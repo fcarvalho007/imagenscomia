@@ -1,13 +1,34 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { HeroSection } from "@/components/landing/HeroSection";
+import { CredibilitySection } from "@/components/landing/CredibilitySection";
+import { ProblemSection } from "@/components/landing/ProblemSection";
+import { ModulesSection } from "@/components/landing/ModulesSection";
+import { BonusSection } from "@/components/landing/BonusSection";
+import { AudienceSection } from "@/components/landing/AudienceSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { AgendaSection } from "@/components/landing/AgendaSection";
+import { UrgencySection } from "@/components/landing/UrgencySection";
+import { FAQSection } from "@/components/landing/FAQSection";
+import { CTAFinalSection } from "@/components/landing/CTAFinalSection";
+import { FooterSection } from "@/components/landing/FooterSection";
+import { StickyMobileCTA } from "@/components/landing/StickyMobileCTA";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <main className="overflow-x-hidden">
+      <HeroSection />
+      <CredibilitySection />
+      <ProblemSection />
+      <ModulesSection />
+      <BonusSection />
+      <AudienceSection />
+      <TestimonialsSection />
+      <AgendaSection />
+      <UrgencySection />
+      <FAQSection />
+      <CTAFinalSection />
+      <FooterSection />
+      <StickyMobileCTA />
+    </main>
   );
 };
 
