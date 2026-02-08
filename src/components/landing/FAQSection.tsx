@@ -38,10 +38,10 @@ const faqs = [
 ];
 
 export const FAQSection = () => (
-  <section className="py-20 bg-muted/30 grid-tron">
+  <section className="py-20 section-light">
     <div className="container mx-auto px-4 max-w-3xl">
       <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-navy">
           Questões <span className="text-gradient">Frequentes</span>
         </h2>
       </ScrollReveal>
@@ -52,12 +52,12 @@ export const FAQSection = () => (
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="bg-card rounded-xl border border-border px-6 overflow-hidden data-[state=open]:neon-border"
+              className="bg-white rounded-xl border border-light-border px-6 overflow-hidden data-[state=open]:border-primary/20 data-[state=open]:shadow-md transition-all"
             >
-              <AccordionTrigger className="text-left font-semibold hover:no-underline py-5 text-foreground">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline py-5 text-navy">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
+              <AccordionContent className="text-navy-light leading-relaxed pb-5">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>

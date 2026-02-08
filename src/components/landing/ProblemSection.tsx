@@ -12,7 +12,7 @@ const problems = [
 ];
 
 export const ProblemSection = () => (
-  <section className="py-20">
+  <section className="py-20 section-dark grid-tron">
     <div className="container mx-auto px-4 max-w-3xl">
       <ScrollReveal>
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
@@ -33,7 +33,7 @@ export const ProblemSection = () => (
 
       <ScrollReveal>
         <div className="text-center p-8 rounded-2xl neon-border bg-card">
-          <p className="text-lg font-medium text-foreground/90">
+          <p className="text-lg font-medium text-foreground/90 leading-relaxed">
             Em 90 minutos, vai descobrir <strong className="text-primary">QUAIS</strong> ferramentas usar e <strong className="text-primary">COMO</strong> implementar — com demonstrações ao vivo.
           </p>
           <p className="text-muted-foreground mt-3 font-medium">

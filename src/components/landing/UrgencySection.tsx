@@ -24,7 +24,7 @@ export const UrgencySection = () => {
   const { days, hours, minutes, seconds, isUrgent } = useCountdown(WEBINAR_DATE);
 
   return (
-    <section className="py-20">
+    <section className="py-20 section-dark grid-tron">
       <div className="container mx-auto px-4 max-w-3xl text-center">
         <ScrollReveal>
           <p className="text-lg font-semibold mb-6 text-foreground">⏰ Inscrições encerram em:</p>

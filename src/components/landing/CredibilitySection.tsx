@@ -1,6 +1,5 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { useCountUp } from "@/hooks/useCountUp";
-import { GraduationCap, BookOpen, Mic } from "lucide-react";
 
 const credentials = [
   { emoji: "👨‍🏫", title: "Professor SEO", lines: ["Faculdade de Economia", "Universidade de Coimbra"] },
@@ -13,19 +12,19 @@ const Counter = ({ end, suffix, label }: { end: number; suffix: string; label: s
   return (
     <div ref={ref} className="text-center">
       <div className="text-4xl md:text-5xl font-bold text-gradient">{count}{suffix}</div>
-      <div className="text-muted-foreground mt-1 text-sm">{label}</div>
+      <div className="text-navy-light mt-1 text-sm">{label}</div>
     </div>
   );
 };
 
 export const CredibilitySection = () => (
-  <section className="py-20 bg-muted/30 grid-tron">
+  <section className="py-20 section-light grid-tron-light">
     <div className="container mx-auto px-4">
       <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-2">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-2 text-navy">
           Ministrado por <span className="text-gradient">Frederico Carvalho</span>
         </h2>
-        <p className="text-center text-muted-foreground text-lg mb-12">
+        <p className="text-center text-navy-light text-lg mb-12 leading-relaxed">
           Professor, Autor Best-Seller e Consultor de Empresas Líderes
         </p>
       </ScrollReveal>
@@ -33,11 +32,11 @@ export const CredibilitySection = () => (
       <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
         {credentials.map((cred, i) => (
           <ScrollReveal key={cred.title} delay={i * 0.15}>
-            <div className="text-center p-6 rounded-2xl bg-card neon-border hover:neon-glow transition-shadow">
+            <div className="text-center p-6 rounded-2xl card-light transition-all">
               <div className="text-4xl mb-3">{cred.emoji}</div>
-              <h3 className="font-bold text-lg mb-2 text-foreground">{cred.title}</h3>
+              <h3 className="font-bold text-lg mb-2 text-navy">{cred.title}</h3>
               {cred.lines.map((line) => (
-                <p key={line} className="text-muted-foreground text-sm">{line}</p>
+                <p key={line} className="text-navy-light text-sm">{line}</p>
               ))}
             </div>
           </ScrollReveal>
@@ -45,7 +44,7 @@ export const CredibilitySection = () => (
       </div>
 
       <ScrollReveal>
-        <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto text-sm">
+        <p className="text-center text-navy-light mb-8 max-w-2xl mx-auto text-sm leading-relaxed">
           20 anos experiência digital • Fundador CLICKSUMMIT • Consultor L'Oréal, BMW, 3M, Impresa
           <br />Formou equipas de <span className="text-primary font-semibold">700+ empresas</span> em Portugal
         </p>

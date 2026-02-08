@@ -1,5 +1,5 @@
 export const FooterSection = () => (
-  <footer className="py-10 border-t border-border">
+  <footer className="py-10 section-dark border-t border-border">
     <div className="container mx-auto px-4 text-center">
       <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-4">
         <a href="#" className="hover:text-primary transition-colors">Privacidade</a>
