@@ -1,96 +1,80 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
-import { Target, FileText, Settings } from "lucide-react";
+import { Lock } from "lucide-react";
+import { CTAButton } from "./CTAButton";
 
 const modules = [
   {
-    icon: Target,
     emoji: "🎯",
     number: 1,
     title: "Panorama Ferramentas IA 2025",
-    topics: [
-      "As 3 ferramentas essenciais (ChatGPT, Claude, ferramentas específicas)",
-      "Quais usar para cada tipo de tarefa (conteúdo, análise, automação)",
-      "Erros comuns de empresas portuguesas ao implementar IA",
-      "Custo real vs ROI: quando compensa investir",
-    ],
-    result: 'Matriz decisão "Que ferramenta para que tarefa"',
+    teaser: "Descubra as únicas 3 ferramentas que realmente importam para a sua empresa — e as 12 que pode ignorar completamente.",
+    highlight: "Inclui: Matriz de decisão exclusiva",
   },
   {
-    icon: FileText,
     emoji: "📝",
     number: 2,
-    title: "Prompting Executivo (Demonstração ao Vivo)",
-    topics: [
-      'Método "Triple-Check" para prompts empresariais confiáveis',
-      "Como transformar dados brutos em análises executivas",
-      "Template de prompts para: análise concorrência, relatórios, briefings, pesquisa mercado",
-    ],
-    demo: "Análise de concorrente que levaria 8 horas manual → 20 minutos com método estruturado",
-    result: "10 templates de prompts prontos a usar",
+    title: "Prompting Executivo",
+    teaser: "O método que transforma 8 horas de análise manual em 20 minutos de resultados confiáveis. Demonstração ao vivo com empresa real.",
+    highlight: "Demo ao vivo + 10 templates",
+    badge: "DEMO AO VIVO",
   },
   {
-    icon: Settings,
     emoji: "⚙️",
     number: 3,
-    title: "Automações Marketing Sem Código",
-    topics: [
-      "3 automações que poupam 10-15 horas/semana",
-      "Como funciona automação sem programador nem IT",
-      "Lead novo → qualificação automática → email → CRM (workflow completo)",
-      "ROI real: investimento vs tempo poupado",
-    ],
-    demo: "Construção de automação do zero em 15 minutos",
-    result: "Template automação pronto a replicar",
+    title: "Automações Sem Código",
+    teaser: "Como montar automações que poupam 10-15 horas/semana — sem programador, sem equipa IT, do zero em 15 minutos.",
+    highlight: "Construção ao vivo de automação completa",
+    badge: "DEMO AO VIVO",
   },
 ];
 
 export const ModulesSection = () => (
-  <section className="py-20 bg-muted/50">
+  <section className="py-20 bg-muted/30 grid-tron">
     <div className="container mx-auto px-4">
       <ScrollReveal>
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-2">
-          3 Módulos Práticos • 90 Minutos • Demonstrações ao Vivo
+          <span className="text-gradient">3 Módulos</span> • 90 Minutos • Ao Vivo
         </h2>
-        <p className="text-center text-muted-foreground mb-12">Conteúdo aplicável desde o primeiro dia</p>
+        <p className="text-center text-muted-foreground mb-12">O que vai ser revelado no webinar</p>
       </ScrollReveal>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-12">
         {modules.map((mod, i) => (
           <ScrollReveal key={mod.number} delay={i * 0.15}>
             <motion.div
-              whileHover={{ y: -8, rotateX: 3 }}
+              whileHover={{ y: -8, boxShadow: "0 0 30px hsl(190 100% 50% / 0.2)" }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="bg-card rounded-2xl p-8 shadow-sm border border-border hover:shadow-[0_20px_40px_rgba(79,70,229,0.15)] transition-shadow h-full flex flex-col"
+              className="bg-card rounded-2xl p-8 neon-border hover:border-primary/50 transition-all h-full flex flex-col relative overflow-hidden"
             >
-              <div className="text-4xl mb-4">{mod.emoji}</div>
-              <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Módulo {mod.number}</div>
-              <h3 className="text-xl font-bold mb-4">{mod.title}</h3>
-
-              <ul className="space-y-2 mb-6 flex-1">
-                {mod.topics.map((topic, j) => (
-                  <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <span className="text-primary mt-0.5">→</span>
-                    {topic}
-                  </li>
-                ))}
-              </ul>
-
-              {mod.demo && (
-                <div className="bg-primary/5 rounded-xl p-3 mb-4 text-sm">
-                  <span className="font-semibold text-primary">Demo ao vivo:</span>{" "}
-                  <span className="text-muted-foreground">{mod.demo}</span>
+              {mod.badge && (
+                <div className="absolute top-4 right-4 text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full border border-primary/30">
+                  {mod.badge}
                 </div>
               )}
 
-              <div className="bg-muted rounded-xl p-3 text-sm">
-                <span className="font-semibold">Resultado prático:</span>{" "}
-                <span className="text-muted-foreground">{mod.result}</span>
+              <div className="text-4xl mb-4">{mod.emoji}</div>
+              <div className="text-xs font-bold text-primary uppercase tracking-wider mb-2">Módulo {mod.number}</div>
+              <h3 className="text-xl font-bold mb-4 text-foreground">{mod.title}</h3>
+
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-1">
+                {mod.teaser}
+              </p>
+
+              <div className="flex items-center gap-2 text-xs text-primary/80 bg-primary/5 rounded-lg p-3 border border-primary/10">
+                <Lock className="w-3 h-3" />
+                {mod.highlight}
               </div>
             </motion.div>
           </ScrollReveal>
         ))}
       </div>
+
+      <ScrollReveal>
+        <div className="text-center">
+          <CTAButton />
+        </div>
+      </ScrollReveal>
     </div>
   </section>
 );

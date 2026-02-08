@@ -9,39 +9,41 @@ import {
 const faqs = [
   {
     q: "Preciso de conhecimentos técnicos para acompanhar?",
-    a: "Não. O webinar foi desenhado para empresários e profissionais de negócio, não para técnicos. Se consegue usar email e navegador, consegue acompanhar e implementar o que será mostrado.",
+    a: "Não. O webinar foi desenhado para empresários e profissionais de negócio. Se consegue usar email e navegador, consegue implementar o que será mostrado.",
   },
   {
     q: "É necessário pagar ferramentas IA para participar?",
-    a: "Não é necessário. Várias demonstrações usam versões gratuitas de ferramentas. Será mostrado o que funciona grátis e quando compensa investir em versões pagas (com análise ROI).",
+    a: "Não. Várias demonstrações usam versões gratuitas. Será mostrado o que funciona grátis e quando compensa investir em versões pagas.",
   },
   {
-    q: "E se não for possível assistir ao vivo?",
-    a: "A gravação completa será enviada a todos os inscritos com acesso durante 1 ano. No entanto, recomenda-se presença ao vivo para aproveitar Q&A e interação directa.",
+    q: "E se não puder assistir ao vivo?",
+    a: "A gravação completa estará disponível por €15 para quem não conseguir assistir ao vivo. Quem participar ao vivo recebe tudo gratuitamente.",
   },
   {
-    q: "Haverá tentativa de venda de outros produtos?",
-    a: "Sim, total transparência: no final será apresentada informação sobre workshops de aprofundamento (€37-47, opcionais). Mas 85% do webinar é conteúdo puro educativo. Zero pressão comercial.",
+    q: "Haverá tentativa de venda?",
+    a: "Transparência total: no final será apresentada informação sobre workshops opcionais (€37-47). 85% do webinar é conteúdo educativo puro. Zero pressão.",
   },
   {
-    q: "O conteúdo aplica-se ao meu setor específico?",
-    a: "As ferramentas e métodos mostrados são transversais: funcionam para serviços, retalho, consultoria, indústria, B2B e B2C. Os exemplos cobrem vários setores incluindo imobiliário, consultoria, software e serviços.",
+    q: "O conteúdo aplica-se ao meu setor?",
+    a: "Sim. As ferramentas e métodos são transversais: serviços, retalho, consultoria, indústria, B2B e B2C. Os exemplos cobrem vários setores.",
   },
   {
-    q: "Quanto tempo de implementação será necessário depois?",
-    a: "As demonstrações são práticas e replicáveis. Tempo estimado para implementar cada automação/método mostrado: 30 minutos a 2 horas. O objetivo é sair com pelo menos 1 ferramenta aplicável no dia seguinte.",
+    q: "Quanto tempo preciso para implementar depois?",
+    a: "30 minutos a 2 horas por automação/método. O objetivo é sair com pelo menos 1 ferramenta aplicável no dia seguinte.",
   },
   {
-    q: "O Kit IA Empresarial 2025 fica acessível permanentemente?",
-    a: "Sim. As 3 aplicações web, templates e checklist ficam acessíveis de forma permanente. A gravação do webinar tem acesso de 1 ano.",
+    q: "O Kit IA fica acessível para sempre?",
+    a: "Sim. As 3 aplicações web, templates e checklist ficam acessíveis permanentemente. A gravação tem acesso de 1 ano.",
   },
 ];
 
 export const FAQSection = () => (
-  <section className="py-20 bg-muted/50">
+  <section className="py-20 bg-muted/30 grid-tron">
     <div className="container mx-auto px-4 max-w-3xl">
       <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Questões Frequentes</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+          Questões <span className="text-gradient">Frequentes</span>
+        </h2>
       </ScrollReveal>
 
       <ScrollReveal>
@@ -50,9 +52,9 @@ export const FAQSection = () => (
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="bg-card rounded-xl border border-border px-6 overflow-hidden"
+              className="bg-card rounded-xl border border-border px-6 overflow-hidden data-[state=open]:neon-border"
             >
-              <AccordionTrigger className="text-left font-semibold hover:no-underline py-5">
+              <AccordionTrigger className="text-left font-semibold hover:no-underline py-5 text-foreground">
                 {faq.q}
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground leading-relaxed pb-5">
