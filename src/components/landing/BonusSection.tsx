@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 
 export const BonusSection = () => (
-  <section className="py-24">
+  <section className="py-24 section-dark grid-tron">
     <div className="container mx-auto px-4 max-w-3xl">
       <ScrollReveal>
         <div className="text-center mb-10">
@@ -16,7 +16,7 @@ export const BonusSection = () => (
           <h2 className="text-3xl md:text-4xl font-bold mb-3">
             O que recebe ao <span className="text-gradient">inscrever-se</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
             Todos os participantes — ao vivo ou com acesso à gravação — recebem o Kit IA Empresarial 2025, um conjunto de ferramentas práticas prontas a usar.
           </p>
         </div>
@@ -39,21 +39,21 @@ export const BonusSection = () => (
             <div className="space-y-4">
               <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
                 <h4 className="font-semibold text-foreground mb-1">🖥️ 3 Aplicações Web Funcionais</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Ferramentas online exclusivas, desenvolvidas de propósito para este webinar: Analisador de Concorrência com IA, Gerador de Prompts para decisões executivas, e Calculadora de ROI para automações.
                 </p>
               </div>
 
               <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
                 <h4 className="font-semibold text-foreground mb-1">📋 50 Templates de Prompts Testados</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Prompts prontos a copiar e usar em Marketing, Vendas, Operações e Gestão. Validados com empresas reais portuguesas.
                 </p>
               </div>
 
               <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
                 <h4 className="font-semibold text-foreground mb-1">✅ Checklist Visual de Decisão</h4>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground leading-relaxed">
                   Matriz que mostra qual ferramenta de IA usar para cada tipo de tarefa na sua empresa, sem adivinhas.
                 </p>
               </div>

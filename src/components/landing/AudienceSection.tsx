@@ -16,10 +16,10 @@ const notFor = [
 ];
 
 export const AudienceSection = () => (
-  <section className="py-20 bg-muted/30 grid-tron">
+  <section className="py-20 section-light grid-tron-light">
     <div className="container mx-auto px-4 max-w-3xl">
       <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-navy">
           Para quem é <span className="text-gradient">este webinar</span>
         </h2>
       </ScrollReveal>
@@ -27,16 +27,16 @@ export const AudienceSection = () => (
       <div className="space-y-3 mb-10">
         {forWhom.map((item, i) => (
           <ScrollReveal key={i} delay={i * 0.08}>
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-white border border-primary/10 shadow-sm">
               <Check className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-              <p className="text-foreground/80">{item}</p>
+              <p className="text-navy">{item}</p>
             </div>
           </ScrollReveal>
         ))}
       </div>
 
       <ScrollReveal>
-        <h3 className="text-lg font-bold text-center mb-4 text-muted-foreground">Não é para:</h3>
+        <h3 className="text-lg font-bold text-center mb-4 text-navy-light">Não é para:</h3>
       </ScrollReveal>
 
       <div className="space-y-3">
@@ -44,7 +44,7 @@ export const AudienceSection = () => (
           <ScrollReveal key={i} delay={i * 0.08}>
             <div className="flex items-start gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/10">
               <X className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-              <p className="text-muted-foreground text-sm">{item}</p>
+              <p className="text-navy-light text-sm">{item}</p>
             </div>
           </ScrollReveal>
         ))}

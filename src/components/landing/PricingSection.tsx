@@ -1,15 +1,15 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { CTAButton } from "./CTAButton";
-import { Check, X, Video, PlayCircle, Users, MessageCircle } from "lucide-react";
+import { Check, X, Video, PlayCircle } from "lucide-react";
 
 export const PricingSection = () => (
-  <section className="py-24 bg-muted/30 grid-tron">
+  <section className="py-24 section-light grid-tron-light">
     <div className="container mx-auto px-4 max-w-4xl">
       <ScrollReveal>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-3">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-3 text-navy">
           Como <span className="text-gradient">participar</span>
         </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
+        <p className="text-center text-navy-light mb-12 max-w-xl mx-auto leading-relaxed">
           Assista gratuitamente ao vivo, ou garanta acesso permanente à gravação por apenas €15
         </p>
       </ScrollReveal>
@@ -17,15 +17,15 @@ export const PricingSection = () => (
       <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
         {/* Free - Live */}
         <ScrollReveal delay={0}>
-          <div className="bg-card rounded-2xl p-8 neon-border hover:neon-glow transition-shadow h-full flex flex-col relative">
+          <div className="bg-white rounded-2xl p-8 border-2 border-primary/20 shadow-lg shadow-primary/5 h-full flex flex-col relative">
             <div className="absolute -top-3 left-6 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full">
               RECOMENDADO
             </div>
             <div className="flex items-center gap-3 mb-2">
               <Video className="w-6 h-6 text-primary" />
-              <h3 className="text-xl font-bold">Participação ao Vivo</h3>
+              <h3 className="text-xl font-bold text-navy">Participação ao Vivo</h3>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">Quinta, 20 Fev • 19h00 (Lisboa)</p>
+            <p className="text-sm text-navy-light mb-4">Quinta, 20 Fev • 19h00 (Lisboa)</p>
             <div className="mb-6">
               <span className="text-4xl font-bold text-gradient">Grátis</span>
             </div>
@@ -43,9 +43,9 @@ export const PricingSection = () => (
                   {item.included ? (
                     <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                   ) : (
-                    <X className="w-4 h-4 text-muted-foreground/40 mt-0.5 shrink-0" />
+                    <X className="w-4 h-4 text-navy-light/40 mt-0.5 shrink-0" />
                   )}
-                  <span className={item.included ? "text-foreground/80" : "text-muted-foreground/50"}>
+                  <span className={item.included ? "text-navy" : "text-navy-light/50"}>
                     {item.text}
                     {item.note && <span className="text-xs ml-1">({item.note})</span>}
                   </span>
@@ -58,38 +58,38 @@ export const PricingSection = () => (
 
         {/* Paid - Recording */}
         <ScrollReveal delay={0.15}>
-          <div className="bg-card rounded-2xl p-8 border border-border h-full flex flex-col">
+          <div className="bg-white rounded-2xl p-8 card-light h-full flex flex-col">
             <div className="flex items-center gap-3 mb-2">
               <PlayCircle className="w-6 h-6 text-secondary" />
-              <h3 className="text-xl font-bold">Acesso à Gravação</h3>
+              <h3 className="text-xl font-bold text-navy">Acesso à Gravação</h3>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">Disponível após o webinar</p>
+            <p className="text-sm text-navy-light mb-4">Disponível após o webinar</p>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-foreground">€15</span>
-              <span className="text-sm text-muted-foreground ml-2">pagamento único</span>
+              <span className="text-4xl font-bold text-navy">€15</span>
+              <span className="text-sm text-navy-light ml-2">pagamento único</span>
             </div>
 
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                { text: "Gravação completa do webinar", included: true },
-                { text: "Ver e rever sem limite (1 ano)", included: true },
-                { text: "Kit IA Empresarial 2025 completo", included: true },
-                { text: "3 Aplicações Web exclusivas", included: true },
-                { text: "50 Templates de Prompts", included: true },
-                { text: "Ideal para quem não pode estar ao vivo", included: true },
+                { text: "Gravação completa do webinar" },
+                { text: "Ver e rever sem limite (1 ano)" },
+                { text: "Kit IA Empresarial 2025 completo" },
+                { text: "3 Aplicações Web exclusivas" },
+                { text: "50 Templates de Prompts" },
+                { text: "Ideal para quem não pode estar ao vivo" },
               ].map((item) => (
                 <li key={item.text} className="flex items-start gap-2 text-sm">
                   <Check className="w-4 h-4 text-secondary/60 mt-0.5 shrink-0" />
-                  <span className="text-foreground/70">{item.text}</span>
+                  <span className="text-navy">{item.text}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="bg-muted/50 rounded-xl p-4 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="bg-light-alt rounded-xl p-4 text-center">
+              <p className="text-sm text-navy-light">
                 Não pode estar ao vivo? Garanta acesso à gravação.
               </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
+              <p className="text-xs text-navy-light/60 mt-1">
                 Disponível para compra após o webinar
               </p>
             </div>
@@ -98,8 +98,8 @@ export const PricingSection = () => (
       </div>
 
       <ScrollReveal>
-        <p className="text-center text-sm text-muted-foreground mt-8 max-w-lg mx-auto">
-          💡 <strong>Dica:</strong> Inscreva-se gratuitamente agora. Se no dia não puder assistir, terá a opção de adquirir a gravação por €15.
+        <p className="text-center text-sm text-navy-light mt-8 max-w-lg mx-auto leading-relaxed">
+          💡 <strong className="text-navy">Dica:</strong> Inscreva-se gratuitamente agora. Se no dia não puder assistir, terá a opção de adquirir a gravação por €15.
         </p>
       </ScrollReveal>
     </div>
