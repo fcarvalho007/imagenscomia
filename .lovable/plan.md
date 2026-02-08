@@ -1,91 +1,60 @@
 
 
-# Landing Page - Webinar IA para Empresas
+# Redesign Visual: Melhor Leitura e Contraste
 
-## Visão Geral
-Landing page de alta conversão para webinar gratuito sobre Inteligência Artificial para empresas portuguesas, ministrado por Frederico Carvalho. Design moderno com gradientes indigo-purple-blue, animações sofisticadas e foco em conversão.
+## Problema Atual
+A pagina e quase toda escura com variações mínimas entre secções. Texto claro sobre fundos escuros repetidos cansa a vista e dificulta a leitura. Nao ha "respiro" visual.
 
----
+## Estrategia: Secções Alternadas Dark/Light com Gradientes
 
-## Estrutura & Funcionalidades
+A abordagem mais eficaz para leitura e ritmo visual e alternar entre fundos escuros (navy/preto) e fundos claros (branco/cinza claro), mantendo o estilo Tron nos acentos neon.
 
-### 1. Hero Section
-- Kicker vermelho animado ("WEBINAR GRATUITO • AO VIVO • 90 MINUTOS")
-- Headline principal com destaque tipográfico forte
-- Sub-headline com proposta de valor clara
-- Data/hora em destaque grande
-- Botão CTA primário "RESERVAR LUGAR GRATUITO" com efeito ripple
-- Trust line com checkmarks verdes
-- Background com gradiente indigo → purple → blue e partículas SVG animadas flutuantes
+### Paleta Atualizada
+- **Fundos escuros**: Navy profundo (#0a0e1a) com grelha Tron rosa/magenta sutil
+- **Fundos claros**: Branco puro (#ffffff) e cinza muito claro (#f8f9fc) com texto escuro
+- **Acentos**: Manter rosa/magenta neon para gradientes, CTAs e destaques
+- **Texto escuro**: Navy (#0f172a) nas secções claras para contraste maximo
+- **Texto claro**: Branco/cinza claro nas secções escuras
 
-### 2. Secção Credibilidade
-- Apresentação de Frederico Carvalho
-- 3 colunas com ícones: Professor FEUC, Autor Best-Seller, Host Podcast RFM
-- Linha de credenciais com logos (L'Oréal, BMW, 3M, Impresa, CLICKSUMMIT)
-- Contadores animados (700+ empresas, 20 anos, 97% satisfação) com scroll trigger
+### Distribuição por Secção
 
-### 3. Secção Problema
-- Lista de 7 desafios com ✗ vermelhos
-- Texto de transição enfatizando a solução prática
-- Design que cria identificação imediata com o público-alvo
+| Secção | Fundo | Texto |
+|--------|-------|-------|
+| Hero | Dark navy + gradiente + grid Tron | Branco |
+| Credibilidade | **Branco** | Navy escuro |
+| Problema | Dark navy | Branco |
+| Modulos | **Branco/cinza claro** | Navy escuro |
+| Bonus (Kit) | Dark navy + glass gold | Branco |
+| Audiencia | **Branco** | Navy escuro |
+| Testemunhos | Dark navy gradient | Branco |
+| Pricing | **Branco/cinza claro** | Navy escuro |
+| Urgencia | Dark navy + neon glow | Branco |
+| FAQ | **Branco** | Navy escuro |
+| CTA Final | Dark navy gradient + neon | Branco |
+| Footer | Dark navy | Cinza claro |
 
-### 4. 3 Módulos Detalhados
-- Cards com efeito hover 3D (translateY + rotateX)
-- Módulo 1: Panorama Ferramentas IA 2025
-- Módulo 2: Prompting Executivo (Demo ao Vivo)
-- Módulo 3: Automações Marketing Sem Código
-- Cada card com ícone, tópicos e "Resultado prático"
+### Mudanças Tecnicas
 
-### 5. Bónus Kit IA Empresarial 2025
-- Card glassmorphism com fundo dourado suave
-- Lista de bónus: 3 apps web, 50 templates, checklist, gravação
-- Valor âncora (€147 → Grátis)
-- Ícone 🎁 com animação pulse
+**1. CSS (index.css)**
+- Adicionar classe `.section-light` com fundo branco e texto navy
+- Adicionar gradientes suaves para secções claras (branco para cinza muito claro)
+- Grid Tron mais sutil nas secções claras (usando cinza em vez de rosa)
+- Atualizar `gradient-hero` para navy mais profundo com toque azul
 
-### 6. Para Quem É / Não É
-- Lista ✓ verdes para público-alvo (5 perfis)
-- Lista ✗ vermelhos para quem não é adequado (3 exclusões)
-- Transparência que gera confiança
+**2. Tailwind Config**
+- Adicionar cores `navy` para texto escuro
+- Adicionar classes utilitarias para secções claras
 
-### 7. Testemunhos
-- 3 cards com citações, nome, cargo, empresa e setor
-- Carousel com autoplay
-- Design com aspas decorativas e fotos circulares
+**3. Componentes (todas as secções)**
+- Secções claras: fundo branco, texto navy, cards com sombra suave em vez de neon-border
+- Secções escuras: manter estilo Tron atual mas com navy mais rico
+- Cards nas secções claras: borda cinza suave, sombra, hover com toque rosa
+- Cards nas secções escuras: manter neon-border rosa
 
-### 8. Agenda Timeline Visual
-- Timeline vertical com 4 blocos horários
-- Separadores visuais entre módulos
-- Indicação de duração e tipo (demo ao vivo, Q&A)
+**4. Tipografia melhorada**
+- Tamanhos de texto ligeiramente maiores no body (base 17-18px)
+- Mais espacamento entre linhas (leading-relaxed em todo o lado)
+- Subtitulos com peso mais leve para hierarquia clara
 
-### 9. Secção Urgência
-- Countdown timer com flip animation (dias, horas, min, seg)
-- Muda para vermelho quando <24h
-- Indicador de vagas limitadas (250 max, 142 disponíveis)
-- Prova social da edição anterior
-
-### 10. FAQ Accordion
-- 7 perguntas com accordion (máximo 1 aberto)
-- Ícone + → × com rotação animada
-- Animação slide suave
-
-### 11. CTA Final
-- Texto motivacional inspirador
-- Botão grande "GARANTIR LUGAR GRATUITO"
-- Garantia RGPD e sem spam
-
-### 12. Footer
-- Logos de credenciais e parceiros
-- Testemunho institucional
-- Links privacidade, termos, contacto
-- Copyright
-
----
-
-## Design & UX
-
-- **Cores**: Gradiente principal indigo (#4F46E5) → purple (#7C3AED) → blue (#2563EB), vermelho para urgência (#EF4444), dourado para bónus
-- **Tipografia**: Inter, headlines 48-64px bold, body 16-18px
-- **Animações**: Fade-in no scroll, contadores animados, hover 3D nos cards, countdown flip, partículas flutuantes
-- **Mobile**: Sticky CTA bar no fundo com blur após scroll, layout totalmente responsivo mobile-first
-- **Formulário**: Campos nome + email com validação, integração pronta para email marketing
-
+### Resultado Esperado
+Uma pagina com ritmo visual claro — secções escuras "Tron" dramáticas alternadas com secções brancas limpas e profissionais. O contraste entre dark e light cria pontos de descanso visual e melhora significativamente a leitura.
