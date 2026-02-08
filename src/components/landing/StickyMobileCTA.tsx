@@ -21,11 +21,11 @@ export const StickyMobileCTA = () => {
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           exit={{ y: 100 }}
-          className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/80 backdrop-blur-lg border-t border-border p-3"
+          className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/90 backdrop-blur-lg border-t border-border p-3 safe-area-bottom"
         >
           <button
             onClick={open}
-            className="w-full gradient-cta text-primary-foreground font-bold py-3 rounded-xl text-sm neon-glow"
+            className="w-full gradient-cta text-primary-foreground font-bold py-3.5 rounded-xl text-sm"
           >
             RESERVAR LUGAR GRATUITO
           </button>

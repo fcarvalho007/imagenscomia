@@ -1,66 +1,66 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 
+const items = [
+  {
+    icon: "🖥️",
+    title: "3 Aplicações Web Exclusivas",
+    desc: "Analisador de Concorrência, Gerador de Prompts e Calculadora de ROI — prontas a usar.",
+  },
+  {
+    icon: "📋",
+    title: "50 Templates de Prompts",
+    desc: "Para Marketing, Vendas, Operações e Gestão. Validados com empresas portuguesas.",
+  },
+  {
+    icon: "✅",
+    title: "Checklist de Decisão",
+    desc: "Matriz visual: qual ferramenta usar para cada tipo de tarefa na sua empresa.",
+  },
+];
+
 export const BonusSection = () => (
-  <section className="py-24 section-dark grid-tron">
-    <div className="container mx-auto px-4 max-w-3xl">
+  <section className="py-16 md:py-20 section-dark grid-tron">
+    <div className="container mx-auto px-5 sm:px-6 max-w-3xl">
       <ScrollReveal>
-        <div className="text-center mb-10">
+        <div className="text-center mb-8 md:mb-10">
           <motion.span
-            animate={{ scale: [1, 1.15, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="text-5xl inline-block mb-4"
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            className="text-4xl inline-block mb-3"
           >
             🎁
           </motion.span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-3">
-            O que recebe ao <span className="text-gradient">inscrever-se</span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            Kit IA Empresarial <span className="text-gradient">2025</span>
           </h2>
-          <p className="text-muted-foreground text-lg max-w-xl mx-auto leading-relaxed">
-            Todos os participantes — ao vivo ou com acesso à gravação — recebem o Kit IA Empresarial 2025, um conjunto de ferramentas práticas prontas a usar.
+          <p className="text-muted-foreground text-sm sm:text-base max-w-md mx-auto leading-relaxed">
+            Incluído gratuitamente para todos os participantes — ao vivo ou com acesso à gravação.
           </p>
         </div>
       </ScrollReveal>
 
       <ScrollReveal>
-        <div className="glass-gold rounded-2xl p-8 md:p-10 relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
+        <div className="glass-gold rounded-2xl p-6 sm:p-8 md:p-10 relative overflow-hidden">
+          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold/8 rounded-full blur-3xl" />
 
-          <div className="relative">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold">Kit IA Empresarial 2025</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground line-through text-sm">€147</span>
-                <span className="bg-primary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded">INCLUÍDO</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mb-6">Incluído gratuitamente na sua inscrição</p>
-
-            <div className="space-y-4">
-              <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
-                <h4 className="font-semibold text-foreground mb-1">🖥️ 3 Aplicações Web Funcionais</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Ferramentas online exclusivas, desenvolvidas de propósito para este webinar: Analisador de Concorrência com IA, Gerador de Prompts para decisões executivas, e Calculadora de ROI para automações.
-                </p>
-              </div>
-
-              <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
-                <h4 className="font-semibold text-foreground mb-1">📋 50 Templates de Prompts Testados</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Prompts prontos a copiar e usar em Marketing, Vendas, Operações e Gestão. Validados com empresas reais portuguesas.
-                </p>
-              </div>
-
-              <div className="bg-background/40 rounded-xl p-5 border border-gold/10">
-                <h4 className="font-semibold text-foreground mb-1">✅ Checklist Visual de Decisão</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Matriz que mostra qual ferramenta de IA usar para cada tipo de tarefa na sua empresa, sem adivinhas.
-                </p>
-              </div>
+          <div className="relative space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-muted-foreground line-through text-sm">€147</span>
+              <span className="bg-primary text-primary-foreground text-xs font-bold px-2.5 py-0.5 rounded">GRÁTIS</span>
             </div>
 
-            <p className="text-xs text-muted-foreground mt-6 pt-4 border-t border-gold/15">
-              Acesso enviado automaticamente por email após inscrição.
+            {items.map((item) => (
+              <div key={item.title} className="bg-background/30 rounded-xl p-4 sm:p-5 border border-gold/10">
+                <h4 className="font-semibold text-foreground text-sm sm:text-base mb-1">
+                  {item.icon} {item.title}
+                </h4>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+
+            <p className="text-xs text-muted-foreground pt-3 border-t border-gold/10">
+              Acesso enviado por email após inscrição.
             </p>
           </div>
         </div>

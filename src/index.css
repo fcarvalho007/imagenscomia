@@ -38,11 +38,11 @@
     --gold-foreground: 45 93% 10%;
 
     /* Light section tokens */
-    --light-bg: 230 20% 98%;
-    --light-bg-alt: 230 15% 95%;
-    --light-text: 230 25% 10%;
-    --light-text-muted: 230 15% 40%;
-    --light-border: 230 15% 88%;
+    --light-bg: 0 0% 100%;
+    --light-bg-alt: 230 20% 97%;
+    --light-text: 230 25% 12%;
+    --light-text-muted: 230 12% 45%;
+    --light-border: 230 15% 90%;
     --light-card: 0 0% 100%;
 
     --sidebar-background: 230 22% 8%;
@@ -64,38 +64,46 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 17px;
-    line-height: 1.7;
+    line-height: 1.75;
   }
 }
 
 @layer utilities {
   /* Dark sections */
   .section-dark {
-    background: linear-gradient(180deg, hsl(230 25% 5%) 0%, hsl(230 22% 7%) 50%, hsl(230 25% 5%) 100%);
+    background: hsl(230 25% 4%);
     color: hsl(220 15% 90%);
   }
 
   .gradient-hero {
-    background: linear-gradient(160deg, hsl(230 25% 4%) 0%, hsl(250 30% 10%) 40%, hsl(230 25% 6%) 100%);
+    background: linear-gradient(165deg, hsl(230 30% 4%) 0%, hsl(250 25% 9%) 50%, hsl(230 28% 5%) 100%);
   }
 
   .gradient-cta {
     background: linear-gradient(135deg, hsl(320 80% 55%) 0%, hsl(280 70% 50%) 100%);
   }
 
-  /* Light sections */
+  /* Light sections — pure white */
   .section-light {
-    background: linear-gradient(180deg, hsl(var(--light-bg)) 0%, hsl(var(--light-bg-alt)) 100%);
+    background: hsl(0 0% 100%);
+    color: hsl(var(--light-text));
+  }
+
+  .section-light-alt {
+    background: linear-gradient(180deg, hsl(230 20% 98%) 0%, hsl(0 0% 100%) 100%);
     color: hsl(var(--light-text));
   }
 
   .section-light .text-foreground,
   .section-light .text-foreground\/80,
-  .section-light .text-foreground\/90 {
+  .section-light .text-foreground\/90,
+  .section-light-alt .text-foreground,
+  .section-light-alt .text-foreground\/80 {
     color: hsl(var(--light-text));
   }
 
-  .section-light .text-muted-foreground {
+  .section-light .text-muted-foreground,
+  .section-light-alt .text-muted-foreground {
     color: hsl(var(--light-text-muted));
   }
 
@@ -107,45 +115,45 @@
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(320 80% 65%), hsl(280 70% 60%));
+    background: linear-gradient(135deg, hsl(320 80% 60%), hsl(280 70% 55%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .neon-border {
-    border: 1px solid hsl(320 80% 60% / 0.2);
-    box-shadow: 0 0 8px hsl(320 80% 60% / 0.06), inset 0 0 8px hsl(320 80% 60% / 0.03);
+    border: 1px solid hsl(320 80% 60% / 0.15);
+    box-shadow: 0 0 6px hsl(320 80% 60% / 0.04), inset 0 0 6px hsl(320 80% 60% / 0.02);
   }
 
   .neon-glow {
-    box-shadow: 0 0 15px hsl(320 80% 60% / 0.3), 0 0 40px hsl(320 80% 60% / 0.1);
+    box-shadow: 0 0 12px hsl(320 80% 60% / 0.25), 0 0 30px hsl(320 80% 60% / 0.08);
   }
 
   /* Light section card styling */
   .card-light {
-    background: hsl(var(--light-card));
-    border: 1px solid hsl(var(--light-border));
-    box-shadow: 0 1px 3px hsl(230 25% 10% / 0.05), 0 4px 12px hsl(230 25% 10% / 0.04);
+    background: hsl(0 0% 100%);
+    border: 1px solid hsl(230 15% 92%);
+    box-shadow: 0 1px 3px hsl(230 25% 10% / 0.04), 0 4px 16px hsl(230 25% 10% / 0.03);
   }
 
   .card-light:hover {
-    box-shadow: 0 2px 8px hsl(320 80% 60% / 0.08), 0 8px 24px hsl(230 25% 10% / 0.06);
-    border-color: hsl(320 80% 60% / 0.2);
+    box-shadow: 0 2px 8px hsl(320 80% 60% / 0.06), 0 8px 24px hsl(230 25% 10% / 0.05);
+    border-color: hsl(320 80% 60% / 0.15);
   }
 
   /* Tron grids */
   .grid-tron {
     background-image:
-      linear-gradient(hsl(320 80% 60% / 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(320 80% 60% / 0.02) 1px, transparent 1px);
+      linear-gradient(hsl(320 80% 60% / 0.015) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(320 80% 60% / 0.015) 1px, transparent 1px);
     background-size: 80px 80px;
   }
 
   .grid-tron-light {
     background-image:
-      linear-gradient(hsl(230 20% 80% / 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, hsl(230 20% 80% / 0.3) 1px, transparent 1px);
+      linear-gradient(hsl(230 20% 88% / 0.25) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(230 20% 88% / 0.25) 1px, transparent 1px);
     background-size: 80px 80px;
   }
 }
