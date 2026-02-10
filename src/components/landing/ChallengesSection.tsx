@@ -11,7 +11,7 @@ const challenges = [
 
 export const ChallengesSection = () => (
   <section className="py-16 md:py-24 bg-off-white">
-    <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
+    <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
         <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-12">
           Algum disto soa familiar?

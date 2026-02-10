@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, Star, Shield, X, ArrowRight } from "lucide-react";
+import { Check, Loader2, Star, Shield, X, ArrowRight, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -94,9 +95,11 @@ const CurrentPlanBlock = () => (
 const SkipCard = ({
   selected,
   onSelect,
+  onShowReferralInfo,
 }: {
   selected: boolean;
   onSelect: () => void;
+  onShowReferralInfo: () => void;
 }) => (
   <motion.div
     initial={{ opacity: 0, y: 16 }}
@@ -123,6 +126,22 @@ const SkipCard = ({
         </li>
       ))}
     </ul>
+
+    {/* Referral block */}
+    <div className="bg-green-50 border border-green-100 rounded-lg p-3 mb-3">
+      <div className="flex items-start gap-2">
+        <Gift className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-[13px] text-green-700 font-medium">Ou convida 2 amigos e ganha o Premium grátis</p>
+          <button
+            onClick={onShowReferralInfo}
+            className="text-[12px] text-blue-600 hover:underline mt-1 bg-transparent border-none cursor-pointer p-0"
+          >
+            Ver como funciona →
+          </button>
+        </div>
+      </div>
+    </div>
 
     <button
       onClick={onSelect}
@@ -427,6 +446,77 @@ const MobileCTA = ({
   );
 };
 
+/* ───────── Referral Info Modal ───────── */
+const ReferralInfoModal = ({
+  open,
+  onClose,
+  onSignupFree,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSignupFree: () => void;
+}) => (
+  <AnimatePresence>
+    {open && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[60] flex items-center justify-center bg-ink-900/70 backdrop-blur-sm px-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.25 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-background max-w-[400px] w-full rounded-2xl p-7 shadow-card-lg relative"
+        >
+          <button onClick={onClose} className="absolute top-4 right-4 text-ink-400 hover:text-ink-700">
+            <X className="w-5 h-5" />
+          </button>
+
+          <div className="text-center mb-3">
+            <span className="text-[40px]">🎁</span>
+          </div>
+
+          <h3 className="font-heading font-bold text-[20px] text-ink-900 text-center mb-2">
+            Ganha o Premium Pass grátis
+          </h3>
+          <p className="text-[15px] text-ink-500 text-center mt-2">
+            Partilha o teu link com 2 amigos. Quando ambos se inscrevem, recebes o Premium Pass no valor de €15 — sem pagar nada.
+          </p>
+
+          <ol className="mt-4 space-y-2.5 text-[14px] text-ink-700">
+            <li className="flex items-start gap-2"><span className="font-heading font-bold text-blue-600">1.</span> Inscreve-te grátis no webinar</li>
+            <li className="flex items-start gap-2"><span className="font-heading font-bold text-blue-600">2.</span> Copia o teu link de convite pessoal</li>
+            <li className="flex items-start gap-2"><span className="font-heading font-bold text-blue-600">3.</span> Envia para 2 amigos</li>
+            <li className="flex items-start gap-2"><span className="font-heading font-bold text-blue-600">4.</span> Ambos inscrevem-se → recebes o Premium</li>
+          </ol>
+
+          <p className="text-[13px] text-ink-400 text-center mt-3">
+            Os teus amigos têm de se inscrever antes do webinar começar.
+          </p>
+
+          <button
+            onClick={onSignupFree}
+            className="w-full mt-5 bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-[15px] py-4 rounded-xl transition-colors"
+          >
+            Inscrever-me grátis e partilhar link
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full text-center text-[13px] text-ink-400 mt-3 hover:text-ink-700 bg-transparent border-none cursor-pointer"
+          >
+            Prefiro pagar €15 directamente
+          </button>
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 /* ───────── Footer ───────── */
 const MicroFooter = () => (
   <footer className="bg-off-white border-t border-border py-5 px-4 text-center">
@@ -441,8 +531,10 @@ const MicroFooter = () => (
 
 /* ═════════ Main Page ═════════ */
 const Upsell = () => {
+  const navigate = useNavigate();
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(null);
   const [isBundleOpen, setIsBundleOpen] = useState(false);
+  const [isReferralInfoOpen, setIsReferralInfoOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
@@ -498,7 +590,7 @@ const Upsell = () => {
         <div className="max-w-[960px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-5 mb-10 lg:mb-16">
           {/* Mobile order: Masterclass, Workshop, Skip | Desktop order: Skip, Masterclass, Workshop */}
           <div className={isMobile ? "order-2 lg:order-1" : ""}>
-            <SkipCard selected={selectedOption === "skip"} onSelect={() => setSelectedOption("skip")} />
+            <SkipCard selected={selectedOption === "skip"} onSelect={() => setSelectedOption("skip")} onShowReferralInfo={() => setIsReferralInfoOpen(true)} />
           </div>
           <div className={isMobile ? "order-1 lg:order-2" : ""}>
             <MasterclassCard selected={selectedOption === "masterclass"} onSelect={() => setSelectedOption("masterclass")} />
@@ -519,6 +611,7 @@ const Upsell = () => {
       <MobileCTA selectedOption={selectedOption} loading={loading} onConfirm={handleConfirm} />
       <MicroFooter />
       <BundleModal open={isBundleOpen} onClose={() => setIsBundleOpen(false)} onConfirm={selectBundle} />
+      <ReferralInfoModal open={isReferralInfoOpen} onClose={() => setIsReferralInfoOpen(false)} onSignupFree={() => { setIsReferralInfoOpen(false); navigate("/?referral=true"); }} />
 
       {/* Spacer for mobile fixed CTA */}
       {selectedOption && <div className="lg:hidden h-20" />}

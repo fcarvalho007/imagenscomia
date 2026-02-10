@@ -1,39 +1,49 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-import { X, Loader2, Shield, MinusCircle, Clock, Sparkles, ArrowRight, Ticket, User, Mail, Check, CalendarPlus, CreditCard, Gift, Copy, MessageCircle, Send, ExternalLink } from "lucide-react";
+import { X, Loader2, Shield, MinusCircle, Clock, Sparkles, ArrowRight, Ticket, User, Mail, Check, CalendarPlus, Gift, Copy, MessageCircle, Send, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+type ConfirmationMode = "referral" | "simple";
+
 export const RegistrationModal = () => {
+  const navigate = useNavigate();
   const { isOpen, variant, open, close, referredBy } = useRegistrationModal();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [showUpsell, setShowUpsell] = useState(true);
+  const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [error, setError] = useState<string | null>(null);
   const [referralData, setReferralData] = useState<{ referralCode: string; referralLink: string } | null>(null);
 
-  const isPremium = variant === "premium";
+  const registerFree = async (): Promise<{ referralCode: string; referralLink: string } | null> => {
+    const { data, error: fnError } = await supabase.functions.invoke("register-free", {
+      body: { name, email, referredBy: referredBy || undefined },
+    });
+    if (fnError) throw fnError;
+    return { referralCode: data.referralCode, referralLink: data.referralLink };
+  };
 
-  const handleSubmitFree = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoToPremium = () => {
+    close();
+    navigate("/upgrade");
+  };
+
+  const handleReferralPath = async () => {
+    if (!name.trim() || !email.trim()) {
+      setError("Preenche o nome e email primeiro.");
+      return;
+    }
     setLoading(true);
     setError(null);
-
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-        body: { name, email, referredBy: referredBy || undefined },
-      });
-
-      if (fnError) throw fnError;
-
-      setReferralData({
-        referralCode: data.referralCode,
-        referralLink: data.referralLink,
-      });
+      const data = await registerFree();
+      setReferralData(data);
+      setConfirmationMode("referral");
       setSubmitted(true);
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("Registration error:", err);
       setError("Erro ao processar. Tenta novamente.");
     } finally {
@@ -41,25 +51,22 @@ export const RegistrationModal = () => {
     }
   };
 
-  const handleSubmitPremium = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleContinueFree = async () => {
+    if (!name.trim() || !email.trim()) {
+      setError("Preenche o nome e email primeiro.");
+      return;
+    }
     setLoading(true);
     setError(null);
-
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan: "premium", email, nome: name },
-      });
-
-      if (fnError) throw fnError;
-      if (data?.paymentLink) {
-        window.location.href = data.paymentLink;
-      } else {
-        throw new Error("Link de pagamento não recebido");
-      }
-    } catch (err: unknown) {
-      console.error("Payment error:", err);
+      await registerFree();
+      setReferralData(null);
+      setConfirmationMode("simple");
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Registration error:", err);
       setError("Erro ao processar. Tenta novamente.");
+    } finally {
       setLoading(false);
     }
   };
@@ -69,7 +76,7 @@ export const RegistrationModal = () => {
     if (submitted) {
       setTimeout(() => {
         setSubmitted(false);
-        setShowUpsell(true);
+        setConfirmationMode("simple");
         setName("");
         setEmail("");
         setError(null);
@@ -77,9 +84,6 @@ export const RegistrationModal = () => {
       }, 300);
     }
   };
-
-  const handleContinueFree = () => setShowUpsell(false);
-  const handleSwitchToPremium = () => { open("premium"); setShowUpsell(false); };
 
   const modalVariants = {
     hidden: { opacity: 0, scale: 0.95, y: -8 },
@@ -116,25 +120,18 @@ export const RegistrationModal = () => {
             </button>
 
             {submitted ? (
-              <ConfirmationView email={email} referralData={referralData} />
-            ) : isPremium ? (
-              <PremiumForm
-                name={name} setName={setName}
-                email={email} setEmail={setEmail}
-                loading={loading} error={error}
-                onSubmit={handleSubmitPremium}
-              />
-            ) : showUpsell ? (
-              <UpsellView
-                onContinueFree={handleContinueFree}
-                onSwitchToPremium={handleSwitchToPremium}
-              />
+              <ConfirmationView email={email} referralData={referralData} mode={confirmationMode} />
             ) : (
-              <FreeForm
-                name={name} setName={setName}
-                email={email} setEmail={setEmail}
-                loading={loading} error={error}
-                onSubmit={handleSubmitFree}
+              <UpsellView
+                name={name}
+                setName={setName}
+                email={email}
+                setEmail={setEmail}
+                loading={loading}
+                error={error}
+                onGoToPremium={handleGoToPremium}
+                onReferralPath={handleReferralPath}
+                onContinueFree={handleContinueFree}
               />
             )}
           </motion.div>
@@ -146,7 +143,15 @@ export const RegistrationModal = () => {
 
 /* ── Sub-components ── */
 
-const ConfirmationView = ({ email, referralData }: { email: string; referralData: { referralCode: string; referralLink: string } | null }) => {
+const ConfirmationView = ({
+  email,
+  referralData,
+  mode,
+}: {
+  email: string;
+  referralData: { referralCode: string; referralLink: string } | null;
+  mode: ConfirmationMode;
+}) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -186,7 +191,7 @@ const ConfirmationView = ({ email, referralData }: { email: string; referralData
         {email}
       </span>
 
-      {referralData && (
+      {mode === "referral" && referralData && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -254,11 +259,25 @@ const ConfirmationView = ({ email, referralData }: { email: string; referralData
 };
 
 const UpsellView = ({
+  name,
+  setName,
+  email,
+  setEmail,
+  loading,
+  error,
+  onGoToPremium,
+  onReferralPath,
   onContinueFree,
-  onSwitchToPremium,
 }: {
+  name: string;
+  setName: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  loading: boolean;
+  error: string | null;
+  onGoToPremium: () => void;
+  onReferralPath: () => void;
   onContinueFree: () => void;
-  onSwitchToPremium: () => void;
 }) => (
   <>
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-2">
@@ -270,14 +289,16 @@ const UpsellView = ({
 
     <div className="space-y-2 mb-5">
       {[
-        "Gravação da sessão (perde acesso após o webinar)",
-        "Sessão Q&A exclusiva em grupo (60 min de aprofundamento)",
-        "Guia completo de prompts (30+ páginas, não disponível gratuitamente)",
-        "Early access às apps (os outros esperam, você acede primeiro)",
+        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
+        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
+        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
       ].map((item) => (
-        <div key={item} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
+        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
           <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-          <span className="text-[14px] text-ink-700">{item}</span>
+          <div>
+            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
+            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
+          </div>
         </div>
       ))}
     </div>
@@ -289,132 +310,72 @@ const UpsellView = ({
       </p>
     </div>
 
-    <div className="bg-green-50 border border-green-200 rounded-lg p-3.5 mb-4 flex items-start gap-2.5">
-      <Gift className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-      <p className="text-[13px] text-ink-700 font-medium">
-        Ou inscreve-te grátis e convida 2 amigos para ganhar o Premium sem pagar!
-      </p>
+    {/* Inline name/email fields */}
+    <div className="space-y-3 mb-5">
+      <div className="relative">
+        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="text"
+          placeholder="O teu nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
+      </div>
+      <div className="relative">
+        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="email"
+          placeholder="O teu melhor email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
+      </div>
     </div>
+
+    {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
+
+    <p className="text-[14px] text-ink-500 text-center mb-3">Como preferes avançar?</p>
 
     <div className="space-y-2.5">
       <motion.button
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        onClick={onSwitchToPremium}
-        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-heading font-bold text-base py-4 rounded-xl shadow-blue transition-all flex items-center justify-center gap-2"
+        onClick={onGoToPremium}
+        className="w-full bg-gradient-to-r from-neon-purple to-blue-600 hover:from-neon-purple-light hover:to-blue-500 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
       >
         <Sparkles className="w-5 h-5" />
         Sim, quero o Premium por €15
       </motion.button>
 
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        disabled={loading}
+        onClick={onReferralPath}
+        className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100 disabled:opacity-70"
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Gift className="w-4 h-4" />
+        )}
+        Prefiro convidar 2 amigos e ganhar grátis
+      </motion.button>
+
       <button
         onClick={onContinueFree}
-        className="w-full text-sm text-ink-400 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4"
+        disabled={loading}
+        className="w-full text-sm text-ink-400 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4 disabled:opacity-70"
       >
         Não, continuar com versão gratuita
       </button>
     </div>
 
-    <div className="flex items-center justify-center gap-1.5 mt-5">
-      <div className="w-2 h-2 rounded-full bg-blue-600" />
-      <div className="w-2 h-2 rounded-full bg-ink-200" />
-    </div>
-  </>
-);
-
-const PremiumForm = ({
-  name, setName, email, setEmail, loading, error, onSubmit,
-}: {
-  name: string; setName: (v: string) => void;
-  email: string; setEmail: (v: string) => void;
-  loading: boolean; error: string | null;
-  onSubmit: (e: React.FormEvent) => void;
-}) => (
-  <>
-    <div className="text-center mb-6">
-      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
-        <CreditCard className="w-6 h-6 text-blue-600" />
-      </div>
-      <h3 className="font-heading text-xl font-bold text-ink-900 mb-1">Premium Pass — €15 + IVA</h3>
-      <p className="text-xs text-ink-500">
-        Quarta, 18 de Fevereiro · 10h00 (Lisboa)
-      </p>
-    </div>
-
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div className="relative">
-        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input type="text" placeholder="O teu nome" value={name} onChange={(e) => setName(e.target.value)} required
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
-      </div>
-      <div className="relative">
-        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input type="email" placeholder="O teu melhor email" value={email} onChange={(e) => setEmail(e.target.value)} required
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
-      </div>
-
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
-      <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-blue transition-all disabled:opacity-70 flex items-center justify-center gap-2">
-        {loading ? (<><Loader2 className="w-5 h-5 animate-spin" />A preparar pagamento...</>) : (<>Confirmar e pagar €15<ArrowRight className="w-5 h-5" /></>)}
-      </motion.button>
-    </form>
-
-    <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-ink-400">
-      <Shield className="w-3 h-3" />
-      Pagamento seguro via EuPago · Reembolso 14 dias
-    </div>
-  </>
-);
-
-const FreeForm = ({
-  name, setName, email, setEmail, loading, error, onSubmit,
-}: {
-  name: string; setName: (v: string) => void;
-  email: string; setEmail: (v: string) => void;
-  loading: boolean; error: string | null;
-  onSubmit: (e: React.FormEvent) => void;
-}) => (
-  <>
-    <div className="text-center mb-6">
-      <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-        <Ticket className="w-6 h-6 text-green-600" />
-      </div>
-      <h3 className="font-heading text-xl font-bold text-ink-900 mb-1">Inscrição Gratuita</h3>
-      <p className="text-xs text-ink-500">
-        Quarta, 18 de Fevereiro · 10h00 (Lisboa)
-      </p>
-    </div>
-
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div className="relative">
-        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input type="text" placeholder="O teu nome" value={name} onChange={(e) => setName(e.target.value)} required
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
-      </div>
-      <div className="relative">
-        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input type="email" placeholder="O teu melhor email" value={email} onChange={(e) => setEmail(e.target.value)} required
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
-      </div>
-
-      {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-
-      <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-        className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-green transition-all disabled:opacity-70 flex items-center justify-center gap-2">
-        {loading ? (<><Loader2 className="w-5 h-5 animate-spin" />A processar...</>) : (<>Inscrever grátis<ArrowRight className="w-5 h-5" /></>)}
-      </motion.button>
-    </form>
-
     <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-ink-400">
       <Shield className="w-3 h-3" />
       Sem spam · Dados protegidos RGPD
-    </div>
-
-    <div className="flex items-center justify-center gap-1.5 mt-4">
-      <div className="w-2 h-2 rounded-full bg-ink-200" />
-      <div className="w-2 h-2 rounded-full bg-blue-600" />
     </div>
   </>
 );

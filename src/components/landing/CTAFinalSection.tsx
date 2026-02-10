@@ -1,13 +1,15 @@
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 export const CTAFinalSection = () => {
   const { open } = useRegistrationModal();
+  const navigate = useNavigate();
 
   return (
     <section className="py-20 md:py-28 bg-ink-900">
-      <div className="container mx-auto px-4 sm:px-6 max-w-[600px] text-center">
+      <div className="container mx-auto px-4 sm:px-6 max-w-[720px] text-center">
         <ScrollReveal>
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[32px] md:text-[36px] leading-[1.2] text-white mb-1 max-w-[600px] mx-auto">
             Imagens profissionais com IA.
@@ -34,7 +36,7 @@ export const CTAFinalSection = () => {
               Garantir lugar grátis
             </motion.button>
             <motion.button
-              onClick={() => open("premium")}
+              onClick={() => navigate("/upgrade")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all"
