@@ -66,9 +66,8 @@ export const PricingCardsSection = () => {
                 ))}
               </ul>
 
-              <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4">
-                <p className="text-[13px] text-blue-600 font-medium">⏰ Preço sobe para €27 após 18 Fev</p>
-              </div>
+
+
 
               <motion.button
                 whileHover={{ scale: 1.02 }}

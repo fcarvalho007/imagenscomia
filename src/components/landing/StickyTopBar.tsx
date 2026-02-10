@@ -13,7 +13,7 @@ export const StickyTopBar = () => {
           AO VIVO · QUARTA 18 FEV · 10H00 · GRATUITO
         </p>
         <a
-          href="#inscrever"
+          href="#form-gratis"
           className="shrink-0 text-[13px] font-heading font-semibold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full transition-colors"
         >
           Reservar lugar →

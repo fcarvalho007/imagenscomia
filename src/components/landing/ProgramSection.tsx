@@ -81,7 +81,7 @@ export const ProgramSection = () => (
       <ScrollReveal>
         <div className="text-center mt-10">
           <motion.a
-            href="#inscrever"
+            href="#form-gratis"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="inline-block bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-green transition-all"
