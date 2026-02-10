@@ -48,14 +48,6 @@ export const PresenterSection = () => (
           </ScrollReveal>
         ))}
       </div>
-      <ScrollReveal delay={0.24}>
-        <div className="bg-off-white border border-border rounded-md p-3.5 mt-3">
-          <div className="text-xl mb-1.5">🏆</div>
-          <p className="font-heading font-semibold text-[13px] text-ink-900">
-            29 anos · 700+ projetos · <span className="text-blue-600">L'Oréal</span> · <span className="text-blue-600">BMW</span> · <span className="text-blue-600">3M</span> · <span className="text-blue-600">Impresa</span>
-          </p>
-        </div>
-      </ScrollReveal>
     </div>
   </section>
 );

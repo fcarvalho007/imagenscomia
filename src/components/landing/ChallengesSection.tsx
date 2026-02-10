@@ -29,6 +29,12 @@ export const ChallengesSection = () => (
         ))}
       </div>
 
+      <ScrollReveal delay={0.4}>
+        <p className="text-center text-[16px] text-ink-500 mt-8">
+          Se te identificaste com pelo menos 2 destes problemas, este webinar vai poupar-te meses de tentativa e erro.
+        </p>
+      </ScrollReveal>
+
     </div>
   </section>
 );
