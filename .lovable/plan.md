@@ -1,95 +1,42 @@
 
 
-# Alteracoes ao PresenterSection + Progressive Disclosure no Modal
+# Remover caixa 🏆 + Melhorias do documento
 
 ---
 
-## Parte 1 -- PresenterSection (alteracoes de conteudo)
+## 1. Remover caixa 🏆 (PresenterSection.tsx)
 
-### 1A. Remover SMSonline.pt da caixa "Fundador e CEO"
-Substituir o sub de "DIGITALFC . SMSonline.pt" por apenas "DIGITALFC" e adicionar "+ 700 auditorias digitais realizadas".
-
-### 1B. Actualizar "Professor Universitario"
-Substituir o sub actual:
-- De: "FEUC . Univ. Europeia . Univ. Autonoma"
-- Para: "Universidade de Coimbra (FEUC) . Univ. Europeia (IPAM) . Univ. Aveiro . Univ. Autonoma"
-
-**Ficheiro:** `src/components/landing/PresenterSection.tsx` (apenas actualizar o array `credentials`, linhas 5 e 8)
+Remover o bloco ScrollReveal com a caixa "29 anos . 700+ projetos . L'Oreal . BMW . 3M . Impresa" (linhas 51-58). A informacao de "700+ auditorias" ja esta na caixa "Fundador e CEO", tornando esta caixa redundante.
 
 ---
 
-## Parte 2 -- Progressive Disclosure no Modal de Registo
+## 2. Melhorar respostas do FAQ (FAQSection.tsx)
 
-A ideia e dividir o modal em 2 passos:
+O documento tem respostas mais persuasivas e completas. Actualizar:
 
-### Passo 1: Captacao de dados
-- Titulo: "Preenche os teus dados para reservar o lugar:"
-- Campos: Nome + Email
-- Botao: "Reservar o meu lugar" (gradiente principal)
-- RGPD note em baixo
-- Ao clicar, **grava imediatamente** os dados no backend via `register-free` edge function
-- Dados ficam guardados independentemente da escolha seguinte
-
-### Passo 2: Upsell (aparece apos dados gravados)
-- Titulo: "Lugar reservado! Como preferes participar?"
-- Check verde + email confirmado (feedback visual imediato)
-- 3 bullets vermelhos (o que perdes sem Premium)
-- 3 botoes de escolha:
-  1. "Sim, quero o Premium por EUR15+IVA" -- fecha modal, navega para /upgrade com name+email
-  2. "Prefiro convidar 2 amigos e ganhar gratis" -- mostra confirmacao com widget referral (dados ja guardados)
-  3. "Nao, continuar com versao gratuita" -- mostra confirmacao simples (dados ja guardados)
-
-### Logica tecnica no RegistrationModal.tsx
-
-Novo estado: `step` com valores `"capture"` | `"upsell"` | `"confirmation"`
-
-**Passo "capture":**
-- Mostra campos nome + email + botao "Reservar o meu lugar"
-- Ao submeter: chama `register-free`, guarda `referralData` no estado
-- Transiciona para step `"upsell"`
-
-**Passo "upsell":**
-- Mostra feedback "Lugar reservado, [nome]!" com check verde
-- Mostra 3 bullets vermelhos
-- 3 botoes:
-  - Premium: `close()` + `navigate('/upgrade?name=...&email=...')`
-  - Referral: muda para step `"confirmation"` com mode `"referral"` (sem nova chamada ao backend -- dados ja guardados)
-  - Gratis: muda para step `"confirmation"` com mode `"simple"` (sem nova chamada)
-
-**Passo "confirmation":**
-- Igual ao ConfirmationView actual
-
-### Botoes "Premium Pass EUR15" e "Garantir Premium" na landing page
-
-Actualmente os botoes "Premium Pass EUR15" no HeroSection, PricingCardsSection e CTAFinalSection navegam directamente para `/upgrade` sem captar dados. Devem ser alterados para:
-- Abrir o modal de registo (mesmo comportamento do "Inscrever gratis")
-- O modal capta os dados primeiro (passo 1)
-- No passo 2 do upsell, o utilizador pode escolher Premium (que navega para /upgrade com dados)
-
-Isto garante que **qualquer clique de conversao na landing page capta dados primeiro**.
-
-**Ficheiros afectados:**
-- `src/components/landing/HeroSection.tsx` -- botao "Premium Pass EUR15" passa a abrir `open("free")` em vez de `navigate("/upgrade")`
-- `src/components/landing/PricingCardsSection.tsx` -- botao "Garantir Premium EUR15" passa a abrir `open("free")`
-- `src/components/landing/CTAFinalSection.tsx` -- botao "Premium Pass EUR15" passa a abrir `open("free")`
+| Pergunta | Resposta actual | Resposta do documento |
+|----------|----------------|----------------------|
+| "Preciso de conhecimentos tecnicos?" | Generica | "Nao. Se consegues usar o WhatsApp, consegues criar imagens com este metodo. Vou mostrar passo a passo, do zero." |
+| "As ferramentas mostradas sao pagas?" | Generica | "Mostro opcoes gratuitas e pagas. Maior parte do que ensino funciona com ferramentas gratuitas (incluindo a app que criei especificamente para este metodo)." |
+| "Quanto tempo para ver resultados?" | Vaga | "No dia seguinte ao webinar ja consegues criar as tuas primeiras imagens profissionais. Participantes anteriores relatam criacao de 5-10 imagens utilizaveis na primeira semana." |
 
 ---
 
-## Resumo de ficheiros alterados
+## 3. Adicionar frase qualificadora nos Desafios (ChallengesSection.tsx)
+
+O documento inclui uma frase apos os 6 desafios que funciona como qualificador:
+
+> "Se te identificaste com pelo menos 2 destes problemas, este webinar vai poupar-te meses de tentativa e erro."
+
+Adicionar esta frase centrada abaixo da grelha, com texto em ink-500 e tamanho 16px.
+
+---
+
+## Resumo de ficheiros
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/PresenterSection.tsx` | Actualizar credentials: remover SMSonline.pt, adicionar auditorias, actualizar universidades |
-| `src/components/landing/RegistrationModal.tsx` | Progressive disclosure: 2 passos (capture + upsell), gravar dados no passo 1, upsell no passo 2 |
-| `src/components/landing/HeroSection.tsx` | Botao Premium abre modal em vez de navegar |
-| `src/components/landing/PricingCardsSection.tsx` | Botao Premium abre modal em vez de navegar |
-| `src/components/landing/CTAFinalSection.tsx` | Botao Premium abre modal em vez de navegar |
-
----
-
-## Sequencia de implementacao
-
-1. Actualizar PresenterSection (conteudo)
-2. Reescrever RegistrationModal com progressive disclosure (capture -> upsell -> confirmation)
-3. Actualizar botoes Premium nos 3 componentes da landing page para abrir modal
+| `src/components/landing/PresenterSection.tsx` | Remover bloco da caixa 🏆 (linhas 51-58) |
+| `src/components/landing/FAQSection.tsx` | Actualizar 3 respostas com copy mais persuasivo do documento |
+| `src/components/landing/ChallengesSection.tsx` | Adicionar frase qualificadora apos a grelha de desafios |
 
