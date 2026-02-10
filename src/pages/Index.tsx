@@ -8,7 +8,7 @@ import { PresenterSection } from "@/components/landing/PresenterSection";
 import { ChallengesSection } from "@/components/landing/ChallengesSection";
 import { ProgramSection } from "@/components/landing/ProgramSection";
 import { AudienceSection } from "@/components/landing/AudienceSection";
-import { MasterclassSection } from "@/components/landing/MasterclassSection";
+
 import { FAQSection } from "@/components/landing/FAQSection";
 import { CTAFinalSection } from "@/components/landing/CTAFinalSection";
 import { FooterSection } from "@/components/landing/FooterSection";
@@ -20,12 +20,11 @@ const Index = () => {
         <StickyTopBar />
         <MirrorCopySection />
         <HeroSection />
-        <PricingCardsSection />
         <PresenterSection />
         <ChallengesSection />
         <ProgramSection />
         <AudienceSection />
-        <MasterclassSection />
+        <PricingCardsSection />
         <FAQSection />
         <CTAFinalSection />
         <FooterSection />

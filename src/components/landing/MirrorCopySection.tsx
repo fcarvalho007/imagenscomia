@@ -3,8 +3,6 @@ import { ScrollReveal } from "./ScrollReveal";
 
 const points = [
   "Já tentaste gerar imagens com IA mas os resultados ficaram longe do que querias",
-  "Pagas designer ou agência para criar materiais visuais e sabes que há forma mais rápida",
-  "Já ouviste falar de Midjourney ou DALL-E mas nunca conseguiste resultados utilizáveis",
   "Precisas de imagens para redes sociais ou anúncios e o stock fotográfico não representa a marca",
   "Queres produzir mais conteúdo visual sem depender de terceiros para cada peça",
 ];
