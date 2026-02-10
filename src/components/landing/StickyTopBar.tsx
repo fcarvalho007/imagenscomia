@@ -1,17 +1,41 @@
 import { motion } from "framer-motion";
+import { useCountdown } from "@/hooks/useCountdown";
+
+const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <span className="bg-white/10 rounded px-2 py-1 font-heading font-bold text-[14px] text-white min-w-[32px] text-center">
+      {String(value).padStart(2, "0")}
+    </span>
+    <span className="text-[9px] text-white/60 mt-0.5">{label}</span>
+  </div>
+);
 
 export const StickyTopBar = () => {
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-02-18T10:00:00"));
+
   return (
     <motion.div
       initial={{ y: -50 }}
       animate={{ y: 0 }}
       className="sticky top-0 z-50 bg-gradient-to-r from-ink-900 via-[hsl(262,83%,58%)]/20 to-blue-700"
     >
-      <div className="container mx-auto px-4 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
-        <p className="text-[13px] text-white/90 font-medium tracking-wide text-center sm:text-left">
+      <div className="container mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
           <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle animate-pulse" />
-          AO VIVO · QUARTA 18 FEV · 10H00 · GRATUITO
+          AO VIVO · 18 FEV · 10H00
         </p>
+
+        <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
+          <span className="sm:hidden inline-block w-2 h-2 rounded-full bg-red-500 mr-1 animate-pulse" />
+          <CountdownBlock value={days} label="dias" />
+          <span className="text-white/40 font-bold text-sm">:</span>
+          <CountdownBlock value={hours} label="horas" />
+          <span className="text-white/40 font-bold text-sm">:</span>
+          <CountdownBlock value={minutes} label="min" />
+          <span className="text-white/40 font-bold text-sm">:</span>
+          <CountdownBlock value={seconds} label="seg" />
+        </div>
+
         <a
           href="#form-gratis"
           className="shrink-0 text-[13px] font-heading font-semibold text-white bg-gradient-to-r from-neon-purple to-neon-cyan px-5 py-2.5 rounded-full transition-all shadow-neon-purple"
