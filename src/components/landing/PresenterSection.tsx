@@ -1,4 +1,5 @@
 import { ScrollReveal } from "./ScrollReveal";
+import fredericoImg from "@/assets/frederico-carvalho.jpg";
 
 const credentials = [
   { emoji: "🎓", title: "Professor Universitário", sub: "FEUC · Univ. Europeia · Univ. Autónoma" },
@@ -13,9 +14,12 @@ export const PresenterSection = () => (
       <div className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-16 mb-10">
         {/* Avatar placeholder */}
         <ScrollReveal>
-          <div className="w-40 h-40 md:w-[200px] md:h-[200px] rounded-full bg-blue-50 border-[3px] border-blue-100 flex items-center justify-center shrink-0">
-            <span className="font-heading font-extrabold text-5xl text-blue-600">FC</span>
-          </div>
+          <img
+            src={fredericoImg}
+            alt="Frederico Carvalho"
+            loading="lazy"
+            className="w-40 h-40 md:w-[200px] md:h-[200px] rounded-full object-cover border-[3px] border-blue-100 shrink-0"
+          />
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
