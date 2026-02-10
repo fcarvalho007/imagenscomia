@@ -2,20 +2,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-import { X, Loader2, Shield, MinusCircle, Clock, Sparkles, ArrowRight, Ticket, User, Mail, Check, CalendarPlus, Gift, Copy, MessageCircle, Send, ExternalLink } from "lucide-react";
+import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+type Step = "capture" | "upsell" | "confirmation";
 type ConfirmationMode = "referral" | "simple";
 
 export const RegistrationModal = () => {
   const navigate = useNavigate();
-  const { isOpen, variant, open, close, referredBy } = useRegistrationModal();
+  const { isOpen, close, referredBy } = useRegistrationModal();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [error, setError] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>("capture");
+  const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [referralData, setReferralData] = useState<{ referralCode: string; referralLink: string } | null>(null);
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string } | null> => {
@@ -26,18 +27,9 @@ export const RegistrationModal = () => {
     return { referralCode: data.referralCode, referralLink: data.referralLink };
   };
 
-  const handleGoToPremium = () => {
+  const handleCapture = async () => {
     if (!name.trim() || !email.trim()) {
-      setError("Preenche o nome e email primeiro.");
-      return;
-    }
-    close();
-    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
-  };
-
-  const handleReferralPath = async () => {
-    if (!name.trim() || !email.trim()) {
-      setError("Preenche o nome e email primeiro.");
+      setError("Preenche o nome e email.");
       return;
     }
     setLoading(true);
@@ -45,8 +37,7 @@ export const RegistrationModal = () => {
     try {
       const data = await registerFree();
       setReferralData(data);
-      setConfirmationMode("referral");
-      setSubmitted(true);
+      setStep("upsell");
     } catch (err) {
       console.error("Registration error:", err);
       setError("Erro ao processar. Tenta novamente.");
@@ -55,38 +46,31 @@ export const RegistrationModal = () => {
     }
   };
 
-  const handleContinueFree = async () => {
-    if (!name.trim() || !email.trim()) {
-      setError("Preenche o nome e email primeiro.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      await registerFree();
-      setReferralData(null);
-      setConfirmationMode("simple");
-      setSubmitted(true);
-    } catch (err) {
-      console.error("Registration error:", err);
-      setError("Erro ao processar. Tenta novamente.");
-    } finally {
-      setLoading(false);
-    }
+  const handleGoToPremium = () => {
+    close();
+    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
+  };
+
+  const handleReferralPath = () => {
+    setConfirmationMode("referral");
+    setStep("confirmation");
+  };
+
+  const handleContinueFree = () => {
+    setConfirmationMode("simple");
+    setStep("confirmation");
   };
 
   const handleClose = () => {
     close();
-    if (submitted) {
-      setTimeout(() => {
-        setSubmitted(false);
-        setConfirmationMode("simple");
-        setName("");
-        setEmail("");
-        setError(null);
-        setReferralData(null);
-      }, 300);
-    }
+    setTimeout(() => {
+      setStep("capture");
+      setConfirmationMode("simple");
+      setName("");
+      setEmail("");
+      setError(null);
+      setReferralData(null);
+    }, 300);
   };
 
   const modalVariants = {
@@ -123,19 +107,33 @@ export const RegistrationModal = () => {
               <X className="w-4 h-4" />
             </button>
 
-            {submitted ? (
-              <ConfirmationView email={email} name={name} referralData={referralData} mode={confirmationMode} />
-            ) : (
-              <UpsellView
+            {step === "capture" && (
+              <CaptureView
                 name={name}
                 setName={setName}
                 email={email}
                 setEmail={setEmail}
                 loading={loading}
                 error={error}
+                onSubmit={handleCapture}
+              />
+            )}
+
+            {step === "upsell" && (
+              <UpsellView
+                name={name}
                 onGoToPremium={handleGoToPremium}
                 onReferralPath={handleReferralPath}
                 onContinueFree={handleContinueFree}
+              />
+            )}
+
+            {step === "confirmation" && (
+              <ConfirmationView
+                email={email}
+                name={name}
+                referralData={referralData}
+                mode={confirmationMode}
               />
             )}
           </motion.div>
@@ -145,7 +143,161 @@ export const RegistrationModal = () => {
   );
 };
 
-/* ── Sub-components ── */
+/* ── Step 1: Capture ── */
+
+const CaptureView = ({
+  name,
+  setName,
+  email,
+  setEmail,
+  loading,
+  error,
+  onSubmit,
+}: {
+  name: string;
+  setName: (v: string) => void;
+  email: string;
+  setEmail: (v: string) => void;
+  loading: boolean;
+  error: string | null;
+  onSubmit: () => void;
+}) => (
+  <>
+    <h3 className="font-heading font-bold text-xl text-ink-900 mb-2">
+      Reserva o teu lugar
+    </h3>
+    <p className="text-[15px] text-ink-500 mb-5">
+      Preenche os teus dados para reservar o lugar:
+    </p>
+
+    <div className="space-y-3 mb-5">
+      <div className="relative">
+        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="text"
+          placeholder="O teu nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
+      </div>
+      <div className="relative">
+        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="email"
+          placeholder="O teu melhor email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
+      </div>
+    </div>
+
+    {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
+
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      disabled={loading}
+      onClick={onSubmit}
+      className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+    >
+      {loading ? (
+        <Loader2 className="w-5 h-5 animate-spin" />
+      ) : (
+        <Check className="w-5 h-5" />
+      )}
+      {loading ? "A registar..." : "Reservar o meu lugar"}
+    </motion.button>
+
+    <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-ink-400">
+      <Shield className="w-3 h-3" />
+      Sem spam · Dados protegidos RGPD
+    </div>
+  </>
+);
+
+/* ── Step 2: Upsell ── */
+
+const UpsellView = ({
+  name,
+  onGoToPremium,
+  onReferralPath,
+  onContinueFree,
+}: {
+  name: string;
+  onGoToPremium: () => void;
+  onReferralPath: () => void;
+  onContinueFree: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <div className="flex items-center gap-2 mb-4">
+      <CheckCircle2 className="w-6 h-6 text-green-600" />
+      <h3 className="font-heading font-bold text-lg text-ink-900">
+        Lugar reservado, {name.trim().split(" ")[0]}!
+      </h3>
+    </div>
+
+    <p className="text-[15px] text-ink-500 mb-4">
+      Como preferes participar?
+    </p>
+
+    <p className="text-[14px] text-ink-500 mb-3">
+      Com a versão gratuita, vais perder acesso a:
+    </p>
+
+    <div className="space-y-2 mb-5">
+      {[
+        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
+        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
+        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
+      ].map((item) => (
+        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
+          <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+          <div>
+            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
+            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div className="space-y-2.5">
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onGoToPremium}
+        className="w-full bg-gradient-to-r from-neon-purple to-blue-600 hover:from-neon-purple-light hover:to-blue-500 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
+      >
+        <Sparkles className="w-5 h-5" />
+        Sim, quero o Premium por €15+IVA
+      </motion.button>
+
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onReferralPath}
+        className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100"
+      >
+        <Gift className="w-4 h-4" />
+        Prefiro convidar 2 amigos e ganhar grátis
+      </motion.button>
+
+      <button
+        onClick={onContinueFree}
+        className="w-full text-sm text-ink-400 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4"
+      >
+        Não, continuar com versão gratuita
+      </button>
+    </div>
+  </motion.div>
+);
+
+/* ── Step 3: Confirmation ── */
 
 const ConfirmationView = ({
   email,
@@ -192,7 +344,7 @@ const ConfirmationView = ({
         <Check className="w-8 h-8 text-green-600" />
       </motion.div>
       <h3 className="font-heading text-2xl font-bold mb-2 text-ink-900">
-        {name ? `Inscrição Confirmada, ${name}!` : "Inscrição Confirmada!"}
+        {name ? `Inscrição Confirmada, ${name.trim().split(" ")[0]}!` : "Inscrição Confirmada!"}
       </h3>
       <p className="text-ink-500 text-sm mb-1">Verifique o email</p>
       <span className="inline-block bg-blue-50 text-blue-600 font-medium text-sm px-3 py-1 rounded-full mb-4">
@@ -265,122 +417,3 @@ const ConfirmationView = ({
     </motion.div>
   );
 };
-
-const UpsellView = ({
-  name,
-  setName,
-  email,
-  setEmail,
-  loading,
-  error,
-  onGoToPremium,
-  onReferralPath,
-  onContinueFree,
-}: {
-  name: string;
-  setName: (v: string) => void;
-  email: string;
-  setEmail: (v: string) => void;
-  loading: boolean;
-  error: string | null;
-  onGoToPremium: () => void;
-  onReferralPath: () => void;
-  onContinueFree: () => void;
-}) => (
-  <>
-    <h3 className="font-heading font-bold text-xl text-ink-900 mb-2">
-      Antes de continuar...
-    </h3>
-    <p className="text-[15px] text-ink-500 mb-4">
-      Preenche os teus dados para reservar o lugar:
-    </p>
-
-    {/* Name/email fields FIRST */}
-    <div className="space-y-3 mb-5">
-      <div className="relative">
-        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input
-          type="text"
-          placeholder="O teu nome"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
-        />
-      </div>
-      <div className="relative">
-        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input
-          type="email"
-          placeholder="O teu melhor email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
-        />
-      </div>
-    </div>
-
-    <p className="text-[15px] text-ink-500 mb-3">
-      Com a versão gratuita, vais perder acesso a:
-    </p>
-
-    <div className="space-y-2 mb-5">
-      {[
-        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
-        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
-        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
-      ].map((item) => (
-        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
-          <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-          <div>
-            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
-            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
-
-    <p className="text-[14px] text-ink-500 text-center mb-3">Como preferes avançar?</p>
-
-    <div className="space-y-2.5">
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onGoToPremium}
-        className="w-full bg-gradient-to-r from-neon-purple to-blue-600 hover:from-neon-purple-light hover:to-blue-500 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
-      >
-        <Sparkles className="w-5 h-5" />
-        Sim, quero o Premium por €15+IVA
-      </motion.button>
-
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        disabled={loading}
-        onClick={onReferralPath}
-        className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100 disabled:opacity-70"
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Gift className="w-4 h-4" />
-        )}
-        Prefiro convidar 2 amigos e ganhar grátis
-      </motion.button>
-
-      <button
-        onClick={onContinueFree}
-        disabled={loading}
-        className="w-full text-sm text-ink-400 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4 disabled:opacity-70"
-      >
-        Não, continuar com versão gratuita
-      </button>
-    </div>
-
-    <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-ink-400">
-      <Shield className="w-3 h-3" />
-      Sem spam · Dados protegidos RGPD
-    </div>
-  </>
-);

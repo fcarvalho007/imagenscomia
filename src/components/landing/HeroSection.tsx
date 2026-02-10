@@ -1,12 +1,10 @@
 import { Play, Check, Sparkles, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 export const HeroSection = () => {
   const { open } = useRegistrationModal();
-  const navigate = useNavigate();
 
   return (
     <section className="py-16 md:py-24 bg-background">
@@ -86,7 +84,7 @@ export const HeroSection = () => {
               Inscrever grátis
             </motion.button>
             <motion.button
-              onClick={() => navigate("/upgrade")}
+              onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all flex items-center justify-center gap-2"
