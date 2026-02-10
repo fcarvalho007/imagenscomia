@@ -1,156 +1,145 @@
 
 
-# Refinamento Visual da Landing Page -- Tipografia Maior, Meta Row Destacado, Botoes Neon/HUD
-
-Objectivo: aumentar a legibilidade geral (fontes maiores), tornar a linha de data/horario mais perceptivel e visualmente distinta, e introduzir uma linguagem visual mais elegante nos botoes (tons neon azul/roxo/ciano, estilo "Tron HUD") mantendo o fundo editorial clean (branco + off-white).
+# Correcao de Layout, Flow do Modal e Pagina /upgrade
 
 ---
 
-## 1. Novas variaveis de cor -- Neon/HUD (index.css)
+## Parte 1 -- Layout desktop mais largo
 
-Adicionar ao `:root` as seguintes variaveis para os tons neon que serao usados nos botoes e acentos:
+Actualmente quase todas as seccoes usam `max-w-[680px]` a `max-w-[800px]`, o que e estreito em monitores desktop. Alargar para dar mais respiro:
 
-```
---neon-blue: 217 100% 65%;       /* #4D8EFF - azul neon */
---neon-cyan: 187 100% 50%;       /* #00E5FF - ciano neon */
---neon-purple: 262 83% 58%;      /* #7C3AED - roxo/violet */
---neon-purple-light: 262 83% 68%; /* hover mais claro */
-```
+| Seccao | Actual | Novo |
+|--------|--------|------|
+| HeroSection | `max-w-[800px]` | `max-w-[960px]` |
+| MirrorCopySection | `max-w-[680px]` | `max-w-[760px]` |
+| ChallengesSection | verificar | `max-w-[960px]` |
+| ProgramSection | verificar | `max-w-[960px]` |
+| AudienceSection | verificar | `max-w-[800px]` |
+| PricingCardsSection | `max-w-[920px]` | manter |
+| CTAFinalSection | `max-w-[600px]` | `max-w-[720px]` |
+| FAQSection | verificar | `max-w-[760px]` |
 
-Adicionar tambem novas utility shadows neon:
-
-```css
-.shadow-neon-blue {
-  box-shadow: 0 0 20px rgba(77,142,255,0.35), 0 0 60px rgba(77,142,255,0.10);
-}
-.shadow-neon-purple {
-  box-shadow: 0 0 20px rgba(124,58,237,0.35), 0 0 60px rgba(124,58,237,0.10);
-}
-.shadow-neon-cyan {
-  box-shadow: 0 0 20px rgba(0,229,255,0.30), 0 0 60px rgba(0,229,255,0.08);
-}
-```
-
-Registar as cores no `tailwind.config.ts` para ficarem disponiveis como classes.
+Os valores finais serao ajustados conforme o conteudo de cada seccao.
 
 ---
 
-## 2. Tipografia maior em toda a pagina
+## Parte 2 -- Corrigir o Modal "Antes de continuar" (RegistrationModal.tsx)
 
-### HeroSection.tsx
-- Label: `text-[11px]` passa para `text-[13px]`
-- H1: `text-[28px] sm:text-[36px] md:text-[40px]` passa para `text-[32px] sm:text-[40px] md:text-[48px]`
-- Tagline: `text-[20px] md:text-[26px]` passa para `text-[22px] md:text-[28px]`
-- Subheadline: `text-xl` passa para `text-[19px] md:text-[21px]`
+### 2A. Reduzir bullets de 4 para 3
 
-### MirrorCopySection.tsx
-- Bullets: `text-[15px]` passa para `text-[16px]`
+Remover o 4o bullet ("Early access as apps"). Actualizar o formato para incluir titulo + sub-texto:
 
-### ChallengesSection.tsx
-- Titulos dos cards: `text-base` passa para `text-[17px]`
-- Texto de fecho: `text-[17px]` passa para `text-[18px]`
+- **Bullet 1:** Titulo: "Gravacao da sessao" / Sub: "sem Premium, perdes acesso logo apos o webinar"
+- **Bullet 2:** Titulo: "Sessao Q&A exclusiva em grupo -- 60 minutos" / Sub: "o unico momento para tirar duvidas com Frederico apos o evento"
+- **Bullet 3:** Titulo: "Guia completo de prompts -- 30+ paginas" / Sub: "testado em contexto empresarial portugues, nao disponivel gratuitamente"
 
-### ProgramSection.tsx
-- Desc dos cards: `text-[15px]` passa para `text-[16px]`
+### 2B. Substituir caixa verde + botoes por 3 opcoes
 
-### AudienceSection.tsx
-- Items: `text-[15px]` passa para `text-[16px]`
+Remover a caixa verde actual sobre convites. Substituir por:
 
-### PricingCardsSection.tsx
-- Feature items: `text-[15px]` passa para `text-[16px]`
+1. **Texto:** "Como preferes avancar?" (Inter 400, 14px, ink-500, centrado)
 
-### FAQSection.tsx
-- Respostas: `text-[15px]` passa para `text-[16px]`
+2. **Botao primario:** "Sim, quero o Premium por €15"
+   - onClick: `close()` + `navigate('/upgrade')`
+   - Estilo: gradiente neon actual (roxo-azul)
 
-### CTAFinalSection.tsx
-- Subtitulo: `text-[17px]` passa para `text-[18px]`
+3. **Botao verde (novo):** "Prefiro convidar 2 amigos e ganhar gratis"
+   - Fundo: green-50, border green-600, texto green-700
+   - onClick: registar o utilizador gratis (chamar `register-free` edge function) + mostrar ConfirmationView COM referralData
 
----
+4. **Link discreto:** "Nao, continuar com versao gratuita"
+   - onClick: registar gratis + mostrar ConfirmationView SEM referralData (confirmacao simples)
 
-## 3. Meta row destacado no Hero (data/horario/duracao)
+### 2C. Corrigir o bug do flow
 
-A linha "Quarta 18 Fev / 10h00 / 75 min / Gratuito" passa de texto simples a um bloco visual com fundo e icones, mais perceptivel:
+Actualmente `handleSwitchToPremium` faz `open("premium")` que mostra o PremiumForm dentro do modal. Em vez disso, deve:
+- Fechar o modal (`close()`)
+- Redirecionar para `/upgrade` (`navigate('/upgrade')`)
 
-**Antes:** `<p className="text-sm text-ink-500 ...">` -- texto pequeno e discreto
+O componente `RegistrationModal` precisa de importar `useNavigate` de react-router-dom.
 
-**Depois:** Um container com fundo `bg-ink-900` (escuro), `rounded-xl`, `px-6 py-3`, `max-w-fit mx-auto`, com 4 items em flex-wrap:
+### 2D. Novos estados no modal
 
-Cada item tera:
-- Icone Lucide (Calendar, Clock, Timer, GraduationCap) em `text-neon-cyan` (ciano neon)
-- Texto em branco `text-[14px] font-medium`
-- Separadores visuais `|` em `text-white/20`
+Adicionar um novo estado `showReferralConfirmation` para distinguir entre:
+- Confirmacao com widget de convites (via botao verde)
+- Confirmacao simples sem convites (via link "continuar gratis")
 
-Isto cria um "chip" escuro que contrasta com o fundo branco do hero e torna a informacao impossivel de ignorar.
+O `handleContinueFree` actual passa a: registar gratis + mostrar confirmacao simples.
+O novo `handleReferralPath` faz: registar gratis + mostrar confirmacao com widget de convites.
 
----
+### 2E. Adaptar UpsellView
 
-## 4. Botoes com estilo neon/HUD
+A UpsellView recebe novas props:
+- `onGoToPremium`: fecha modal + navega para /upgrade
+- `onReferralPath`: regista gratis e mostra confirmacao com convites
+- `onContinueFree`: regista gratis e mostra confirmacao simples
 
-Substituir as cores solidas dos botoes principais por gradientes neon, mantendo a forma (rounded-xl, py-4, font-heading font-bold).
+Precisa tambem de receber `name`, `email`, `setName`, `setEmail` para o formulario de registo (nome + email) ser preenchido antes de clicar nos botoes de referral ou gratis. Alternativa: pedir nome/email dentro do UpsellView com campos inline antes dos 3 botoes.
 
-### Botao "Inscrever gratis" (Hero + PricingCards + CTA Final)
-- **Antes:** `bg-green-600`
-- **Depois:** `bg-gradient-to-r from-[#7C3AED] to-[#2563EB]` (roxo para azul) com `shadow-neon-purple`
-- Hover: ligeiramente mais brilhante (opacity ou scale)
-- Texto: branco
-
-### Botao "Premium Pass €15" (Hero + PricingCards + CTA Final)
-- **Antes:** `bg-amber-500` / `bg-blue-600`
-- **Depois:** `bg-gradient-to-r from-[#2563EB] to-[#00E5FF]` (azul para ciano) com `shadow-neon-cyan`
-- Hover: ligeiramente mais brilhante
-- Texto: branco
-
-### Botao da StickyTopBar
-- **Antes:** `bg-white text-blue-600`
-- **Depois:** `bg-gradient-to-r from-[#7C3AED] to-[#00E5FF] text-white` com sombra neon sutil
-- Mantém `rounded-full`
-
-### Botao "Reservar lugar gratuito" (ProgramSection)
-- Mesmo gradiente roxo-azul do botao "Inscrever gratis"
-
-### Botoes do CTA Final (fundo escuro)
-- "Garantir lugar gratis": gradiente roxo-azul com `shadow-neon-purple`
-- "Premium Pass €15": gradiente azul-ciano com `shadow-neon-cyan`
-
-### Botao "Inscrever e receber link de convite" (PricingCardsSection referral box)
-- Gradiente roxo-azul para coerencia
+**Decisao:** Adicionar campos nome + email directamente no UpsellView (abaixo da caixa ambar, acima dos botoes) para que ao clicar em qualquer opcao o registo possa ser processado imediatamente.
 
 ---
 
-## 5. Barra topo -- gradiente actualizado
+## Parte 3 -- Pagina /upgrade: bloco referral no SkipCard
 
-A StickyTopBar ja tem `bg-gradient-to-r from-ink-900 to-blue-700`. Manter mas adicionar um toque de roxo:
-- `bg-gradient-to-r from-ink-900 via-[#7C3AED]/20 to-blue-700`
+### 3A. Bloco referral dentro do SkipCard
 
-Isto cria coerencia com os novos botoes neon sem alterar drasticamente a barra.
+Adicionar acima do botao "Confirmar so Premium" um bloco discreto:
+- Fundo: green-50, border green-100, rounded-lg, p-3
+- Icone: Gift + texto "Ou convida 2 amigos e ganha o Premium gratis"
+- Link: "Ver como funciona →" que abre mini-modal
+
+### 3B. Mini-modal informativo "Como funciona"
+
+Novo estado `isReferralInfoOpen` no componente Upsell.
+
+Conteudo do modal:
+- Icone Gift centralizado
+- H3: "Ganha o Premium Pass gratis"
+- Paragrafo explicativo
+- 4 passos numerados
+- Nota sobre prazo
+- Botao primario: "Inscrever-me gratis e partilhar link" → navega para landing page e abre modal de registo gratis com path referral
+- Botao secundario: "Prefiro pagar €15 directamente" → fecha mini-modal
+
+### 3C. Confirmacao page com plan=referral
+
+Actualizar `src/pages/Confirmacao.tsx` para suportar `plan=referral` e `plan=free`:
+
+- **plan=free:** Confirmacao simples (inscricao gratis confirmada, sem widget de convites)
+- **plan=referral:** Confirmacao com widget de convites (link copiavel, WhatsApp, Email, progresso)
+
+Adicionar ao objecto `CONFIRMATIONS` as entradas `free` e `referral`.
 
 ---
 
-## 6. Micro-acentos neon para coesao
+## Parte 4 -- Melhorias UX/UI menores
 
-Para criar coerencia entre seccoes sem alterar fundos:
-
-- **MirrorCopySection:** a linha decorativa azul (`w-8 h-0.5 bg-blue-600`) passa para um gradiente: `bg-gradient-to-r from-[#7C3AED] to-[#00E5FF]` e `h-[2px] w-10`
-- **ProgramSection:** os numeros grandes dos cards (`text-ink-300/30`) passam para `text-[#7C3AED]/15` (roxo muito subtil)
-- **ChallengesSection:** os numeros dos cards (`text-ink-300`) passam para `text-[#7C3AED]/40`
+- Remover `PremiumForm` do modal (ja nao e necessario -- o botao "€15" redireciona para /upgrade em vez de mostrar formulario inline)
+- Limpar a logica de `variant === "premium"` no modal principal
+- Garantir que os step indicators (dots) no fundo do UpsellView sao removidos ou actualizados
 
 ---
 
-## Ficheiros alterados
+## Resumo de ficheiros alterados
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/index.css` | 4 novas variaveis neon + 3 shadow utilities |
-| `tailwind.config.ts` | Registar cores neon-blue, neon-cyan, neon-purple |
-| `src/components/landing/HeroSection.tsx` | Fontes maiores + meta row destacado escuro com icones |
-| `src/components/landing/StickyTopBar.tsx` | Botao neon gradient + barra com toque roxo |
-| `src/components/landing/MirrorCopySection.tsx` | Fonte maior + linha decorativa gradient |
-| `src/components/landing/ChallengesSection.tsx` | Fontes maiores + numeros roxo subtil |
-| `src/components/landing/ProgramSection.tsx` | Fontes maiores + numeros roxo + botao neon |
-| `src/components/landing/AudienceSection.tsx` | Fontes maiores |
-| `src/components/landing/PricingCardsSection.tsx` | Fontes maiores + botoes neon |
-| `src/components/landing/FAQSection.tsx` | Fontes maiores |
-| `src/components/landing/CTAFinalSection.tsx` | Fontes maiores + botoes neon |
+| `src/components/landing/RegistrationModal.tsx` | Reescrever UpsellView (3 bullets, 3 opcoes, campos nome/email), corrigir flow €15 → /upgrade, adicionar navigate |
+| `src/hooks/useRegistrationModal.tsx` | Sem alteracoes |
+| `src/pages/Upsell.tsx` | Adicionar bloco referral no SkipCard + mini-modal informativo |
+| `src/pages/Confirmacao.tsx` | Adicionar entries para plan=free e plan=referral com widget de convites |
+| `src/components/landing/HeroSection.tsx` | Alargar max-w |
+| `src/components/landing/MirrorCopySection.tsx` | Alargar max-w |
+| `src/components/landing/CTAFinalSection.tsx` | Alargar max-w |
+| Outras seccoes | Alargar max-w conforme tabela acima |
 
-Nenhum ficheiro novo. Nenhuma dependencia nova. Layout e estrutura das seccoes inalterados.
+---
+
+## Sequencia de implementacao
+
+1. Alargar max-widths em todas as seccoes da landing page
+2. Corrigir RegistrationModal -- flow, bullets, 3 opcoes, campos inline
+3. Actualizar /upgrade com bloco referral + mini-modal
+4. Actualizar /confirmacao com plan=free e plan=referral
 
