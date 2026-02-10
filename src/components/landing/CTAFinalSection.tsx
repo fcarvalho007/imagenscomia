@@ -2,49 +2,49 @@ import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 
 export const CTAFinalSection = () => (
-  <section className="py-20 md:py-28 bg-gradient-to-b from-[hsl(222,47%,5%)] to-[hsl(217,33%,11%)] grid-pattern">
-    <div className="container mx-auto px-5 sm:px-6 max-w-3xl text-center">
+  <section className="py-20 md:py-28 bg-ink-900">
+    <div className="container mx-auto px-4 sm:px-6 max-w-[600px] text-center">
       <ScrollReveal>
-        <h2 className="font-heading font-extrabold text-xl sm:text-2xl md:text-3xl lg:text-[2.5rem] leading-[1.2] mb-4 max-w-2xl mx-auto">
-          A diferença entre empresas que crescem e as que estacionam está na{" "}
-          <span className="text-gradient">velocidade de adoção</span> de sistemas novos.
+        <h2 className="font-heading font-extrabold text-[28px] sm:text-[32px] md:text-[36px] leading-[1.2] text-white mb-1 max-w-[600px] mx-auto">
+          Imagens profissionais com IA.
         </h2>
+        <p className="font-heading font-extrabold text-[28px] sm:text-[32px] md:text-[36px] leading-[1.2] text-blue-600 mb-4">
+          Sem designer. Sem agência. Sem esperas.
+        </p>
       </ScrollReveal>
 
       <ScrollReveal delay={0.1}>
-        <p className="font-heading font-semibold text-secondary text-base sm:text-lg mb-8 md:mb-10">
-          75 minutos. Sem custo. Ferramentas prontas a usar.
+        <p className="text-[17px] text-white/65 mb-10">
+          75 minutos. Sem custo. Método pronto a usar no dia seguinte.
         </p>
       </ScrollReveal>
 
       <ScrollReveal delay={0.2}>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
           <motion.a
             href="#inscrever"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full sm:w-auto text-center bg-cta-free hover:bg-cta-free-hover text-white font-heading font-bold text-sm px-8 py-4 rounded-xl glow-green transition-all"
+            className="w-full sm:w-auto text-center bg-white hover:bg-off-white text-ink-900 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all"
           >
-            GARANTIR LUGAR GRÁTIS
+            Garantir lugar grátis
           </motion.a>
           <motion.a
             href="#form-premium"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full sm:w-auto text-center bg-cta-premium hover:bg-cta-premium-hover text-white font-heading font-bold text-sm px-8 py-4 rounded-xl glow-amber transition-all"
+            className="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-blue transition-all"
           >
-            PREMIUM PASS €15+iva
+            Premium Pass €15
           </motion.a>
         </div>
       </ScrollReveal>
 
       <ScrollReveal delay={0.3}>
-        <p className="text-xs text-text-secondary flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span>Sem spam</span>
-          <span>·</span>
-          <span>Dados protegidos RGPD</span>
-          <span>·</span>
-          <span>Reembolso 14 dias</span>
+        <p className="text-[13px] text-white/40 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+          <span>✓ Sem spam</span>
+          <span>✓ Dados protegidos RGPD</span>
+          <span>✓ Reembolso garantido 14 dias</span>
         </p>
       </ScrollReveal>
     </div>
