@@ -55,7 +55,7 @@ export const ProgramSection = () => (
           <ScrollReveal key={i} delay={i * 0.1}>
             <div className={`bg-background border border-border ${s.borderColor} border-l-4 rounded-r-lg p-7 shadow-card`}>
               <div className="flex flex-col md:flex-row md:items-start gap-4">
-                <span className="font-heading font-extrabold text-[42px] text-ink-300/30 leading-none md:min-w-[60px] md:text-right">{s.num}</span>
+                <span className="font-heading font-extrabold text-[42px] text-[hsl(262,83%,58%)]/15 leading-none md:min-w-[60px] md:text-right">{s.num}</span>
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <h3 className="font-heading font-semibold text-lg text-ink-900">{s.title}</h3>
@@ -63,7 +63,7 @@ export const ProgramSection = () => (
                       AO VIVO
                     </span>
                   </div>
-                  <p className="text-[15px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
+                  <p className="text-[16px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
                   <div className="space-y-1.5">
                     {s.bullets.map((b) => (
                       <p key={b} className="text-sm text-ink-700 flex items-start gap-2">
@@ -85,7 +85,7 @@ export const ProgramSection = () => (
             href="#form-gratis"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="inline-block bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-green transition-all"
+            className="inline-block bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
           >
             Reservar lugar gratuito
           </motion.a>

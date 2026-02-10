@@ -36,7 +36,7 @@ export const AudienceSection = () => (
               <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0 font-bold" />
-                  <p className="text-[15px] text-ink-700">{item}</p>
+                  <p className="text-[16px] text-ink-700">{item}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -55,7 +55,7 @@ export const AudienceSection = () => (
               <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-2.5">
                   <X className="w-4 h-4 text-ink-400 mt-0.5 shrink-0" />
-                  <p className="text-[15px] text-ink-500">
+                  <p className="text-[16px] text-ink-500">
                     {item.main}
                     <br />
                     <span className="text-[13px]">({item.sub})</span>

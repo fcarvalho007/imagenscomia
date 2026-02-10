@@ -58,7 +58,7 @@ export const PricingCardsSection = () => {
                     <div className="flex items-start gap-2.5">
                       <Check className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                       <div>
-                        <span className="text-[15px] font-medium text-ink-900">{f.main}</span>
+                        <span className="text-[16px] font-medium text-ink-900">{f.main}</span>
                         {f.sub && <p className="text-[13px] text-ink-500 pl-0 mt-0.5">{f.sub}</p>}
                       </div>
                     </div>
@@ -73,7 +73,7 @@ export const PricingCardsSection = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => open("premium")}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-blue transition-all"
+                className="w-full bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-cyan transition-all"
               >
                 Garantir Premium €15
               </motion.button>
@@ -92,7 +92,7 @@ export const PricingCardsSection = () => {
                 {freeFeatures.map((f) => (
                   <li key={f} className="flex items-start gap-2.5">
                     <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                    <span className="text-[15px] text-ink-700">{f}</span>
+                    <span className="text-[16px] text-ink-700">{f}</span>
                   </li>
                 ))}
               </ul>
@@ -106,7 +106,7 @@ export const PricingCardsSection = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => open("free")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-green transition-all"
+                className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all"
               >
                 Inscrever grátis
               </motion.button>
@@ -127,7 +127,7 @@ export const PricingCardsSection = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => open("free")}
-              className="bg-amber-500 hover:bg-amber-600 text-white font-heading font-bold text-sm px-6 py-3 rounded-xl transition-all"
+              className="bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-sm px-6 py-3 rounded-xl shadow-neon-purple transition-all"
             >
               Inscrever e receber link de convite
             </motion.button>
