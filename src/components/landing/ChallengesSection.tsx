@@ -1,12 +1,10 @@
 import { ScrollReveal } from "./ScrollReveal";
 
 const challenges = [
-  { num: "01", title: "O designer demora dias e custa caro" },
-  { num: "02", title: "Tentaste IA mas os resultados foram inúteis" },
-  { num: "03", title: "O teu stock fotográfico parece de qualquer empresa" },
-  { num: "04", title: "Não tens consistência visual entre publicações" },
-  { num: "05", title: "Não sabes qual ferramenta usar para quê" },
-  { num: "06", title: "Precisas de mais volume sem aumentar equipa" },
+  { num: "01", title: "O stock fotográfico parece de qualquer empresa" },
+  { num: "02", title: "Sem consistência visual entre publicações" },
+  { num: "03", title: "Difícil saber qual ferramenta usar para quê" },
+  { num: "04", title: "Mais volume sem aumentar equipa" },
 ];
 
 export const ChallengesSection = () => (
