@@ -1,85 +1,45 @@
 
 
-# Refinamentos Visuais + Copy + Modal
+# Refinamentos Hero + Pricing
 
 ---
 
-## 1. Imagens -- Avaliacao e Uso
+## 1. HeroSection.tsx -- Tagline que não parte
 
-Das 4 imagens fornecidas, recomendo usar apenas **1**:
+O problema: "Sem equipa criativa. Sem agência. Sem meses de tentativa e erro." está a partir em 2 linhas no desktop porque o font-size é demasiado grande (22px/28px).
 
-- **Abstract particles** (abstract_particle_sci-fi_background_blue): Ideal como fundo da CTAFinalSection (ja tem fundo escuro ink-900). E subtil, nao compete com o texto e reforça a estetica tech/IA. Aplicado com `background-image`, `cover`, e um overlay escuro semi-transparente para manter legibilidade.
+Solução:
+- Reduzir o font-size da tagline de `text-[22px] md:text-[28px]` para `text-[18px] md:text-[22px]`
+- Adicionar `whitespace-nowrap` em desktop para evitar quebra (com fallback para wrap em mobile)
+- Alternativamente, aumentar o `max-w` do container ou usar `text-[20px] md:text-[24px]` que caiba numa linha a 960px
 
-As restantes 3 nao sao recomendadas:
-- Tron grid tunnel: Demasiado agressivo/intenso, distrai do copy
-- Cosmic nebula: Demasiado organico/abstracto, nao encaixa no estilo editorial clean
-- Blue planet: Demasiado sci-fi, fora do tom empresarial
-
-**Ficheiros:** Copiar a imagem de particulas para `src/assets/`, importar em `CTAFinalSection.tsx` como background.
+Ajuste fino recomendado: `text-[17px] sm:text-[20px] md:text-[24px]` -- cabe numa linha em desktop (960px) e faz wrap natural em mobile.
 
 ---
 
-## 2. HeroSection.tsx -- Remocoes
+## 2. PricingCardsSection.tsx -- Remover "€27+IVA depois do webinar"
 
-Remover:
-- O bloco `<ul>` com os 3 micro-bullets (linhas 36-47): "3 modelos de imagem...", "Metodo de briefing...", "Checklist..."
-- O bloco social proof (linhas 113-124): "127 lugares ja reservados..."
-
-Manter tudo o resto (headline, tagline, meta row, video placeholder, CTAs, trust line).
-
----
-
-## 3. ChallengesSection.tsx -- Remover 2 desafios
-
-Remover do array `challenges`:
-- `{ num: "01", title: "O designer demora dias e custa caro" }`
-- `{ num: "02", title: "Tentaste IA mas os resultados foram inuteis" }`
-
-Renumerar os restantes 4 desafios para 01-04. Tambem neutralizar a linguagem "tu/teu" nos titulos restantes:
-- "O stock fotografico parece de qualquer empresa"
-- "Sem consistencia visual entre publicacoes"
-- "Dificil saber qual ferramenta usar para que"
-- "Mais volume sem aumentar equipa"
+Remover a linha 47:
+```
+<p className="text-sm text-ink-400 line-through mb-1">€27+IVA depois do webinar</p>
+```
 
 ---
 
-## 4. RegistrationModal.tsx -- Capture View
+## 3. PricingCardsSection.tsx -- Remover "em early access" do Premium
 
-Remover a linha "Demora menos de 30 segundos." (linha 195).
+Alterar o item no array `premiumFeatures` (linha 19):
+- De: `{ main: "App Gerador de Prompts em early access", sub: "acesso antes de todos os participantes" }`
+- Para: `{ main: "App Gerador de Prompts", sub: "" }`
 
----
-
-## 5. RegistrationModal.tsx -- Upsell View (voltar ao estilo "a vermelho")
-
-Actualmente os 3 extras premium aparecem com checks verdes e fundo neutro. Mudar para estilo de "perda" visual:
-- Icone: `MinusCircle` ou `X` a vermelho (text-red-500)
-- Texto: com estilo de alerta (text-red-700 ou text-ink-700 com icone vermelho)
-- Fundo dos items: `bg-red-50 border border-red-100`
-- Manter o texto introdutorio "Na participacao gratuita, estes extras nao estao incluidos:"
-
-Isto cria o efeito visual de "perda" que incentiva o upgrade, como estava antes.
+Isto remove tanto "em early access" do titulo como "acesso antes de todos os participantes" do subtitulo.
 
 ---
 
-## 6. CTAFinalSection.tsx -- Background com imagem
+## Ficheiros a editar
 
-Adicionar a imagem de particulas abstractas como background:
-- Import da imagem de `@/assets/`
-- `style={{ backgroundImage }}` com `cover` e `center`
-- Overlay: `bg-ink-900/85` por cima para manter legibilidade do texto branco
-- Sem outras alteracoes de copy
-
----
-
-## Resumo de ficheiros
-
-| Ficheiro | Alteracao |
+| Ficheiro | Alteração |
 |----------|-----------|
-| `src/assets/particles-bg.jpg` | Copiar imagem de particulas |
-| `src/components/landing/HeroSection.tsx` | Remover micro-bullets e social proof |
-| `src/components/landing/ChallengesSection.tsx` | Remover 2 desafios, renumerar, neutralizar linguagem |
-| `src/components/landing/RegistrationModal.tsx` | Remover subtitulo capture + mudar upsell extras para estilo vermelho |
-| `src/components/landing/CTAFinalSection.tsx` | Adicionar background image com overlay |
-
-Nenhuma dependencia nova. Nenhum ficheiro novo alem da copia da imagem.
+| `src/components/landing/HeroSection.tsx` | Reduzir font-size da tagline para caber numa linha |
+| `src/components/landing/PricingCardsSection.tsx` | Remover preço riscado e "early access" |
 
