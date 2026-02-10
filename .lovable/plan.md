@@ -1,60 +1,40 @@
 
 
-# Redesign Visual: Melhor Leitura e Contraste
+# Alinhamento da Landing Page com a Spec Completa
 
-## Problema Atual
-A pagina e quase toda escura com variações mínimas entre secções. Texto claro sobre fundos escuros repetidos cansa a vista e dificulta a leitura. Nao ha "respiro" visual.
+## Resumo
+A landing page ja esta maioritariamente implementada e alinhada com a spec. Este plano cobre os ajustes finais de copy, precos (+IVA) e pequenas correcoes de conteudo para garantir correspondencia exata com o documento fornecido.
 
-## Estrategia: Secções Alternadas Dark/Light com Gradientes
+## Alteracoes por Ficheiro
 
-A abordagem mais eficaz para leitura e ritmo visual e alternar entre fundos escuros (navy/preto) e fundos claros (branco/cinza claro), mantendo o estilo Tron nos acentos neon.
+### 1. PresenterSection.tsx
+- Corrigir credencial "Professor Universitario": sub deve ser "FEUC . Univ. Europeia . Univ. Autonoma"
+- Corrigir credencial "Fundador e CEO": sub deve ser "DIGITALFC . SMSonline.pt"
+- Manter as restantes credenciais como estao
 
-### Paleta Atualizada
-- **Fundos escuros**: Navy profundo (#0a0e1a) com grelha Tron rosa/magenta sutil
-- **Fundos claros**: Branco puro (#ffffff) e cinza muito claro (#f8f9fc) com texto escuro
-- **Acentos**: Manter rosa/magenta neon para gradientes, CTAs e destaques
-- **Texto escuro**: Navy (#0f172a) nas secções claras para contraste maximo
-- **Texto claro**: Branco/cinza claro nas secções escuras
+### 2. PricingCardsSection.tsx
+- Botao Premium: alterar de "GARANTIR PREMIUM EUR15" para "GARANTIR PREMIUM EUR15+iva"
+- Texto urgencia: remover referencia a EUR27 na linha do preco sobe (manter apenas "Preco sobe apos 18 Fev")
 
-### Distribuição por Secção
+### 3. RegistrationModal.tsx
+- Botao Premium no upsell: alterar para "SIM, QUERO PREMIUM EUR15+iva"
+- Texto na caixa de alerta: atualizar para mencionar "EUR15+iva" e "EUR27"
 
-| Secção | Fundo | Texto |
-|--------|-------|-------|
-| Hero | Dark navy + gradiente + grid Tron | Branco |
-| Credibilidade | **Branco** | Navy escuro |
-| Problema | Dark navy | Branco |
-| Modulos | **Branco/cinza claro** | Navy escuro |
-| Bonus (Kit) | Dark navy + glass gold | Branco |
-| Audiencia | **Branco** | Navy escuro |
-| Testemunhos | Dark navy gradient | Branco |
-| Pricing | **Branco/cinza claro** | Navy escuro |
-| Urgencia | Dark navy + neon glow | Branco |
-| FAQ | **Branco** | Navy escuro |
-| CTA Final | Dark navy gradient + neon | Branco |
-| Footer | Dark navy | Cinza claro |
+### 4. CTAFinalSection.tsx
+- Botao Premium: alterar para "PREMIUM PASS EUR15+iva"
 
-### Mudanças Tecnicas
+### 5. MirrorCopySection.tsx
+- Botao Premium: manter "PREMIUM PASS EUR15" (sem +iva, conforme spec desta seccao)
 
-**1. CSS (index.css)**
-- Adicionar classe `.section-light` com fundo branco e texto navy
-- Adicionar gradientes suaves para secções claras (branco para cinza muito claro)
-- Grid Tron mais sutil nas secções claras (usando cinza em vez de rosa)
-- Atualizar `gradient-hero` para navy mais profundo com toque azul
+### 6. FAQSection.tsx
+- Resposta sobre gravacao: alterar "EUR15" para "EUR15+iva"
 
-**2. Tailwind Config**
-- Adicionar cores `navy` para texto escuro
-- Adicionar classes utilitarias para secções claras
+### 7. StickyTopBar.tsx
+- Texto mobile: alterar de "GRATIS" para "GRATUITO" para consistencia com desktop
 
-**3. Componentes (todas as secções)**
-- Secções claras: fundo branco, texto navy, cards com sombra suave em vez de neon-border
-- Secções escuras: manter estilo Tron atual mas com navy mais rico
-- Cards nas secções claras: borda cinza suave, sombra, hover com toque rosa
-- Cards nas secções escuras: manter neon-border rosa
+## Notas
+- Nao ha alteracoes estruturais ou de layout
+- Todas as seccoes ja existem na ordem correta
+- O design system (cores, tipografia, efeitos) ja esta implementado corretamente
+- Responsividade ja esta aplicada em todos os componentes
 
-**4. Tipografia melhorada**
-- Tamanhos de texto ligeiramente maiores no body (base 17-18px)
-- Mais espacamento entre linhas (leading-relaxed em todo o lado)
-- Subtitulos com peso mais leve para hierarquia clara
-
-### Resultado Esperado
-Uma pagina com ritmo visual claro — secções escuras "Tron" dramáticas alternadas com secções brancas limpas e profissionais. O contraste entre dark e light cria pontos de descanso visual e melhora significativamente a leitura.
