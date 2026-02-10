@@ -72,7 +72,7 @@ export const PricingCardsSection = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={open}
+                onClick={() => open("premium")}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-blue transition-all"
               >
                 Garantir Premium €15
@@ -105,7 +105,7 @@ export const PricingCardsSection = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={open}
+                onClick={() => open("free")}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-green transition-all"
               >
                 Inscrever grátis
