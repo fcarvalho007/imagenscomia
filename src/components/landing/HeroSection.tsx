@@ -24,7 +24,7 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.15}>
-          <p className="font-heading font-bold text-[22px] md:text-[28px] text-blue-600 mb-4">
+          <p className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-4">
             Sem equipa criativa. Sem agência. Sem meses de tentativa e erro.
           </p>
         </ScrollReveal>
