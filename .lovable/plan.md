@@ -1,98 +1,77 @@
 
-# Refinamentos Página /upgrade + Modal + EuPago
+# Otimizacao Mobile — Pagina /upgrade
 
 ---
 
-## 1. Modal — Todos os caminhos redirecionam para /upgrade
+## Problemas atuais em mobile
 
-Atualmente, "Continuar com participação gratuita" mostra a ConfirmationView dentro do modal. Alterar `handleContinueFree` para também redirecionar para `/upgrade`, tal como `handleGoToPremium` já faz. Assim todos os 3 caminhos (Premium, Referral, Gratuito) fecham o modal e navegam para `/upgrade` com os query params `name` e `email`.
-
-**Ficheiro:** `src/components/landing/RegistrationModal.tsx`
-- `handleContinueFree`: mudar de `setStep("confirmation")` para `close()` + `navigate(/upgrade?...)` 
-- O passo "confirmation" com referral continua a existir para quem escolhe o caminho de convites
-
----
-
-## 2. Página /upgrade — Sticky checkout bar no footer
-
-Adicionar uma barra sticky no fundo da página (tipo checkout) que mostra:
-- O que está selecionado (por defeito "Premium Pass · €15")
-- Botão "Confirmar e Pagar" que dispara o pagamento
-- A barra acompanha o scroll e fica sempre visível
-
-Adicionar também no topo um bloco de confirmação do que foi escolhido com possibilidade de avançar directamente para pagamento.
-
-**Ficheiro:** `src/pages/Upsell.tsx` — novo componente `StickyCheckoutBar`
+1. **Cards empilhados com padding excessivo** — p-6/p-8 ocupa demasiado espaco em ecras pequenos
+2. **Precos com font-size demasiado grande** — 34px/40px em mobile desperdicam espaco vertical
+3. **Sticky bar sobrepoe conteudo** — o h-20 de padding nao e suficiente e a footer fica tapada
+4. **Separadores (dividers) redundantes** — os `h-px my-5` criam demasiado espaco vazio em mobile
+5. **Section header ocupa espaco sem necessidade** — margens grandes antes dos cards
+6. **Bundle block nao e compacto o suficiente** em mobile
+7. **Bundle modal** — padding p-7 excessivo em ecras pequenos
+8. **SkipLine** — texto "Nao, obrigado" podia ser mais compacto em mobile
+9. **MicroFooter** — gap-5 entre trust badges forca wrap desnecessario
 
 ---
 
-## 3. Remover "Normal separado: €64 / Poupa €12"
+## Alteracoes
 
-No `MasterclassCard`, remover o bloco de comparação de preço (linhas 120-134):
-```
-Normal separado: €64
-Poupa €12
-```
+### 1. MasterclassCard — Compactar em mobile
 
-**Ficheiro:** `src/pages/Upsell.tsx` (linhas 120-134)
+- Padding: `p-4 md:p-8` (era `p-6 md:p-8`)
+- Preco: `text-[28px] md:text-[40px]` (era `text-[34px] md:text-[40px]`)
+- Reduzir `my-5` dos dividers para `my-3 md:my-5`
+- Reduzir `mb-5` dos blocos para `mb-3 md:mb-5`
+- CTA button: `py-3.5 md:py-4` e `text-[15px] md:text-[16px]`
 
----
+### 2. WorkshopCard — Compactar em mobile
 
-## 4. Masterclass — Remover bullets específicos
+- Padding: `p-4 md:p-6` (era `p-6`)
+- Preco: `text-[26px] md:text-[32px]` (era `text-[32px]`)
+- Reduzir espacamentos internos (`my-3 md:my-4`, `mb-3 md:mb-4`)
 
-Remover do array de bullets da MasterclassCard:
-- "Midjourney, DALL-E e Firefly. Sem tentativa-erro." (sub do 1o bullet)
-- "Casos reais de empresas portuguesas" (2o bullet inteiro, incluindo sub)
-- "Do briefing ao resultado final — no teu sector." (sub do 2o bullet)
+### 3. AnchorBlock — Menos espaco superior
 
-Manter apenas:
-- `{ title: "50 prompts testados — por tipo de imagem, prontos a usar", sub: "" }`
-- `{ title: "Gravação vitalícia + certificado Professor FEUC", sub: "Rever quando precisares. Válido para curriculum." }`
+- `pt-5 md:pt-9` (era `pt-7 md:pt-9`)
 
-**Ficheiro:** `src/pages/Upsell.tsx` (linhas 141-155)
+### 4. Section header — Menos margem
 
----
+- `pt-6 md:pt-10` (era `pt-8 md:pt-10`)
+- `mb-5 md:mb-8` (era `mb-8`)
 
-## 5. Workshop — Ajustes de texto
+### 5. Sticky checkout bar — Safe area
 
-No `WorkshopCard`:
-- "8h de implementação real com a tua empresa" → "8h de formação e implementação real em sala"
-- "n8n workflows do zero — sem código" → "Ferramentas intermédias e avançadas de automação (Zapier, n8n, outras)"
-- Remover "4 já reservadas nesta sessão" (manter apenas "Só 15 vagas")
+- Adicionar `pb-[env(safe-area-inset-bottom)]` para iPhones com home indicator
+- Aumentar padding inferior da pagina para `h-24` (era `h-20`)
 
-**Ficheiro:** `src/pages/Upsell.tsx` (linhas 254-272)
+### 6. BundleBlock — Mais compacto
 
----
+- `pt-4 pb-6 md:pt-6 md:pb-8` (era `pt-6 pb-8`)
+- Padding interno: `p-4 md:p-5` (era `p-5`)
 
-## 6. Datas concretas
+### 7. BundleModal — Mobile friendly
 
-- **Masterclass**: mudar "3 horas · Online · Máx. 30 participantes" para "25 Fevereiro, 10:30–11:30 · Online · Máx. 30 participantes"
-- **Workshop**: mudar "Sábado · Abril · Lisboa · Máx. 15" para "28 Março · Lisboa · Máx. 15"
-- **Bundle modal** (linha 424): "Masterclass 3h online (data a anunciar)" → "Masterclass online — 25 Fev, 10:30h"
-- **Bundle modal** (linha 425): "Workshop 8h presencial Lisboa (Abril)" → "Workshop 8h presencial Lisboa — 28 Mar"
+- Padding: `p-5 md:p-7` (era `p-7`)
+- Adicionar `max-h-[90vh] overflow-y-auto` para ecras muito pequenos
 
-**Ficheiro:** `src/pages/Upsell.tsx`
+### 8. MicroFooter — Trust badges em coluna em mobile
 
----
+- Mudar de `flex-wrap` para `flex-col sm:flex-row` nos trust badges
+- Reduzir `gap-5` para `gap-2 sm:gap-5`
 
-## 7. EuPago — Estado da integração
+### 9. ProgressBar — Texto mais compacto
 
-A integração com EuPago **já está configurada e funcional**:
-- O secret `EUPAGO_API_KEY` está configurado
-- A edge function `create-payment` gera links PayByLink via API EuPago (suporta CC, MB WAY, Multibanco)
-- A edge function `eupago-webhook` recebe callbacks de confirmação
-- Os 4 produtos estão definidos (premium €15, masterclass €52, workshop €512, bundle €524)
-- O fluxo de pagamento redireciona para o checkout hosted da EuPago e retorna para `/confirmacao?plan=...`
-
-Tudo pronto. Não são necessárias alterações nas edge functions.
+- Padding: `px-3 py-2 md:px-5 md:py-2.5` (era `px-5 py-2.5`)
 
 ---
 
-## Resumo de ficheiros
+## Ficheiro a editar
 
-| Ficheiro | Alteração |
+| Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/RegistrationModal.tsx` | handleContinueFree redireciona para /upgrade |
-| `src/pages/Upsell.tsx` | Sticky checkout bar; remover "Poupa €12"; limpar bullets masterclass; ajustar textos workshop; datas concretas |
+| `src/pages/Upsell.tsx` | Todos os ajustes de spacing, font-size e safe-area para mobile |
 
-Nenhuma dependência nova. Edge functions sem alterações.
+Nenhuma dependencia nova. Apenas refinamento de classes CSS responsivas.
