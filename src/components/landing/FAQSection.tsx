@@ -9,11 +9,11 @@ import {
 const faqs = [
   {
     q: "Preciso de conhecimentos técnicos?",
-    a: "Não. Este webinar é para gestores e empresários, não para técnicos. Se sabes usar um browser, tens o suficiente.",
+    a: "Não. Se consegues usar o WhatsApp, consegues criar imagens com este método. Vou mostrar passo a passo, do zero.",
   },
   {
     q: "As ferramentas mostradas são pagas?",
-    a: "Algumas têm versão gratuita, outras têm custo. Mostro opções para diferentes orçamentos e explico o que justifica cada investimento.",
+    a: "Mostro opções gratuitas e pagas. A maior parte do que ensino funciona com ferramentas gratuitas (incluindo a app que criei especificamente para este método).",
   },
   {
     q: "Vou ter acesso à gravação?",
@@ -21,7 +21,7 @@ const faqs = [
   },
   {
     q: "Quanto tempo para ver resultados?",
-    a: "Primeiros resultados são praticamente imediatos, sabendo quais as ferramentas e o processo. O método completo leva 1 semana de prática gradual.",
+    a: "No dia seguinte ao webinar já consegues criar as tuas primeiras imagens profissionais. Participantes anteriores relatam criação de 5-10 imagens utilizáveis na primeira semana.",
   },
   {
     q: "Posso ver o webinar depois se não puder estar ao vivo?",
