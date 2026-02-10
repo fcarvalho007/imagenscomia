@@ -1,64 +1,81 @@
 
+# Ajustes de Copy, Programa e Elegancia da Primeira Parte
 
-# Reorganizacao da Landing Page + Remocoes
+## 1. PricingCardsSection.tsx — Pacote Premium
 
-## Resumo
+**Remover items:**
+- Apagar sub "gratis: acesso so durante o webinar" do item "Gravacao HD vitalicia"
+- Apagar o item completo "Prioridade nas perguntas durante o Q&A ao vivo"
 
-Remover a seccao Masterclass, apagar 2 pontos do Mirror Copy, e reorganizar a ordem das seccoes para um fluxo de conversao mais direto e eficaz.
+**Enfase no gratuito incluido:** Reformular a linha "Tudo do gratuito, mais:" para algo mais enfatico, como uma caixa com check verde: "Inclui tudo da participacao gratuita" com destaque visual (fundo green-50, border green-100, check verde)
 
-## O que muda
+**Resultado Premium — 4 items:**
+1. Gravacao HD vitalicia (sem sub)
+2. Sessao Q&A em grupo — 60 minutos (sub: exclusiva, apos o webinar)
+3. Guia completo de prompts por tipo de imagem (sub: PDF 30+ paginas, testado em contexto empresarial)
+4. App Gerador de Prompts em early access (sub: acesso antes de todos os participantes)
 
-### 1. Remover MasterclassSection
-- Apagar o ficheiro `src/components/landing/MasterclassSection.tsx`
-- Remover o import e o componente de `src/pages/Index.tsx`
+## 2. PricingCardsSection.tsx — Pacote Gratuito
 
-### 2. Apagar 2 pontos do MirrorCopySection
-Remover estes dois itens da lista:
-- "Pagas designer ou agencia para criar materiais visuais e sabes que ha forma mais rapida"
-- "Ja ouviste falar de Midjourney ou DALL-E mas nunca conseguiste resultados utilizaveis"
+**Substituicoes na lista:**
+- "3 demos de criacao de imagens ao vivo" → "Demos ao vivo"
+- "Resumo PDF: ferramentas e tipos de imagem" → "Resumo PDF da sessao"
+- "App Gerador de Prompts basica" → "Acesso a aplicacoes especializadas"
 
-Ficam 3 pontos:
-1. "Ja tentaste gerar imagens com IA mas os resultados ficaram longe do que querias"
-2. "Precisas de imagens para redes sociais ou anuncios e o stock fotografico nao representa a marca"
-3. "Queres produzir mais conteudo visual sem depender de terceiros para cada peca"
+**Lista final gratuita (6 items):**
+1. Webinar ao vivo (75 minutos)
+2. Demos ao vivo
+3. Acesso a aplicacoes especializadas
+4. Resumo PDF da sessao
+5. Grupo WhatsApp do evento
+6. Certificado digital
 
-### 3. Reorganizar ordem das seccoes
+## 3. ProgramSection.tsx — Mais persuasivo, menos revelado
 
-A ordem atual e:
-1. StickyTopBar
-2. MirrorCopy (hook)
-3. Hero
-4. Pricing
-5. Presenter
-6. Challenges
-7. Program
-8. Audience
-9. Masterclass (remover)
-10. FAQ
-11. CTA Final
-12. Footer
+Reescrever os 3 cards para gerar curiosidade em vez de detalhar tudo. Manter titulos mas tornar descricoes mais intrigantes e reduzir bullets para 2 por card (sem "O que levas:" — substituir por frases de beneficio).
 
-Nova ordem proposta (fluxo de conversao otimizado):
+**Card 1 — "O Metodo do Prompt Perfeito"**
+Desc: "Ha uma diferenca entre gerar uma imagem e gerar a imagem certa. Vou mostrar ao vivo o que separa um resultado amador de um resultado profissional."
+Bullets:
+- Demo ao vivo com 5 tipos de imagem diferentes
+- Acesso a uma app exclusiva que constroi prompts por ti
 
-1. **StickyTopBar** — urgencia sempre visivel
-2. **MirrorCopy** — qualificacao imediata ("isto e para mim?")
-3. **HeroSection** — proposta de valor principal + video
-4. **PresenterSection** — credibilidade (quem e este?)
-5. **ChallengesSection** — dor (identificacao com o problema)
-6. **ProgramSection** — solucao (o que vou aprender)
-7. **AudienceSection** — confirmacao final ("e para mim, sim")
-8. **PricingCardsSection** — decisao de compra (agora que ja entende o valor)
-9. **FAQSection** — objecoes finais
-10. **CTAFinalSection** — ultimo empurrao
-11. **FooterSection**
+**Card 2 — "Imagens para Redes Sociais e Anuncios"**
+Desc: "Vou criar 3 pecas prontas a publicar em direto — e vais perceber como podes fazer o mesmo para a tua marca, em minutos."
+Bullets:
+- Do briefing a imagem publicavel, passo a passo
+- Funciona para feed, stories, anuncios e site
 
-**Logica da mudanca:**
-- Pricing passa de posicao 4 para posicao 8. Motivo: o utilizador deve primeiro entender o valor (quem apresenta, que problemas resolve, o que vai aprender) antes de ver precos. Mostrar precos cedo demais causa abandono em quem ainda nao percebeu o beneficio.
-- Presenter sobe para logo apos o hero, para construir confianca antes de apresentar a dor.
-- Audience fica antes do pricing como ultimo filtro de qualificacao.
+**Card 3 — "Escalar Producao Visual Sem Equipa"**
+Desc: "O segredo nao e trabalhar mais — e ter um sistema. Vou construir um ao vivo e mostrar como multiplicar a tua producao visual."
+Bullets:
+- Quanto custa realmente: IA vs designer externo
+- Quando usar IA e quando contratar
 
-### Ficheiros alterados
-- `src/pages/Index.tsx` — nova ordem de componentes + remover import MasterclassSection
-- `src/components/landing/MirrorCopySection.tsx` — remover 2 pontos da lista
-- `src/components/landing/MasterclassSection.tsx` — apagar ficheiro
+## 4. ChallengesSection.tsx — Card 05 mais intuitivo
 
+Substituir a descricao do card 05:
+- De: "Midjourney, DALL-E, Firefly, Ideogram. Qual delas? Para que? A que custo? Respondo tudo."
+- Para: "Ha dezenas de ferramentas de IA para imagens. Qual escolher, para que situacao e a que custo? Fica claro nesta sessao."
+
+## 5. Primeira parte da pagina — Mais elegante
+
+A primeira parte (MirrorCopy + Hero) pode ser refinada juntando-as visualmente. Proposta:
+
+**MirrorCopySection:**
+- Remover os dois botoes CTA desta seccao (ja existem no hero e mais abaixo) — reduz repeticao e torna a entrada mais limpa
+- Manter apenas: label + 3 pontos + separador + meta row (data/hora)
+- Resultado: seccao mais leve, funciona como qualificacao rapida sem pedir acao imediata
+
+**HeroSection:**
+- Adicionar os dois botoes CTA (verde "Inscrever gratis" + ambar "Premium Pass") abaixo do video placeholder
+- Assim o hero torna-se o primeiro ponto de conversao real, depois da qualificacao
+
+Isto cria um fluxo mais elegante: qualificacao silenciosa (MirrorCopy) → proposta de valor + CTA (Hero)
+
+## Ficheiros alterados
+- `src/components/landing/PricingCardsSection.tsx` — premium e free features + enfase gratuito
+- `src/components/landing/ProgramSection.tsx` — copy persuasivo, menos revelado
+- `src/components/landing/ChallengesSection.tsx` — card 05 descricao
+- `src/components/landing/MirrorCopySection.tsx` — remover botoes CTA
+- `src/components/landing/HeroSection.tsx` — adicionar botoes CTA abaixo do video
