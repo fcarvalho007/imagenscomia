@@ -86,7 +86,7 @@ export const PricingCardsSection = () => {
                 ))}
               </ul>
 
-              <p className="text-xs text-urgency mb-1">⏰ Preço sobe para €27 após 18 Fev</p>
+              <p className="text-xs text-urgency mb-1">⏰ Preço sobe após 18 Fev</p>
               <p className="text-xs text-text-secondary mb-4">👥 Vagas Premium limitadas</p>
 
               <motion.button
@@ -95,7 +95,7 @@ export const PricingCardsSection = () => {
                 onClick={open}
                 className="w-full bg-cta-premium hover:bg-cta-premium-hover text-white font-heading font-bold text-sm py-4 rounded-xl glow-amber transition-all"
               >
-                GARANTIR PREMIUM €15
+                GARANTIR PREMIUM €15+iva
               </motion.button>
             </div>
           </ScrollReveal>

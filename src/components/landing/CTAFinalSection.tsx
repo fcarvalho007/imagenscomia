@@ -33,7 +33,7 @@ export const CTAFinalSection = () => (
             whileTap={{ scale: 0.98 }}
             className="w-full sm:w-auto text-center bg-cta-premium hover:bg-cta-premium-hover text-white font-heading font-bold text-sm px-8 py-4 rounded-xl glow-amber transition-all"
           >
-            PREMIUM PASS €15
+            PREMIUM PASS €15+iva
           </motion.a>
         </div>
       </ScrollReveal>

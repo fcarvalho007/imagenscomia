@@ -1,10 +1,10 @@
 import { ScrollReveal } from "./ScrollReveal";
 
 const credentials = [
-  { emoji: "🎓", title: "Professor Universitário", sub: "Univ. Coimbra (FEUC) · IADE · Univ. Europeia (IPAM) · Univ. Aveiro" },
+  { emoji: "🎓", title: "Professor Universitário", sub: "FEUC · Univ. Europeia · Univ. Autónoma" },
   { emoji: "📚", title: "Co-autor e Autor", sub: "Marketing Digital para Empresas · Guia Essencial SEO" },
   { emoji: "🎙️", title: "Host Semanal RFM", sub: "Podcast Marketing por Idiotas" },
-  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · consultoria" },
+  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · SMSonline.pt" },
   { emoji: "🏆", title: "700+ Projetos", sub: "L'Oréal · BMW · 3M · Impresa" },
   { emoji: "🎯", title: "20 Anos", sub: "Marketing Digital e SEO" },
 ];

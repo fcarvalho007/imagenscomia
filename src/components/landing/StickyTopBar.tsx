@@ -11,7 +11,7 @@ export const StickyTopBar = () => {
         <p className="text-xs sm:text-sm text-text-muted font-heading font-semibold tracking-wide truncate">
           <span className="inline-block w-2 h-2 rounded-full bg-urgency animate-pulse mr-2 align-middle" />
           <span className="hidden sm:inline">AO VIVO · QUARTA 18 FEV · 10H00 · GRATUITO</span>
-          <span className="sm:hidden">🔴 18 FEV · 10H · GRÁTIS</span>
+          <span className="sm:hidden">🔴 18 FEV · 10H · GRATUITO</span>
         </p>
         <a
           href="#inscrever"
