@@ -1,12 +1,9 @@
-import { Calendar, Clock, Users } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 const points = [
-  "Já tentaste Midjourney ou DALL-E e saíste frustrado — e ainda não percebeste que o problema era o prompt, não a ferramenta",
   "Queres imagens profissionais para redes sociais e anúncios sem pagar designer para cada peça nova",
   "Sabes que a IA consegue muito mais do que o ChatGPT mas ninguém te mostrou como aplicar ao teu negócio em concreto",
   "Precisas de consistência visual na tua marca sem orçamento para agência criativa a tempo inteiro",
-  "Queres ver como se faz — ao vivo, no teu ecrã — não ouvir mais teoria sobre ferramentas que nunca experimentaste",
 ];
 
 export const MirrorCopySection = () => (
@@ -34,28 +31,6 @@ export const MirrorCopySection = () => (
         ))}
       </div>
 
-      <div className="w-full h-px bg-border my-8" />
-
-      <ScrollReveal>
-        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-ink-500 font-medium">
-          <span className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-blue-600" />
-            Quarta, 18 Fev
-          </span>
-          <span className="text-blue-600">·</span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-blue-600" />
-            10h00
-          </span>
-          <span className="text-blue-600">·</span>
-          <span className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-blue-600" />
-            75 minutos
-          </span>
-          <span className="text-blue-600">·</span>
-          <span className="font-semibold text-blue-600">Gratuito</span>
-        </div>
-      </ScrollReveal>
     </div>
   </section>
 );

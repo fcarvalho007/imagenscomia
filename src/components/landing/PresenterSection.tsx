@@ -31,13 +31,13 @@ export const PresenterSection = () => (
               Frederico Carvalho
             </h2>
             <p className="text-lg text-ink-500 font-medium leading-relaxed max-w-lg">
-              17 anos a implementar marketing digital e IA em empresas portuguesas
+              29 anos a implementar marketing digital e IA em empresas portuguesas
             </p>
           </div>
         </ScrollReveal>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {credentials.map((c, i) => (
           <ScrollReveal key={i} delay={i * 0.06}>
             <div className="bg-off-white border border-border rounded-md p-3.5 h-full">
@@ -47,16 +47,15 @@ export const PresenterSection = () => (
             </div>
           </ScrollReveal>
         ))}
-        {/* Card 5 spans 2 columns */}
-        <ScrollReveal delay={0.24}>
-          <div className="bg-off-white border border-border rounded-md p-3.5 sm:col-span-2">
-            <div className="text-xl mb-1.5">🏆</div>
-            <p className="font-heading font-semibold text-[13px] text-ink-900">
-              17 anos · 700+ projetos · <span className="text-blue-600">L'Oréal</span> · <span className="text-blue-600">BMW</span> · <span className="text-blue-600">3M</span> · <span className="text-blue-600">Impresa</span>
-            </p>
-          </div>
-        </ScrollReveal>
       </div>
+      <ScrollReveal delay={0.24}>
+        <div className="bg-off-white border border-border rounded-md p-3.5 mt-3">
+          <div className="text-xl mb-1.5">🏆</div>
+          <p className="font-heading font-semibold text-[13px] text-ink-900">
+            29 anos · 700+ projetos · <span className="text-blue-600">L'Oréal</span> · <span className="text-blue-600">BMW</span> · <span className="text-blue-600">3M</span> · <span className="text-blue-600">Impresa</span>
+          </p>
+        </div>
+      </ScrollReveal>
     </div>
   </section>
 );
