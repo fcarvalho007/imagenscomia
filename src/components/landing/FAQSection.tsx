@@ -24,8 +24,8 @@ const faqs = [
     a: "Primeiros resultados são praticamente imediatos, sabendo quais as ferramentas e o processo. O método completo leva 1 semana de prática gradual.",
   },
   {
-    q: "Há algum programa mais desenvolvido com mais horas sobre este assunto?",
-    a: "Sim — serei direto sobre isso. No final, apresento as opções de aprofundamento. Sem pressão. O conteúdo gratuito é completo por si mesmo.",
+    q: "Posso ver o webinar depois se não puder estar ao vivo?",
+    a: "A gravação está disponível no Premium Pass (€15). A inscrição gratuita dá acesso ao vivo mas não inclui gravação — se faltares ao webinar, perdes o acesso ao conteúdo. O Premium garante acesso para sempre por €15, agora. Depois do webinar passa a custar €27.",
   },
 ];
 

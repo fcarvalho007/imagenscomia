@@ -16,7 +16,7 @@ export const StickyTopBar = () => {
           href="#form-gratis"
           className="shrink-0 text-[13px] font-heading font-semibold text-blue-600 bg-white hover:bg-blue-50 px-5 py-2.5 rounded-full transition-colors"
         >
-          Reservar lugar →
+          Reservar lugar grátis →
         </a>
       </div>
     </motion.div>
