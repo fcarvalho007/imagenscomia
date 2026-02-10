@@ -18,8 +18,8 @@ const Index = () => {
     <RegistrationModalProvider>
       <main className="overflow-x-hidden">
         <StickyTopBar />
-        <MirrorCopySection />
         <HeroSection />
+        <MirrorCopySection />
         <PresenterSection />
         <ChallengesSection />
         <ProgramSection />

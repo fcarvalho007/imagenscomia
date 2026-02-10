@@ -9,18 +9,35 @@ export const HeroSection = () => {
   return (
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-[800px] text-center">
+        <ScrollReveal delay={0.05}>
+          <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.08em] text-blue-600 mb-4">
+            WEBINAR GRATUITO · 18 FEVEREIRO · 10H00
+          </p>
+        </ScrollReveal>
+
         <ScrollReveal delay={0.1}>
-          <h1 className="font-heading font-extrabold text-[28px] sm:text-[36px] md:text-[40px] leading-[1.15] tracking-[-0.02em] text-ink-900 mb-4">
-            Como Criar Imagens Profissionais com IA para a Tua Empresa —{" "}
-            <span className="bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
-              Sem Designer
-            </span>
+          <h1 className="font-heading font-extrabold text-[28px] sm:text-[36px] md:text-[40px] leading-[1.15] tracking-[-0.02em] text-ink-900 mb-3">
+            Como Criar Imagens Profissionais
+            <br />
+            com IA para a Tua Empresa
           </h1>
         </ScrollReveal>
 
+        <ScrollReveal delay={0.15}>
+          <p className="font-heading font-bold text-[20px] md:text-[26px] text-blue-600 mb-4">
+            Sem Designer. Sem Agência. Sem Curso de 6 Meses.
+          </p>
+        </ScrollReveal>
+
         <ScrollReveal delay={0.2}>
-          <p className="text-xl text-ink-600 font-medium max-w-[560px] mx-auto mt-4 mb-10">
-            O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo.
+          <p className="text-xl text-ink-600 font-medium max-w-[560px] mx-auto mb-4">
+            O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo, no teu ecrã.
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal delay={0.25}>
+          <p className="text-sm text-ink-500 font-medium mb-10">
+            📅 Quarta 18 Fev  ·  🕙 10h00  ·  ⏱ 75 min  ·  🎓 Gratuito
           </p>
         </ScrollReveal>
 

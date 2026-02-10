@@ -26,10 +26,11 @@ const systems = [
     num: "03",
     title: "Escalar Produção Visual Sem Equipa",
     borderColor: "border-l-green-600",
-    desc: "O segredo não é trabalhar mais — é ter um sistema. Vou construir um ao vivo e mostrar como multiplicar a tua produção visual.",
+    desc: "Como passar de 5 imagens por semana para 50 — com o mesmo tempo e sem mais custos.",
     bullets: [
-      "Quanto custa realmente: IA vs designer externo",
-      "Quando usar IA e quando contratar",
+      "Processo de produção em lote com IA",
+      "App Calculadora: custo IA vs designer externo",
+      "Mapa de decisão: quando usar IA, quando contratar",
     ],
   },
 ];

@@ -2,9 +2,11 @@ import { Calendar, Clock, Users } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 const points = [
-  "Já tentaste gerar imagens com IA mas os resultados ficaram longe do que querias",
-  "Precisas de imagens para redes sociais ou anúncios e o stock fotográfico não representa a marca",
-  "Queres produzir mais conteúdo visual sem depender de terceiros para cada peça",
+  "Já tentaste Midjourney ou DALL-E e saíste frustrado — e ainda não percebeste que o problema era o prompt, não a ferramenta",
+  "Queres imagens profissionais para redes sociais e anúncios sem pagar designer para cada peça nova",
+  "Sabes que a IA consegue muito mais do que o ChatGPT mas ninguém te mostrou como aplicar ao teu negócio em concreto",
+  "Precisas de consistência visual na tua marca sem orçamento para agência criativa a tempo inteiro",
+  "Queres ver como se faz — ao vivo, no teu ecrã — não ouvir mais teoria sobre ferramentas que nunca experimentaste",
 ];
 
 export const MirrorCopySection = () => (
