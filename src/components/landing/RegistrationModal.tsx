@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2 } from "lucide-react";
+import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type Step = "capture" | "upsell" | "confirmation";
@@ -13,6 +13,8 @@ export const RegistrationModal = () => {
   const { isOpen, close, referredBy } = useRegistrationModal();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("capture");
@@ -21,7 +23,7 @@ export const RegistrationModal = () => {
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string } | null> => {
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { name, email, referredBy: referredBy || undefined },
+      body: { name, email, whatsapp: whatsapp || undefined, referredBy: referredBy || undefined },
     });
     if (fnError) throw fnError;
     return { referralCode: data.referralCode, referralLink: data.referralLink };
@@ -30,6 +32,10 @@ export const RegistrationModal = () => {
   const handleCapture = async () => {
     if (!name.trim() || !email.trim()) {
       setError("Preenche o nome e email.");
+      return;
+    }
+    if (!acceptedTerms) {
+      setError("Tens de aceitar os termos para continuar.");
       return;
     }
     setLoading(true);
@@ -68,6 +74,8 @@ export const RegistrationModal = () => {
       setConfirmationMode("simple");
       setName("");
       setEmail("");
+      setWhatsapp("");
+      setAcceptedTerms(false);
       setError(null);
       setReferralData(null);
     }, 300);
@@ -113,6 +121,10 @@ export const RegistrationModal = () => {
                 setName={setName}
                 email={email}
                 setEmail={setEmail}
+                whatsapp={whatsapp}
+                setWhatsapp={setWhatsapp}
+                acceptedTerms={acceptedTerms}
+                setAcceptedTerms={setAcceptedTerms}
                 loading={loading}
                 error={error}
                 onSubmit={handleCapture}
@@ -134,6 +146,7 @@ export const RegistrationModal = () => {
                 name={name}
                 referralData={referralData}
                 mode={confirmationMode}
+                onGoToPremium={handleGoToPremium}
               />
             )}
           </motion.div>
@@ -150,6 +163,10 @@ const CaptureView = ({
   setName,
   email,
   setEmail,
+  whatsapp,
+  setWhatsapp,
+  acceptedTerms,
+  setAcceptedTerms,
   loading,
   error,
   onSubmit,
@@ -158,6 +175,10 @@ const CaptureView = ({
   setName: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
+  whatsapp: string;
+  setWhatsapp: (v: string) => void;
+  acceptedTerms: boolean;
+  setAcceptedTerms: (v: boolean) => void;
   loading: boolean;
   error: string | null;
   onSubmit: () => void;
@@ -170,7 +191,7 @@ const CaptureView = ({
       Preenche os teus dados para reservar o lugar:
     </p>
 
-    <div className="space-y-3 mb-5">
+    <div className="space-y-3 mb-4">
       <div className="relative">
         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
@@ -191,16 +212,40 @@ const CaptureView = ({
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
         />
       </div>
+      <div className="relative">
+        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="tel"
+          placeholder="O teu WhatsApp (opcional)"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
+      </div>
     </div>
+
+    <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={acceptedTerms}
+        onChange={(e) => setAcceptedTerms(e.target.checked)}
+        className="mt-1 w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/20 shrink-0"
+      />
+      <span className="text-[11px] text-ink-400 leading-relaxed">
+        Não utilizo a tua informação para enviar SPAM. Os teus dados pessoais vão ser tratados pela Fomentar Sonhos., Lda., após obter o teu consentimento prévio, unicamente para o envio de comunicações de "Frederico Carvalho".{" "}
+        <a href="#" className="underline hover:text-ink-600">Aceito a política de privacidade</a> e os{" "}
+        <a href="#" className="underline hover:text-ink-600">termos e condições comerciais</a>.
+      </span>
+    </label>
 
     {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
 
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      disabled={loading}
+      disabled={loading || !acceptedTerms}
       onClick={onSubmit}
-      className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-70"
+      className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-50"
     >
       {loading ? (
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -304,11 +349,13 @@ const ConfirmationView = ({
   name,
   referralData,
   mode,
+  onGoToPremium,
 }: {
   email: string;
   name: string;
   referralData: { referralCode: string; referralLink: string } | null;
   mode: ConfirmationMode;
+  onGoToPremium: () => void;
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -356,57 +403,76 @@ const ConfirmationView = ({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-5 text-left"
+          className="mt-4 text-left space-y-4"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Gift className="w-5 h-5 text-amber-600" />
-            <h4 className="font-heading font-bold text-[15px] text-ink-900">Ganha Premium Grátis!</h4>
-          </div>
-          <p className="text-[13px] text-ink-600 mb-4">
-            Convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar.
-          </p>
-
-          <div className="flex items-center gap-2 mb-3">
-            <input
-              readOnly
-              value={referralData.referralLink}
-              className="flex-1 bg-background border border-border rounded-lg px-3 py-2.5 text-xs text-ink-700 truncate"
-            />
-            <button
-              onClick={handleCopy}
-              className="shrink-0 bg-ink-900 text-white text-xs font-medium px-3 py-2.5 rounded-lg hover:bg-ink-700 transition-colors flex items-center gap-1.5"
+          {/* Upgrade CTA */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-[13px] text-ink-600 mb-3">
+              Enviámos as instruções para o teu email. Entretanto, podes ainda fazer upgrade para Premium.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={onGoToPremium}
+              className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-[14px] py-3 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
             >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copiado" : "Copiar"}
-            </button>
+              <Sparkles className="w-4 h-4" />
+              Fazer upgrade agora por €15+IVA
+            </motion.button>
           </div>
 
-          <div className="flex gap-2">
+          {/* Referral sharing */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Gift className="w-5 h-5 text-amber-600" />
+              <h4 className="font-heading font-bold text-[15px] text-ink-900">Ou ganha Premium grátis!</h4>
+            </div>
+            <p className="text-[13px] text-ink-600 mb-4">
+              Convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar.
+            </p>
+
+            <div className="flex items-center gap-2 mb-3">
+              <input
+                readOnly
+                value={referralData.referralLink}
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-2.5 text-xs text-ink-700 truncate"
+              />
+              <button
+                onClick={handleCopy}
+                className="shrink-0 bg-ink-900 text-white text-xs font-medium px-3 py-2.5 rounded-lg hover:bg-ink-700 transition-colors flex items-center gap-1.5"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copiado" : "Copiar"}
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <a
+                href={`https://wa.me/?text=${whatsappMsg}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                WhatsApp
+              </a>
+              <a
+                href={mailtoLink}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Email
+              </a>
+            </div>
+
             <a
-              href={`https://wa.me/?text=${whatsappMsg}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
+              href={`/convites?email=${encodeURIComponent(email)}`}
+              className="mt-3 text-[12px] text-blue-600 hover:underline flex items-center justify-center gap-1"
             >
-              <MessageCircle className="w-3.5 h-3.5" />
-              WhatsApp
-            </a>
-            <a
-              href={mailtoLink}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Email
+              Ver estado dos convites
+              <ExternalLink className="w-3 h-3" />
             </a>
           </div>
-
-          <a
-            href={`/convites?email=${encodeURIComponent(email)}`}
-            className="mt-3 text-[12px] text-blue-600 hover:underline flex items-center justify-center gap-1"
-          >
-            Ver estado dos convites
-            <ExternalLink className="w-3 h-3" />
-          </a>
         </motion.div>
       )}
 

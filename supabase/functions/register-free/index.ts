@@ -27,7 +27,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { name, email, referredBy } = await req.json();
+    const { name, email, whatsapp, referredBy } = await req.json();
 
     if (!name || !email) {
       return new Response(
@@ -74,6 +74,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase.from("registrations").insert({
       name: name.trim(),
       email: email.toLowerCase().trim(),
+      whatsapp: whatsapp?.trim() || null,
       referral_code: referralCode,
       referred_by: referredBy || null,
     });

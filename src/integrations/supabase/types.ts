@@ -23,6 +23,7 @@ export type Database = {
           premium_unlocked: boolean | null
           referral_code: string
           referred_by: string | null
+          whatsapp: string | null
         }
         Insert: {
           created_at?: string | null
@@ -32,6 +33,7 @@ export type Database = {
           premium_unlocked?: boolean | null
           referral_code: string
           referred_by?: string | null
+          whatsapp?: string | null
         }
         Update: {
           created_at?: string | null
@@ -41,6 +43,7 @@ export type Database = {
           premium_unlocked?: boolean | null
           referral_code?: string
           referred_by?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
