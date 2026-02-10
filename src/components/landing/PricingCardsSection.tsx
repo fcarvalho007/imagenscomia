@@ -4,19 +4,15 @@ import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const freeFeatures = [
-  "Webinar ao vivo (75 minutos)",
-  "Demos ao vivo",
-  "Acesso a aplicações especializadas",
+  "Webinar ao vivo (75 min)",
+  "Demonstração ao vivo",
   "Resumo PDF da sessão",
-  "Grupo WhatsApp do evento",
-  "Certificado digital",
 ];
 
 const premiumFeatures = [
-  { main: "Gravação HD vitalícia", sub: "" },
-  { main: "Sessão Q&A em grupo — 60 minutos", sub: "exclusiva, após o webinar" },
-  { main: "Guia completo de prompts por tipo de imagem", sub: "PDF 30+ páginas, testado em contexto empresarial" },
-  { main: "App Gerador de Prompts", sub: "" },
+  { main: "Gravação da sessão (30 dias)", sub: "" },
+  { main: "Sessão Q&A exclusiva em grupo — 60 min", sub: "" },
+  { main: "Guia completo de prompts (30+ páginas)", sub: "" },
 ];
 
 export const PricingCardsSection = () => {
@@ -27,16 +23,50 @@ export const PricingCardsSection = () => {
       <div className="container mx-auto px-4 sm:px-6 max-w-[920px]">
         <ScrollReveal>
           <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
-            Escolha como participar
+            Como participar
           </h2>
         </ScrollReveal>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px] mx-auto">
-          {/* Premium card - first on mobile */}
+          {/* Free card - first on mobile */}
           <ScrollReveal>
-            <div id="form-premium" className="bg-background border-2 border-blue-600 rounded-lg p-8 h-full flex flex-col relative shadow-blue order-first md:order-last">
+            <div className="bg-background border border-border rounded-lg p-8 h-full flex flex-col shadow-card">
+              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
+              <span className="font-heading font-extrabold text-4xl text-ink-900 mb-1">€0</span>
+              <p className="text-[12px] text-ink-500 font-medium mb-4">Ideal para quem vai estar ao vivo</p>
+
+              <div className="w-full h-px bg-border mb-6" />
+
+              <ul className="space-y-3 mb-5 flex-1">
+                {freeFeatures.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                    <span className="text-[16px] text-ink-700">{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="bg-surface rounded-md p-3 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-[13px] text-ink-500">Nota: sem acesso a gravação após o webinar</p>
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => open("free")}
+                className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all"
+              >
+                Inscrever grátis
+              </motion.button>
+            </div>
+          </ScrollReveal>
+
+          {/* Premium card */}
+          <ScrollReveal delay={0.12}>
+            <div id="form-premium" className="bg-background border-2 border-blue-600 rounded-lg p-8 h-full flex flex-col relative shadow-blue">
               <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[11px] font-heading font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.05em]">
-                RECOMENDADO
+                Mais completo
               </span>
 
               <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 mb-1">PREMIUM PASS — €15 + IVA</p>
@@ -81,41 +111,13 @@ export const PricingCardsSection = () => {
               </motion.button>
             </div>
           </ScrollReveal>
-
-          {/* Free card */}
-          <ScrollReveal delay={0.12}>
-            <div className="bg-background border border-border rounded-lg p-8 h-full flex flex-col shadow-card order-last md:order-first">
-              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
-              <span className="font-heading font-extrabold text-4xl text-ink-900 mb-1">€0</span>
-              <p className="text-[12px] text-ink-500 font-medium mb-4">Ideal para quem vai estar ao vivo</p>
-
-              <div className="w-full h-px bg-border mb-6" />
-
-              <ul className="space-y-3 mb-5 flex-1">
-                {freeFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5">
-                    <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                    <span className="text-[16px] text-ink-700">{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="bg-surface rounded-md p-3 mb-4 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-[13px] text-ink-500">Nota: sem acesso a gravação após o webinar</p>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => open("free")}
-                className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all"
-              >
-                Inscrever grátis
-              </motion.button>
-            </div>
-          </ScrollReveal>
         </div>
+
+        <ScrollReveal>
+          <p className="text-center text-[14px] text-ink-500 italic mt-6 max-w-[560px] mx-auto">
+            O Premium é recomendado para aplicação prática depois do evento.
+          </p>
+        </ScrollReveal>
 
         <ScrollReveal>
           <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-[560px] mx-auto text-center">

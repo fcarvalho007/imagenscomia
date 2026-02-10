@@ -36,26 +36,18 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
-          <div className="bg-ink-900 rounded-xl px-6 py-3 max-w-fit mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-10">
-            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
-              <Calendar className="w-4 h-4 text-neon-cyan" />
-              Quarta 18 Fev
-            </span>
-            <span className="text-white/20">|</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
-              <Clock className="w-4 h-4 text-neon-cyan" />
-              10h00
-            </span>
-            <span className="text-white/20">|</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
-              <Timer className="w-4 h-4 text-neon-cyan" />
-              75 min
-            </span>
-            <span className="text-white/20">|</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
-              <GraduationCap className="w-4 h-4 text-neon-cyan" />
-              Gratuito
-            </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-w-[560px] mx-auto mb-10">
+            {[
+              { icon: Calendar, text: "Ao vivo — 18 Fevereiro" },
+              { icon: Clock, text: "10h00 (Portugal)" },
+              { icon: Timer, text: "75 minutos" },
+              { icon: GraduationCap, text: "Gratuito" },
+            ].map(({ icon: Icon, text }) => (
+              <div key={text} className="bg-surface border border-border rounded-xl px-3 py-3 flex items-center gap-2 shadow-sm">
+                <Icon className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="text-[13px] font-medium text-ink-700">{text}</span>
+              </div>
+            ))}
           </div>
         </ScrollReveal>
 
@@ -90,7 +82,7 @@ export const HeroSection = () => {
               className="w-full sm:w-auto text-center border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Garantir Premium €15
+              Ver Premium (€15 + IVA)
             </motion.button>
           </div>
           <p className="text-[13px] text-ink-400 mt-3">
