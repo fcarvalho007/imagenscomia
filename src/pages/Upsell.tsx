@@ -94,7 +94,7 @@ const MasterclassCard = ({
       Implementação Completa
     </h3>
     <p className="text-[13px] mt-1 mb-5" style={{ color: "hsl(var(--ink-400))" }}>
-      3 horas · Online · Máx. 30 participantes
+      25 Fevereiro, 10:30–11:30 · Online · Máx. 30 participantes
     </p>
 
     {/* Price block */}
@@ -105,8 +105,7 @@ const MasterclassCard = ({
         border: "1px solid hsl(var(--blue-100))",
       }}
     >
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
+      <div>
           <p className="text-[11px] uppercase mb-1" style={{ color: "hsl(var(--ink-400))" }}>
             A ACRESCENTAR AO TEU PEDIDO
           </p>
@@ -117,21 +116,6 @@ const MasterclassCard = ({
             Total: €52 · inclui IVA
           </p>
         </div>
-        <div
-          className="rounded-lg px-3 py-2 text-center"
-          style={{
-            backgroundColor: "rgba(255,255,255,0.7)",
-            border: "1px solid hsl(var(--border))",
-          }}
-        >
-          <p className="text-[12px]" style={{ color: "hsl(var(--ink-400))" }}>
-            Normal separado: <span className="line-through">€64</span>
-          </p>
-          <p className="text-[12px] font-semibold" style={{ color: "hsl(var(--green-600))" }}>
-            Poupa €12
-          </p>
-        </div>
-      </div>
     </div>
 
     <div className="w-full h-px my-5" style={{ backgroundColor: "hsl(var(--border))" }} />
@@ -139,8 +123,7 @@ const MasterclassCard = ({
     {/* Bullets */}
     <div className="space-y-3 mb-5 flex-1">
       {[
-        { title: "50 prompts testados — por tipo de imagem, prontos a usar", sub: "Midjourney, DALL-E e Firefly. Sem tentativa-erro." },
-        { title: "Casos reais de empresas portuguesas", sub: "Do briefing ao resultado final — no teu sector." },
+        { title: "50 prompts testados — por tipo de imagem, prontos a usar", sub: "" },
         { title: "Gravação vitalícia + certificado Professor FEUC", sub: "Rever quando precisares. Válido para curriculum." },
       ].map((b) => (
         <div key={b.title} className="flex gap-2.5">
@@ -226,7 +209,7 @@ const WorkshopCard = ({
       Implementação Hands-On
     </h3>
     <p className="text-[12px] mt-1 mb-4" style={{ color: "hsl(var(--ink-400))" }}>
-      Sábado · Abril · Lisboa · Máx. 15
+      28 Março · Lisboa · Máx. 15
     </p>
 
     {/* Price block */}
@@ -253,9 +236,9 @@ const WorkshopCard = ({
     {/* Bullets */}
     <ul className="space-y-2.5 mb-4 flex-1">
       {[
-        "8h de implementação real com a tua empresa",
+        "8h de formação e implementação real em sala",
         "Sistema completo configurado no próprio dia",
-        "n8n workflows do zero — sem código",
+        "Ferramentas intermédias e avançadas de automação (Zapier, n8n, outras)",
       ].map((f) => (
         <li key={f} className="flex items-start gap-2 text-[14px]" style={{ color: "hsl(var(--ink-700))" }}>
           <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#D97706" }} />
@@ -267,7 +250,7 @@ const WorkshopCard = ({
     {/* Vagas note */}
     <div className="rounded-lg p-2.5 mt-3 text-center" style={{ backgroundColor: "#FFFBEB" }}>
       <p className="text-[12px] font-medium" style={{ color: "#92400E" }}>
-        🤝 Só 15 vagas — 4 já reservadas nesta sessão
+        🤝 Só 15 vagas
       </p>
     </div>
 
@@ -421,8 +404,8 @@ const BundleModal = ({
 
           <ul className="space-y-1.5 text-[13px] mb-5" style={{ color: "hsl(var(--ink-500))" }}>
             <li>• Webinar ao vivo 18 Fev + Premium Pass completo</li>
-            <li>• Masterclass 3h online (data a anunciar)</li>
-            <li>• Workshop 8h presencial Lisboa (Abril)</li>
+            <li>• Masterclass online — 25 Fev, 10:30h</li>
+            <li>• Workshop 8h presencial Lisboa — 28 Mar</li>
           </ul>
 
           <button
@@ -458,6 +441,51 @@ const MicroFooter = () => (
   </footer>
 );
 
+/* ───────── [7] Sticky Checkout Bar ───────── */
+const StickyCheckoutBar = ({
+  loading,
+  payingPlan,
+  onPay,
+}: {
+  loading: boolean;
+  payingPlan: string | null;
+  onPay: () => void;
+}) => (
+  <div
+    className="fixed bottom-0 left-0 right-0 z-50"
+    style={{
+      backgroundColor: "hsl(var(--background))",
+      borderTop: "1px solid hsl(var(--border))",
+      boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+    }}
+  >
+    <div className="max-w-[600px] mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div className="min-w-0">
+        <p className="font-heading font-semibold text-[13px] truncate" style={{ color: "hsl(var(--ink-900))" }}>
+          Premium Pass · €15
+        </p>
+        <p className="text-[11px]" style={{ color: "hsl(var(--ink-400))" }}>
+          Gravação · Q&A · Guia
+        </p>
+      </div>
+      <button
+        disabled={loading}
+        onClick={onPay}
+        className="shrink-0 text-white font-heading font-bold text-[14px] px-5 py-3 rounded-xl transition-all disabled:opacity-60 flex items-center gap-2"
+        style={{
+          backgroundColor: "hsl(var(--blue-600))",
+          boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
+        }}
+      >
+        {payingPlan === "premium" ? (
+          <><Loader2 className="w-4 h-4 animate-spin" /> A pagar...</>
+        ) : (
+          <>Confirmar e Pagar</>
+        )}
+      </button>
+    </div>
+  </div>
+);
 /* ═════════ Main Page ═════════ */
 const Upsell = () => {
   const [searchParams] = useSearchParams();
@@ -534,6 +562,15 @@ const Upsell = () => {
       <BundleBlock onBundleClick={() => setIsBundleOpen(true)} />
 
       <MicroFooter />
+
+      {/* Bottom padding for sticky bar */}
+      <div className="h-20" />
+
+      <StickyCheckoutBar
+        loading={loading}
+        payingPlan={payingPlan}
+        onPay={() => handlePayment("premium")}
+      />
 
       <BundleModal
         open={isBundleOpen}
