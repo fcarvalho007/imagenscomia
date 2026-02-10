@@ -67,8 +67,8 @@ export const RegistrationModal = () => {
   };
 
   const handleContinueFree = () => {
-    setConfirmationMode("simple");
-    setStep("confirmation");
+    close();
+    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleClose = () => {
