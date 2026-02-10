@@ -8,7 +8,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 /* ───────── [1] Progress Bar ───────── */
 const ProgressBar = () => (
   <div className="sticky top-0 z-50" style={{ backgroundColor: "hsl(var(--green-50))" }}>
-    <div className="flex items-center justify-between px-5 py-2.5" style={{ borderBottom: "1px solid hsl(var(--green-100) / 0.6)" }}>
+    <div className="flex items-center justify-between px-3 py-2 md:px-5 md:py-2.5" style={{ borderBottom: "1px solid hsl(var(--green-100) / 0.6)" }}>
       <div className="flex items-center gap-2">
         <div className="w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: "hsl(var(--green-600))" }}>
           <Check className="w-2.5 h-2.5 text-white" />
@@ -33,7 +33,7 @@ const AnchorBlock = () => (
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay: 0.1, duration: 0.4 }}
-    className="max-w-[560px] mx-auto px-4 pt-7 md:pt-9"
+    className="max-w-[560px] mx-auto px-4 pt-5 md:pt-9"
   >
     <div
       className="bg-background rounded-[10px] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
@@ -72,7 +72,7 @@ const MasterclassCard = ({
   onPay: () => void;
 }) => (
   <div
-    className="bg-background rounded-2xl p-6 md:p-8 flex flex-col relative h-full"
+    className="bg-background rounded-2xl p-4 md:p-8 flex flex-col relative h-full"
     style={{
       border: "2px solid hsl(var(--blue-600))",
       boxShadow: "0 8px 32px rgba(37,99,235,0.12)",
@@ -109,7 +109,7 @@ const MasterclassCard = ({
           <p className="text-[11px] uppercase mb-1" style={{ color: "hsl(var(--ink-400))" }}>
             A ACRESCENTAR AO TEU PEDIDO
           </p>
-          <span className="font-heading font-black text-[34px] md:text-[40px] leading-none" style={{ color: "hsl(var(--blue-600))" }}>
+          <span className="font-heading font-black text-[28px] md:text-[40px] leading-none" style={{ color: "hsl(var(--blue-600))" }}>
             +€37
           </span>
           <p className="text-[14px] font-medium mt-1" style={{ color: "hsl(var(--ink-700))" }}>
@@ -118,10 +118,10 @@ const MasterclassCard = ({
         </div>
     </div>
 
-    <div className="w-full h-px my-5" style={{ backgroundColor: "hsl(var(--border))" }} />
+    <div className="w-full h-px my-3 md:my-5" style={{ backgroundColor: "hsl(var(--border))" }} />
 
     {/* Bullets */}
-    <div className="space-y-3 mb-5 flex-1">
+    <div className="space-y-3 mb-3 md:mb-5 flex-1">
       {[
         { title: "50 prompts testados — por tipo de imagem, prontos a usar", sub: "" },
         { title: "Gravação vitalícia + certificado Professor FEUC", sub: "Rever quando precisares. Válido para curriculum." },
@@ -138,10 +138,10 @@ const MasterclassCard = ({
       ))}
     </div>
 
-    <div className="w-full h-px my-5" style={{ backgroundColor: "hsl(var(--border))" }} />
+    <div className="w-full h-px my-3 md:my-5" style={{ backgroundColor: "hsl(var(--border))" }} />
 
     {/* Urgency */}
-    <div className="rounded-lg p-3 mb-5 text-center" style={{ backgroundColor: "rgba(239,246,255,0.6)" }}>
+    <div className="rounded-lg p-3 mb-3 md:mb-5 text-center" style={{ backgroundColor: "rgba(239,246,255,0.6)" }}>
       <p className="text-[13px] font-medium" style={{ color: "hsl(var(--blue-700))" }}>
         ⏰ Preço sobe para €47 depois do webinar (18 Fev)
       </p>
@@ -151,7 +151,7 @@ const MasterclassCard = ({
     <button
       disabled={loading}
       onClick={onPay}
-      className="w-full text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      className="w-full text-white font-heading font-bold text-[15px] md:text-[16px] py-3.5 md:py-4 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       style={{
         backgroundColor: "hsl(var(--blue-600))",
         boxShadow: "0 4px 16px rgba(37,99,235,0.30)",
@@ -182,7 +182,7 @@ const WorkshopCard = ({
   onBundleClick: () => void;
 }) => (
   <div
-    className="bg-background rounded-2xl p-6 flex flex-col relative h-full"
+    className="bg-background rounded-2xl p-4 md:p-6 flex flex-col relative h-full"
     style={{
       border: "1px solid hsl(var(--border))",
       borderTop: "3px solid #D97706",
@@ -220,7 +220,7 @@ const WorkshopCard = ({
         border: "1px solid rgba(217,119,6,0.20)",
       }}
     >
-      <span className="font-heading font-extrabold text-[32px] leading-none" style={{ color: "hsl(var(--ink-900))" }}>
+      <span className="font-heading font-extrabold text-[26px] md:text-[32px] leading-none" style={{ color: "hsl(var(--ink-900))" }}>
         +€497
       </span>
       <p className="text-[13px] font-medium mt-1" style={{ color: "hsl(var(--ink-700))" }}>
@@ -231,10 +231,10 @@ const WorkshopCard = ({
       </p>
     </div>
 
-    <div className="w-full h-px my-4" style={{ backgroundColor: "hsl(var(--border))" }} />
+    <div className="w-full h-px my-3 md:my-4" style={{ backgroundColor: "hsl(var(--border))" }} />
 
     {/* Bullets */}
-    <ul className="space-y-2.5 mb-4 flex-1">
+    <ul className="space-y-2.5 mb-3 md:mb-4 flex-1">
       {[
         "8h de formação e implementação real em sala",
         "Sistema completo configurado no próprio dia",
@@ -322,9 +322,9 @@ const SkipLine = ({
 
 /* ───────── [5] Bundle Block ───────── */
 const BundleBlock = ({ onBundleClick }: { onBundleClick: () => void }) => (
-  <div className="max-w-[600px] mx-auto px-4 pt-6 pb-8 text-center">
+  <div className="max-w-[600px] mx-auto px-4 pt-4 pb-6 md:pt-6 md:pb-8 text-center">
     <div
-      className="rounded-[14px] p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+      className="rounded-[14px] p-4 md:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       style={{
         backgroundColor: "hsl(var(--off-white))",
         border: "1px solid hsl(var(--border))",
@@ -382,7 +382,7 @@ const BundleModal = ({
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.25 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-background max-w-[420px] w-full rounded-xl p-7 shadow-card-lg relative"
+          className="bg-background max-w-[420px] w-full rounded-xl p-5 md:p-7 shadow-card-lg relative max-h-[90vh] overflow-y-auto"
         >
           <button onClick={onClose} className="absolute top-4 right-4 hover:opacity-70" style={{ color: "hsl(var(--ink-400))" }}>
             <X className="w-5 h-5" />
@@ -432,7 +432,7 @@ const BundleModal = ({
 /* ───────── [6] Micro Footer ───────── */
 const MicroFooter = () => (
   <footer className="py-5 px-4 text-center" style={{ backgroundColor: "hsl(var(--off-white))", borderTop: "1px solid hsl(var(--border))" }}>
-    <div className="flex flex-wrap items-center justify-center gap-5 text-[13px] mb-2" style={{ color: "hsl(var(--ink-400))" }}>
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-5 text-[13px] mb-2" style={{ color: "hsl(var(--ink-400))" }}>
       <span className="flex items-center gap-1"><Shield className="w-3.5 h-3.5" /> Pagamento seguro EuPago</span>
       <span>📋 Dados protegidos RGPD</span>
       <span>↩ Reembolso 14 dias sem perguntas</span>
@@ -459,7 +459,7 @@ const StickyCheckoutBar = ({
       boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
     }}
   >
-    <div className="max-w-[600px] mx-auto px-4 py-3 flex items-center justify-between gap-4">
+    <div className="max-w-[600px] mx-auto px-4 py-3 flex items-center justify-between gap-4" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
       <div className="min-w-0">
         <p className="font-heading font-semibold text-[13px] truncate" style={{ color: "hsl(var(--ink-900))" }}>
           Premium Pass · €15
@@ -525,8 +525,8 @@ const Upsell = () => {
       <AnchorBlock />
 
       {/* [3] Recommendation Section */}
-      <section className="max-w-[900px] mx-auto px-4 pt-8 md:pt-10">
-        <div className="text-center mb-8">
+      <section className="max-w-[900px] mx-auto px-4 pt-6 md:pt-10">
+        <div className="text-center mb-5 md:mb-8">
           <h2 className="font-heading font-bold text-[20px] md:text-[28px]" style={{ color: "hsl(var(--ink-900))" }}>
             O webinar cobre o método.
           </h2>
@@ -564,7 +564,7 @@ const Upsell = () => {
       <MicroFooter />
 
       {/* Bottom padding for sticky bar */}
-      <div className="h-20" />
+      <div className="h-24" />
 
       <StickyCheckoutBar
         loading={loading}
