@@ -25,14 +25,26 @@ export const HeroSection = () => {
 
         <ScrollReveal delay={0.15}>
           <p className="font-heading font-bold text-[22px] md:text-[28px] text-blue-600 mb-4">
-            Sem Designer. Sem Agência. Sem Curso de 6 Meses.
+            Sem equipa criativa. Sem agência. Sem meses de tentativa e erro.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[560px] mx-auto mb-6">
-            O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo, no teu ecrã.
+          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[560px] mx-auto mb-4">
+            O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo, no ecrã.
           </p>
+          <ul className="max-w-[480px] mx-auto space-y-1.5 mb-6">
+            {[
+              "3 modelos de imagem prontos a aplicar (redes sociais, anúncios, produto)",
+              "Método de briefing → imagem utilizável em ~3 minutos",
+              "Checklist de consistência visual para a marca",
+            ].map((b) => (
+              <li key={b} className="flex items-start gap-2 text-[15px] text-ink-600">
+                <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                {b}
+              </li>
+            ))}
+          </ul>
         </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
@@ -81,7 +93,7 @@ export const HeroSection = () => {
               className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
             >
               <Check className="w-5 h-5" />
-              Inscrever grátis
+              Reservar lugar grátis
             </motion.button>
             <motion.button
               onClick={() => open("free")}
@@ -90,9 +102,12 @@ export const HeroSection = () => {
               className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Premium Pass €15 →
+              Ver o que inclui o Premium (€15 + IVA)
             </motion.button>
           </div>
+          <p className="text-[13px] text-ink-400 mt-3">
+            Sem spam. Dados protegidos (RGPD). Cancelamento simples.
+          </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.5}>
@@ -103,7 +118,7 @@ export const HeroSection = () => {
               ))}
             </div>
             <p className="text-sm text-ink-500 font-medium">
-              <span className="text-ink-700 font-semibold">127</span> lugares reservados
+              <span className="text-ink-700 font-semibold">127</span> lugares já reservados (atualizado hoje)
             </p>
           </div>
         </ScrollReveal>

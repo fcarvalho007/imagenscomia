@@ -13,7 +13,7 @@ export const CTAFinalSection = () => {
             Imagens profissionais com IA.
           </h2>
           <p className="font-heading font-extrabold text-[28px] sm:text-[32px] md:text-[36px] leading-[1.2] text-blue-600 mb-4">
-            Sem designer. Sem agência. Sem esperas.
+            Sem equipa criativa. Sem agência. Sem esperas.
           </p>
         </ScrollReveal>
 

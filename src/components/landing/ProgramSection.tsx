@@ -9,18 +9,20 @@ const systems = [
     desc: "Há uma diferença entre gerar uma imagem e gerar a imagem certa. Vou mostrar ao vivo o que separa um resultado amador de um resultado profissional.",
     bullets: [
       "Demo ao vivo com 5 tipos de imagem diferentes",
-      "Acesso a uma app exclusiva que constrói prompts por ti",
+      "Acesso a uma app exclusiva que constrói prompts automaticamente",
     ],
+    deliverable: "5 prompts-base prontos a reutilizar",
   },
   {
     num: "02",
     title: "Imagens para Redes Sociais e Anúncios",
     borderColor: "border-l-[#0891B2]",
-    desc: "Vou criar 3 peças prontas a publicar em direto — e vais perceber como podes fazer o mesmo para a tua marca, em minutos.",
+    desc: "Criação de 3 peças prontas a publicar em direto — o mesmo método pode ser replicado para qualquer marca, em minutos.",
     bullets: [
       "Do briefing à imagem publicável, passo a passo",
       "Funciona para feed, stories, anúncios e site",
     ],
+    deliverable: "3 peças visuais prontas a publicar",
   },
   {
     num: "03",
@@ -32,6 +34,7 @@ const systems = [
       "App Calculadora: custo IA vs designer externo",
       "Mapa de decisão: quando usar IA, quando contratar",
     ],
+    deliverable: "processo de produção em lote configurado",
   },
 ];
 
@@ -64,7 +67,7 @@ export const ProgramSection = () => (
                     </span>
                   </div>
                   <p className="text-[16px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 mb-3">
                     {s.bullets.map((b) => (
                       <p key={b} className="text-sm text-ink-700 flex items-start gap-2">
                         <span className="text-blue-600 shrink-0">→</span>
@@ -72,6 +75,9 @@ export const ProgramSection = () => (
                       </p>
                     ))}
                   </div>
+                  <p className="text-[13px] font-medium text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-1.5 inline-block">
+                    No fim deste bloco, fica com: {s.deliverable}
+                  </p>
                 </div>
               </div>
             </div>

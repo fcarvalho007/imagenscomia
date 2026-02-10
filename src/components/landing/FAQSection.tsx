@@ -25,7 +25,15 @@ const faqs = [
   },
   {
     q: "Posso ver o webinar depois se não puder estar ao vivo?",
-    a: "A gravação está disponível no Premium Pass (€15). A inscrição gratuita dá acesso ao vivo mas não inclui gravação — se faltares ao webinar, perdes o acesso ao conteúdo. O Premium garante acesso para sempre por €15, agora. Depois do webinar passa a custar €27.",
+    a: "A gravação está disponível no Premium Pass (€15+IVA). A inscrição gratuita dá acesso ao vivo mas não inclui gravação — quem faltar ao webinar, perde o acesso ao conteúdo. O Premium garante acesso vitalício por €15+IVA agora. Depois do webinar passa a custar €27+IVA.",
+  },
+  {
+    q: "Isto funciona com ferramentas gratuitas?",
+    a: "Sim. A maior parte do método funciona com ferramentas gratuitas, incluindo a aplicação criada especificamente para este webinar. Também são mostradas opções pagas para quem quiser ir mais longe.",
+  },
+  {
+    q: "O que é exatamente o 'Guia de prompts' e para que serve?",
+    a: "É um documento PDF com mais de 30 páginas de prompts testados em contexto empresarial português. Cada prompt está organizado por tipo de imagem (produto, redes sociais, anúncios) e inclui instruções de personalização para qualquer marca.",
   },
 ];
 
