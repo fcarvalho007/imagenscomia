@@ -27,8 +27,12 @@ export const RegistrationModal = () => {
   };
 
   const handleGoToPremium = () => {
+    if (!name.trim() || !email.trim()) {
+      setError("Preenche o nome e email primeiro.");
+      return;
+    }
     close();
-    navigate("/upgrade");
+    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleReferralPath = async () => {
@@ -120,7 +124,7 @@ export const RegistrationModal = () => {
             </button>
 
             {submitted ? (
-              <ConfirmationView email={email} referralData={referralData} mode={confirmationMode} />
+              <ConfirmationView email={email} name={name} referralData={referralData} mode={confirmationMode} />
             ) : (
               <UpsellView
                 name={name}
@@ -145,10 +149,12 @@ export const RegistrationModal = () => {
 
 const ConfirmationView = ({
   email,
+  name,
   referralData,
   mode,
 }: {
   email: string;
+  name: string;
   referralData: { referralCode: string; referralLink: string } | null;
   mode: ConfirmationMode;
 }) => {
@@ -185,7 +191,9 @@ const ConfirmationView = ({
       >
         <Check className="w-8 h-8 text-green-600" />
       </motion.div>
-      <h3 className="font-heading text-2xl font-bold mb-2 text-ink-900">Inscrição Confirmada!</h3>
+      <h3 className="font-heading text-2xl font-bold mb-2 text-ink-900">
+        {name ? `Inscrição Confirmada, ${name}!` : "Inscrição Confirmada!"}
+      </h3>
       <p className="text-ink-500 text-sm mb-1">Verifique o email</p>
       <span className="inline-block bg-blue-50 text-blue-600 font-medium text-sm px-3 py-1 rounded-full mb-4">
         {email}
@@ -283,34 +291,11 @@ const UpsellView = ({
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-2">
       Antes de continuar...
     </h3>
-    <p className="text-[15px] text-ink-500 mb-5">
-      Com a versão gratuita, vais perder acesso a:
+    <p className="text-[15px] text-ink-500 mb-4">
+      Preenche os teus dados para reservar o lugar:
     </p>
 
-    <div className="space-y-2 mb-5">
-      {[
-        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
-        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
-        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
-      ].map((item) => (
-        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
-          <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-          <div>
-            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
-            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3.5 mb-6 flex items-start gap-2.5">
-      <Clock className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-      <p className="text-[13px] text-ink-700 font-medium">
-        Se mudar de ideias depois do webinar, o Premium custará €27. Poupa €12 ao decidir agora.
-      </p>
-    </div>
-
-    {/* Inline name/email fields */}
+    {/* Name/email fields FIRST */}
     <div className="space-y-3 mb-5">
       <div className="relative">
         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
@@ -334,6 +319,26 @@ const UpsellView = ({
       </div>
     </div>
 
+    <p className="text-[15px] text-ink-500 mb-3">
+      Com a versão gratuita, vais perder acesso a:
+    </p>
+
+    <div className="space-y-2 mb-5">
+      {[
+        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
+        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
+        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
+      ].map((item) => (
+        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
+          <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+          <div>
+            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
+            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
     {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
 
     <p className="text-[14px] text-ink-500 text-center mb-3">Como preferes avançar?</p>
@@ -346,7 +351,7 @@ const UpsellView = ({
         className="w-full bg-gradient-to-r from-neon-purple to-blue-600 hover:from-neon-purple-light hover:to-blue-500 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
       >
         <Sparkles className="w-5 h-5" />
-        Sim, quero o Premium por €15
+        Sim, quero o Premium por €15+IVA
       </motion.button>
 
       <motion.button

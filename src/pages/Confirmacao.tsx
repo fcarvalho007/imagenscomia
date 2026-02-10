@@ -76,6 +76,7 @@ const CONFIRMATIONS: Record<string, { title: string; emoji: string; items: strin
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
   const plan = searchParams.get("plan") || "premium";
+  const userName = searchParams.get("name") || "";
   const conf = CONFIRMATIONS[plan] || CONFIRMATIONS.premium;
   const showReferralWidget = plan === "referral";
 
@@ -97,7 +98,7 @@ const Confirmacao = () => {
         </motion.div>
 
         <h1 className="font-heading font-extrabold text-2xl md:text-3xl text-ink-900 mb-6">
-          {conf.title}
+          {userName ? `${conf.title.replace("!", "")}, ${userName}!` : conf.title}
         </h1>
 
         <div className="bg-surface rounded-xl p-5 mb-6 text-left">
