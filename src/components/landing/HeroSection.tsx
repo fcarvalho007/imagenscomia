@@ -81,16 +81,16 @@ export const HeroSection = () => {
               className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
             >
               <Check className="w-5 h-5" />
-              Reservar lugar grátis
+              Reservar Lugar Grátis!
             </motion.button>
             <motion.button
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto text-center border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
-              Ver o que inclui o Premium (€15 + IVA)
+              Garantir Premium €15
             </motion.button>
           </div>
           <p className="text-[13px] text-ink-400 mt-3">
