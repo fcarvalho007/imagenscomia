@@ -5,19 +5,18 @@ import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const freeFeatures = [
   "Webinar ao vivo (75 minutos)",
-  "3 demos de criação de imagens ao vivo",
-  "App Gerador de Prompts básica",
-  "Resumo PDF: ferramentas e tipos de imagem",
+  "Demos ao vivo",
+  "Acesso a aplicações especializadas",
+  "Resumo PDF da sessão",
   "Grupo WhatsApp do evento",
   "Certificado digital",
 ];
 
 const premiumFeatures = [
-  { main: "Gravação HD vitalícia", sub: "grátis: acesso só durante o webinar" },
+  { main: "Gravação HD vitalícia", sub: "" },
   { main: "Sessão Q&A em grupo — 60 minutos", sub: "exclusiva, após o webinar" },
   { main: "Guia completo de prompts por tipo de imagem", sub: "PDF 30+ páginas, testado em contexto empresarial" },
   { main: "App Gerador de Prompts em early access", sub: "acesso antes de todos os participantes" },
-  { main: "Prioridade nas perguntas durante o Q&A ao vivo", sub: "" },
 ];
 
 export const PricingCardsSection = () => {
@@ -48,7 +47,10 @@ export const PricingCardsSection = () => {
 
               <div className="w-full h-px bg-border-strong mb-6" />
 
-              <p className="text-sm text-ink-500 italic mb-3">Tudo do gratuito, mais:</p>
+              <div className="bg-green-50 border border-green-100 rounded-md p-3 mb-4 flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-600 shrink-0" />
+                <p className="text-sm text-green-700 font-medium">Inclui tudo da participação gratuita</p>
+              </div>
 
               <ul className="space-y-3 mb-5 flex-1">
                 {premiumFeatures.map((f) => (

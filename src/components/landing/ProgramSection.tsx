@@ -6,33 +6,30 @@ const systems = [
     num: "01",
     title: "O Método do Prompt Perfeito",
     borderColor: "border-l-blue-600",
-    desc: "A mesma ferramenta com o prompt errado gera lixo — com o prompt certo gera uma imagem utilizável em 3 minutos. Demo ao vivo com 5 tipos de imagem.",
+    desc: "Há uma diferença entre gerar uma imagem e gerar a imagem certa. Vou mostrar ao vivo o que separa um resultado amador de um resultado profissional.",
     bullets: [
-      "Estrutura de prompt em 4 camadas (qualquer ferramenta)",
-      "App Gerador de Prompts exclusiva (acesso imediato)",
-      "20 estruturas base testadas em contexto PT",
+      "Demo ao vivo com 5 tipos de imagem diferentes",
+      "Acesso a uma app exclusiva que constrói prompts por ti",
     ],
   },
   {
     num: "02",
     title: "Imagens para Redes Sociais e Anúncios",
     borderColor: "border-l-[#0891B2]",
-    desc: "Criação ao vivo de 3 peças prontas a publicar — post LinkedIn, anúncio Facebook e imagem de produto — com consistência de marca, sem designer.",
+    desc: "Vou criar 3 peças prontas a publicar em direto — e vais perceber como podes fazer o mesmo para a tua marca, em minutos.",
     bullets: [
-      "Workflow: briefing → prompt → imagem → publicação",
-      "Templates para 8 formatos (feed, stories, anúncios, site)",
-      "Checklist de consistência visual com IA",
+      "Do briefing à imagem publicável, passo a passo",
+      "Funciona para feed, stories, anúncios e site",
     ],
   },
   {
     num: "03",
     title: "Escalar Produção Visual Sem Equipa",
     borderColor: "border-l-green-600",
-    desc: "Como passar de 5 imagens por semana para 50 — com o mesmo tempo e sem mais custos. Construção ao vivo de um mini-workflow de produção.",
+    desc: "O segredo não é trabalhar mais — é ter um sistema. Vou construir um ao vivo e mostrar como multiplicar a tua produção visual.",
     bullets: [
-      "Processo de produção em lote com IA",
-      "App Calculadora: custo IA vs designer externo",
-      "Mapa de decisão: quando usar IA, quando contratar",
+      "Quanto custa realmente: IA vs designer externo",
+      "Quando usar IA e quando contratar",
     ],
   },
 ];
@@ -66,7 +63,6 @@ export const ProgramSection = () => (
                     </span>
                   </div>
                   <p className="text-[15px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
-                  <p className="font-heading font-semibold text-[13px] text-ink-500 mb-2">O que levas:</p>
                   <div className="space-y-1.5">
                     {s.bullets.map((b) => (
                       <p key={b} className="text-sm text-ink-700 flex items-start gap-2">

@@ -38,26 +38,6 @@ export const MirrorCopySection = () => (
         </p>
       </ScrollReveal>
 
-      <ScrollReveal>
-        <div id="inscrever" className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <motion.a
-            href="#form-gratis"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-green transition-all"
-          >
-            Inscrever grátis
-          </motion.a>
-          <motion.a
-            href="#form-premium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full sm:w-auto text-center bg-amber-500 hover:bg-amber-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-amber transition-all"
-          >
-            Premium Pass €15 →
-          </motion.a>
-        </div>
-      </ScrollReveal>
     </div>
   </section>
 );
