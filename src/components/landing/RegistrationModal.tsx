@@ -191,9 +191,6 @@ const CaptureView = ({
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
       Concluir reserva do lugar
     </h3>
-    <p className="text-[14px] text-ink-400 mb-5">
-      Demora menos de 30 segundos.
-    </p>
 
     <div className="space-y-3 mb-4">
       <div className="relative">
@@ -313,9 +310,9 @@ const UpsellView = ({
         { title: "Sessão Q&A exclusiva em grupo — 60 minutos" },
         { title: "Guia completo de prompts (30+ páginas, contexto empresarial em PT)" },
       ].map((item) => (
-        <div key={item.title} className="flex items-start gap-3 bg-surface border border-border rounded-lg px-3 py-2.5">
-          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-          <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
+        <div key={item.title} className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5">
+          <MinusCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+          <span className="text-[14px] font-medium text-ink-700">{item.title}</span>
         </div>
       ))}
     </div>

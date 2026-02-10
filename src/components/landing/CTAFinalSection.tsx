@@ -1,13 +1,18 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
+import particlesBg from "@/assets/particles-bg.jpg";
 
 export const CTAFinalSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section className="py-20 md:py-28 bg-ink-900">
-      <div className="container mx-auto px-4 sm:px-6 max-w-[720px] text-center">
+    <section
+      className="py-20 md:py-28 relative bg-ink-900"
+      style={{ backgroundImage: `url(${particlesBg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+    >
+      <div className="absolute inset-0 bg-ink-900/85" />
+      <div className="container mx-auto px-4 sm:px-6 max-w-[720px] text-center relative z-10">
         <ScrollReveal>
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[32px] md:text-[36px] leading-[1.2] text-white mb-1 max-w-[600px] mx-auto">
             Imagens profissionais com IA.

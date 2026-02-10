@@ -33,18 +33,6 @@ export const HeroSection = () => {
           <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[560px] mx-auto mb-4">
             O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo, no ecrã.
           </p>
-          <ul className="max-w-[480px] mx-auto space-y-1.5 mb-6">
-            {[
-              "3 modelos de imagem prontos a aplicar (redes sociais, anúncios, produto)",
-              "Método de briefing → imagem utilizável em ~3 minutos",
-              "Checklist de consistência visual para a marca",
-            ].map((b) => (
-              <li key={b} className="flex items-start gap-2 text-[15px] text-ink-600">
-                <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                {b}
-              </li>
-            ))}
-          </ul>
         </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
@@ -110,18 +98,6 @@ export const HeroSection = () => {
           </p>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.5}>
-          <div className="flex items-center justify-center gap-2 mt-6">
-            <div className="flex -space-x-2">
-              {["bg-blue-500", "bg-green-500", "bg-amber-500"].map((bg, i) => (
-                <div key={i} className={`w-7 h-7 rounded-full ${bg} border-2 border-white`} />
-              ))}
-            </div>
-            <p className="text-sm text-ink-500 font-medium">
-              <span className="text-ink-700 font-semibold">127</span> lugares já reservados (atualizado hoje)
-            </p>
-          </div>
-        </ScrollReveal>
       </div>
     </section>
   );
