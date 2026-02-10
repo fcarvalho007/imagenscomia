@@ -1,42 +1,44 @@
 
 
-# Remover caixa 🏆 + Melhorias do documento
+# Adicionar Countdown Visual a StickyTopBar + Lazy Loading
 
 ---
 
-## 1. Remover caixa 🏆 (PresenterSection.tsx)
+## Alteracoes
 
-Remover o bloco ScrollReveal com a caixa "29 anos . 700+ projetos . L'Oreal . BMW . 3M . Impresa" (linhas 51-58). A informacao de "700+ auditorias" ja esta na caixa "Fundador e CEO", tornando esta caixa redundante.
+### 1. StickyTopBar.tsx -- Adicionar countdown visual
+
+A barra sticky actualmente mostra texto estatico "AO VIVO . QUARTA 18 FEV . 10H00 . GRATUITO". Substituir parte do texto por um countdown dinamico usando o hook `useCountdown` que ja existe.
+
+Layout actualizado:
+- Esquerda: ponto vermelho + "AO VIVO . 18 FEV . 10H00"
+- Centro/Direita: countdown em blocos (DD:HH:MM:SS) com labels "dias/horas/min/seg"
+- Botao CTA mantido
+
+O countdown usa `useCountdown(new Date('2026-02-18T10:00:00'))` -- o mesmo hook ja existente no projecto.
+
+Estilo dos blocos countdown:
+- Cada unidade: fundo branco/10%, rounded, px-2 py-1
+- Numero: Montserrat 700, 14px, branco
+- Label: Inter 400, 9px, branco/60%
+- Separador ":" entre blocos
+
+### 2. PresenterSection.tsx -- Lazy loading na imagem
+
+Adicionar `loading="lazy"` a tag `img` do Frederico Carvalho.
+
+### 3. HeroSection.tsx -- Lazy loading no placeholder video
+
+Nao ha imagem real no placeholder do video (e um div com icone Play), portanto nao ha alteracao necessaria aqui.
 
 ---
 
-## 2. Melhorar respostas do FAQ (FAQSection.tsx)
-
-O documento tem respostas mais persuasivas e completas. Actualizar:
-
-| Pergunta | Resposta actual | Resposta do documento |
-|----------|----------------|----------------------|
-| "Preciso de conhecimentos tecnicos?" | Generica | "Nao. Se consegues usar o WhatsApp, consegues criar imagens com este metodo. Vou mostrar passo a passo, do zero." |
-| "As ferramentas mostradas sao pagas?" | Generica | "Mostro opcoes gratuitas e pagas. Maior parte do que ensino funciona com ferramentas gratuitas (incluindo a app que criei especificamente para este metodo)." |
-| "Quanto tempo para ver resultados?" | Vaga | "No dia seguinte ao webinar ja consegues criar as tuas primeiras imagens profissionais. Participantes anteriores relatam criacao de 5-10 imagens utilizaveis na primeira semana." |
-
----
-
-## 3. Adicionar frase qualificadora nos Desafios (ChallengesSection.tsx)
-
-O documento inclui uma frase apos os 6 desafios que funciona como qualificador:
-
-> "Se te identificaste com pelo menos 2 destes problemas, este webinar vai poupar-te meses de tentativa e erro."
-
-Adicionar esta frase centrada abaixo da grelha, com texto em ink-500 e tamanho 16px.
-
----
-
-## Resumo de ficheiros
+## Ficheiros alterados
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/PresenterSection.tsx` | Remover bloco da caixa 🏆 (linhas 51-58) |
-| `src/components/landing/FAQSection.tsx` | Actualizar 3 respostas com copy mais persuasivo do documento |
-| `src/components/landing/ChallengesSection.tsx` | Adicionar frase qualificadora apos a grelha de desafios |
+| `src/components/landing/StickyTopBar.tsx` | Adicionar countdown dinamico com useCountdown hook |
+| `src/components/landing/PresenterSection.tsx` | Adicionar loading="lazy" a imagem |
+
+Nenhuma dependencia nova. Nenhum ficheiro novo.
 
