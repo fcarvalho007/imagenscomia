@@ -9,7 +9,7 @@ export default {
       center: true,
       padding: "2rem",
       screens: {
-        "2xl": "1400px",
+        "2xl": "1200px",
       },
     },
     extend: {
@@ -47,19 +47,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          foreground: "hsl(var(--gold-foreground))",
-        },
-        navy: {
-          DEFAULT: "hsl(230 25% 10%)",
-          light: "hsl(230 15% 40%)",
-        },
-        light: {
-          DEFAULT: "hsl(var(--light-bg))",
-          alt: "hsl(var(--light-bg-alt))",
-          card: "hsl(var(--light-card))",
-          border: "hsl(var(--light-border))",
+        "cta-free": "hsl(var(--cta-free))",
+        "cta-free-hover": "hsl(var(--cta-free-hover))",
+        "cta-premium": "hsl(var(--cta-premium))",
+        "cta-premium-hover": "hsl(var(--cta-premium-hover))",
+        "text-primary": "hsl(var(--text-primary))",
+        "text-secondary": "hsl(var(--text-secondary))",
+        "text-muted": "hsl(var(--text-muted))",
+        urgency: "hsl(var(--urgency))",
+        badge: {
+          DEFAULT: "hsl(var(--badge-bg))",
+          border: "hsl(var(--badge-border))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -86,25 +84,10 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        float: {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-20px)" },
-        },
-        "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 15px hsl(320 80% 60% / 0.2)" },
-          "50%": { boxShadow: "0 0 30px hsl(320 80% 60% / 0.4), 0 0 60px hsl(320 80% 60% / 0.15)" },
-        },
-        "scan-line": {
-          "0%": { transform: "translateY(-100%)" },
-          "100%": { transform: "translateY(100vh)" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        float: "float 6s ease-in-out infinite",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        "scan-line": "scan-line 8s linear infinite",
       },
     },
   },
