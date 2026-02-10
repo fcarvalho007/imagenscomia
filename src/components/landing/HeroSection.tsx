@@ -1,4 +1,4 @@
-import { Play, Check, Sparkles } from "lucide-react";
+import { Play, Check, Sparkles, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
@@ -10,13 +10,13 @@ export const HeroSection = () => {
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-[800px] text-center">
         <ScrollReveal delay={0.05}>
-          <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.08em] text-blue-600 mb-4">
+          <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.08em] text-blue-600 mb-4">
             WEBINAR GRATUITO · 18 FEVEREIRO · 10H00
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <h1 className="font-heading font-extrabold text-[28px] sm:text-[36px] md:text-[40px] leading-[1.15] tracking-[-0.02em] text-ink-900 mb-3">
+          <h1 className="font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900 mb-3">
             Como Criar Imagens Profissionais
             <br />
             com IA para a Tua Empresa
@@ -24,21 +24,39 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.15}>
-          <p className="font-heading font-bold text-[20px] md:text-[26px] text-blue-600 mb-4">
+          <p className="font-heading font-bold text-[22px] md:text-[28px] text-blue-600 mb-4">
             Sem Designer. Sem Agência. Sem Curso de 6 Meses.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <p className="text-xl text-ink-600 font-medium max-w-[560px] mx-auto mb-4">
+          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[560px] mx-auto mb-6">
             O método que transforma um briefing em imagem utilizável em menos de 3 minutos. Demonstrado ao vivo, no teu ecrã.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
-          <p className="text-sm text-ink-500 font-medium mb-10">
-            📅 Quarta 18 Fev  ·  🕙 10h00  ·  ⏱ 75 min  ·  🎓 Gratuito
-          </p>
+          <div className="bg-ink-900 rounded-xl px-6 py-3 max-w-fit mx-auto flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-10">
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
+              <Calendar className="w-4 h-4 text-neon-cyan" />
+              Quarta 18 Fev
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
+              <Clock className="w-4 h-4 text-neon-cyan" />
+              10h00
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
+              <Timer className="w-4 h-4 text-neon-cyan" />
+              75 min
+            </span>
+            <span className="text-white/20">|</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-medium text-white">
+              <GraduationCap className="w-4 h-4 text-neon-cyan" />
+              Gratuito
+            </span>
+          </div>
         </ScrollReveal>
 
         <ScrollReveal delay={0.3}>
@@ -60,7 +78,7 @@ export const HeroSection = () => {
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-green transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
             >
               <Check className="w-5 h-5" />
               Inscrever grátis
@@ -69,7 +87,7 @@ export const HeroSection = () => {
               onClick={() => open("premium")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-amber-500 hover:bg-amber-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-amber transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5" />
               Premium Pass €15 →

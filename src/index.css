@@ -24,6 +24,11 @@
     --red-50: 0 86% 97%;
     --red-500: 0 84% 60%;
 
+    --neon-blue: 217 100% 65%;
+    --neon-cyan: 187 100% 50%;
+    --neon-purple: 262 83% 58%;
+    --neon-purple-light: 262 83% 68%;
+
     --ink-900: 222 47% 11%;
     --ink-700: 215 25% 27%;
     --ink-500: 215 16% 47%;
@@ -112,5 +117,14 @@
   }
   .shadow-amber {
     box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+  }
+  .shadow-neon-blue {
+    box-shadow: 0 0 20px rgba(77,142,255,0.35), 0 0 60px rgba(77,142,255,0.10);
+  }
+  .shadow-neon-purple {
+    box-shadow: 0 0 20px rgba(124,58,237,0.35), 0 0 60px rgba(124,58,237,0.10);
+  }
+  .shadow-neon-cyan {
+    box-shadow: 0 0 20px rgba(0,229,255,0.30), 0 0 60px rgba(0,229,255,0.08);
   }
 }

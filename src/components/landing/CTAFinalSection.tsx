@@ -18,7 +18,7 @@ export const CTAFinalSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <p className="text-[17px] text-white/65 mb-10">
+          <p className="text-[18px] text-white/65 mb-10">
             75 minutos. Sem custo. Método pronto a usar no dia seguinte.
           </p>
         </ScrollReveal>
@@ -29,7 +29,7 @@ export const CTAFinalSection = () => {
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-white hover:bg-off-white text-ink-900 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all"
+              className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all"
             >
               Garantir lugar grátis
             </motion.button>
@@ -37,7 +37,7 @@ export const CTAFinalSection = () => {
               onClick={() => open("premium")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-blue transition-all"
+              className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all"
             >
               Premium Pass €15
             </motion.button>

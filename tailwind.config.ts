@@ -72,6 +72,10 @@ export default {
         "cta-premium": "hsl(var(--cta-premium))",
         "cta-premium-hover": "hsl(var(--cta-premium-hover))",
         urgency: "hsl(var(--urgency))",
+        "neon-blue": "hsl(var(--neon-blue))",
+        "neon-cyan": "hsl(var(--neon-cyan))",
+        "neon-purple": "hsl(var(--neon-purple))",
+        "neon-purple-light": "hsl(var(--neon-purple-light))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

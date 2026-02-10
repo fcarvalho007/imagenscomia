@@ -49,7 +49,7 @@ export const FAQSection = () => (
               <AccordionTrigger className="text-base font-heading font-semibold text-ink-900 hover:no-underline text-left py-5 [&[data-state=open]>svg]:text-blue-600 [&>svg]:text-blue-600">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-[15px] text-ink-500 leading-relaxed pb-5">
+              <AccordionContent className="text-[16px] text-ink-500 leading-relaxed pb-5">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>
