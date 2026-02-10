@@ -1,13 +1,13 @@
 export const FooterSection = () => (
-  <footer className="py-10 section-dark border-t border-border">
-    <div className="container mx-auto px-4 text-center">
-      <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mb-4">
-        <a href="#" className="hover:text-primary transition-colors">Privacidade</a>
-        <a href="#" className="hover:text-primary transition-colors">Termos</a>
-        <a href="#" className="hover:text-primary transition-colors">Contacto</a>
+  <footer className="py-8 bg-[hsl(222,50%,3%)] border-t border-white/[0.04]">
+    <div className="container mx-auto px-5 sm:px-6 text-center">
+      <div className="flex flex-wrap justify-center gap-5 text-xs text-text-secondary mb-3">
+        <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
+        <a href="#" className="hover:text-foreground transition-colors">Termos</a>
+        <a href="#" className="hover:text-foreground transition-colors">Contacto</a>
       </div>
-      <p className="text-xs text-muted-foreground/60">
-        © 2025 Frederico Carvalho • Marketing Digital & Inteligência Artificial
+      <p className="text-[11px] text-text-secondary/60">
+        © 2025 Frederico Carvalho · DIGITALFC
       </p>
     </div>
   </footer>
