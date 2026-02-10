@@ -1,9 +1,9 @@
 import { ScrollReveal } from "./ScrollReveal";
 
 const points = [
-  "Queres imagens profissionais para redes sociais e anúncios sem pagar designer para cada peça nova",
-  "Sabes que a IA consegue muito mais do que o ChatGPT mas ninguém te mostrou como aplicar ao teu negócio em concreto",
-  "Precisas de consistência visual na tua marca sem orçamento para agência criativa a tempo inteiro",
+  "Precisa de imagens profissionais para redes sociais e anúncios sem depender de designer",
+  "Sabe que a IA pode fazer muito mais, mas ninguém mostrou como aplicar ao negócio",
+  "Quer consistência visual na marca sem orçamento para agência criativa",
 ];
 
 export const MirrorCopySection = () => (
@@ -13,7 +13,7 @@ export const MirrorCopySection = () => (
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-[2px] bg-gradient-to-r from-neon-purple to-neon-cyan rounded-full" />
           <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600">
-            ESTE WEBINAR É PARA TI SE:
+            ESTE WEBINAR É PARA QUEM:
           </p>
         </div>
       </ScrollReveal>

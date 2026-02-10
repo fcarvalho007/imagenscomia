@@ -30,12 +30,16 @@ export const RegistrationModal = () => {
   };
 
   const handleCapture = async () => {
-    if (!name.trim() || !email.trim()) {
-      setError("Preenche o nome e email.");
+    if (!name.trim()) {
+      setError("Este campo é obrigatório.");
+      return;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Indique um email válido.");
       return;
     }
     if (!acceptedTerms) {
-      setError("Tens de aceitar os termos para continuar.");
+      setError("É necessário aceitar os termos para continuar.");
       return;
     }
     setLoading(true);
@@ -46,7 +50,7 @@ export const RegistrationModal = () => {
       setStep("upsell");
     } catch (err) {
       console.error("Registration error:", err);
-      setError("Erro ao processar. Tenta novamente.");
+      setError("Erro ao processar. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -184,11 +188,11 @@ const CaptureView = ({
   onSubmit: () => void;
 }) => (
   <>
-    <h3 className="font-heading font-bold text-xl text-ink-900 mb-2">
-      Reserva o teu lugar
+    <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
+      Concluir reserva do lugar
     </h3>
-    <p className="text-[15px] text-ink-500 mb-5">
-      Preenche os teus dados para reservar o lugar:
+    <p className="text-[14px] text-ink-400 mb-5">
+      Demora menos de 30 segundos.
     </p>
 
     <div className="space-y-3 mb-4">
@@ -196,7 +200,7 @@ const CaptureView = ({
         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
           type="text"
-          placeholder="O teu nome"
+          placeholder="Nome"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
@@ -206,7 +210,7 @@ const CaptureView = ({
         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
           type="email"
-          placeholder="O teu melhor email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
@@ -216,11 +220,12 @@ const CaptureView = ({
         <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
           type="tel"
-          placeholder="O teu WhatsApp (opcional)"
+          placeholder="WhatsApp (opcional)"
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
         />
+        <p className="text-[11px] text-ink-400 mt-1 ml-10">Opcional — apenas para lembretes do evento</p>
       </div>
     </div>
 
@@ -232,11 +237,12 @@ const CaptureView = ({
         className="mt-1 w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/20 shrink-0"
       />
       <span className="text-[11px] text-ink-400 leading-relaxed">
-        Não utilizo a tua informação para enviar SPAM. Os teus dados pessoais vão ser tratados pela Fomentar Sonhos., Lda., após obter o teu consentimento prévio, unicamente para o envio de comunicações de "Frederico Carvalho".{" "}
-        <a href="#" className="underline hover:text-ink-600">Aceito a política de privacidade</a> e os{" "}
-        <a href="#" className="underline hover:text-ink-600">termos e condições comerciais</a>.
+        Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing. Os dados pessoais serão tratados pela Fomentar Sonhos, Lda.{" "}
+        <a href="#" className="underline hover:text-ink-600">Política de Privacidade</a> e{" "}
+        <a href="#" className="underline hover:text-ink-600">Termos e Condições</a>.
       </span>
     </label>
+    <p className="text-[11px] text-ink-400 mb-5 ml-6">Sem spam. Cancelamento a qualquer momento.</p>
 
     {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
 
@@ -255,7 +261,13 @@ const CaptureView = ({
       {loading ? "A registar..." : "Reservar o meu lugar"}
     </motion.button>
 
-    <div className="flex items-center justify-center gap-2 mt-4 text-[11px] text-ink-400">
+    <div className="bg-surface rounded-lg p-3 mt-4 mb-2">
+      <p className="text-[12px] text-ink-500 text-center">
+        A seguir: recebe um email com o link de acesso e opção para adicionar ao calendário.
+      </p>
+    </div>
+
+    <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-ink-400">
       <Shield className="w-3 h-3" />
       Sem spam · Dados protegidos RGPD
     </div>
@@ -280,33 +292,30 @@ const UpsellView = ({
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.3 }}
   >
-    <div className="flex items-center gap-2 mb-4">
+    <div className="flex items-center gap-2 mb-2">
       <CheckCircle2 className="w-6 h-6 text-green-600" />
       <h3 className="font-heading font-bold text-lg text-ink-900">
-        Lugar reservado, {name.trim().split(" ")[0]}!
+        Lugar reservado.
       </h3>
     </div>
 
     <p className="text-[15px] text-ink-500 mb-4">
-      Como preferes participar?
+      Antes de concluir, escolha o formato de participação.
     </p>
 
     <p className="text-[14px] text-ink-500 mb-3">
-      Com a versão gratuita, vais perder acesso a:
+      Na participação gratuita, estes extras não estão incluídos:
     </p>
 
     <div className="space-y-2 mb-5">
       {[
-        { title: "Gravação da sessão", sub: "sem Premium, perdes acesso logo após o webinar" },
-        { title: "Sessão Q&A exclusiva em grupo — 60 minutos", sub: "o único momento para tirar dúvidas com Frederico após o evento" },
-        { title: "Guia completo de prompts — 30+ páginas", sub: "testado em contexto empresarial português, não disponível gratuitamente" },
+        { title: "Gravação da sessão (acesso durante 30 dias)" },
+        { title: "Sessão Q&A exclusiva em grupo — 60 minutos" },
+        { title: "Guia completo de prompts (30+ páginas, contexto empresarial em PT)" },
       ].map((item) => (
-        <div key={item.title} className="flex items-start gap-3 bg-red-50/50 border-l-2 border-red-400 rounded-r-lg px-3 py-2.5">
-          <MinusCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-          <div>
-            <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
-            <p className="text-[12px] text-ink-500 mt-0.5">{item.sub}</p>
-          </div>
+        <div key={item.title} className="flex items-start gap-3 bg-surface border border-border rounded-lg px-3 py-2.5">
+          <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+          <span className="text-[14px] font-medium text-ink-900">{item.title}</span>
         </div>
       ))}
     </div>
@@ -319,8 +328,9 @@ const UpsellView = ({
         className="w-full bg-gradient-to-r from-neon-purple to-blue-600 hover:from-neon-purple-light hover:to-blue-500 text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
       >
         <Sparkles className="w-5 h-5" />
-        Sim, quero o Premium por €15+IVA
+        Sim, quero o Premium (€15 + IVA)
       </motion.button>
+      <p className="text-[11px] text-ink-400 text-center">Pagamento seguro. Acesso imediato após o evento.</p>
 
       <motion.button
         whileHover={{ scale: 1.02 }}
@@ -329,14 +339,17 @@ const UpsellView = ({
         className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100"
       >
         <Gift className="w-4 h-4" />
-        Prefiro convidar 2 amigos e ganhar grátis
+        Preferir convidar 2 pessoas e obter o Premium
       </motion.button>
+      <p className="text-[11px] text-ink-400 text-center">
+        Será gerado um link pessoal para convidar 2 pessoas. Assim que 2 inscrições forem confirmadas, o Premium fica ativo.
+      </p>
 
       <button
         onClick={onContinueFree}
-        className="w-full text-sm text-ink-400 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4"
+        className="w-full text-sm text-ink-500 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4"
       >
-        Não, continuar com versão gratuita
+        Continuar com participação gratuita
       </button>
     </div>
   </motion.div>
@@ -408,7 +421,7 @@ const ConfirmationView = ({
           {/* Upgrade CTA */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <p className="text-[13px] text-ink-600 mb-3">
-              Enviámos as instruções para o teu email. Entretanto, podes ainda fazer upgrade para Premium.
+              Enviámos as instruções para o email. Entretanto, é possível fazer upgrade para Premium.
             </p>
             <motion.button
               whileHover={{ scale: 1.02 }}

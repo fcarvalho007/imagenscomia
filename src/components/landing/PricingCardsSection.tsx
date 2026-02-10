@@ -27,7 +27,7 @@ export const PricingCardsSection = () => {
       <div className="container mx-auto px-4 sm:px-6 max-w-[920px]">
         <ScrollReveal>
           <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
-            Escolhe como participar
+            Escolha como participar
           </h2>
         </ScrollReveal>
 
@@ -39,11 +39,13 @@ export const PricingCardsSection = () => {
                 RECOMENDADO
               </span>
 
-              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 mb-1">PREMIUM PASS</p>
+              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 mb-1">PREMIUM PASS — €15 + IVA</p>
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="font-heading font-extrabold text-4xl text-ink-900">€15</span>
+                <span className="text-sm text-ink-400">+ IVA</span>
               </div>
-              <p className="text-sm text-ink-400 line-through mb-6">€27 depois do webinar</p>
+              <p className="text-sm text-ink-400 line-through mb-1">€27+IVA depois do webinar</p>
+              <p className="text-[12px] text-blue-600 font-medium mb-4">Ideal para quem quer rever e aplicar depois</p>
 
               <div className="w-full h-px bg-border-strong mb-6" />
 
@@ -83,8 +85,9 @@ export const PricingCardsSection = () => {
           {/* Free card */}
           <ScrollReveal delay={0.12}>
             <div className="bg-background border border-border rounded-lg p-8 h-full flex flex-col shadow-card order-last md:order-first">
-              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA</p>
-              <span className="font-heading font-extrabold text-4xl text-ink-900 mb-6">€0</span>
+              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
+              <span className="font-heading font-extrabold text-4xl text-ink-900 mb-1">€0</span>
+              <p className="text-[12px] text-ink-500 font-medium mb-4">Ideal para quem vai estar ao vivo</p>
 
               <div className="w-full h-px bg-border mb-6" />
 
@@ -121,7 +124,7 @@ export const PricingCardsSection = () => {
               <span className="font-heading font-bold text-[15px] text-ink-900">Ou ganha Premium grátis</span>
             </div>
             <p className="text-[13px] text-ink-600 mb-4">
-              Inscreve-te grátis e convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar nada.
+              Inscrição gratuita + convite a 2 pessoas. Se ambas se registarem, o Premium Pass (€15+IVA) fica desbloqueado sem qualquer custo.
             </p>
             <motion.button
               whileHover={{ scale: 1.02 }}
