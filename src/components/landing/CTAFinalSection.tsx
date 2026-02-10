@@ -36,15 +36,15 @@ export const CTAFinalSection = () => {
               whileTap={{ scale: 0.98 }}
               className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all"
             >
-              Garantir lugar grátis
+              Reservar Lugar Grátis!
             </motion.button>
             <motion.button
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-cyan transition-all"
+              className="w-full sm:w-auto text-center border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all"
             >
-              Premium Pass €15
+              Garantir Premium €15
             </motion.button>
           </div>
         </ScrollReveal>
