@@ -2,10 +2,10 @@ import { ScrollReveal } from "./ScrollReveal";
 import fredericoImg from "@/assets/frederico-carvalho.jpg";
 
 const credentials = [
-  { emoji: "🎓", title: "Professor Universitário", sub: "FEUC · Univ. Europeia · Univ. Autónoma" },
+  { emoji: "🎓", title: "Professor Universitário", sub: "Universidade de Coimbra (FEUC) · Univ. Europeia (IPAM) · Univ. Aveiro · Univ. Autónoma" },
   { emoji: "📚", title: "Co-autor e Autor", sub: "Marketing Digital para Empresas · Guia Essencial SEO" },
   { emoji: "🎙️", title: "Host Semanal RFM", sub: "Podcast Marketing por Idiotas" },
-  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · SMSonline.pt" },
+  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · + 700 auditorias digitais realizadas" },
 ];
 
 export const PresenterSection = () => (

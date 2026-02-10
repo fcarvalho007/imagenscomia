@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Check, AlertTriangle, Gift } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
@@ -22,7 +21,6 @@ const premiumFeatures = [
 
 export const PricingCardsSection = () => {
   const { open } = useRegistrationModal();
-  const navigate = useNavigate();
 
   return (
     <section id="form-gratis" className="py-16 md:py-24 bg-off-white">
@@ -74,7 +72,7 @@ export const PricingCardsSection = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate("/upgrade")}
+                onClick={() => open("free")}
                 className="w-full bg-gradient-to-r from-blue-600 to-neon-cyan text-white font-heading font-bold text-base py-4 rounded-xl shadow-neon-cyan transition-all"
               >
                 Garantir Premium €15
