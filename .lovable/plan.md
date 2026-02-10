@@ -1,99 +1,188 @@
 
-# Primeira Dobra e Modal — Redesign Visual Premium
+
+# Integracao EuPago PayByLink — Lovable Cloud
 
 ## Resumo
 
-Elevar visualmente a primeira dobra (StickyTopBar + MirrorCopy + Hero) e o modal de registo com tecnicas de UX/UI de alta conversao: melhor hierarquia visual, micro-interacoes, espacamento, e um modal mais polido e profissional.
+Implementar pagamentos via EuPago PayByLink usando uma edge function no Lovable Cloud. Inclui os 4 produtos (Premium, Masterclass, Workshop, Bundle), pagina de upsell apos inscricao gratuita, pagina de confirmacao, e webhook de callback.
 
 ---
 
-## 1. StickyTopBar — Mais impactante
+## Arquitectura
 
-**Atual:** Fundo branco plano com borda fina, pouco contraste.
-
-**Proposta:**
-- Fundo com gradiente subtil (`bg-gradient-to-r from-ink-900 to-blue-700`) com texto branco — cria contraste imediato e destaque
-- Ponto vermelho com animacao `animate-pulse` para reforcar urgencia ("AO VIVO")
-- Botao CTA com fundo branco e texto blue-600 (inversao) para se destacar do fundo escuro
-- Padding ligeiramente maior em mobile para melhor toque
-
----
-
-## 2. MirrorCopySection — Editorial elegante
-
-**Atual:** Fundo off-white cinzento, setas azuis simples, visualmente "flat".
-
-**Proposta:**
-- Remover fundo off-white — usar `bg-background` (branco) para continuidade visual com o hero
-- Remover a border-b inferior
-- Cada ponto recebe um card subtil: fundo `bg-blue-50` com `border border-blue-100 rounded-lg p-4` — cria profundidade sem peso
-- Substituir seta `->` por numeros circulares azuis (01, 02, 03) para ritmo visual
-- Meta row (data/hora) com icones pequenos (Calendar, Clock, Users) para tornar a informacao mais scannable
-- Aumentar espacamento vertical entre pontos
-
----
-
-## 3. HeroSection — Impacto visual maximo
-
-**Atual:** Titulo + subtitulo + placeholder de video + 2 botoes. Funcional mas sem drama visual.
-
-**Proposta:**
-- Remover o label "WEBINAR GRATUITO - 18 FEVEREIRO" (redundante com sticky bar e mirror copy)
-- Titulo com gradiente no "Sem Designer": `bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent` em vez do underline — mais moderno
-- Subtitulo com tamanho ligeiramente maior (`text-xl`) e `text-ink-600` para melhor leitura
-- Video placeholder com hover effect: escala 1.02 + sombra aumentada ao passar o rato, cursor pointer — convida a interacao
-- Botoes CTA com icones: check icon no gratuito, sparkles/star no premium — guiam a acao
-- Adicionar badge de social proof abaixo dos botoes: "127 lugares reservados" com avatar stack (3 circulos sobrepostos) — urgencia social
-
----
-
-## 4. Modal de Registo — Polimento premium
-
-### 4a. Upsell (primeira tela do modal)
-
-**Atual:** Titulo direto, lista com X vermelhos, caixa vermelha. Funcional mas visualmente agressivo.
-
-**Proposta:**
-- Animacao de entrada mais sofisticada: `scale: 0.95 -> 1` com `spring` transition
-- Titulo reformulado: "Antes de continuar..." (menos confrontacional)
-- Subtitulo mais suave: "Com a versao gratuita, vais perder acesso a:"
-- Cada item perdido num mini-card com fundo `bg-red-50/50` e `border-l-2 border-red-400` — menos agressivo que X vermelho puro
-- Substituir icone X por `MinusCircle` (lucide) em `text-red-400` — menos alarmante
-- Caixa de urgencia: trocar fundo vermelho por `bg-amber-50 border-amber-200` com icone `Clock` — urgencia sem alarme
-- Botao premium com gradiente: `bg-gradient-to-r from-blue-600 to-blue-700` + icone `Sparkles`
-- Botao "continuar gratis" com sublinhado ao hover em vez de mudanca de cor
-
-### 4b. Formulario (segunda tela)
-
-**Atual:** Inputs basicos + botao verde. Simples.
-
-**Proposta:**
-- Adicionar icone decorativo no topo: emoji ou icone `Ticket` com fundo `bg-green-50 rounded-full p-3`
-- Inputs com icones internos: `User` no nome, `Mail` no email (dentro do input, lado esquerdo)
-- Botao submit com icone `ArrowRight` apos o texto
-- Progress dots no fundo do modal (2 pontos, indicando step 2/2) para contexto de navegacao
-
-### 4c. Confirmacao (terceira tela)
-
-**Atual:** Emoji + texto. Basico.
-
-**Proposta:**
-- Animacao de confetti ou checkmark animado (circulo verde com check que escala com spring)
-- Texto de confirmacao com destaque visual no email (pill azul com fundo blue-50)
-- Adicionar botao "Adicionar ao calendario" como acao secundaria util
+```text
+Utilizador clica "Pagar"
+        |
+        v
+React Frontend
+(chama edge function)
+        |
+        v
+Edge Function: create-payment
+(API key segura como secret)
+        |
+        v
+EuPago API PayByLink
+POST /api/v1.02/paybylink/create
+        |
+        v
+Devolve { paymentLink }
+        |
+        v
+Frontend redireciona para paymentLink
+        |
+        v
+Utilizador paga na pagina EuPago
+        |
+        v
+EuPago redireciona para /confirmacao?plan=xxx
+        |
+        v
+EuPago envia webhook POST
+        |
+        v
+Edge Function: eupago-webhook
+(processa confirmacao)
+```
 
 ---
 
-## 5. Detalhes tecnicos
+## 1. Configuracao Lovable Cloud
+
+### Activar Cloud
+- Necessario para criar edge functions e guardar secrets
+
+### Secret
+- Guardar `EUPAGO_API_KEY` como secret (API key de producao)
+
+---
+
+## 2. Edge Function: create-payment
+
+Ficheiro: `supabase/functions/create-payment/index.ts`
+
+- Recebe POST com `{ plan, email, nome }`
+- Mapeia plan para produto (valor, identifier, descricao)
+- Chama EuPago PayByLink API
+- Devolve `{ paymentLink }` ao frontend
+- Base URL producao: `https://clientes.eupago.pt/api`
+
+Mapa de produtos:
+| Plan | Valor | Identifier |
+|------|-------|------------|
+| premium | 15.00 | WEBINAR-PREMIUM |
+| masterclass | 52.00 | WEBINAR-MASTERCLASS |
+| workshop | 512.00 | WEBINAR-WORKSHOP |
+| bundle | 524.00 | WEBINAR-BUNDLE |
+
+---
+
+## 3. Edge Function: eupago-webhook
+
+Ficheiro: `supabase/functions/eupago-webhook/index.ts`
+
+- Recebe POST da EuPago quando pagamento e confirmado
+- Verifica `transactionStatus === "Success"`
+- Log da transacao (por agora apenas log, sem DB)
+- Responde 200 OK
+
+---
+
+## 4. Fluxo do Modal — Alteracoes
+
+### Fluxo atual:
+1. Upsell (mostra o que perde) → 2. Formulario gratuito → 3. Confirmacao
+
+### Novo fluxo (Premium):
+Quando clica "Garantir Premium" no pricing ou "Sim, quero Premium" no upsell:
+1. Formulario de dados (nome + email) com titulo "Premium Pass"
+2. Ao submeter → chama edge function → redireciona para EuPago
+3. Apos pagamento → EuPago redireciona para `/confirmacao?plan=premium`
+
+### Novo fluxo (Gratuito):
+Mantém-se como está (upsell → formulario → confirmacao inline no modal)
+
+### Alteracoes no useRegistrationModal:
+- Adicionar `variant: "free" | "premium"` ao contexto
+- `open("free")` abre com upsell primeiro
+- `open("premium")` abre directo no formulario com titulo "Premium Pass"
+
+### Alteracoes no RegistrationModal:
+- Quando variant = "premium":
+  - Mostrar formulario com titulo "Premium Pass — €15"
+  - Botao submit: "Confirmar e pagar €15"
+  - Ao submeter: chama `create-payment` edge function, redireciona para link EuPago
+- Quando variant = "free":
+  - Fluxo atual mantém-se (upsell → form → confirmacao)
+- Botao "Sim, quero Premium" no upsell → muda variant para "premium" e mostra formulario premium
+
+---
+
+## 5. Pagina de Upsell Pos-Inscricao
+
+Nova pagina: `src/pages/Upsell.tsx`
+Rota: `/upgrade`
+
+Mostrada apos inscricao gratuita (botao no modal de confirmacao ou redirect).
+Apresenta 3 cartoes de upgrade:
+
+| Cartao | Valor | Descricao |
+|--------|-------|-----------|
+| Premium Pass | €15 | Gravacao + Q&A + Guia + Apps |
+| Premium + Masterclass | €52 | Tudo do premium + 3h masterclass online |
+| Premium + Workshop | €512 | Tudo do premium + 8h workshop presencial Lisboa |
+
+Cada cartao tem botao que:
+1. Recolhe email (se nao tiver) ou usa o ja capturado
+2. Chama edge function create-payment
+3. Redireciona para EuPago
+
+---
+
+## 6. Pagina de Confirmacao
+
+Nova pagina: `src/pages/Confirmacao.tsx`
+Rota: `/confirmacao?plan=xxx`
+
+- Le parametro `plan` da URL
+- Mostra mensagem de confirmacao conforme o plano
+- Inclui: icone, titulo, lista do que inclui, proximo passo, link WhatsApp
+- Botao "Voltar ao site"
+- Design consistente com o resto da landing page
+
+---
+
+## 7. Ficheiros a criar/alterar
+
+### Novos ficheiros:
+- `supabase/functions/create-payment/index.ts` — edge function pagamento
+- `supabase/functions/eupago-webhook/index.ts` — edge function webhook
+- `src/pages/Confirmacao.tsx` — pagina de confirmacao
+- `src/pages/Upsell.tsx` — pagina de upsell pos-inscricao
 
 ### Ficheiros alterados:
-- `src/components/landing/StickyTopBar.tsx` — fundo escuro, pulse dot, CTA invertido
-- `src/components/landing/MirrorCopySection.tsx` — cards azuis, numeros circulares, icones meta
-- `src/components/landing/HeroSection.tsx` — gradiente titulo, video hover, icones CTA, social proof
-- `src/components/landing/RegistrationModal.tsx` — redesign completo das 3 telas
+- `supabase/config.toml` — registar as 2 edge functions (verify_jwt = false)
+- `src/App.tsx` — adicionar rotas /confirmacao e /upgrade
+- `src/hooks/useRegistrationModal.tsx` — adicionar variant (free/premium)
+- `src/components/landing/RegistrationModal.tsx` — fluxo premium com chamada a edge function
+- `src/components/landing/PricingCardsSection.tsx` — botao premium chama open("premium")
+- `src/components/landing/HeroSection.tsx` — botao premium chama open("premium")
+- `src/components/landing/CTAFinalSection.tsx` — botao premium chama open("premium")
 
 ### Dependencias:
-- Nenhuma nova — usa apenas lucide-react (ja instalado) e framer-motion (ja instalado)
+- Nenhuma nova (usa supabase client ja disponivel via Cloud)
 
-### Icones novos utilizados (lucide-react):
-- `Calendar`, `Clock`, `Users`, `Check`, `Sparkles`, `ArrowRight`, `MinusCircle`, `Mail`, `User`, `Ticket`
+---
+
+## 8. Sequencia de implementacao
+
+1. Activar Lovable Cloud
+2. Guardar secret EUPAGO_API_KEY
+3. Criar edge function `create-payment`
+4. Criar edge function `eupago-webhook`
+5. Actualizar modal e contexto para suportar variant premium
+6. Criar pagina `/confirmacao`
+7. Criar pagina `/upgrade` (upsell)
+8. Actualizar rotas no App.tsx
+9. Actualizar botoes premium no pricing/hero/CTA
+
