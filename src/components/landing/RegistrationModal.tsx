@@ -102,7 +102,7 @@ export const RegistrationModal = () => {
 
                 <div className="bg-urgency/10 border border-urgency/20 rounded-xl p-4 mb-5">
                   <p className="text-sm text-foreground">
-                    Se mudar de ideias depois do webinar: Premium custará <strong>€27</strong>, não €15. Perde €12 por esperar.
+                    Se mudar de ideias depois do webinar: Premium custará <strong>€27</strong>, não €15+iva. Perde €12 por esperar.
                   </p>
                 </div>
 
@@ -111,7 +111,7 @@ export const RegistrationModal = () => {
                   whileTap={{ scale: 0.98 }}
                   className="w-full bg-cta-premium hover:bg-cta-premium-hover text-white font-heading font-bold text-sm py-4 rounded-xl glow-amber transition-all mb-3"
                 >
-                  SIM, QUERO PREMIUM €15
+                  SIM, QUERO PREMIUM €15+iva
                 </motion.button>
 
                 <button

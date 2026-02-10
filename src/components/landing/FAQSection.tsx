@@ -17,7 +17,7 @@ const faqs = [
   },
   {
     q: "Vou ter acesso à gravação?",
-    a: "A gravação está disponível no Premium Pass (€15). A versão gratuita inclui o webinar ao vivo mas sem gravação posterior.",
+    a: "A gravação está disponível no Premium Pass (€15+iva). A versão gratuita inclui o webinar ao vivo mas sem gravação posterior.",
   },
   {
     q: "O conteúdo aplica-se ao meu setor?",
