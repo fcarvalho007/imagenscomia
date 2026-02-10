@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Star, Shield, X, ArrowRight, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +41,7 @@ const ConfirmationBar = () => (
 );
 
 /* ───────── Hero ───────── */
-const HeroShort = () => (
+const HeroShort = ({ userName }: { userName?: string }) => (
   <motion.section
     initial={{ opacity: 0, y: 12 }}
     animate={{ opacity: 1, y: 0 }}
@@ -54,7 +54,7 @@ const HeroShort = () => (
         ENQUANTO CONFIRMAS O ACESSO
       </p>
       <h1 className="font-heading font-extrabold text-[24px] sm:text-[32px] text-ink-900 mb-3">
-        Queres ir mais fundo?
+        {userName ? <>Olá, <strong>{userName}</strong>! Queres ir mais fundo?</> : "Queres ir mais fundo?"}
       </h1>
       <p className="text-[16px] text-ink-500 max-w-[480px] mx-auto leading-relaxed">
         Tens 2 opções para complementar o teu Premium Pass.
@@ -532,6 +532,9 @@ const MicroFooter = () => (
 /* ═════════ Main Page ═════════ */
 const Upsell = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const userName = searchParams.get("name") || "";
+  const userEmail = searchParams.get("email") || "";
   const [selectedOption, setSelectedOption] = useState<SelectedOption>(null);
   const [isBundleOpen, setIsBundleOpen] = useState(false);
   const [isReferralInfoOpen, setIsReferralInfoOpen] = useState(false);
@@ -548,7 +551,7 @@ const Upsell = () => {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan, email: "", nome: "" },
+        body: { plan, email: userEmail, nome: userName },
       });
       if (fnError) throw fnError;
       if (data?.paymentLink) {
@@ -571,7 +574,7 @@ const Upsell = () => {
   return (
     <div className="min-h-screen bg-off-white flex flex-col">
       <ConfirmationBar />
-      <HeroShort />
+      <HeroShort userName={userName || undefined} />
 
       <div className="px-4 flex-1">
         <CurrentPlanBlock />
