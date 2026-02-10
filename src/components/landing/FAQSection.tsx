@@ -20,15 +20,11 @@ const faqs = [
     a: "A gravação está disponível no Premium Pass (€15). A versão gratuita inclui o webinar ao vivo mas sem acesso à gravação depois.",
   },
   {
-    q: "O conteúdo aplica-se ao meu setor?",
-    a: "Sim. Os sistemas mostrados funcionam em qualquer empresa. Mostro exemplos de marketing, e-commerce, serviços, imobiliário e comércio.",
-  },
-  {
     q: "Quanto tempo para ver resultados?",
-    a: "Primeiros resultados nas primeiras 48 horas. O método completo leva 1 a 2 semanas de prática gradual.",
+    a: "Primeiros resultados são praticamente imediatos, sabendo quais as ferramentas e o processo. O método completo leva 1 semana de prática gradual.",
   },
   {
-    q: "Haverá tentativa de venda durante o webinar?",
+    q: "Há algum programa mais desenvolvido com mais horas sobre este assunto?",
     a: "Sim — serei direto sobre isso. No final, apresento as opções de aprofundamento. Sem pressão. O conteúdo gratuito é completo por si mesmo.",
   },
 ];
