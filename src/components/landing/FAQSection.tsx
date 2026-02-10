@@ -31,7 +31,7 @@ const faqs = [
 
 export const FAQSection = () => (
   <section className="py-16 md:py-24 bg-off-white">
-    <div className="container mx-auto px-4 sm:px-6 max-w-[680px]">
+    <div className="container mx-auto px-4 sm:px-6 max-w-[760px]">
       <ScrollReveal>
         <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
           Perguntas frequentes

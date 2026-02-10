@@ -11,7 +11,7 @@ const points = [
 
 export const MirrorCopySection = () => (
   <section className="py-12 md:py-16 bg-background">
-    <div className="container mx-auto px-4 sm:px-6 max-w-[680px]">
+    <div className="container mx-auto px-4 sm:px-6 max-w-[760px]">
       <ScrollReveal>
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-[2px] bg-gradient-to-r from-neon-purple to-neon-cyan rounded-full" />
