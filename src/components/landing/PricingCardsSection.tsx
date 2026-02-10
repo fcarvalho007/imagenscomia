@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, Gift } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
@@ -115,7 +115,27 @@ export const PricingCardsSection = () => {
         </div>
 
         <ScrollReveal>
-          <p className="text-center text-[13px] text-ink-400 mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
+          <div className="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-[560px] mx-auto text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Gift className="w-5 h-5 text-amber-600" />
+              <span className="font-heading font-bold text-[15px] text-ink-900">Ou ganha Premium grátis</span>
+            </div>
+            <p className="text-[13px] text-ink-600 mb-4">
+              Inscreve-te grátis e convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar nada.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => open("free")}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-heading font-bold text-sm px-6 py-3 rounded-xl transition-all"
+            >
+              Inscrever e receber link de convite
+            </motion.button>
+          </div>
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <p className="text-center text-[13px] text-ink-400 mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
             <span>✓ Sem compromisso</span>
             <span>✓ RGPD</span>
             <span>✓ Reembolso 14 dias</span>

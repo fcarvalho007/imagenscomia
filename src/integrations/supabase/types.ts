@@ -14,7 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      registrations: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          premium_unlocked: boolean | null
+          referral_code: string
+          referred_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          premium_unlocked?: boolean | null
+          referral_code: string
+          referred_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          premium_unlocked?: boolean | null
+          referral_code?: string
+          referred_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
