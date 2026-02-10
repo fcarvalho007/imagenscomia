@@ -29,11 +29,6 @@ export const ChallengesSection = () => (
         ))}
       </div>
 
-      <ScrollReveal>
-        <p className="text-center text-[18px] text-ink-700 font-medium mt-10 max-w-[500px] mx-auto">
-          Em 75 minutos mostro como resolver os três primeiros. Ao vivo, no teu tipo de empresa.
-        </p>
-      </ScrollReveal>
     </div>
   </section>
 );
