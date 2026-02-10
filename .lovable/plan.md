@@ -1,250 +1,129 @@
 
 
-# Sistema de Convites "Traz 2 Amigos, Ganha Premium"
+# Alteracoes a Landing Page -- 7 Modificacoes Pontuais
 
-## Resumo
-
-Criar um sistema de referral onde cada utilizador que se inscreve gratuitamente recebe um link unico para convidar 2 amigos. Quando ambos se registam, o convidador ganha acesso Premium automaticamente. Inclui uma pagina de acompanhamento dos convites e integracao visivel na landing page.
+Todas as alteracoes sao cirurgicas. Nenhuma seccao, componente ou estilo fora do listado sera tocado.
 
 ---
 
-## Arquitectura do Sistema
+## Alteracao 1 -- Ordem das seccoes (Index.tsx)
 
-```text
-Utilizador regista-se (gratuito)
-        |
-        v
-Edge Function: register-free
-  - Guarda na tabela registrations
-  - Gera referral_code unico (6 chars)
-  - Devolve { referralCode, referralLink }
-        |
-        v
-Modal de confirmacao mostra:
-  - "Convida 2 amigos e ganha Premium gratis!"
-  - Link de partilha copiavel
-  - Botao WhatsApp / email
-        |
-        v
-Amigo clica link /?ref=ABC123
-  - Parametro ref e capturado
-  - Ao registar-se, referred_by = ABC123
-        |
-        v
-Edge Function: register-free
-  - Guarda registo com referred_by
-  - Conta quantos amigos ja se registaram para esse referral_code
-  - Se count >= 2: marca convidador como premium_unlocked = true
-  - (Opcional: envia email ao convidador)
-        |
-        v
-Pagina /convites?email=xxx
-  - Utilizador ve o estado dos seus convites
-  - Mostra: link, quantos registados (0/2, 1/2, 2/2)
-  - Se 2/2: mostra badge "Premium Desbloqueado!"
+**Ficheiro:** `src/pages/Index.tsx` (linhas 21-22)
+
+Trocar a posicao de `<MirrorCopySection />` e `<HeroSection />`:
+
+```
+ANTES:                      DEPOIS:
+<StickyTopBar />            <StickyTopBar />
+<MirrorCopySection />       <HeroSection />        ← sobe
+<HeroSection />             <MirrorCopySection />  ← desce
 ```
 
 ---
 
-## 1. Tabela de Base de Dados: `registrations`
+## Alteracao 2 -- Texto do botao da barra topo (StickyTopBar.tsx)
 
-```sql
-CREATE TABLE public.registrations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE,
-  referral_code TEXT NOT NULL UNIQUE,
-  referred_by TEXT DEFAULT NULL,
-  premium_unlocked BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
+**Ficheiro:** `src/components/landing/StickyTopBar.tsx` (linha 19)
 
-ALTER TABLE public.registrations ENABLE ROW LEVEL SECURITY;
-
--- Politica: leitura publica limitada (a edge function usa service role)
--- Nao precisa de RLS para select publico pois o acesso e feito via edge functions
-```
-
-Notas:
-- `referral_code`: codigo unico de 6 caracteres (ex: ABC123)
-- `referred_by`: o referral_code de quem convidou (nullable)
-- `premium_unlocked`: true quando 2 amigos se registaram
-- Sem auth.users — isto nao requer login, apenas email de registo do webinar
+- ANTES: `Reservar lugar →`
+- DEPOIS: `Reservar lugar gratis →`
 
 ---
 
-## 2. Edge Function: `register-free`
+## Alteracao 3 -- Hero: headline reestruturado (HeroSection.tsx)
 
-Ficheiro: `supabase/functions/register-free/index.ts`
+**Ficheiro:** `src/components/landing/HeroSection.tsx`
 
-Recebe POST com `{ name, email, referredBy? }`
+Substituir o bloco de headline + subheadline (linhas 12-25) por:
 
-Logica:
-1. Verifica se email ja existe (se sim, devolve o referral_code existente)
-2. Gera referral_code aleatorio de 6 caracteres (A-Z0-9)
-3. Insere na tabela `registrations` com `referred_by` se presente
-4. Se `referred_by` existe: conta quantos registos tem esse referral_code como referred_by
-5. Se count >= 2: UPDATE o registo do convidador para `premium_unlocked = true`
-6. Devolve `{ referralCode, referralLink, alreadyRegistered }`
+1. **Label** (novo, acima do H1): `"WEBINAR GRATUITO · 18 FEVEREIRO · 10H00"` -- mesmo estilo das labels existentes (Montserrat 600, 11px, uppercase, tracking, blue-600)
+2. **H1** (duas linhas, sem gradiente):
+   - "Como Criar Imagens Profissionais"
+   - "com IA para a Tua Empresa"
+3. **Tagline** (nova, logo abaixo do H1): `"Sem Designer. Sem Agencia. Sem Curso de 6 Meses."` -- Montserrat 700, text-[20px] md:text-[26px], text-blue-600
+4. **Subheadline** (actualizar texto): `"O metodo que transforma um briefing em imagem utilizavel em menos de 3 minutos. Demonstrado ao vivo, no teu ecra."`
+5. **Meta row** (novo, abaixo da subheadline): emojis + texto inline: `"📅 Quarta 18 Fev · 🕙 10h00 · ⏱ 75 min · 🎓 Gratuito"`
 
----
-
-## 3. Edge Function: `check-referrals`
-
-Ficheiro: `supabase/functions/check-referrals/index.ts`
-
-Recebe POST com `{ email }`
-
-Logica:
-1. Procura o registo pelo email
-2. Se nao encontra: devolve erro
-3. Busca todos os registos com `referred_by = referral_code` deste utilizador
-4. Devolve `{ referralCode, referralLink, referrals: [{ name, createdAt }], premiumUnlocked, totalNeeded: 2 }`
+Tudo o resto (placeholder video, botoes, social proof) permanece inalterado.
 
 ---
 
-## 4. Alteracoes no Modal de Registo
+## Alteracao 4 -- Mirror Copy: 5 novos bullets (MirrorCopySection.tsx)
 
-### Fluxo gratuito actualizado:
+**Ficheiro:** `src/components/landing/MirrorCopySection.tsx` (linhas 4-8)
 
-Antes: `handleSubmitFree` fazia apenas um setTimeout fake.
-Agora: chama a edge function `register-free` e guarda o resultado.
+Substituir o array `points` de 3 itens para 5 itens:
 
-### ConfirmationView actualizado:
+1. "Ja tentaste Midjourney ou DALL-E e saiste frustrado -- e ainda nao percebeste que o problema era o prompt, nao a ferramenta"
+2. "Queres imagens profissionais para redes sociais e anuncios sem pagar designer para cada peca nova"
+3. "Sabes que a IA consegue muito mais do que o ChatGPT mas ninguem te mostrou como aplicar ao teu negocio em concreto"
+4. "Precisas de consistencia visual na tua marca sem orcamento para agencia criativa a tempo inteiro"
+5. "Queres ver como se faz -- ao vivo, no teu ecra -- nao ouvir mais teoria sobre ferramentas que nunca experimentaste"
 
-Apos confirmacao gratuita, mostrar novo bloco:
-
-```text
-+------------------------------------------+
-|  🎁 Ganha Premium Grátis!                |
-|                                          |
-|  Convida 2 amigos e desbloqueia o        |
-|  Premium Pass (valor €15) sem pagar.     |
-|                                          |
-|  [  Copiar link de convite  📋  ]        |
-|                                          |
-|  [WhatsApp]  [Email]                     |
-|                                          |
-|  0/2 amigos registados                   |
-|  Ver estado dos convites →               |
-+------------------------------------------+
-```
-
-- Botao "Copiar link" copia `https://site.com/?ref=ABC123`
-- Botao WhatsApp abre wa.me com mensagem pre-preenchida
-- Botao Email abre mailto com subject e body
-- Link "Ver estado dos convites" navega para `/convites?email=xxx`
+A label, separador, meta row e estilo visual dos cards mantêm-se iguais.
 
 ---
 
-## 5. Nova Pagina: `/convites`
+## Alteracao 5 -- Pain Points simplificados (ChallengesSection.tsx)
 
-Ficheiro: `src/pages/Convites.tsx`
-Rota: `/convites`
+**Ficheiro:** `src/components/landing/ChallengesSection.tsx`
 
-### Fluxo:
-1. Pede email ao utilizador (ou recebe via query param `?email=xxx`)
-2. Chama edge function `check-referrals`
-3. Mostra painel com:
+5a. **Headline** (linha 17): `"Identifica-te com algum destes desafios?"` → `"Algum disto soa familiar?"`
 
-```text
-+------------------------------------------+
-|  Os Teus Convites                        |
-|                                          |
-|  O teu link: site.com/?ref=ABC123       |
-|  [Copiar]                                |
-|                                          |
-|  Progresso: ████░░░░ 1/2                 |
-|                                          |
-|  ✓ Maria Silva — registou-se 10 Fev     |
-|  ○ A aguardar 2º convite...              |
-|                                          |
-|  Falta 1 amigo para desbloquear o        |
-|  Premium Pass grátis!                    |
-+------------------------------------------+
-```
+5b. **Remover subtitulo** (linha 19-21): apagar o `<p>` com "Se sim a pelo menos um..."
 
-Se 2/2:
-```text
-|  🎉 Premium Desbloqueado!               |
-|  Já tens acesso a tudo do Premium Pass.  |
-|  Não precisas de pagar.                  |
-```
+5c. **Titulos actualizados** nos dados do array (confirmar/ajustar):
+- 01: "O designer demora dias e custa caro" (igual)
+- 02: "Tentaste IA mas os resultados foram inuteis" (actualizar de "Tentaste mas...")
+- 03: "O teu stock fotografico parece de qualquer empresa" (actualizar de "Stock fotografico nao representa a marca")
+- 04: "Nao tens consistencia visual entre publicacoes" (actualizar de "Nao tens consistencia visual")
+- 05: "Nao sabes qual ferramenta usar para que" (actualizar de "Nao sabes qual ferramenta usar")
+- 06: "Precisas de mais volume sem aumentar equipa" (actualizar de "Precisas de volume sem aumentar equipa")
 
-Design: mesmo estilo editorial da landing page, centrado, max-w-520px.
+Remover campo `desc` do array e do render (linha 30).
+
+5d. **Texto de fecho** (linha 38): `"Em 75 minutos, mostro o metodo completo — do briefing a imagem final, ao vivo."` → `"Em 75 minutos mostro como resolver os tres primeiros. Ao vivo, no teu tipo de empresa."`
 
 ---
 
-## 6. Captura do parametro `ref` na landing page
+## Alteracao 6 -- FAQ: ultima pergunta (FAQSection.tsx)
 
-### Alteracao em `Index.tsx` ou `useRegistrationModal`:
+**Ficheiro:** `src/components/landing/FAQSection.tsx` (linha 27-28)
 
-- Ao carregar a pagina, ler `?ref=XXX` da URL
-- Guardar em state/context
-- Quando o utilizador se regista (free), passar `referredBy: refCode` ao `register-free`
+Substituir o 5o item do array `faqs`:
 
-### Alteracao no `useRegistrationModal.tsx`:
-- Adicionar `referralCode` ao contexto (capturado da URL)
+- **ANTES:** q: "Ha algum programa mais desenvolvido..." / a: "Sim -- serei direto..."
+- **DEPOIS:** q: `"Posso ver o webinar depois se nao puder estar ao vivo?"` / a: `"A gravacao esta disponivel no Premium Pass (€15). A inscricao gratuita da acesso ao vivo mas nao inclui gravacao -- se faltares ao webinar, perdes o acesso ao conteudo. O Premium garante acesso para sempre por €15, agora. Depois do webinar passa a custar €27."`
 
 ---
 
-## 7. Seccao na Landing Page: "Traz Amigos"
+## Alteracao 7 -- Verificacao: card Sistema 3 (ProgramSection.tsx)
 
-### Nova seccao ou bloco no PricingCardsSection:
+**Ficheiro:** `src/components/landing/ProgramSection.tsx` (linhas 26-34)
 
-Adicionar abaixo dos cartoes de pricing um bloco visivel:
+O card 03 "Escalar Producao Visual Sem Equipa" ja existe e renderiza. Mas a descricao e os bullets diferem do pedido. Actualizar:
 
-```text
-+------------------------------------------+
-|  OU GANHA PREMIUM GRÁTIS                 |
-|                                          |
-|  Inscreve-te grátis e convida 2 amigos.  |
-|  Se ambos se registarem, ganhas acesso   |
-|  Premium (€15) sem pagar nada.           |
-|                                          |
-|  [Inscrever e receber link de convite]   |
-+------------------------------------------+
-```
+- **desc:** `"Como passar de 5 imagens por semana para 50 -- com o mesmo tempo e sem mais custos."`
+- **bullets:**
+  - "Processo de producao em lote com IA"
+  - "App Calculadora: custo IA vs designer externo"
+  - "Mapa de decisao: quando usar IA, quando contratar"
 
-Posicao: entre os cartoes de pricing e o FAQ, ou como nota dentro do cartao gratuito.
+(3 bullets em vez dos 2 actuais)
 
 ---
 
-## 8. Ficheiros a criar/alterar
+## Resumo de ficheiros alterados
 
-### Novos ficheiros:
-| Ficheiro | Descricao |
-|----------|-----------|
-| `supabase/functions/register-free/index.ts` | Edge function de registo gratuito |
-| `supabase/functions/check-referrals/index.ts` | Edge function de verificacao de convites |
-| `src/pages/Convites.tsx` | Pagina de acompanhamento de convites |
-
-### Ficheiros alterados:
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/RegistrationModal.tsx` | handleSubmitFree chama edge function; ConfirmationView mostra bloco de convites |
-| `src/hooks/useRegistrationModal.tsx` | Captura `ref` da URL e expoe referralCode |
-| `src/pages/Index.tsx` | Le parametro `?ref` da URL |
-| `src/App.tsx` | Adicionar rota `/convites` |
-| `src/components/landing/PricingCardsSection.tsx` | Adicionar bloco "Ganha Premium gratis" |
+| `src/pages/Index.tsx` | Trocar ordem Hero / MirrorCopy |
+| `src/components/landing/StickyTopBar.tsx` | Texto do botao |
+| `src/components/landing/HeroSection.tsx` | Label + H1 + tagline + subheadline + meta row |
+| `src/components/landing/MirrorCopySection.tsx` | 5 novos bullets |
+| `src/components/landing/ChallengesSection.tsx` | Headline, remover subtitulo, remover desc dos cards, texto fecho |
+| `src/components/landing/FAQSection.tsx` | Ultima pergunta substituida |
+| `src/components/landing/ProgramSection.tsx` | Desc e bullets do card 03 |
 
-### Migracao DB:
-- Criar tabela `registrations` com RLS
-
-### Config:
-- `supabase/config.toml` — registar as 2 novas edge functions com `verify_jwt = false`
-
----
-
-## 9. Sequencia de implementacao
-
-1. Criar tabela `registrations` (migracao DB)
-2. Criar edge function `register-free`
-3. Criar edge function `check-referrals`
-4. Actualizar `useRegistrationModal` para capturar `?ref` da URL
-5. Actualizar `RegistrationModal` — handleSubmitFree + ConfirmationView com convites
-6. Criar pagina `/convites`
-7. Adicionar rota no App.tsx
-8. Adicionar bloco referral na seccao de pricing
-9. Deploy edge functions e testar fluxo completo
+Nenhuma dependencia nova. Nenhum ficheiro criado ou apagado.
 
