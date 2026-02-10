@@ -1,81 +1,99 @@
 
-# Ajustes de Copy, Programa e Elegancia da Primeira Parte
+# Primeira Dobra e Modal — Redesign Visual Premium
 
-## 1. PricingCardsSection.tsx — Pacote Premium
+## Resumo
 
-**Remover items:**
-- Apagar sub "gratis: acesso so durante o webinar" do item "Gravacao HD vitalicia"
-- Apagar o item completo "Prioridade nas perguntas durante o Q&A ao vivo"
+Elevar visualmente a primeira dobra (StickyTopBar + MirrorCopy + Hero) e o modal de registo com tecnicas de UX/UI de alta conversao: melhor hierarquia visual, micro-interacoes, espacamento, e um modal mais polido e profissional.
 
-**Enfase no gratuito incluido:** Reformular a linha "Tudo do gratuito, mais:" para algo mais enfatico, como uma caixa com check verde: "Inclui tudo da participacao gratuita" com destaque visual (fundo green-50, border green-100, check verde)
+---
 
-**Resultado Premium — 4 items:**
-1. Gravacao HD vitalicia (sem sub)
-2. Sessao Q&A em grupo — 60 minutos (sub: exclusiva, apos o webinar)
-3. Guia completo de prompts por tipo de imagem (sub: PDF 30+ paginas, testado em contexto empresarial)
-4. App Gerador de Prompts em early access (sub: acesso antes de todos os participantes)
+## 1. StickyTopBar — Mais impactante
 
-## 2. PricingCardsSection.tsx — Pacote Gratuito
+**Atual:** Fundo branco plano com borda fina, pouco contraste.
 
-**Substituicoes na lista:**
-- "3 demos de criacao de imagens ao vivo" → "Demos ao vivo"
-- "Resumo PDF: ferramentas e tipos de imagem" → "Resumo PDF da sessao"
-- "App Gerador de Prompts basica" → "Acesso a aplicacoes especializadas"
+**Proposta:**
+- Fundo com gradiente subtil (`bg-gradient-to-r from-ink-900 to-blue-700`) com texto branco — cria contraste imediato e destaque
+- Ponto vermelho com animacao `animate-pulse` para reforcar urgencia ("AO VIVO")
+- Botao CTA com fundo branco e texto blue-600 (inversao) para se destacar do fundo escuro
+- Padding ligeiramente maior em mobile para melhor toque
 
-**Lista final gratuita (6 items):**
-1. Webinar ao vivo (75 minutos)
-2. Demos ao vivo
-3. Acesso a aplicacoes especializadas
-4. Resumo PDF da sessao
-5. Grupo WhatsApp do evento
-6. Certificado digital
+---
 
-## 3. ProgramSection.tsx — Mais persuasivo, menos revelado
+## 2. MirrorCopySection — Editorial elegante
 
-Reescrever os 3 cards para gerar curiosidade em vez de detalhar tudo. Manter titulos mas tornar descricoes mais intrigantes e reduzir bullets para 2 por card (sem "O que levas:" — substituir por frases de beneficio).
+**Atual:** Fundo off-white cinzento, setas azuis simples, visualmente "flat".
 
-**Card 1 — "O Metodo do Prompt Perfeito"**
-Desc: "Ha uma diferenca entre gerar uma imagem e gerar a imagem certa. Vou mostrar ao vivo o que separa um resultado amador de um resultado profissional."
-Bullets:
-- Demo ao vivo com 5 tipos de imagem diferentes
-- Acesso a uma app exclusiva que constroi prompts por ti
+**Proposta:**
+- Remover fundo off-white — usar `bg-background` (branco) para continuidade visual com o hero
+- Remover a border-b inferior
+- Cada ponto recebe um card subtil: fundo `bg-blue-50` com `border border-blue-100 rounded-lg p-4` — cria profundidade sem peso
+- Substituir seta `->` por numeros circulares azuis (01, 02, 03) para ritmo visual
+- Meta row (data/hora) com icones pequenos (Calendar, Clock, Users) para tornar a informacao mais scannable
+- Aumentar espacamento vertical entre pontos
 
-**Card 2 — "Imagens para Redes Sociais e Anuncios"**
-Desc: "Vou criar 3 pecas prontas a publicar em direto — e vais perceber como podes fazer o mesmo para a tua marca, em minutos."
-Bullets:
-- Do briefing a imagem publicavel, passo a passo
-- Funciona para feed, stories, anuncios e site
+---
 
-**Card 3 — "Escalar Producao Visual Sem Equipa"**
-Desc: "O segredo nao e trabalhar mais — e ter um sistema. Vou construir um ao vivo e mostrar como multiplicar a tua producao visual."
-Bullets:
-- Quanto custa realmente: IA vs designer externo
-- Quando usar IA e quando contratar
+## 3. HeroSection — Impacto visual maximo
 
-## 4. ChallengesSection.tsx — Card 05 mais intuitivo
+**Atual:** Titulo + subtitulo + placeholder de video + 2 botoes. Funcional mas sem drama visual.
 
-Substituir a descricao do card 05:
-- De: "Midjourney, DALL-E, Firefly, Ideogram. Qual delas? Para que? A que custo? Respondo tudo."
-- Para: "Ha dezenas de ferramentas de IA para imagens. Qual escolher, para que situacao e a que custo? Fica claro nesta sessao."
+**Proposta:**
+- Remover o label "WEBINAR GRATUITO - 18 FEVEREIRO" (redundante com sticky bar e mirror copy)
+- Titulo com gradiente no "Sem Designer": `bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent` em vez do underline — mais moderno
+- Subtitulo com tamanho ligeiramente maior (`text-xl`) e `text-ink-600` para melhor leitura
+- Video placeholder com hover effect: escala 1.02 + sombra aumentada ao passar o rato, cursor pointer — convida a interacao
+- Botoes CTA com icones: check icon no gratuito, sparkles/star no premium — guiam a acao
+- Adicionar badge de social proof abaixo dos botoes: "127 lugares reservados" com avatar stack (3 circulos sobrepostos) — urgencia social
 
-## 5. Primeira parte da pagina — Mais elegante
+---
 
-A primeira parte (MirrorCopy + Hero) pode ser refinada juntando-as visualmente. Proposta:
+## 4. Modal de Registo — Polimento premium
 
-**MirrorCopySection:**
-- Remover os dois botoes CTA desta seccao (ja existem no hero e mais abaixo) — reduz repeticao e torna a entrada mais limpa
-- Manter apenas: label + 3 pontos + separador + meta row (data/hora)
-- Resultado: seccao mais leve, funciona como qualificacao rapida sem pedir acao imediata
+### 4a. Upsell (primeira tela do modal)
 
-**HeroSection:**
-- Adicionar os dois botoes CTA (verde "Inscrever gratis" + ambar "Premium Pass") abaixo do video placeholder
-- Assim o hero torna-se o primeiro ponto de conversao real, depois da qualificacao
+**Atual:** Titulo direto, lista com X vermelhos, caixa vermelha. Funcional mas visualmente agressivo.
 
-Isto cria um fluxo mais elegante: qualificacao silenciosa (MirrorCopy) → proposta de valor + CTA (Hero)
+**Proposta:**
+- Animacao de entrada mais sofisticada: `scale: 0.95 -> 1` com `spring` transition
+- Titulo reformulado: "Antes de continuar..." (menos confrontacional)
+- Subtitulo mais suave: "Com a versao gratuita, vais perder acesso a:"
+- Cada item perdido num mini-card com fundo `bg-red-50/50` e `border-l-2 border-red-400` — menos agressivo que X vermelho puro
+- Substituir icone X por `MinusCircle` (lucide) em `text-red-400` — menos alarmante
+- Caixa de urgencia: trocar fundo vermelho por `bg-amber-50 border-amber-200` com icone `Clock` — urgencia sem alarme
+- Botao premium com gradiente: `bg-gradient-to-r from-blue-600 to-blue-700` + icone `Sparkles`
+- Botao "continuar gratis" com sublinhado ao hover em vez de mudanca de cor
 
-## Ficheiros alterados
-- `src/components/landing/PricingCardsSection.tsx` — premium e free features + enfase gratuito
-- `src/components/landing/ProgramSection.tsx` — copy persuasivo, menos revelado
-- `src/components/landing/ChallengesSection.tsx` — card 05 descricao
-- `src/components/landing/MirrorCopySection.tsx` — remover botoes CTA
-- `src/components/landing/HeroSection.tsx` — adicionar botoes CTA abaixo do video
+### 4b. Formulario (segunda tela)
+
+**Atual:** Inputs basicos + botao verde. Simples.
+
+**Proposta:**
+- Adicionar icone decorativo no topo: emoji ou icone `Ticket` com fundo `bg-green-50 rounded-full p-3`
+- Inputs com icones internos: `User` no nome, `Mail` no email (dentro do input, lado esquerdo)
+- Botao submit com icone `ArrowRight` apos o texto
+- Progress dots no fundo do modal (2 pontos, indicando step 2/2) para contexto de navegacao
+
+### 4c. Confirmacao (terceira tela)
+
+**Atual:** Emoji + texto. Basico.
+
+**Proposta:**
+- Animacao de confetti ou checkmark animado (circulo verde com check que escala com spring)
+- Texto de confirmacao com destaque visual no email (pill azul com fundo blue-50)
+- Adicionar botao "Adicionar ao calendario" como acao secundaria util
+
+---
+
+## 5. Detalhes tecnicos
+
+### Ficheiros alterados:
+- `src/components/landing/StickyTopBar.tsx` — fundo escuro, pulse dot, CTA invertido
+- `src/components/landing/MirrorCopySection.tsx` — cards azuis, numeros circulares, icones meta
+- `src/components/landing/HeroSection.tsx` — gradiente titulo, video hover, icones CTA, social proof
+- `src/components/landing/RegistrationModal.tsx` — redesign completo das 3 telas
+
+### Dependencias:
+- Nenhuma nova — usa apenas lucide-react (ja instalado) e framer-motion (ja instalado)
+
+### Icones novos utilizados (lucide-react):
+- `Calendar`, `Clock`, `Users`, `Check`, `Sparkles`, `ArrowRight`, `MinusCircle`, `Mail`, `User`, `Ticket`
