@@ -1,111 +1,123 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Check } from "lucide-react";
+import { motion } from "framer-motion";
+import { Check, AlertTriangle } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const freeFeatures = [
   "Webinar ao vivo (75 minutos)",
-  "3 demos práticas ao vivo",
-  "Apps IA básicas incluídas",
-  "Resumo PDF da sessão",
+  "3 demos de criação de imagens ao vivo",
+  "App Gerador de Prompts básica",
+  "Resumo PDF: ferramentas e tipos de imagem",
   "Grupo WhatsApp do evento",
   "Certificado digital",
 ];
 
 const premiumFeatures = [
-  "Gravação HD vitalícia (grátis: sem gravação)",
-  "Sessão Q&A em grupo (60 min, exclusiva pós-webinar)",
-  "Guia completo de ferramentas (PDF 30+ páginas)",
-  "Apps IA em early access (antes de todos)",
-  "Prioridade nas perguntas Q&A ao vivo",
+  { main: "Gravação HD vitalícia", sub: "grátis: acesso só durante o webinar" },
+  { main: "Sessão Q&A em grupo — 60 minutos", sub: "exclusiva, após o webinar" },
+  { main: "Guia completo de prompts por tipo de imagem", sub: "PDF 30+ páginas, testado em contexto empresarial" },
+  { main: "App Gerador de Prompts em early access", sub: "acesso antes de todos os participantes" },
+  { main: "Prioridade nas perguntas durante o Q&A ao vivo", sub: "" },
 ];
 
 export const PricingCardsSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section id="form-gratis" className="py-16 md:py-24 bg-primary-dark grid-pattern">
-      <div className="container mx-auto px-5 sm:px-6 max-w-4xl">
+    <section id="form-gratis" className="py-16 md:py-24 bg-off-white">
+      <div className="container mx-auto px-4 sm:px-6 max-w-[920px]">
         <ScrollReveal>
-          <h2 className="font-heading font-bold text-2xl sm:text-3xl md:text-4xl text-center mb-10 md:mb-14">
+          <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
             Escolhe como participar
           </h2>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 max-w-3xl mx-auto">
-          {/* Free card */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px] mx-auto">
+          {/* Premium card - first on mobile */}
           <ScrollReveal>
-            <div className="glass-card rounded-2xl p-6 sm:p-8 h-full flex flex-col">
-              <h3 className="font-heading font-extrabold text-lg sm:text-xl mb-1">GRATUITO</h3>
-              <p className="font-mono text-2xl sm:text-3xl text-text-secondary mb-5">€0</p>
+            <div id="form-premium" className="bg-background border-2 border-blue-600 rounded-lg p-8 h-full flex flex-col relative shadow-blue order-first md:order-last">
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-blue-600 text-white text-[11px] font-heading font-semibold px-4 py-1.5 rounded-full uppercase tracking-[0.05em]">
+                RECOMENDADO
+              </span>
 
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {freeFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 text-cta-free mt-0.5 shrink-0" />
-                    <span className="text-text-muted">{f}</span>
+              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 mb-1">PREMIUM PASS</p>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="font-heading font-extrabold text-4xl text-ink-900">€15</span>
+              </div>
+              <p className="text-sm text-ink-400 line-through mb-6">€27 depois do webinar</p>
+
+              <div className="w-full h-px bg-border-strong mb-6" />
+
+              <p className="text-sm text-ink-500 italic mb-3">Tudo do gratuito, mais:</p>
+
+              <ul className="space-y-3 mb-5 flex-1">
+                {premiumFeatures.map((f) => (
+                  <li key={f.main}>
+                    <div className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                      <div>
+                        <span className="text-[15px] font-medium text-ink-900">{f.main}</span>
+                        {f.sub && <p className="text-[13px] text-ink-500 pl-0 mt-0.5">{f.sub}</p>}
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>
 
-              <p className="text-xs text-text-secondary italic mb-4">
-                Nota: sem acesso a gravação após o webinar
-              </p>
+              <div className="bg-blue-50 border border-blue-100 rounded-md p-3 mb-4">
+                <p className="text-[13px] text-blue-600 font-medium">⏰ Preço sobe para €27 após 18 Fev</p>
+              </div>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={open}
-                className="w-full bg-cta-free hover:bg-cta-free-hover text-white font-heading font-bold text-sm py-4 rounded-xl glow-green transition-all"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-blue transition-all"
               >
-                INSCREVER GRÁTIS
+                Garantir Premium €15
               </motion.button>
             </div>
           </ScrollReveal>
 
-          {/* Premium card */}
+          {/* Free card */}
           <ScrollReveal delay={0.12}>
-            <div id="form-premium" className="glass-card rounded-2xl p-6 sm:p-8 h-full flex flex-col relative border-primary/30 glow-blue">
-              <span className="absolute -top-3 right-5 gradient-main text-white text-[10px] font-heading font-semibold px-3 py-1 rounded-full">
-                RECOMENDADO
-              </span>
+            <div className="bg-background border border-border rounded-lg p-8 h-full flex flex-col shadow-card order-last md:order-first">
+              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA</p>
+              <span className="font-heading font-extrabold text-4xl text-ink-900 mb-6">€0</span>
 
-              <h3 className="font-heading font-extrabold text-lg sm:text-xl mb-1 text-gradient">PREMIUM PASS 🔥</h3>
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="font-mono text-2xl sm:text-3xl text-cta-premium font-bold">€15</span>
-                <span className="text-xs text-text-secondary line-through">€27</span>
-              </div>
-              <p className="text-xs text-text-secondary italic mb-5">TUDO do gratuito, mais:</p>
+              <div className="w-full h-px bg-border mb-6" />
 
-              <ul className="space-y-2.5 mb-5 flex-1">
-                {premiumFeatures.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className="w-4 h-4 text-cta-premium mt-0.5 shrink-0" />
-                    <span className="text-text-muted">{f}</span>
+              <ul className="space-y-3 mb-5 flex-1">
+                {freeFeatures.map((f) => (
+                  <li key={f} className="flex items-start gap-2.5">
+                    <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+                    <span className="text-[15px] text-ink-700">{f}</span>
                   </li>
                 ))}
               </ul>
 
-              <p className="text-xs text-urgency mb-1">⏰ Preço sobe após 18 Fev</p>
-              <p className="text-xs text-text-secondary mb-4">👥 Vagas Premium limitadas</p>
+              <div className="bg-surface rounded-md p-3 mb-4 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                <p className="text-[13px] text-ink-500">Nota: sem acesso a gravação após o webinar</p>
+              </div>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={open}
-                className="w-full bg-cta-premium hover:bg-cta-premium-hover text-white font-heading font-bold text-sm py-4 rounded-xl glow-amber transition-all"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-green transition-all"
               >
-                GARANTIR PREMIUM €15+iva
+                Inscrever grátis
               </motion.button>
             </div>
           </ScrollReveal>
         </div>
 
         <ScrollReveal>
-          <p className="text-center text-xs text-text-secondary mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <p className="text-center text-[13px] text-ink-400 mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
             <span>✓ Sem compromisso</span>
-            <span>✓ Dados protegidos RGPD</span>
-            <span>✓ Reembolso garantido 14 dias</span>
+            <span>✓ RGPD</span>
+            <span>✓ Reembolso 14 dias</span>
           </p>
         </ScrollReveal>
       </div>
