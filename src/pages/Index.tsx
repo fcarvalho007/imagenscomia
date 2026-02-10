@@ -16,7 +16,7 @@ import { FooterSection } from "@/components/landing/FooterSection";
 const Index = () => {
   return (
     <RegistrationModalProvider>
-      <main className="overflow-x-hidden">
+      <main className="overflow-x-hidden pt-[52px]">
         <StickyTopBar />
         <HeroSection />
         <MirrorCopySection />

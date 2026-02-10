@@ -5,6 +5,7 @@ export const FooterSection = () => (
         <a href="#" className="hover:text-white/60 transition-colors">Privacidade</a>
         <a href="#" className="hover:text-white/60 transition-colors">Termos</a>
         <a href="#" className="hover:text-white/60 transition-colors">Contacto</a>
+        <a href="/convites" className="hover:text-white/60 transition-colors">Ver os teus convites</a>
       </div>
       <p className="text-[13px] text-white/30">
         © 2025 Frederico Carvalho · DIGITALFC
