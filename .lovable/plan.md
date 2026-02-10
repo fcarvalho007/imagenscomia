@@ -1,188 +1,91 @@
 
+# Plano: Foto do Frederico + Pagina de Upsell Completa
 
-# Integracao EuPago PayByLink — Lovable Cloud
-
-## Resumo
-
-Implementar pagamentos via EuPago PayByLink usando uma edge function no Lovable Cloud. Inclui os 4 produtos (Premium, Masterclass, Workshop, Bundle), pagina de upsell apos inscricao gratuita, pagina de confirmacao, e webhook de callback.
+## Duas tarefas distintas
 
 ---
 
-## Arquitectura
+## 1. Substituir o logo "FC" pela fotografia real
 
-```text
-Utilizador clica "Pagar"
-        |
-        v
-React Frontend
-(chama edge function)
-        |
-        v
-Edge Function: create-payment
-(API key segura como secret)
-        |
-        v
-EuPago API PayByLink
-POST /api/v1.02/paybylink/create
-        |
-        v
-Devolve { paymentLink }
-        |
-        v
-Frontend redireciona para paymentLink
-        |
-        v
-Utilizador paga na pagina EuPago
-        |
-        v
-EuPago redireciona para /confirmacao?plan=xxx
-        |
-        v
-EuPago envia webhook POST
-        |
-        v
-Edge Function: eupago-webhook
-(processa confirmacao)
-```
+**Onde:** `src/components/landing/PresenterSection.tsx` (linha 16-18)
+
+**O que fazer:**
+- Copiar a imagem enviada para `src/assets/frederico-carvalho.jpg`
+- Substituir o circulo com "FC" por uma tag `<img>` com a foto
+- Dimensoes: `w-40 h-40` mobile / `w-[200px] h-[200px]` desktop (manter as actuais)
+- Aplicar `object-cover` + `rounded-full` para recortar em circulo
+- Manter o border azul existente (`border-[3px] border-blue-100`)
+- Adicionar `loading="lazy"` e `alt="Frederico Carvalho"` para boas praticas
 
 ---
 
-## 1. Configuracao Lovable Cloud
+## 2. Reconstruir a pagina de Upsell (`/upgrade`) completa
 
-### Activar Cloud
-- Necessario para criar edge functions e guardar secrets
+A pagina actual e uma versao basica com formulario de email + 3 cartoes simples. O prompt descreve uma pagina muito mais detalhada e estruturada.
 
-### Secret
-- Guardar `EUPAGO_API_KEY` como secret (API key de producao)
+**Ficheiro:** `src/pages/Upsell.tsx` -- reescrita completa
 
----
+### Estrutura da nova pagina:
 
-## 2. Edge Function: create-payment
+**[1] Barra de confirmacao (sticky top)**
+- Fundo verde claro, icone check, "Premium Pass reservado"
+- Barra de progresso 60% verde (Passo 2 de 3)
 
-Ficheiro: `supabase/functions/create-payment/index.ts`
+**[2] Hero curto**
+- Label "ENQUANTO CONFIRMAS O ACESSO"
+- H1: "Queres ir mais fundo?"
+- Paragrafo explicativo + nota sobre IVA
 
-- Recebe POST com `{ plan, email, nome }`
-- Mapeia plan para produto (valor, identifier, descricao)
-- Chama EuPago PayByLink API
-- Devolve `{ paymentLink }` ao frontend
-- Base URL producao: `https://clientes.eupago.pt/api`
+**[3] Bloco "Ja tens"**
+- Card com icone estrela, mostrando o Premium Pass ja incluido (€15)
+- Gravacao, Q&A, Guia, Early access
 
-Mapa de produtos:
-| Plan | Valor | Identifier |
-|------|-------|------------|
-| premium | 15.00 | WEBINAR-PREMIUM |
-| masterclass | 52.00 | WEBINAR-MASTERCLASS |
-| workshop | 512.00 | WEBINAR-WORKSHOP |
-| bundle | 524.00 | WEBINAR-BUNDLE |
+**[4] Tres cartoes de decisao**
+- **Cartao Saltar** (Opcao A) -- "+€0, Total €15", botao subtil, tom mais apagado
+- **Cartao Masterclass** (Opcao B, destaque) -- "+€37, Total €52", badge "MAIS POPULAR", border azul, detalhes do evento, lista de 6 items, botao azul primario
+- **Cartao Workshop** (Opcao C) -- "+€497, Total €512", badge "PRESENCIAL", border-top amber, lista de 6 items, link bundle ("Quer os dois? €524, poupa €25")
 
----
+**[4b] Mini-modal Bundle**
+- Overlay com resumo de precos (Premium + Masterclass + Workshop = €549 - €25 = €524)
+- Botao "Confirmar bundle -- €524"
 
-## 3. Edge Function: eupago-webhook
+**[5] Resumo flutuante (desktop only)**
+- Sticky bottom, mostra pedido actual + total dinamico + botao confirmar
+- Cor do botao muda conforme seleccao (verde se so Premium, azul se upgrade)
 
-Ficheiro: `supabase/functions/eupago-webhook/index.ts`
+**[6] CTA fixo mobile**
+- Aparece apos seleccionar um cartao
+- Full-width, fixed bottom, "Confirmar -- €XX"
 
-- Recebe POST da EuPago quando pagamento e confirmado
-- Verifica `transactionStatus === "Success"`
-- Log da transacao (por agora apenas log, sem DB)
-- Responde 200 OK
+**[7] Micro rodape**
+- Garantias (pagamento seguro, RGPD, reembolso 14 dias)
+- Email de contacto
 
----
+### Comportamento interactivo:
+- `useState` para `selectedOption`: null | 'skip' | 'masterclass' | 'workshop' | 'bundle'
+- Seleccao visual nos cartoes (border azul no seleccionado)
+- Total dinamico que actualiza conforme seleccao
+- Ao confirmar: chama edge function `create-payment` com o plano escolhido
+- Animacoes staggered na entrada (fade + translateY por cartao)
 
-## 4. Fluxo do Modal — Alteracoes
+### Responsividade:
+- Mobile: cartoes em stack vertical (Masterclass primeiro, depois Workshop, depois Saltar)
+- Desktop: grid 3 colunas (Saltar, Masterclass centro com scale, Workshop)
+- Resumo flutuante so em desktop (lg+)
+- CTA fixo so em mobile
 
-### Fluxo atual:
-1. Upsell (mostra o que perde) → 2. Formulario gratuito → 3. Confirmacao
-
-### Novo fluxo (Premium):
-Quando clica "Garantir Premium" no pricing ou "Sim, quero Premium" no upsell:
-1. Formulario de dados (nome + email) com titulo "Premium Pass"
-2. Ao submeter → chama edge function → redireciona para EuPago
-3. Apos pagamento → EuPago redireciona para `/confirmacao?plan=premium`
-
-### Novo fluxo (Gratuito):
-Mantém-se como está (upsell → formulario → confirmacao inline no modal)
-
-### Alteracoes no useRegistrationModal:
-- Adicionar `variant: "free" | "premium"` ao contexto
-- `open("free")` abre com upsell primeiro
-- `open("premium")` abre directo no formulario com titulo "Premium Pass"
-
-### Alteracoes no RegistrationModal:
-- Quando variant = "premium":
-  - Mostrar formulario com titulo "Premium Pass — €15"
-  - Botao submit: "Confirmar e pagar €15"
-  - Ao submeter: chama `create-payment` edge function, redireciona para link EuPago
-- Quando variant = "free":
-  - Fluxo atual mantém-se (upsell → form → confirmacao)
-- Botao "Sim, quero Premium" no upsell → muda variant para "premium" e mostra formulario premium
+### Integracao com pagamento:
+- Mantém a chamada a `supabase.functions.invoke("create-payment")` ja existente
+- Mapeia seleccao para plan key: skip→premium, masterclass→masterclass, workshop→workshop, bundle→bundle
 
 ---
 
-## 5. Pagina de Upsell Pos-Inscricao
+## Ficheiros afectados
 
-Nova pagina: `src/pages/Upsell.tsx`
-Rota: `/upgrade`
+| Ficheiro | Accao |
+|----------|-------|
+| `src/assets/frederico-carvalho.jpg` | Criar (copiar imagem enviada) |
+| `src/components/landing/PresenterSection.tsx` | Alterar -- substituir "FC" por `<img>` |
+| `src/pages/Upsell.tsx` | Reescrever -- pagina completa conforme prompt |
 
-Mostrada apos inscricao gratuita (botao no modal de confirmacao ou redirect).
-Apresenta 3 cartoes de upgrade:
-
-| Cartao | Valor | Descricao |
-|--------|-------|-----------|
-| Premium Pass | €15 | Gravacao + Q&A + Guia + Apps |
-| Premium + Masterclass | €52 | Tudo do premium + 3h masterclass online |
-| Premium + Workshop | €512 | Tudo do premium + 8h workshop presencial Lisboa |
-
-Cada cartao tem botao que:
-1. Recolhe email (se nao tiver) ou usa o ja capturado
-2. Chama edge function create-payment
-3. Redireciona para EuPago
-
----
-
-## 6. Pagina de Confirmacao
-
-Nova pagina: `src/pages/Confirmacao.tsx`
-Rota: `/confirmacao?plan=xxx`
-
-- Le parametro `plan` da URL
-- Mostra mensagem de confirmacao conforme o plano
-- Inclui: icone, titulo, lista do que inclui, proximo passo, link WhatsApp
-- Botao "Voltar ao site"
-- Design consistente com o resto da landing page
-
----
-
-## 7. Ficheiros a criar/alterar
-
-### Novos ficheiros:
-- `supabase/functions/create-payment/index.ts` — edge function pagamento
-- `supabase/functions/eupago-webhook/index.ts` — edge function webhook
-- `src/pages/Confirmacao.tsx` — pagina de confirmacao
-- `src/pages/Upsell.tsx` — pagina de upsell pos-inscricao
-
-### Ficheiros alterados:
-- `supabase/config.toml` — registar as 2 edge functions (verify_jwt = false)
-- `src/App.tsx` — adicionar rotas /confirmacao e /upgrade
-- `src/hooks/useRegistrationModal.tsx` — adicionar variant (free/premium)
-- `src/components/landing/RegistrationModal.tsx` — fluxo premium com chamada a edge function
-- `src/components/landing/PricingCardsSection.tsx` — botao premium chama open("premium")
-- `src/components/landing/HeroSection.tsx` — botao premium chama open("premium")
-- `src/components/landing/CTAFinalSection.tsx` — botao premium chama open("premium")
-
-### Dependencias:
-- Nenhuma nova (usa supabase client ja disponivel via Cloud)
-
----
-
-## 8. Sequencia de implementacao
-
-1. Activar Lovable Cloud
-2. Guardar secret EUPAGO_API_KEY
-3. Criar edge function `create-payment`
-4. Criar edge function `eupago-webhook`
-5. Actualizar modal e contexto para suportar variant premium
-6. Criar pagina `/confirmacao`
-7. Criar pagina `/upgrade` (upsell)
-8. Actualizar rotas no App.tsx
-9. Actualizar botoes premium no pricing/hero/CTA
-
+Nenhuma dependencia nova necessaria. A landing page (homepage) nao e alterada excepto a foto na seccao do apresentador.
