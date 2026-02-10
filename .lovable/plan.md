@@ -1,38 +1,28 @@
 
-
-# Refinamentos Hero + Pricing
-
----
-
-## 1. HeroSection.tsx -- Tagline que não parte
-
-O problema: "Sem equipa criativa. Sem agência. Sem meses de tentativa e erro." está a partir em 2 linhas no desktop porque o font-size é demasiado grande (22px/28px).
-
-Solução:
-- Reduzir o font-size da tagline de `text-[22px] md:text-[28px]` para `text-[18px] md:text-[22px]`
-- Adicionar `whitespace-nowrap` em desktop para evitar quebra (com fallback para wrap em mobile)
-- Alternativamente, aumentar o `max-w` do container ou usar `text-[20px] md:text-[24px]` que caiba numa linha a 960px
-
-Ajuste fino recomendado: `text-[17px] sm:text-[20px] md:text-[24px]` -- cabe numa linha em desktop (960px) e faz wrap natural em mobile.
+# Padronizar Botões CTA — Distinção Visual + Copy Consistente
 
 ---
 
-## 2. PricingCardsSection.tsx -- Remover "€27+IVA depois do webinar"
+## Problema
 
-Remover a linha 47:
-```
-<p className="text-sm text-ink-400 line-through mb-1">€27+IVA depois do webinar</p>
-```
+Os dois botões (Grátis e Premium) usam gradientes muito semelhantes (purple→blue e blue→cyan), tornando difícil distingui-los rapidamente. O copy também varia entre secções ("Reservar lugar grátis", "Garantir lugar grátis", "Inscrever grátis").
 
 ---
 
-## 3. PricingCardsSection.tsx -- Remover "em early access" do Premium
+## Solução
 
-Alterar o item no array `premiumFeatures` (linha 19):
-- De: `{ main: "App Gerador de Prompts em early access", sub: "acesso antes de todos os participantes" }`
-- Para: `{ main: "App Gerador de Prompts", sub: "" }`
+### 1. Distinção visual clara
 
-Isto remove tanto "em early access" do titulo como "acesso antes de todos os participantes" do subtitulo.
+- **Botão Grátis (primário)**: Manter o gradiente purple→blue (`from-neon-purple to-blue-600`) — este é o CTA principal
+- **Botão Premium (secundário)**: Mudar para estilo **outline/border** com texto cyan, sem gradiente preenchido. Classe: `border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10`. Isto cria contraste visual imediato entre os dois
+
+### 2. Copy padronizado em todas as secções
+
+| Secção | Botão Grátis | Botão Premium |
+|--------|-------------|---------------|
+| HeroSection | "Reservar Lugar Grátis!" | "Garantir Premium €15" |
+| CTAFinalSection | "Reservar Lugar Grátis!" | "Garantir Premium €15" |
+| PricingCardsSection | Já tem "Inscrever grátis" e "Garantir Premium €15" — manter |
 
 ---
 
@@ -40,6 +30,5 @@ Isto remove tanto "em early access" do titulo como "acesso antes de todos os par
 
 | Ficheiro | Alteração |
 |----------|-----------|
-| `src/components/landing/HeroSection.tsx` | Reduzir font-size da tagline para caber numa linha |
-| `src/components/landing/PricingCardsSection.tsx` | Remover preço riscado e "early access" |
-
+| `src/components/landing/HeroSection.tsx` | Mudar estilo do botão premium para outline cyan; padronizar copy |
+| `src/components/landing/CTAFinalSection.tsx` | Mesmas alterações de estilo e copy |
