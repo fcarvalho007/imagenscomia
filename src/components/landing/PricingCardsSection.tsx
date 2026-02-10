@@ -16,7 +16,7 @@ const premiumFeatures = [
   { main: "Gravação HD vitalícia", sub: "" },
   { main: "Sessão Q&A em grupo — 60 minutos", sub: "exclusiva, após o webinar" },
   { main: "Guia completo de prompts por tipo de imagem", sub: "PDF 30+ páginas, testado em contexto empresarial" },
-  { main: "App Gerador de Prompts em early access", sub: "acesso antes de todos os participantes" },
+  { main: "App Gerador de Prompts", sub: "" },
 ];
 
 export const PricingCardsSection = () => {
@@ -44,7 +44,7 @@ export const PricingCardsSection = () => {
                 <span className="font-heading font-extrabold text-4xl text-ink-900">€15</span>
                 <span className="text-sm text-ink-400">+ IVA</span>
               </div>
-              <p className="text-sm text-ink-400 line-through mb-1">€27+IVA depois do webinar</p>
+              
               <p className="text-[12px] text-blue-600 font-medium mb-4">Ideal para quem quer rever e aplicar depois</p>
 
               <div className="w-full h-px bg-border-strong mb-6" />
