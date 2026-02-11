@@ -1,55 +1,50 @@
 
 
-# Refinamento de quebras e consistência (Steps 3-4)
+# Refinamentos visuais — Steps 3 e 4
 
 ## Ficheiros a editar (2)
 
 | Ficheiro | Alteracoes |
 |----------|-----------|
-| `StepPremium.tsx` | Preço nowrap, microcopy mais curta, "+ IVA" consistente |
-| `StepMasterclass.tsx` | Microcopy mais curta, leading consistente, preço nowrap |
+| `StepPremium.tsx` | Skip mais escuro, remover "Pagamento unico...", mover frase posicionamento para baixo do botao, microcopy preco mais curta |
+| `StepMasterclass.tsx` | Skip mais escuro, tag alinhada, remover "Pagamento unico...", mover "Grupo limitado..." para baixo do botao, reduzir espaco antes do "ou" |
 
 ---
 
 ## 1. StepPremium.tsx
 
-### Preço grande (linha 49)
-- Adicionar `whitespace-nowrap` ao `<p>` do preço para garantir que "€15 + IVA" fica numa só linha
-- Atual: `<p className="...">€15 <span className="text-[16px] font-bold">+ IVA</span></p>`
-- Novo: adicionar `whitespace-nowrap` à class do `<p>`
+### Skip link mais escuro (linha 101)
+- De: `text-ink-300` para `text-ink-400`
 
-### Microcopy do preço (linha 50)
-- Encurtar "Para implementar com calma, sem depender do direto." para evitar quebra
-- Novo: **"Para implementar com calma, sem depender do direto."** — manter mas garantir que o `<div>` pai tem espaço suficiente (aumentar `flex-1` ou reduzir badge)
-- Alternativa mais curta se continuar a quebrar: **"Implementar com calma, sem depender do direto."**
+### Remover "Pagamento unico · acesso a gravacao incluido" (linhas 86-88)
+- Apagar completamente
 
-### Badge early bird (linha 52)
-- Já tem `min-w-[160px]` e `whitespace-nowrap` — ok, manter
+### Mover "Upgrade ideal para aplicar o metodo depois do webinar." (linhas 75-77)
+- Remover da posicao atual (antes do CTA, dentro do card)
+- Colocar abaixo do botao CTA (onde estava "Pagamento unico...")
+- Manter `text-[13px] text-ink-400 text-center mt-2`
+
+### Microcopy do preco — evitar quebra de "direto" (linha 50)
+- Encurtar de "Para implementar com calma, sem depender do direto." para **"Implementar com calma, sem depender do direto."**
+- Isto reduz ~4 caracteres e evita que "direto." caia para linha seguinte
 
 ## 2. StepMasterclass.tsx
 
-### Preço grande (linha 52)
-- Separar "+ IVA" num `<span>` mais pequeno (como no Premium) para consistência visual
-- Atual: `€47 + IVA` (tudo no mesmo tamanho 36px)
-- Novo: `€47 <span className="text-[16px] font-bold">+ IVA</span>` (igual ao Premium)
-- Adicionar `whitespace-nowrap` ao `<p>`
+### Skip link mais escuro (linha 114)
+- De: `text-ink-300` para `text-ink-400`
 
-### Microcopy do preço (linha 53)
-- Encurtar para evitar quebra de "(quinta-feira)" para nova linha
-- Atual: "Pagamento único · lugares limitados · 5 de Março (quinta-feira)"
-- Novo: **"Pagamento único · lugares limitados · 5 de Março"**
-- Mover "(quinta-feira)" para o rodapé junto a Online/3h, ou simplesmente remover — a data "5 de Março" já é suficiente
+### Tag "IMAGEM → VIDEO" — alinhar a esquerda (linha 42)
+- Remover `mb-4` (espaco excessivo antes do preco)
+- Usar `mb-3` para aproximar do conteudo
 
-### Bullets micro (linha 71)
-- Adicionar `leading-[1.5]` ao microcopy dos bullets (consistência com Premium)
-- Atual: `text-[14px] text-ink-500`
-- Novo: `text-[14px] text-ink-500 leading-[1.5]`
+### Remover "Pagamento unico · acesso a gravacao incluido" (linhas 99-101)
+- Apagar completamente
 
-## Resumo visual esperado
+### Mover "Grupo limitado para garantir acompanhamento." (linhas 85-87)
+- Remover da posicao atual (antes do CTA)
+- Colocar abaixo do botao CTA (onde estava "Pagamento unico...")
+- Manter `text-[13px] text-ink-400 text-center mt-2`
 
-Ambos os cards ficam com:
-- Preço: `font-black text-[36px]` + `<span text-[16px]>+ IVA</span>` + `whitespace-nowrap`
-- Badge: `whitespace-nowrap min-w-[160px]`
-- Bullets micro: `text-[14px] leading-[1.5]`
-- Microcopy de preço: 1 linha sem quebra
+### Reduzir espaco antes do separador "ou" (linha 105)
+- De: `my-4` para `my-3` para aproximar o "ou" e o skip link do card
 
