@@ -1,4 +1,4 @@
-import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram } from "lucide-react";
+import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram, MessageCircle } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
 
 const OfferCard = ({
@@ -17,7 +17,7 @@ const OfferCard = ({
   dateLine?: string;
   ctaLabel: string;
   ctaUrl: string;
-  priceNote: string;
+  priceNote: React.ReactNode;
   accent?: boolean;
 }) => (
   <div
@@ -50,17 +50,13 @@ const OfferCard = ({
 
     <a
       href={ctaUrl}
-      className={`block w-full text-center font-heading font-semibold text-[15px] rounded-lg py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:ring-offset-2 ${
-        accent
-          ? "bg-ink-900 text-white hover:bg-ink-700"
-          : "bg-ink-900 text-white hover:bg-ink-700"
-      }`}
+      className="block w-full text-center font-heading font-semibold text-[15px] rounded-lg py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:ring-offset-2 bg-ink-900 text-white hover:bg-ink-700"
       aria-label={ctaLabel}
     >
       {ctaLabel}
     </a>
 
-    <p className="text-[12px] text-ink-400 text-center mt-2">{priceNote}</p>
+    <div className="text-[12px] text-ink-400 text-center mt-2">{priceNote}</div>
   </div>
 );
 
@@ -81,32 +77,57 @@ export const WebinarSidebar = () => (
       ]}
       ctaLabel="Garantir Premium Pass"
       ctaUrl={WEBINAR_CONFIG.PREMIUM_URL}
-      priceNote="Early bird: €15 + IVA · Depois do webinar: €27 + IVA"
+      priceNote={
+        <>
+          <span className="block">Early bird: €15 + IVA</span>
+          <span className="block">Depois do webinar: €27 + IVA</span>
+        </>
+      }
     />
 
     <OfferCard
       title="Masterclass Imagem → Vídeo"
       price="€47 + IVA"
       benefits={[
-        { icon: <Sparkles className="w-4 h-4" />, text: "Fluxo para transformar imagem em vídeo utilizável" },
-        { icon: <Video className="w-4 h-4" />, text: "Ferramentas certas (gratuitas e pagas) por objetivo" },
-        { icon: <FileText className="w-4 h-4" />, text: "Guia de prompts para vídeo + gravação incluída" },
+        { icon: <Sparkles className="w-4 h-4" />, text: "Fluxo imagem → vídeo (clip utilizável)" },
+        { icon: <Video className="w-4 h-4" />, text: "Ferramentas por objetivo (gratuitas e pagas)" },
+        { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
       ]}
       dateLine="5 de Março (quinta-feira) · Online · 3 horas"
       ctaLabel="Garantir lugar na Masterclass"
       ctaUrl={WEBINAR_CONFIG.MASTERCLASS_URL}
-      priceNote="Early bird: €47 + IVA · Depois: €97 + IVA"
+      priceNote={
+        <>
+          <span className="block">Early bird: €47 + IVA</span>
+          <span className="block">Depois: €97 + IVA</span>
+        </>
+      }
     />
 
-    {/* Instagram */}
+    {/* Social row */}
+    <div className="flex items-center justify-center gap-5 pt-1">
+      <a
+        href={WEBINAR_CONFIG.INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 text-[13px] font-medium text-ink-400 hover:text-purple-600 transition-colors"
+        aria-label="Instagram do Frederico"
+      >
+        <Instagram className="w-4 h-4 text-purple-500" />
+        Instagram (bastidores e exemplos)
+      </a>
+    </div>
+
+    {/* WhatsApp support */}
     <a
-      href={WEBINAR_CONFIG.INSTAGRAM_URL}
+      href="https://api.whatsapp.com/send?phone=351915015508&text=WebinarAI"
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 text-[14px] font-medium text-ink-500 hover:text-ink-900 transition-colors py-2"
+      className="flex items-center justify-center gap-1.5 text-[12px] text-ink-400 hover:text-green-600 transition-colors"
+      aria-label="Suporte WhatsApp"
     >
-      <Instagram className="w-4 h-4" />
-      Instagram do Frederico
+      <MessageCircle className="w-3.5 h-3.5 text-green-500" />
+      Suporte WhatsApp
     </a>
   </div>
 );
