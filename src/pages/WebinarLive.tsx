@@ -78,9 +78,6 @@ const WebinarLive = () => {
             />
             {!isLive && !isEnded && (
               <div className="text-center py-4 mb-4">
-                <p className="text-[13px] text-ink-400 mb-3">
-                  O vídeo fica disponível automaticamente 30 min antes do início. Sugestão: entrar 3–5 min antes.
-                </p>
                 <WebinarCalendarButton />
               </div>
             )}
