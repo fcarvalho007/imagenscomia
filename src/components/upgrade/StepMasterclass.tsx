@@ -7,28 +7,30 @@ interface Props {
 
 const bullets = [
   {
-    title: "Da imagem ao vídeo — domina a próxima fronteira",
-    sub: "Aprende a criar vídeo com IA usando o mesmo método das imagens.",
+    title: "Imagem → vídeo com IA: do visual estático ao clip pronto",
+    sub: "Fluxo prático para transformar uma imagem em vídeo utilizável.",
   },
   {
-    title: "Casos reais de empresas portuguesas",
-    sub: "Trabalho feito durante a sessão, no teu sector.",
+    title: "Ferramentas certas (gratuitas e pagas) — sem confusão",
+    sub: "Seleção curada por objetivo, para guardar e usar.",
   },
   {
-    title: "Gravação vitalícia + certificado Professor FEUC",
-    sub: "Rever sempre que precisares.",
+    title: "Guia de prompts para vídeo (pronto a reutilizar)",
+    sub: "Estruturas testadas para consistência e melhor controlo do resultado.",
+  },
+  {
+    title: "Gravação incluída",
+    sub: "Rever e replicar sempre que necessário.",
   },
 ];
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
   <div className="max-w-[480px]">
     <h2 className="font-heading font-bold text-[24px] text-ink-900">
-      Para quem quer implementar, não só aprender
+      Transformar imagens em vídeo com IA — ao vivo
     </h2>
     <p className="text-[17px] text-ink-500 mt-2 mb-6">
-      O webinar ensina o método.
-      <br />
-      A Masterclass aprofunda para um grupo restrito ao vivo, com o Frederico.
+      O webinar ensina o método. A Masterclass mostra como o usar para gerar vídeo — com ferramentas certas, prompts prontos e um fluxo replicável.
     </p>
 
     {/* Masterclass Card */}
@@ -36,6 +38,11 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       className="bg-background rounded-2xl p-6 max-w-[460px]"
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
+      {/* Tag */}
+      <span className="inline-block text-[12px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-md bg-ink-100 text-ink-700 mb-4">
+        IMAGEM → VÍDEO
+      </span>
+
       {/* Price row */}
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -43,17 +50,15 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
             MASTERCLASS ONLINE
           </p>
           <p className="font-heading font-black text-[36px] text-ink-900 leading-none">€47 + IVA</p>
-          <p className="text-[14px] text-ink-400">€57,81 total · pagamento único</p>
+          <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março (quinta-feira)</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="font-semibold text-[14px] text-amber-700">Early bird</p>
-          <p className="text-[14px] text-amber-600">Sobe para €97</p>
+        <div className="bg-amber-50 rounded-lg p-2 shrink-0 ml-3" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+          <p className="font-semibold text-[14px] text-amber-700">Early bird: €47 + IVA</p>
+          <p className="text-[14px] text-amber-600">Depois: €97 + IVA</p>
         </div>
       </div>
 
       <div className="w-full h-px bg-border my-4" />
-
-      <p className="font-semibold text-[14px] text-ink-700 mb-3">Da imagem ao vídeo — ao vivo com o Frederico:</p>
 
       <div className="space-y-3">
         {bullets.map((b) => (
@@ -71,21 +76,29 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
       {/* Event details */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {["📅 Data a anunciar", "💻 Online", "⏱ 3 horas", "👥 Máx. 30"].map((d) => (
+        {["📅 5 de Março (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Máx. 30"].map((d) => (
           <span key={d} className="text-[14px] text-ink-400">{d}</span>
         ))}
       </div>
 
+      {/* Scarcity line */}
+      <p className="text-[14px] text-ink-400 text-center mt-4">
+        Grupo limitado para garantir acompanhamento.
+      </p>
+
       {/* CTA */}
       <button
         onClick={onAddMasterclass}
-        className="w-full mt-5 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors"
+        className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors"
         style={{ backgroundColor: "hsl(var(--ink-900))" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "hsl(var(--ink-900))")}
       >
-        Reservar Masterclass →
+        Garantir lugar na Masterclass →
       </button>
+      <p className="text-[13px] text-ink-400 text-center mt-2">
+        Pagamento único · acesso à gravação incluído
+      </p>
     </div>
 
     {/* Separator */}
