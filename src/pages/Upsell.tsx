@@ -85,7 +85,7 @@ const Upsell = () => {
 
       <div className="lg:grid lg:grid-cols-[340px_1fr] lg:min-h-screen">
         {/* Desktop left panel */}
-        <SummaryPanel orderState={orderState} total={total} />
+        <SummaryPanel orderState={orderState} total={total} onRemove={(item) => setOrderState(s => ({ ...s, [item]: false }))} />
 
         {/* Right content */}
         <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen">

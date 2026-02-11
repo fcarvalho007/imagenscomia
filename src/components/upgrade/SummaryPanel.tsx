@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Trash2 } from "lucide-react";
 import type { OrderState } from "@/pages/Upsell";
 import { formatPrice } from "@/pages/Upsell";
 
 interface Props {
   orderState: OrderState;
   total: number;
+  onRemove?: (item: "premium" | "masterclass") => void;
 }
 
 const lineVariants = {
@@ -14,7 +16,7 @@ const lineVariants = {
 };
 
 /* ═══ Desktop Panel ═══ */
-export const SummaryPanel = ({ orderState, total }: Props) => {
+export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
   const [flash, setFlash] = useState(false);
 
   useEffect(() => {
@@ -64,7 +66,10 @@ export const SummaryPanel = ({ orderState, total }: Props) => {
                 <p className="font-semibold text-[14px] text-ink-900">Premium Pass</p>
                 <p className="text-[12px] text-ink-400 mt-0.5">Gravação · Q&A · Guia</p>
               </div>
-              <p className="font-heading font-bold text-[16px] text-ink-900">€15</p>
+              <div className="flex items-center gap-2">
+                <p className="font-heading font-bold text-[16px] text-ink-900">€15</p>
+                <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("premium")} />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -78,7 +83,10 @@ export const SummaryPanel = ({ orderState, total }: Props) => {
                   <p className="font-semibold text-[14px] text-ink-900">Masterclass Online</p>
                   <p className="text-[12px] text-ink-400 mt-0.5">3h · Online · Máx. 30</p>
                 </div>
-                <p className="font-heading font-bold text-[16px] text-ink-900">€47</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-heading font-bold text-[16px] text-ink-900">€47</p>
+                  <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("masterclass")} />
+                </div>
               </div>
             </motion.div>
           )}
