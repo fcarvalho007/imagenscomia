@@ -5,37 +5,36 @@ import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 const systems = [
   {
     num: "01",
-    title: "O Método do Prompt Perfeito",
+    title: "Estado da Arte: IA para Imagens (2026)",
     borderColor: "border-l-blue-600",
-    desc: "Há uma diferença entre gerar uma imagem e gerar a imagem certa. Vou mostrar ao vivo o que separa um resultado amador de um resultado profissional.",
+    desc: "Antes de escolher a ferramenta, convém perceber o \"tabuleiro\": modelos diferentes, resultados diferentes.",
     bullets: [
-      "Demo ao vivo com 5 tipos de imagem diferentes",
-      "Acesso a uma app exclusiva que constrói prompts automaticamente",
+      "Benchmarks simples para distinguir \"amador\" de \"publicável\"",
+      "Lista curada de ferramentas gratuitas e pagas (para guardar nos favoritos)",
     ],
-    deliverable: "5 prompts-base prontos a reutilizar",
+    deliverable: "mapa rápido de decisão + atalhos para poupar semanas",
   },
   {
     num: "02",
-    title: "Imagens para Redes Sociais e Anúncios",
+    title: "Prompting Profissional: do Briefing ao Resultado",
     borderColor: "border-l-[#0891B2]",
-    desc: "Criação de 3 peças prontas a publicar em direto — o mesmo método pode ser replicado para qualquer marca, em minutos.",
+    desc: "Um prompt não é inspiração. Em contexto empresarial, é especificação — com variáveis que mudam tudo.",
     bullets: [
-      "Do briefing à imagem publicável, passo a passo",
-      "Funciona para feed, stories, anúncios e site",
+      "Framework prático para transformar briefing em prompt reutilizável",
+      "Checklist anti-erros (o que faz a IA falhar — e como corrigir)",
     ],
-    deliverable: "3 peças visuais prontas a publicar",
+    deliverable: "prompts-base e um método consistente para qualquer marca",
   },
   {
     num: "03",
-    title: "Escalar Produção Visual Sem Equipa",
+    title: "Imagens para Redes Sociais e Anúncios (Prontas a Publicar)",
     borderColor: "border-l-green-600",
-    desc: "Como passar de 5 imagens por semana para 50 — com o mesmo tempo e sem mais custos.",
+    desc: "Criar imagens é fácil. Criar imagens que funcionam em social e anúncios é outra conversa.",
     bullets: [
-      "Processo de produção em lote com IA",
-      "App Calculadora: custo IA vs designer externo",
-      "Mapa de decisão: quando usar IA, quando contratar",
+      "Do objetivo ao criativo: formatos, variações e consistência visual",
+      "Como sair com peças publicáveis em minutos (sem parecer stock)",
     ],
-    deliverable: "processo de produção em lote configurado",
+    deliverable: "processo simples para produzir criativos com qualidade e coerência",
   },
 ];
 
