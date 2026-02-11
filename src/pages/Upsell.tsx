@@ -15,7 +15,7 @@ export interface OrderState {
 }
 
 export const getTotal = (o: OrderState) =>
-  (o.premium ? 15 : 0) + (o.masterclass ? 57.81 : 0);
+  (o.premium ? 18.45 : 0) + (o.masterclass ? 57.81 : 0);
 
 export const formatPrice = (n: number) =>
   n === 0 ? "€0" : `€${n.toFixed(2).replace(".", ",")}`;

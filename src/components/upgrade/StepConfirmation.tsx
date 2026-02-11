@@ -151,12 +151,18 @@ const VariantPayment = ({
           </div>
 
           {premium && (
-            <div className="flex justify-between items-center">
-              <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
-                <Check className="w-4 h-4 text-blue-600" /> Premium Pass
-              </span>
-              <span className="text-[14px] text-ink-700">€15</span>
-            </div>
+            <>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+                  <Check className="w-4 h-4 text-blue-600" /> Premium Pass
+                </span>
+                <span className="text-[14px] text-ink-700">€15</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[13px] text-ink-400 ml-6">+ IVA (Premium)</span>
+                <span className="text-[13px] text-ink-400">€3,45</span>
+              </div>
+            </>
           )}
 
           {masterclass && (
@@ -199,7 +205,7 @@ const VariantPayment = ({
       </button>
 
       <p className="text-center text-[12px] text-ink-400 mt-2">
-        🔒 Pagamento seguro EuPago · Reembolso 14 dias
+        🔒 Pagamento seguro EuPago
       </p>
 
       {error && <p className="text-center text-[14px] text-red-500 mt-3">{error}</p>}

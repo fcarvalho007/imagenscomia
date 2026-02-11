@@ -67,7 +67,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
                 <p className="text-[12px] text-ink-400 mt-0.5">Gravação · Q&A · Guia</p>
               </div>
               <div className="flex items-center gap-2">
-                <p className="font-heading font-bold text-[16px] text-ink-900">€15</p>
+                <p className="font-heading font-bold text-[16px] text-ink-900">€18,45</p>
                 <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("premium")} />
               </div>
             </motion.div>
@@ -84,7 +84,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
                   <p className="text-[12px] text-ink-400 mt-0.5">3h · Online · Máx. 30</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="font-heading font-bold text-[16px] text-ink-900">€47</p>
+                  <p className="font-heading font-bold text-[16px] text-ink-900">€57,81</p>
                   <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("masterclass")} />
                 </div>
               </div>
@@ -92,11 +92,20 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
           )}
         </AnimatePresence>
 
-        {/* IVA line */}
+        {/* IVA lines */}
         <AnimatePresence>
-          {showIVA && (
+          {orderState.premium && (
             <motion.div variants={lineVariants} initial="initial" animate="animate"
-              className="flex justify-between items-start py-3">
+              className="flex justify-between items-start py-2">
+              <p className="text-[13px] text-ink-400">IVA (Premium)</p>
+              <p className="text-[13px] text-ink-400">€3,45</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {orderState.masterclass && (
+            <motion.div variants={lineVariants} initial="initial" animate="animate"
+              className="flex justify-between items-start py-2">
               <p className="text-[13px] text-ink-400">IVA (Masterclass)</p>
               <p className="text-[13px] text-ink-400">€10,81</p>
             </motion.div>
@@ -120,7 +129,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
       {/* Security block */}
       <div className="mt-auto pt-5 border-t border-border">
         <p className="text-[12px] text-ink-400 leading-[1.8]">🔒 Pagamento seguro EuPago</p>
-        <p className="text-[12px] text-ink-400 leading-[1.8]">📋 RGPD · Reembolso 14 dias</p>
+        <p className="text-[12px] text-ink-400 leading-[1.8]">📋 RGPD</p>
       </div>
     </aside>
   );
@@ -128,7 +137,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
 
 /* ═══ Mobile Bar ═══ */
 export const MobileSummaryBar = ({ orderState, total }: Props) => {
-  const showIVA = orderState.masterclass;
+  const showIVA = orderState.masterclass || orderState.premium;
 
   return (
     <div className="lg:hidden sticky top-0 z-50 h-12 bg-background border-b border-border px-4 flex items-center justify-between">
