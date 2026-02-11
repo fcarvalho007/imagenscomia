@@ -1,59 +1,55 @@
 
 
-# Melhorias UX/UI dos Passos 1-4 do Upsell
+# Refinamento de quebras e consistência (Steps 3-4)
 
-## Ficheiros a editar (5)
+## Ficheiros a editar (2)
 
 | Ficheiro | Alteracoes |
 |----------|-----------|
-| `Upsell.tsx` | Progress bar max-w 560px, container max-w |
-| `StepQualification.tsx` | max-w 560px, line-height, skip mais discreto |
-| `StepPersonalization.tsx` | max-w 560px, caixa azul compacta, skip discreto |
-| `StepPremium.tsx` | max-w 620px, card 560px, badge min-w/nowrap, skip discreto |
-| `StepMasterclass.tsx` | max-w 620px, card 560px, bullets curtos, remover Max 30, badge nowrap, skip discreto |
+| `StepPremium.tsx` | Preço nowrap, microcopy mais curta, "+ IVA" consistente |
+| `StepMasterclass.tsx` | Microcopy mais curta, leading consistente, preço nowrap |
 
 ---
 
-## 1. Layout global (Upsell.tsx)
+## 1. StepPremium.tsx
 
-- Progress bar: `max-w-[480px]` para `max-w-[560px]` (acompanhar a largura dos cards)
-- Sidebar ja esta a 280px (ok, manter)
+### Preço grande (linha 49)
+- Adicionar `whitespace-nowrap` ao `<p>` do preço para garantir que "€15 + IVA" fica numa só linha
+- Atual: `<p className="...">€15 <span className="text-[16px] font-bold">+ IVA</span></p>`
+- Novo: adicionar `whitespace-nowrap` à class do `<p>`
 
-## 2. Passos 1-2 (Qualification + Personalization)
+### Microcopy do preço (linha 50)
+- Encurtar "Para implementar com calma, sem depender do direto." para evitar quebra
+- Novo: **"Para implementar com calma, sem depender do direto."** — manter mas garantir que o `<div>` pai tem espaço suficiente (aumentar `flex-1` ou reduzir badge)
+- Alternativa mais curta se continuar a quebrar: **"Implementar com calma, sem depender do direto."**
 
-### StepQualification.tsx
-- `max-w-[480px]` para `max-w-[560px]`
-- Skip link: reduzir para `text-[13px]` e `text-ink-300` (mais discreto)
+### Badge early bird (linha 52)
+- Já tem `min-w-[160px]` e `whitespace-nowrap` — ok, manter
 
-### StepPersonalization.tsx
-- `max-w-[480px]` para `max-w-[560px]`
-- Caixa azul: reduzir padding de `p-3` para `p-2.5`, remover `mb-5` para `mb-4`
-- Subtitulo: juntar as 2 linhas (remover `<br />`) para ser mais compacto
-- Skip link: `text-[13px]` e `text-ink-300`
+## 2. StepMasterclass.tsx
 
-## 3. Passo 3 — StepPremium.tsx
+### Preço grande (linha 52)
+- Separar "+ IVA" num `<span>` mais pequeno (como no Premium) para consistência visual
+- Atual: `€47 + IVA` (tudo no mesmo tamanho 36px)
+- Novo: `€47 <span className="text-[16px] font-bold">+ IVA</span>` (igual ao Premium)
+- Adicionar `whitespace-nowrap` ao `<p>`
 
-- Container: `max-w-[560px]` para `max-w-[620px]`
-- Card: `max-w-[520px]` para `max-w-[560px]`
-- Badge early bird: adicionar `whitespace-nowrap` e `min-w-[160px]` para evitar que "+ IVA" quebre de linha
-- Preco grande (€15): reduzir de `text-[40px]` para `text-[36px]` para consistencia com Masterclass
-- Bullets: adicionar `leading-[1.5]` ao microcopy para melhor leitura
-- Skip link: `text-[13px]` e `text-ink-300`
+### Microcopy do preço (linha 53)
+- Encurtar para evitar quebra de "(quinta-feira)" para nova linha
+- Atual: "Pagamento único · lugares limitados · 5 de Março (quinta-feira)"
+- Novo: **"Pagamento único · lugares limitados · 5 de Março"**
+- Mover "(quinta-feira)" para o rodapé junto a Online/3h, ou simplesmente remover — a data "5 de Março" já é suficiente
 
-## 4. Passo 4 — StepMasterclass.tsx
+### Bullets micro (linha 71)
+- Adicionar `leading-[1.5]` ao microcopy dos bullets (consistência com Premium)
+- Atual: `text-[14px] text-ink-500`
+- Novo: `text-[14px] text-ink-500 leading-[1.5]`
 
-- Container: `max-w-[560px]` para `max-w-[620px]`
-- Card: `max-w-[520px]` para `max-w-[560px]`
-- Bullets encurtados (titulos mais curtos):
-  1. "Imagem → video: do estatico ao clip" / "Fluxo pratico para gerar video utilizavel."
-  2. "Ferramentas certas (sem confusao)" / "Curadoria por objetivo: gratuitas e pagas."
-  3. "Prompts para video (reutilizaveis)" / "Estruturas para consistencia e controlo."
-  4. "Gravacao incluida" / "Rever e replicar quando necessario."
-- Rodape icones: remover "👥 Max. 30", manter apenas `["💻 Online", "⏱ 3 horas"]`
-- Badge early bird: adicionar `whitespace-nowrap`
-- Skip link: `text-[13px]` e `text-ink-300`
+## Resumo visual esperado
 
-## 5. SummaryPanel.tsx
-
-- Linha da Masterclass: "3h · Online · Max. 30" para "3h · Online" (remover Max. 30)
+Ambos os cards ficam com:
+- Preço: `font-black text-[36px]` + `<span text-[16px]>+ IVA</span>` + `whitespace-nowrap`
+- Badge: `whitespace-nowrap min-w-[160px]`
+- Bullets micro: `text-[14px] leading-[1.5]`
+- Microcopy de preço: 1 linha sem quebra
 
