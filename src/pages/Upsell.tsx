@@ -114,6 +114,7 @@ const Upsell = () => {
                     setOtherSource={setOtherSource}
                     onNext={() => advanceStep(2)}
                     onSkip={() => advanceStep(2)}
+                    userName={userData.nome}
                   />
                 </motion.div>
               )}
@@ -130,6 +131,7 @@ const Upsell = () => {
               {step === 3 && (
                 <motion.div key="s3" variants={stepVariants} initial="initial" animate="animate" exit="exit">
                   <StepPremium
+                    userName={userData.nome}
                     onAddPremium={() => {
                       setOrderState((s) => ({ ...s, premium: true }));
                       advanceStep(4);

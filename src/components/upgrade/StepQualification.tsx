@@ -17,10 +17,12 @@ interface Props {
   setOtherSource: (s: string) => void;
   onNext: () => void;
   onSkip: () => void;
+  userName?: string;
 }
 
-export const StepQualification = ({ sources, setSources, otherSource, setOtherSource, onNext, onSkip }: Props) => {
+export const StepQualification = ({ sources, setSources, otherSource, setOtherSource, onNext, onSkip, userName }: Props) => {
   const [showOther, setShowOther] = useState(sources.includes("Outro"));
+  const firstName = userName?.trim().split(" ")[0] || "";
 
   const toggle = (val: string) => {
     setSources(sources.includes(val) ? sources.filter((s) => s !== val) : [...sources, val]);
@@ -40,7 +42,7 @@ export const StepQualification = ({ sources, setSources, otherSource, setOtherSo
   return (
     <div className="max-w-[480px]">
       <h2 className="font-heading font-bold text-[22px] text-ink-900">
-        Quase pronto — só 2 perguntas rápidas
+        {firstName ? `${firstName}, só` : "Só"} 2 perguntas muito rápidas
       </h2>
       <p className="text-[15px] text-ink-500 mt-2 mb-7">
         Para garantir que o webinar cobre o que precisas.

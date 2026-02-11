@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 interface Props {
   onAddPremium: () => void;
   onSkip: () => void;
+  userName?: string;
 }
 
 const bullets = [
@@ -20,13 +21,15 @@ const bullets = [
   },
 ];
 
-export const StepPremium = ({ onAddPremium, onSkip }: Props) => (
+export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
+  const firstName = userName?.trim().split(" ")[0] || "";
+  return (
   <div className="max-w-[480px]">
     <h2 className="font-heading font-bold text-[22px] text-ink-900">
-      A tua inscrição gratuita está confirmada.
+      {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
     </h2>
     <p className="text-[15px] text-ink-500 mt-2 mb-6">
-      Antes de terminar — queres adicionar o Premium Pass?
+      Mas queres adicionar o Premium Pass para mais tranquilidade?
     </p>
 
     {/* Premium Card */}
@@ -94,4 +97,5 @@ export const StepPremium = ({ onAddPremium, onSkip }: Props) => (
       Continuar sem gravação, Q&A nem guia →
     </p>
   </div>
-);
+  );
+};

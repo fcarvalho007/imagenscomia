@@ -7,8 +7,8 @@ interface Props {
 
 const bullets = [
   {
-    title: "50 prompts testados — por tipo de imagem",
-    sub: "Produto, redes sociais, anúncios, branding. Prontos a usar.",
+    title: "Da imagem ao vídeo — domina a próxima fronteira",
+    sub: "Aprende a criar vídeo com IA usando o mesmo método das imagens.",
   },
   {
     title: "Casos reais de empresas portuguesas",
@@ -26,9 +26,9 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       Para quem quer implementar, não só aprender
     </h2>
     <p className="text-[15px] text-ink-500 mt-2 mb-6">
-      O webinar ensina o método. A Masterclass
+      O webinar ensina o método.
       <br />
-      executa-o na tua empresa, com Frederico, ao vivo.
+      A Masterclass aprofunda para um grupo restrito ao vivo, com o Frederico.
     </p>
 
     {/* Masterclass Card */}
@@ -53,7 +53,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
       <div className="w-full h-px bg-border my-4" />
 
-      <p className="font-semibold text-[13px] text-ink-700 mb-3">3 horas de implementação ao vivo:</p>
+      <p className="font-semibold text-[13px] text-ink-700 mb-3">Da imagem ao vídeo — ao vivo com o Frederico:</p>
 
       <div className="space-y-3">
         {bullets.map((b) => (
