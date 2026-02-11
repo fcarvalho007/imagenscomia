@@ -14,6 +14,7 @@ interface InscritoModalProps {
   onRemoveNota: (id: string, notaId: string) => void;
   onToggleFollowUp: (id: string) => void;
   onArchive: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const GRADIENTS = [
@@ -75,7 +76,7 @@ function stepConverted(i: Inscrito, step: number): boolean {
 }
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -359,6 +360,22 @@ export default function InscritoModal({
                     <Archive size={13} style={{ color: "rgba(255,255,255,0.50)" }} />
                     <span className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Arquivar inscrito</span>
                   </button>
+                  {onDelete && (
+                    <button
+                      onClick={() => {
+                        if (confirm(`Eliminar definitivamente "${inscrito.nome}"? Esta acção é irreversível.`)) {
+                          onDelete(inscrito.id);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: "rgba(239,68,68,0.10)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.20)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.10)"; }}
+                    >
+                      <Trash2 size={13} style={{ color: "#f87171" }} />
+                      <span className="text-[12px] font-medium" style={{ color: "#f87171" }}>Eliminar definitivamente</span>
+                    </button>
+                  )}
                 </div>
               </>
             )}

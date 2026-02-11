@@ -60,5 +60,9 @@ export function useInscritos() {
     );
   }, []);
 
-  return { inscritos, addNota, removeNota, updateStatus, toggleFollowUp };
+  const deleteInscrito = useCallback((inscritoId: string) => {
+    setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
+  }, []);
+
+  return { inscritos, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
 }

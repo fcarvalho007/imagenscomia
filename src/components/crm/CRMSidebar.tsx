@@ -1,8 +1,8 @@
-import { BarChart2, LayoutDashboard, Columns, Table, LogOut, Menu, X } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
-export type CRMView = "dashboard" | "pipeline" | "tabela";
+export type CRMView = "dashboard" | "pipeline" | "tabela" | "lixo";
 
 interface CRMSidebarProps {
   activeView: CRMView;
@@ -14,6 +14,7 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: LayoutDashboard, label: "Dashboard", view: "dashboard" },
   { icon: Columns, label: "Pipeline", view: "pipeline" },
   { icon: Table, label: "Tabela", view: "tabela" },
+  { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 
 function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps) {

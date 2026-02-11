@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, X } from "lucide-react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 
@@ -8,6 +8,7 @@ interface TableViewProps {
   onSelectInscrito: (i: Inscrito) => void;
   onToggleFollowUp?: (id: string) => void;
   onArchive?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -45,7 +46,7 @@ const VALOR_COLORS: Record<number, string> = {
 
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [stepFilter, setStepFilter] = useState("all");
@@ -355,6 +356,18 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <button onClick={handleBulkArchive} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
             <Archive size={14} /> Arquivar
           </button>
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (!confirm(`Eliminar definitivamente ${selected.size} inscrito(s)? Esta acção é irreversível.`)) return;
+                selected.forEach((id) => onDelete(id));
+                setSelected(new Set());
+              }}
+              className="flex items-center gap-1.5 text-[13px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            >
+              <Trash2 size={14} /> Eliminar
+            </button>
+          )}
           <button onClick={() => setSelected(new Set())} className="ml-1" style={{ color: "rgba(255,255,255,0.40)" }}>
             <X size={16} />
           </button>
