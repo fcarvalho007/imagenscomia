@@ -18,7 +18,9 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          first_name: string | null
           id: string
+          last_name: string | null
           name: string
           premium_unlocked: boolean | null
           referral_code: string
@@ -28,7 +30,9 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           name: string
           premium_unlocked?: boolean | null
           referral_code: string
@@ -38,7 +42,9 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
           name?: string
           premium_unlocked?: boolean | null
           referral_code?: string

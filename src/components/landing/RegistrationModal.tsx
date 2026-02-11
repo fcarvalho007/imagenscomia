@@ -11,7 +11,8 @@ type ConfirmationMode = "referral" | "simple";
 export const RegistrationModal = () => {
   const navigate = useNavigate();
   const { isOpen, close, referredBy } = useRegistrationModal();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -23,15 +24,15 @@ export const RegistrationModal = () => {
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string } | null> => {
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { name, email, whatsapp: whatsapp || undefined, referredBy: referredBy || undefined },
+      body: { firstName, lastName, email, whatsapp: whatsapp || undefined, referredBy: referredBy || undefined },
     });
     if (fnError) throw fnError;
     return { referralCode: data.referralCode, referralLink: data.referralLink };
   };
 
   const handleCapture = async () => {
-    if (!name.trim()) {
-      setError("Este campo é obrigatório.");
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("Primeiro nome e último nome são obrigatórios.");
       return;
     }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -47,7 +48,8 @@ export const RegistrationModal = () => {
     try {
       const data = await registerFree();
       close();
-      navigate(`/confirmacao?plan=free&name=${encodeURIComponent(name.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
     } catch (err) {
       console.error("Registration error:", err);
       setError("Erro ao processar. Tente novamente.");
@@ -58,7 +60,8 @@ export const RegistrationModal = () => {
 
   const handleGoToPremium = () => {
     close();
-    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleReferralPath = () => {
@@ -68,7 +71,8 @@ export const RegistrationModal = () => {
 
   const handleContinueFree = () => {
     close();
-    navigate(`/upgrade?name=${encodeURIComponent(name.trim())}&email=${encodeURIComponent(email.trim())}`);
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleClose = () => {
@@ -76,8 +80,8 @@ export const RegistrationModal = () => {
     setTimeout(() => {
       setStep("capture");
       setConfirmationMode("simple");
-      setName("");
-      setEmail("");
+      setFirstName("");
+      setLastName("");
       setWhatsapp("");
       setAcceptedTerms(false);
       setError(null);
@@ -121,8 +125,10 @@ export const RegistrationModal = () => {
 
             {step === "capture" && (
               <CaptureView
-                name={name}
-                setName={setName}
+                firstName={firstName}
+                setFirstName={setFirstName}
+                lastName={lastName}
+                setLastName={setLastName}
                 email={email}
                 setEmail={setEmail}
                 whatsapp={whatsapp}
@@ -137,7 +143,7 @@ export const RegistrationModal = () => {
 
             {step === "upsell" && (
               <UpsellView
-                name={name}
+                name={`${firstName} ${lastName}`}
                 onGoToPremium={handleGoToPremium}
                 onReferralPath={handleReferralPath}
                 onContinueFree={handleContinueFree}
@@ -147,7 +153,7 @@ export const RegistrationModal = () => {
             {step === "confirmation" && (
               <ConfirmationView
                 email={email}
-                name={name}
+                name={`${firstName} ${lastName}`}
                 referralData={referralData}
                 mode={confirmationMode}
                 onGoToPremium={handleGoToPremium}
@@ -163,8 +169,10 @@ export const RegistrationModal = () => {
 /* ── Step 1: Capture ── */
 
 const CaptureView = ({
-  name,
-  setName,
+  firstName,
+  setFirstName,
+  lastName,
+  setLastName,
   email,
   setEmail,
   whatsapp,
@@ -175,8 +183,10 @@ const CaptureView = ({
   error,
   onSubmit,
 }: {
-  name: string;
-  setName: (v: string) => void;
+  firstName: string;
+  setFirstName: (v: string) => void;
+  lastName: string;
+  setLastName: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
   whatsapp: string;
@@ -193,15 +203,27 @@ const CaptureView = ({
     </h3>
 
     <div className="space-y-3 mb-4">
-      <div className="relative">
-        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-        <input
-          type="text"
-          placeholder="Nome"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
-        />
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input
+            type="text"
+            placeholder="Primeiro Nome"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+          />
+        </div>
+        <div className="relative flex-1">
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+          <input
+            type="text"
+            placeholder="Último Nome"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+          />
+        </div>
       </div>
       <div className="relative">
         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
@@ -222,7 +244,7 @@ const CaptureView = ({
           onChange={(e) => setWhatsapp(e.target.value)}
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
         />
-        <p className="text-[11px] text-ink-400 mt-1 ml-10">Opcional — apenas para lembretes do evento</p>
+        
       </div>
     </div>
 
@@ -258,11 +280,6 @@ const CaptureView = ({
       {loading ? "A registar..." : "Reservar o meu lugar"}
     </motion.button>
 
-    <div className="bg-surface rounded-lg p-3 mt-4 mb-2">
-      <p className="text-[12px] text-ink-500 text-center">
-        A seguir: recebe um email com o link de acesso e opção para adicionar ao calendário.
-      </p>
-    </div>
 
     <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-ink-400">
       <Shield className="w-3 h-3" />
