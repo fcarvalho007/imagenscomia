@@ -43,8 +43,8 @@ export const StepPremium = ({ onAddPremium, onSkip }: Props) => (
           <p className="font-heading font-semibold text-[11px] text-blue-600 uppercase tracking-[0.08em]">
             PREMIUM PASS
           </p>
-          <p className="font-heading font-black text-[40px] text-blue-600 leading-none">€15</p>
-          <p className="text-[12px] text-ink-400">pagamento único</p>
+          <p className="font-heading font-black text-[40px] text-blue-600 leading-none">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
+          <p className="text-[12px] text-ink-400">€18,45 total · pagamento único</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="text-[11px] text-amber-700">Sobe para €27</p>
@@ -75,7 +75,7 @@ export const StepPremium = ({ onAddPremium, onSkip }: Props) => (
         onClick={onAddPremium}
         className="w-full mt-5 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors shadow-blue"
       >
-        Adicionar Premium Pass — €15 →
+        Adicionar Premium Pass — €18,45 →
       </button>
     </div>
 
