@@ -30,22 +30,22 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[600px] mx-auto mb-4">
+          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[640px] mx-auto mb-6">
             De briefing a imagem profissional em menos de 3 minutos — demonstrado ao vivo.
           </p>
         </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[640px] mx-auto mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-12">
             {[
               { icon: Calendar, text: "Ao vivo — 18 Fevereiro" },
               { icon: Clock, text: "10h00 (Portugal)" },
               { icon: Timer, text: "75 minutos" },
               { icon: GraduationCap, text: "Gratuito" },
             ].map(({ icon: Icon, text }) => (
-              <div key={text} className="bg-surface border border-border rounded-xl px-4 py-4 flex items-center justify-center gap-2 shadow-sm">
-                <Icon className="w-5 h-5 text-blue-600 shrink-0" />
-                <span className="text-[14px] sm:text-[15px] font-medium text-ink-700">{text}</span>
+              <div key={text} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
+                <Icon className="w-6 h-6 text-blue-600 shrink-0" />
+                <span className="text-[15px] sm:text-[16px] font-semibold text-ink-700">{text}</span>
               </div>
             ))}
           </div>
