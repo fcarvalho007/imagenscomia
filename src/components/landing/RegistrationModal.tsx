@@ -46,8 +46,8 @@ export const RegistrationModal = () => {
     setError(null);
     try {
       const data = await registerFree();
-      setReferralData(data);
-      setStep("upsell");
+      close();
+      navigate(`/confirmacao?plan=free&name=${encodeURIComponent(name.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
     } catch (err) {
       console.error("Registration error:", err);
       setError("Erro ao processar. Tente novamente.");
