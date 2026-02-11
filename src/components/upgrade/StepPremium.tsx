@@ -46,7 +46,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
           <p className="font-heading font-semibold text-[14px] text-blue-600 uppercase tracking-[0.08em]">
             PREMIUM PASS
           </p>
-          <p className="font-heading font-black text-[36px] text-blue-600 leading-none">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
+          <p className="font-heading font-black text-[36px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
           <p className="text-[14px] text-ink-400">Para implementar com calma, sem depender do direto.</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2 min-w-[160px] whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
