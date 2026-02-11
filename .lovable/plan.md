@@ -1,79 +1,64 @@
 
-# Redesign do Upsell Masterclass (StepMasterclass.tsx)
 
-## Ficheiro: `src/components/upgrade/StepMasterclass.tsx`
+# Refinamento do Premium Pass + Layout do Upsell
 
-Reescrever o componente completo com as seguintes alteracoes:
+## Parte 1 — StepPremium.tsx (copy + UX)
 
-### 1. Titulo H2
-- De: "Para quem quer implementar, nao so aprender"
-- Para: **"Transformar imagens em video com IA — ao vivo"** (opcao B, mais descritiva e concreta)
+### Bullets (remover tom negativo)
+Substituir os 3 bullets atuais por versoes orientadas a beneficio:
+1. **"Gravacao HD (acesso continuo)"** — "Rever e aplicar quando for mais conveniente."
+2. **"Q&A exclusivo (60 min)"** — "Duvidas respondidas com foco no caso real."
+3. **"Guia completo de prompts (30+ paginas)"** — "Estruturas prontas para acelerar resultados."
 
-### 2. Subtitulo
-- De: "O webinar ensina o metodo. A Masterclass aprofunda..."
-- Para: **"O webinar ensina o metodo. A Masterclass mostra como o usar para gerar video — com ferramentas certas, prompts prontos e um fluxo replicavel."**
+### Cabecalho de preco
+- Manter "PREMIUM PASS" e "€15 + IVA"
+- Substituir microcopy "€18,45 total · pagamento unico" por: **"Para implementar com calma, sem depender do direto."**
 
-### 3. Tag no topo do card
-- Adicionar uma tag/pill **"IMAGEM → VIDEO"** no topo do card, antes do preco (texto pequeno, fundo subtil, destaque visual imediato)
+### Badge early bird
+- De: "Sobe para €27 / depois do webinar"
+- Para: **"Early bird: €15 + IVA" / "Depois do webinar: €27 + IVA"**
 
-### 4. Cabecalho de preco
-- Manter: "MASTERCLASS ONLINE" (kicker)
-- Manter: "€47 + IVA" (preco grande)
-- Substituir microcopy por: **"Pagamento unico · lugares limitados · 5 de Marco (quinta-feira)"**
+### Remover label "Com o Premium tens acesso a:"
+- Os bullets sao autoexplicativos
 
-### 5. Badge Early Bird
-- Linha 1: **"Early bird: €47 + IVA"**
-- Linha 2: **"Depois: €97 + IVA"**
+### Linha de posicionamento (antes do CTA)
+Adicionar: **"Upgrade ideal para aplicar o metodo depois do webinar."** (texto pequeno, discreto)
 
-### 6. Bullets (4 items, substituir os 3 atuais)
-1. **"Imagem → video com IA: do visual estatico ao clip pronto"**
-   - Micro: "Fluxo pratico para transformar uma imagem em video utilizavel."
-2. **"Ferramentas certas (gratuitas e pagas) — sem confusao"**
-   - Micro: "Selecao curada por objetivo, para guardar e usar."
-3. **"Guia de prompts para video (pronto a reutilizar)"**
-   - Micro: "Estruturas testadas para consistencia e melhor controlo do resultado."
-4. **"Gravacao incluida"**
-   - Micro: "Rever e replicar sempre que necessario."
+### CTA
+- De: "Adicionar Premium Pass →"
+- Para: **"Garantir Premium Pass →"**
+- Adicionar microcopy abaixo: **"Pagamento unico · acesso a gravacao incluido"**
 
-### 7. Remover label antigo "Da imagem ao video — ao vivo com o Frederico:"
-- Ja nao e necessario com a nova tag e bullets
+### Skip link
+- Manter "Continuar sem gravacao, Q&A nem guia →" (ja esta neutro)
 
-### 8. Linha de escassez
-- Adicionar antes do botao: **"Grupo limitado para garantir acompanhamento."** (texto pequeno, centrado)
+---
 
-### 9. Detalhes do evento
-- Substituir array por: `["📅 5 de Marco (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Max. 30"]`
+## Parte 2 — Layout e UX (Upsell.tsx + SummaryPanel.tsx + StepMasterclass.tsx)
 
-### 10. CTA (botao)
-- De: "Reservar Masterclass →"
-- Para: **"Garantir lugar na Masterclass →"**
-- Adicionar microcopy abaixo do botao: **"Pagamento unico · acesso a gravacao incluido"**
+### Grelha (Upsell.tsx)
+- Reduzir coluna esquerda: `lg:grid-cols-[340px_1fr]` para **`lg:grid-cols-[280px_1fr]`**
+- Aumentar max-w dos cards de `max-w-[480px]` para **`max-w-[560px]`** (StepPremium e StepMasterclass)
+- Cards internos de `max-w-[460px]` para **`max-w-[520px]`**
 
-### 11. Tom
-- Remover "tu/voce" directo (ja nao ha "Aprende", "teu sector", "precisares")
-- Linguagem impessoal e de implementacao
+### SummaryPanel.tsx — simplificar
+- Reduzir padding lateral de 28px para **24px**
+- Compactar subtextos: "18 Fev · 10h00 · 75 minutos" para **"18 Fev · 10h00"**
+- "Gravacao · Q&A · Guia" para **"Gravacao + Q&A + Guia"** (mais curto)
 
-### Hierarquia visual final do card (leitura em 5 segundos)
-```text
-┌─────────────────────────────────────┐
-│ [IMAGEM → VÍDEO] tag               │
-│                                     │
-│ MASTERCLASS ONLINE                  │
-│ €47 + IVA          [Early bird]     │
-│ Pagamento único · 5 Mar             │
-│─────────────────────────────────────│
-│ ✓ Imagem → vídeo com IA            │
-│ ✓ Ferramentas certas                │
-│ ✓ Guia de prompts para vídeo        │
-│ ✓ Gravação incluída                 │
-│                                     │
-│ 📅 5 Mar · 💻 Online · ⏱ 3h · 👥 30│
-│                                     │
-│ Grupo limitado para acompanhamento. │
-│                                     │
-│ [Garantir lugar na Masterclass →]   │
-│ Pagamento único · gravação incluída │
-└─────────────────────────────────────┘
-```
+### StepMasterclass.tsx — remover repeticao de data
+- No rodape com icones, remover a data (ja esta no cabecalho):
+  - De: `["📅 5 de Marco (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Max. 30"]`
+  - Para: **`["💻 Online", "⏱ 3 horas", "👥 Max. 30"]`**
 
-Apenas 1 ficheiro a editar: `src/components/upgrade/StepMasterclass.tsx`
+---
+
+## Ficheiros a editar
+
+| Ficheiro | Alteracoes |
+|----------|-----------|
+| `StepPremium.tsx` | Bullets, badge, CTA, microcopy, linha posicionamento |
+| `Upsell.tsx` | Grelha 280px coluna esquerda |
+| `SummaryPanel.tsx` | Padding, textos compactos |
+| `StepMasterclass.tsx` | Remover data duplicada do rodape, max-w 560/520 |
+
