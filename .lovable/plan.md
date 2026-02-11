@@ -1,45 +1,36 @@
 
 
-# Adicionar botao de remover (lixo) nas linhas pagas do painel esquerdo
+# Adicionar 3 blocos no final da pagina /confirmacao
 
 ## Resumo
 
-Adicionar um icone de caixote de lixo nas linhas do Premium Pass e Masterclass no painel lateral esquerdo, permitindo ao utilizador remover opcoes pagas directamente do resumo do pedido.
-
----
+Adicionar 3 blocos (Referral, Calendario, Instagram) abaixo do conteudo existente na pagina `/confirmacao`, sem alterar nada do que ja existe.
 
 ## Alteracoes
 
-### 1. `src/components/upgrade/SummaryPanel.tsx`
+### Ficheiro: `src/pages/Confirmacao.tsx`
 
-**Props**: Adicionar callback `onRemove: (item: "premium" | "masterclass") => void` na interface Props.
+Dentro do `motion.div` principal, **depois** do bloco `<p>` com "Questoes? frederico@digitalfc.pt" (linha 107), adicionar:
 
-**Linha Premium (linha 2)**: Adicionar um icone `Trash2` (lucide-react) ao lado direito, entre o preco e a borda. Ao clicar, chama `onRemove("premium")`.
+**Bloco 1 — Referral Bonus**
+- Fundo amber-50, border rgba(217,119,6,0.25), rounded-xl, p-5, mt-5
+- Titulo: "Convida 2 amigos — ganha acesso ao Q&A Bonus de 25 Fev"
+- Texto explicativo
+- Botao "Copiar o meu link de convite" com feedback "Link copiado" durante 2s
+- Usar estado `copied` (ja existe no ReferralWidget mas este bloco e independente — adicionar estado local)
+- O link de referral usa `searchParams.get("ref")` ou fallback para origin
 
-**Linha Masterclass (linha 3)**: Mesmo icone `Trash2`, chama `onRemove("masterclass")`.
+**Bloco 2 — Botao Calendario**
+- mt-3, full-width, border ink-700, fundo branco
+- Gera ficheiro .ics com data 18 Fev 2026 10h00-11h15
 
-**Estilo do icone**:
-- `w-4 h-4`, cor `--ink-400`, hover `--red-500`
-- `cursor-pointer`, `transition-colors 150ms`
-- Posicionado a direita do preco com `ml-2`
-- O layout da direita passa a ser `flex items-center gap-2` para alinhar preco + icone
+**Bloco 3 — Botao Instagram**
+- mt-2.5, full-width, fundo #E1306C
+- Abre link Instagram em novo separador
 
-**Mobile bar**: Sem alteracao (nao ha espaco para lixo na barra compacta).
+### Detalhes tecnicos
 
-### 2. `src/pages/Upsell.tsx`
-
-**Passar `onRemove` ao SummaryPanel**: Criar handler que faz `setOrderState(s => ({ ...s, [item]: false }))`.
-
-Nao altera o step actual — o utilizador pode estar no passo 5 e remover uma opcao, o resumo e total actualizam sem mudar de passo.
-
----
-
-## Ficheiros a editar
-
-| Ficheiro | Alteracao |
-|----------|-----------|
-| `src/components/upgrade/SummaryPanel.tsx` | Adicionar icone Trash2 nas linhas Premium e Masterclass com callback onRemove |
-| `src/pages/Upsell.tsx` | Passar prop onRemove ao SummaryPanel |
-
-Sem dependencias novas (Trash2 ja existe no lucide-react).
+- Mover o `useState` para `copied` para o componente `Confirmacao` (ou adicionar um novo estado local) para o botao de copiar do bloco 1
+- Os 3 blocos aparecem para **todos** os planos, nao so para o plano referral
+- Nenhum conteudo existente e alterado — sao insercoes puras no final do card
 
