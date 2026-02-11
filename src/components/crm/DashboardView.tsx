@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Users, Euro, TrendingUp, BarChart2 } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 
 interface DashboardViewProps {
@@ -239,6 +239,103 @@ export default function DashboardView({ inscritos, onSelectInscrito }: Dashboard
           })}
         </div>
       </div>
+
+      {/* Para Fazer Hoje */}
+      <ParaFazerHoje inscritos={inscritos} onSelectInscrito={onSelectInscrito} />
+    </div>
+  );
+}
+
+/* ── "Para Fazer Hoje" block ── */
+
+const GRADIENTS_TODO = [
+  "linear-gradient(135deg,#1e3a5f,#3b82f6)",
+  "linear-gradient(135deg,#064e3b,#10b981)",
+  "linear-gradient(135deg,#7c2d12,#f97316)",
+  "linear-gradient(135deg,#1e1b4b,#7c3aed)",
+  "linear-gradient(135deg,#0c4a6e,#0284c7)",
+  "linear-gradient(135deg,#134e4a,#0d9488)",
+];
+
+const PLAN_BADGE_TODO: Record<string, { bg: string; color: string; label: string }> = {
+  free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
+  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium" },
+  masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
+  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
+};
+
+function getInitialsTodo(name: string) {
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function ParaFazerHoje({ inscritos, onSelectInscrito }: { inscritos: Inscrito[]; onSelectInscrito: (i: Inscrito) => void }) {
+  const followUps = useMemo(
+    () => inscritos.filter((i) => i.follow_up && i.status === "activo"),
+    [inscritos]
+  );
+  const shown = followUps.slice(0, 5);
+  const remaining = followUps.length - 5;
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5 mt-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-heading font-bold text-[14px] text-ink-800">Para Fazer Hoje</h3>
+        {followUps.length > 0 && (
+          <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-600">
+            {followUps.length} em follow-up
+          </span>
+        )}
+      </div>
+
+      {followUps.length === 0 ? (
+        <div className="flex flex-col items-center py-8">
+          <CheckCircle size={24} className="text-green-400" />
+          <p className="text-[14px] text-ink-400 mt-2">Sem pendências. Tudo em ordem.</p>
+        </div>
+      ) : (
+        <>
+          {shown.map((i, idx) => {
+            const badge = PLAN_BADGE_TODO[i.plan];
+            const gradIdx = parseInt(i.id, 10) % GRADIENTS_TODO.length;
+            return (
+              <div
+                key={i.id}
+                className={`flex items-center gap-3 py-3 cursor-pointer hover:bg-off-white -mx-2 px-2 rounded ${idx < shown.length - 1 ? "border-b border-border" : ""}`}
+                onClick={() => onSelectInscrito(i)}
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white font-heading font-bold text-[11px]"
+                  style={{ background: GRADIENTS_TODO[gradIdx] }}
+                >
+                  {getInitialsTodo(i.nome)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-[14px] text-ink-800">{i.nome}</p>
+                  <p className="text-[12px] text-ink-400 truncate">{i.email}</p>
+                </div>
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: badge.bg, color: badge.color }}>
+                  {badge.label}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(`https://wa.me/${i.whatsapp.replace(/\D/g, "")}`, "_blank");
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[12px] font-medium shrink-0 transition-colors"
+                  style={{ background: "rgba(37,211,102,0.10)", color: "#25D366" }}
+                >
+                  <MessageCircle size={12} /> WhatsApp
+                </button>
+              </div>
+            );
+          })}
+          {remaining > 0 && (
+            <p className="text-[13px] text-blue-600 font-medium mt-3 cursor-pointer hover:underline text-center">
+              Ver mais {remaining} →
+            </p>
+          )}
+        </>
+      )}
     </div>
   );
 }

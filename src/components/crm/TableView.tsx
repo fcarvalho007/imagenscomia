@@ -1,10 +1,13 @@
-import { useMemo, useState } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, X } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 
 interface TableViewProps {
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
+  onToggleFollowUp?: (id: string) => void;
+  onArchive?: (id: string) => void;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -42,13 +45,14 @@ const VALOR_COLORS: Record<number, string> = {
 
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 
-export default function TableView({ inscritos, onSelectInscrito }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [stepFilter, setStepFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const PER_PAGE = 10;
 
   const active = useMemo(() => inscritos.filter((i) => i.status === "activo"), [inscritos]);
@@ -91,10 +95,39 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
       : <ChevronDown size={12} className="inline ml-1 text-blue-600" />;
   };
 
-  const exportCSV = () => {
+  const toggleSelect = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const allPageSelected = paged.length > 0 && paged.every((i) => selected.has(i.id));
+  const somePageSelected = paged.some((i) => selected.has(i.id));
+
+  const toggleSelectAll = () => {
+    if (allPageSelected) {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        paged.forEach((i) => next.delete(i.id));
+        return next;
+      });
+    } else {
+      setSelected((prev) => {
+        const next = new Set(prev);
+        paged.forEach((i) => next.add(i.id));
+        return next;
+      });
+    }
+  };
+
+  const exportCSV = (ids?: Set<string>) => {
     const BOM = "\uFEFF";
     const header = "Nome;Email;WhatsApp;Plano;Valor;Passo;Dúvida;Inscrição;Notas";
-    const rows = filtered.map((i) =>
+    const source = ids ? filtered.filter((i) => ids.has(i.id)) : filtered;
+    const rows = source.map((i) =>
       [i.nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
     );
     const csv = BOM + header + "\n" + rows.join("\n");
@@ -103,6 +136,19 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
     const a = document.createElement("a");
     a.href = url; a.download = "inscritos_crm.csv"; a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleBulkFollowUp = () => {
+    if (!onToggleFollowUp) return;
+    selected.forEach((id) => onToggleFollowUp(id));
+    setSelected(new Set());
+  };
+
+  const handleBulkArchive = () => {
+    if (!onArchive) return;
+    if (!confirm(`Arquivar ${selected.size} inscritos?`)) return;
+    selected.forEach((id) => onArchive(id));
+    setSelected(new Set());
   };
 
   return (
@@ -142,7 +188,7 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
           <option value="all">Todos os passos</option>
           {[1,2,3,4,5].map((s) => <option key={s} value={s}>Passo {s}</option>)}
         </select>
-        <button onClick={exportCSV} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white">
+        <button onClick={() => exportCSV()} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white">
           <Download size={14} /> Exportar CSV
         </button>
       </div>
@@ -153,6 +199,14 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-off-white border-b-2 border-border">
+                <th className="px-3 py-3 w-10">
+                  <Checkbox
+                    checked={allPageSelected}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Seleccionar todos"
+                    {...(somePageSelected && !allPageSelected ? { "data-state": "indeterminate" } : {})}
+                  />
+                </th>
                 {([
                   { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
                   { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
@@ -181,12 +235,16 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
               {paged.map((i) => {
                 const badge = PLAN_BADGE[i.plan];
                 const gradIdx = parseInt(i.id, 10) % GRADIENTS.length;
+                const isSelected = selected.has(i.id);
                 return (
                   <tr
                     key={i.id}
-                    className="border-b border-border hover:bg-off-white cursor-pointer transition-colors"
+                    className={`border-b border-border hover:bg-off-white cursor-pointer transition-colors ${isSelected ? "bg-blue-50" : ""}`}
                     onClick={() => onSelectInscrito(i)}
                   >
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(i.id)} aria-label={`Seleccionar ${i.nome}`} />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div
@@ -279,6 +337,29 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
           </div>
         )}
       </div>
+
+      {/* Bulk Action Bar */}
+      {selected.size > 0 && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-3 rounded-[14px] animate-in slide-in-from-bottom duration-200"
+          style={{ background: "#0F172A", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}
+        >
+          <span className="font-heading font-semibold text-[14px] text-white">{selected.size} seleccionados</span>
+          <div className="h-5" style={{ borderLeft: "1px solid rgba(255,255,255,0.15)" }} />
+          <button onClick={() => exportCSV(selected)} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
+            <Download size={14} /> Exportar
+          </button>
+          <button onClick={handleBulkFollowUp} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
+            <Star size={14} /> Follow-up
+          </button>
+          <button onClick={handleBulkArchive} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
+            <Archive size={14} /> Arquivar
+          </button>
+          <button onClick={() => setSelected(new Set())} className="ml-1" style={{ color: "rgba(255,255,255,0.40)" }}>
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
