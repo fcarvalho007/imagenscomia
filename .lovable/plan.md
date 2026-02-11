@@ -1,105 +1,100 @@
 
+## Avaliação da página Webinar Live: Melhorias e Refinamentos Propostos
 
-## Integração E-goi no momento da primeira inscrição
+### ✅ O que está bem implementado
+- **Estrutura limpa e modular**: Componentes bem separados (VideoArea, Sidebar, Content, Footer)
+- **Estados claros**: Waiting, Live e Ended implementados correctamente
+- **Countdown dinâmico**: Actualiza-se a cada segundo
+- **Config centralizado**: Fácil de reutilizar para futuros webinars
+- **Tipografia consistente**: Montserrat para títulos, Inter para corpo
+- **Responsiveness**: Layout 2-col em desktop, 1-col em mobile
+- **Accessibility básica**: Contraste, spacing, tags semânticas
 
-### Contexto atual
-- Quando o utilizador clica "Reservar o meu lugar" no `CaptureView`, a função `register-free` é chamada
-- Os dados são guardados na BD (`registrations`)
-- O utilizador é redirecionado para `/upgrade`
-- E-goi ainda não está integrado
+---
 
-### Solução proposta
+### 🎯 Melhorias propostas (5 áreas)
 
-#### 1. Guardar secret EGOI_API_KEY
-- Valor: `ecd755f3532e7fa23cfd618c308ce6988d1c30a0`
+#### 1. **Refinamento visual do card de aguardar**
+**Problema**: Card de espera no estado "waiting" é visualmente simples; grid pattern muito subtil (~4% opacity).
 
-#### 2. Criar nova edge function `sync-egoi`
-Função dedicada que:
-- Recebe dados do contacto (first_name, last_name, email, cellphone)
-- Envia POST para `https://api.egoiapp.com/lists/5/contacts` com:
-  - `base`: first_name, last_name, email, cellphone (whatsapp)
-  - `extra_field_40`: referral_code (para personalização posterior)
-  - `tags`: ["webinar_imagens_com_ia_18_fev"]
-- Usa header `Apikey` com o secret
-- Trata erros gracefully (não bloqueia o registo se E-goi falhar)
+**Solução**:
+- Aumentar opacity do grid pattern para ~8-12% para mais definição visual
+- Adicionar animação suave ao badge "A transmissão começa em breve" (pulse leve)
+- Melhorar o contraste do texto do countdown: usar `text-white` em vez de `text-ink-900` para clareza na escuridão
 
-#### 3. Atualizar `register-free/index.ts`
-Após inserir com sucesso na BD:
-- Chamar `sync-egoi` com os dados do novo contacto
-- Passar também o `referral_code` para o campo extra #40
-- Log de sucesso/erro, mas continua o fluxo normal
+#### 2. **Visibilidade do estado "Live" com badge de urgência**
+**Problema**: Quando live começa, não há feedback visual claro para utilizadores que estão na página.
 
-#### 4. Atualizar `supabase/config.toml`
-- Adicionar `[functions.sync-egoi]` com `verify_jwt = false`
+**Solução**:
+- Implementar "Live badge" sticky na header quando `isLive === true`
+- Adicionar transição suave (fade-in) quando muda de waiting → live
+- Usar badge vermelha com pulse animation quando em direto
 
-### Fluxo final
+#### 3. **Layout sidebar em mobile (melhoria UX)**
+**Problema**: Sidebar full-width em mobile pode parecer desconectada da área de vídeo.
 
-```
-Utilizador preenche form + clica "Reservar o meu lugar"
-         ↓
-register-free insere na BD
-         ↓
-register-free chama sync-egoi
-         ↓
-sync-egoi envia contacto para E-goi (List 5) com tag
-         ↓
-E-goi recebe contacto + tag "webinar_imagens_com_ia_18_fev"
-         ↓
-Automações E-goi disparam (email + SMS)
-         ↓
-Utilizador vai para /upgrade (fluxo normal continua)
-```
+**Solução**:
+- Em mobile, mover sidebar ABAIXO do vídeo e conteúdo (não acima)
+- Adicionar separador visual entre conteúdo principal e offers
+- Tornar sticky a barra de ofertas em desktop apenas (já está, mas confirmar comportamento)
 
-### Variáveis no E-goi (para você configurar os templates)
+#### 4. **Melhorias no FAQ accordion**
+**Problema**: FAQ importa `ScrollReveal` mas não o usa; accordion sem espaçamento entre questões.
 
-No painel E-goi, nestes templates terá disponíveis:
-- `!first_name` — Frederico
-- `!last_name` — Carvalho
-- `!email` — frederico@email.com
-- `!cellphone` — 912345678
-- `!extra_field_40` — A8K2X9 (referral_code)
+**Solução**:
+- Remover import não utilizado de `ScrollReveal`
+- Aumentar gap entre acordeões de `space-y-2` para `space-y-3`
+- Adicionar animação suave ao abrir (já tem via Radix, mas verificar timing)
+- Adicionar border-bottom subtil no último item para definição
 
-**Nota importante**: Os dados fixos do evento (data 18 Fevereiro, hora 10h00, links) devem ser inseridos diretamente nos templates/automações do E-goi — não vêm da BD.
+#### 5. **Tratamento de edge cases e acessibilidade**
+**Problema**: Link "Adicionar ao calendário" apontando para `#`; falta de aria-labels.
 
-### Sugestões de melhoria (para mais tarde)
+**Solução**:
+- Adicionar `aria-label` descritivo em links e botões
+- Alterar CALENDAR_URL para placeholder mais realista (ex: Google Calendar link template)
+- Adicionar skip link invisível no topo para acessibilidade (keyboard nav)
+- Melhorar focus states em links (actualmente via hover, mas falta focus ring)
 
-1. **Segmentação por pagamento**: No futuro, quando quiser diferenciar quem pagou vs não pagou:
-   - Usar um webhook do CRM ou função adicional para atualizar o contacto no E-goi com nova tag (`pagou_premium_18_fev` ou similar)
-   - Ou criar automações internas no E-goi com base em delay (ex: "Se não pagou em 24h, enviar email de relembrança")
+#### 6. **Performance e SEO**
+**Problema**: Sem meta tags (title, description) ou structured data para webinar.
 
-2. **Histórico de eventos**: Guardar qual webinar cada contacto se inscreveu (útil se tiver múltiplos webinars)
-   - Adicionar campo extra no E-goi tipo `webinar_name` para referência futura
+**Solução**:
+- Adicionar `useEffect` para actualizar `document.title` quando página carrega
+- Considerar adicionar schema.org Event JSON-LD na página
+- Adicionar meta description dinâmica baseada em WEBINAR_CONFIG
 
-3. **Double-opt-in**: Se quiser confirmação de email antes de enviar automações
-   - Configurar no E-goi como "status: pending" em vez de "active" na primeira inscrição
+#### 7. **Refinamento do CTA no Premium Pass**
+**Problema**: Card Premium tem gradient sutil que pode passar despercebido em mobile.
 
-### Ficheiros a modificar
+**Solução**:
+- Aumentar ligeiramente o gradiente visual (ajustar `from-blue-50/60` para `from-blue-50/80`)
+- Adicionar subtle shadow no card accent para depth
+- Assegurar CTA "Garantir Premium Pass" está claramente destacado
 
-| Ficheiro | Ação |
-|----------|------|
-| Secret | Guardar `EGOI_API_KEY` |
-| `supabase/functions/sync-egoi/index.ts` | Criar — envia contacto para E-goi com tag |
-| `supabase/functions/register-free/index.ts` | Editar — chamar sync-egoi após registo bem-sucedido |
-| `supabase/config.toml` | Editar — adicionar config sync-egoi |
+---
 
-### Detalhes técnicos
+### 🔧 Implementação proposta
 
-**Payload para E-goi API** (POST `/lists/5/contacts`):
-```json
-{
-  "base": {
-    "status": "active",
-    "first_name": "Frederico",
-    "last_name": "Carvalho",
-    "email": "frederico@email.com",
-    "cellphone": "351912345678"
-  },
-  "extra": [
-    { "field_id": 40, "value": "A8K2X9" }
-  ],
-  "tags": ["webinar_imagens_com_ia_18_fev"]
-}
-```
+**Prioridade ALTA** (impact visual + UX):
+1. Aumentar visibilidade do grid pattern no waiting state
+2. Adicionar live badge na header quando `isLive === true`
+3. Melhorar espaçamento e definição do FAQ
+4. Refinar focus/hover states nos links
 
-**Headers**: `{ "Apikey": "ecd755f3532e7fa23cfd618c308ce6988d1c30a0", "Content-Type": "application/json" }`
+**Prioridade MÉDIA** (polish):
+5. Adicionar aria-labels e accessibility improvements
+6. Melhorar card accent gradient
+7. Actualizar CALENDAR_URL com template real
+
+**Prioridade BAIXA** (futura):
+8. Adicionar schema.org Event JSON-LD
+9. Implementar analytics tracking
+
+---
+
+### 📋 Resumo das mudanças
+- Ficheiros a modificar: `WebinarVideoArea.tsx`, `WebinarSidebar.tsx`, `WebinarContent.tsx`, `WebinarLive.tsx`
+- Linhas estimadas a alterar: ~15-20 mudanças pequenas, focadas em CSS classes + accessibility
+- Tempo estimado: 15-20 minutos
 
