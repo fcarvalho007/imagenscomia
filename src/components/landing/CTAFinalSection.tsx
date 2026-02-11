@@ -29,32 +29,16 @@ export const CTAFinalSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+          <div className="flex justify-center">
             <motion.button
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all"
+              className="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
             >
-              Reservar Lugar Grátis!
-            </motion.button>
-            <motion.button
-              onClick={() => open("free")}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all"
-            >
-              Garantir Premium €15
+              Inscrever-me grátis →
             </motion.button>
           </div>
-        </ScrollReveal>
-
-        <ScrollReveal delay={0.3}>
-          <p className="text-[13px] text-white/40 flex flex-wrap items-center justify-center gap-x-6 gap-y-1">
-            <span>✓ Sem spam</span>
-            <span>✓ Dados protegidos RGPD</span>
-            <span>✓ Reembolso garantido 14 dias</span>
-          </p>
         </ScrollReveal>
       </div>
     </section>

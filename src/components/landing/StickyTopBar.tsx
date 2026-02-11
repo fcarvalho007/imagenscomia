@@ -40,9 +40,9 @@ export const StickyTopBar = () => {
 
         <button
           onClick={() => open()}
-          className="shrink-0 text-[13px] font-heading font-semibold text-white bg-gradient-to-r from-neon-purple to-neon-cyan px-5 py-2.5 rounded-full transition-all shadow-neon-purple"
+          className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)]"
         >
-          Reservar lugar grátis →
+          Inscrever-me grátis →
         </button>
       </div>
     </motion.div>
