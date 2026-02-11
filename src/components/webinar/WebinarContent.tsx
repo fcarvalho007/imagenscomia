@@ -1,5 +1,4 @@
 import { CheckCircle2 } from "lucide-react";
-import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import {
   Accordion,
   AccordionContent,
@@ -52,7 +51,7 @@ export const WebinarContent = () => (
       <h2 className="font-heading font-bold text-[20px] sm:text-[22px] text-ink-900 mb-4">
         Perguntas frequentes
       </h2>
-      <Accordion type="single" collapsible className="space-y-2">
+      <Accordion type="single" collapsible className="space-y-3">
         {faqs.map((faq, i) => (
           <AccordionItem
             key={i}

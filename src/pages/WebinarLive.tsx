@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { Radio } from "lucide-react";
 import { WebinarVideoArea } from "@/components/webinar/WebinarVideoArea";
 import { WebinarSidebar } from "@/components/webinar/WebinarSidebar";
 import { WebinarContent } from "@/components/webinar/WebinarContent";
@@ -7,6 +9,18 @@ import { useCountdown } from "@/hooks/useCountdown";
 
 const WebinarLive = () => {
   const countdown = useCountdown(WEBINAR_CONFIG.startDate);
+
+  useEffect(() => {
+    document.title = `${WEBINAR_CONFIG.title} — DIGITALFC`;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", WEBINAR_CONFIG.summary);
+    else {
+      const tag = document.createElement("meta");
+      tag.name = "description";
+      tag.content = WEBINAR_CONFIG.summary;
+      document.head.appendChild(tag);
+    }
+  }, []);
   const now = new Date();
   const timeDiff = WEBINAR_CONFIG.startDate.getTime() - now.getTime();
   const isNearStart = timeDiff <= 30 * 60 * 1000 && timeDiff > 0;
@@ -23,6 +37,12 @@ const WebinarLive = () => {
           <span className="font-heading font-bold text-[15px] tracking-tight text-ink-900">
             DIGITALFC
           </span>
+          {isLive && (
+            <span className="inline-flex items-center gap-1.5 bg-red-500/10 text-red-600 text-[12px] font-semibold px-2.5 py-1 rounded-full">
+              <Radio className="w-3 h-3 animate-pulse" />
+              EM DIRETO
+            </span>
+          )}
           <span className="text-[13px] text-ink-400 hidden sm:block">
             {WEBINAR_CONFIG.metaLine}
           </span>

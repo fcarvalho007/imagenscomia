@@ -18,7 +18,7 @@ export const WEBINAR_CONFIG = {
   EMBED_IFRAME_HTML: "",
 
   // ─── URLs (replace with real values) ───
-  CALENDAR_URL: "#",
+  CALENDAR_URL: "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cria+Imagens+Profissionais+com+IA&dates=20260218T100000Z/20260218T111500Z&details=Webinar+gratuito+com+Frederico+Carvalho&location=Online",
   PREMIUM_URL: "/upgrade",
   MASTERCLASS_URL: "#",
   INSTAGRAM_URL: "https://instagram.com/fredericocarvalho",
