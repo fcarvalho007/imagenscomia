@@ -1,10 +1,10 @@
 
 
-# Mostrar valores + IVA e remover "Reembolso 14 dias"
+# Simplificar botoes CTA e formatar precos no painel lateral
 
 ## Resumo
 
-Adicionar a notacao "+ IVA" ao Premium Pass (que actualmente mostra apenas "€15") para consistencia com a Masterclass, e remover todas as mencoes a "Reembolso 14 dias" na pagina /upgrade.
+Remover os valores dos botoes CTA (Premium e Masterclass), e no painel lateral (SummaryPanel) mostrar os precos base "+ IVA" em vez dos totais com IVA ja incluido. O total final continua a mostrar o valor com IVA incluido.
 
 ---
 
@@ -12,36 +12,50 @@ Adicionar a notacao "+ IVA" ao Premium Pass (que actualmente mostra apenas "€1
 
 ### 1. `src/components/upgrade/StepPremium.tsx`
 
-- Linha 46: Mudar `€15` para `€15 + IVA`
-- Linha 47: Adicionar subtexto `€18,45 total · pagamento unico` (15 * 1.23 = 18.45)
-- Linha 78 (botao CTA): Mudar `€15` para `€18,45`
+- Linha 78: Mudar de `Adicionar Premium Pass — €18,45 →` para `Adicionar Premium Pass →`
 
-### 2. `src/components/upgrade/SummaryPanel.tsx`
+### 2. `src/components/upgrade/StepMasterclass.tsx`
 
-- Linha 70: Premium mostra `€15` — mudar para `€15 + IVA` ou mostrar `€18,45`
-- Linha 87: Masterclass mostra `€47` — ja esta correcto mas adicionar sub-texto `+ IVA` se nao tiver
-- Linhas 95-104: Reformular a linha de IVA para cobrir Premium tambem (IVA Premium €3,45 + IVA Masterclass €10,81)
-- Linha 123: Remover `· Reembolso 14 dias` da linha de seguranca, ficando apenas `🔒 Pagamento seguro EuPago`
+- Linha 87: Mudar de `Reservar Masterclass — €57,81 →` para `Reservar Masterclass →`
 
-### 3. `src/pages/Upsell.tsx`
+### 3. `src/components/upgrade/SummaryPanel.tsx`
 
-- Linha 18: Actualizar `getTotal` — Premium passa de 15 para 18.45 (15 + 23% IVA): `(o.premium ? 18.45 : 0) + (o.masterclass ? 57.81 : 0)`
+- Linha 66-67 (Premium line): Mudar subtexto para "Gravacao . Q&A . Guia" e preco para "€15 + IVA" em vez de "€18,45"
+- Linha 83-84 (Masterclass line): Mudar preco para "€47 + IVA" em vez de "€57,81"
+- Linhas 95-113 (IVA lines separadas): Remover — ja nao sao necessarias porque os precos base + IVA estao indicados nas linhas principais
+- O TOTAL continua a mostrar o valor com IVA incluido (€18,45 / €57,81 / €76,26) via `formatPrice(total)` — sem alteracao
 
 ### 4. `src/components/upgrade/StepConfirmation.tsx`
 
-- Linha 158: Premium mostra `€15` — mudar para `€15 + IVA` com sub-linha de IVA (€3,45), tal como ja existe para Masterclass
-- Linha 181: O total ja usa `getTotal()` portanto actualiza automaticamente
-- Linha 202: Remover `· Reembolso 14 dias`, ficando apenas `🔒 Pagamento seguro EuPago`
+- Linha 159: Premium mostra "€15" — adicionar texto "+ IVA" ao lado
+- Linhas 161-164: Remover a linha separada de IVA Premium (€3,45) — ja indicado no preco
+- Linha 174: Masterclass mostra "€47" — adicionar texto "+ IVA" ao lado
+- Linhas 176-179: Remover a linha separada de IVA Masterclass (€10,81) — ja indicado no preco
+- O TOTAL continua a mostrar o valor total com IVA incluido, e deve indicar "(c/ IVA)" ao lado
 
 ---
 
-## Resumo dos valores actualizados
+## Resultado visual esperado
 
-| Produto | Base | IVA (23%) | Total |
-|---------|------|-----------|-------|
-| Premium Pass | €15 | €3,45 | €18,45 |
-| Masterclass | €47 | €10,81 | €57,81 |
-| Ambos | €62 | €14,26 | €76,26 |
+**Painel lateral (SummaryPanel):**
+```text
+Premium Pass
+Gravacao . Q&A . Guia          €15 + IVA
+
+Masterclass Online
+3h . Online . Max. 30          €47 + IVA
+
+────────────────────────────────
+TOTAL                          €76,26
+```
+
+**Step 5 (Confirmacao com pagamento):**
+```text
+Premium Pass                   €15 + IVA
+Masterclass Online             €47 + IVA
+────────────────────────────────
+TOTAL (c/ IVA)                 €76,26
+```
 
 ---
 
@@ -49,10 +63,9 @@ Adicionar a notacao "+ IVA" ao Premium Pass (que actualmente mostra apenas "€1
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/upgrade/StepPremium.tsx` | Precos com "+ IVA", total €18,45 |
-| `src/components/upgrade/SummaryPanel.tsx` | IVA no Premium, remover "Reembolso 14 dias" |
-| `src/pages/Upsell.tsx` | getTotal: premium = 18.45 |
-| `src/components/upgrade/StepConfirmation.tsx` | IVA no Premium, remover "Reembolso 14 dias" |
+| `src/components/upgrade/StepPremium.tsx` | Remover preco do botao CTA |
+| `src/components/upgrade/StepMasterclass.tsx` | Remover preco do botao CTA |
+| `src/components/upgrade/SummaryPanel.tsx` | Precos base + IVA, remover linhas IVA separadas |
+| `src/components/upgrade/StepConfirmation.tsx` | Precos base + IVA, remover linhas IVA separadas, total c/ IVA |
 
 Sem dependencias novas.
-
