@@ -1,28 +1,79 @@
 
+# Redesign do Upsell Masterclass (StepMasterclass.tsx)
 
-# Atualizar Conteudo da Seccao Programa
+## Ficheiro: `src/components/upgrade/StepMasterclass.tsx`
 
-## Ficheiro: `src/components/landing/ProgramSection.tsx`
+Reescrever o componente completo com as seguintes alteracoes:
 
-Substituir o array `systems` (linhas 5-40) com o novo conteudo:
+### 1. Titulo H2
+- De: "Para quem quer implementar, nao so aprender"
+- Para: **"Transformar imagens em video com IA — ao vivo"** (opcao B, mais descritiva e concreta)
 
-**Modulo 01** — "Estado da Arte: IA para Imagens (2026)"
-- borderColor: `border-l-blue-600` (manter)
-- desc: "Antes de escolher a ferramenta, convem perceber o 'tabuleiro': modelos diferentes, resultados diferentes."
-- bullets: 2 items (benchmarks + lista curada)
-- deliverable: "mapa rapido de decisao + atalhos para poupar semanas"
+### 2. Subtitulo
+- De: "O webinar ensina o metodo. A Masterclass aprofunda..."
+- Para: **"O webinar ensina o metodo. A Masterclass mostra como o usar para gerar video — com ferramentas certas, prompts prontos e um fluxo replicavel."**
 
-**Modulo 02** — "Prompting Profissional: do Briefing ao Resultado"
-- borderColor: `border-l-[#0891B2]` (manter)
-- desc: "Um prompt nao e inspiracao. Em contexto empresarial, e especificacao — com variaveis que mudam tudo."
-- bullets: 2 items (framework + checklist)
-- deliverable: "prompts-base e um metodo consistente para qualquer marca"
+### 3. Tag no topo do card
+- Adicionar uma tag/pill **"IMAGEM → VIDEO"** no topo do card, antes do preco (texto pequeno, fundo subtil, destaque visual imediato)
 
-**Modulo 03** — "Imagens para Redes Sociais e Anuncios (Prontas a Publicar)"
-- borderColor: `border-l-green-600` (manter)
-- desc: "Criar imagens e facil. Criar imagens que funcionam em social e anuncios e outra conversa."
-- bullets: 2 items (objetivo ao criativo + pecas publicaveis)
-- deliverable: "processo simples para produzir criativos com qualidade e coerencia"
+### 4. Cabecalho de preco
+- Manter: "MASTERCLASS ONLINE" (kicker)
+- Manter: "€47 + IVA" (preco grande)
+- Substituir microcopy por: **"Pagamento unico · lugares limitados · 5 de Marco (quinta-feira)"**
 
-Nenhuma alteracao ao layout, estilos ou logica do componente — apenas o conteudo do array de dados.
+### 5. Badge Early Bird
+- Linha 1: **"Early bird: €47 + IVA"**
+- Linha 2: **"Depois: €97 + IVA"**
 
+### 6. Bullets (4 items, substituir os 3 atuais)
+1. **"Imagem → video com IA: do visual estatico ao clip pronto"**
+   - Micro: "Fluxo pratico para transformar uma imagem em video utilizavel."
+2. **"Ferramentas certas (gratuitas e pagas) — sem confusao"**
+   - Micro: "Selecao curada por objetivo, para guardar e usar."
+3. **"Guia de prompts para video (pronto a reutilizar)"**
+   - Micro: "Estruturas testadas para consistencia e melhor controlo do resultado."
+4. **"Gravacao incluida"**
+   - Micro: "Rever e replicar sempre que necessario."
+
+### 7. Remover label antigo "Da imagem ao video — ao vivo com o Frederico:"
+- Ja nao e necessario com a nova tag e bullets
+
+### 8. Linha de escassez
+- Adicionar antes do botao: **"Grupo limitado para garantir acompanhamento."** (texto pequeno, centrado)
+
+### 9. Detalhes do evento
+- Substituir array por: `["📅 5 de Marco (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Max. 30"]`
+
+### 10. CTA (botao)
+- De: "Reservar Masterclass →"
+- Para: **"Garantir lugar na Masterclass →"**
+- Adicionar microcopy abaixo do botao: **"Pagamento unico · acesso a gravacao incluido"**
+
+### 11. Tom
+- Remover "tu/voce" directo (ja nao ha "Aprende", "teu sector", "precisares")
+- Linguagem impessoal e de implementacao
+
+### Hierarquia visual final do card (leitura em 5 segundos)
+```text
+┌─────────────────────────────────────┐
+│ [IMAGEM → VÍDEO] tag               │
+│                                     │
+│ MASTERCLASS ONLINE                  │
+│ €47 + IVA          [Early bird]     │
+│ Pagamento único · 5 Mar             │
+│─────────────────────────────────────│
+│ ✓ Imagem → vídeo com IA            │
+│ ✓ Ferramentas certas                │
+│ ✓ Guia de prompts para vídeo        │
+│ ✓ Gravação incluída                 │
+│                                     │
+│ 📅 5 Mar · 💻 Online · ⏱ 3h · 👥 30│
+│                                     │
+│ Grupo limitado para acompanhamento. │
+│                                     │
+│ [Garantir lugar na Masterclass →]   │
+│ Pagamento único · gravação incluída │
+└─────────────────────────────────────┘
+```
+
+Apenas 1 ficheiro a editar: `src/components/upgrade/StepMasterclass.tsx`
