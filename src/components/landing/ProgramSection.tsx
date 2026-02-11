@@ -79,7 +79,7 @@ export const ProgramSection = () => {
                     ))}
                   </div>
                   <p className="text-[14px] font-medium text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-1.5 inline-block">
-                    No fim deste bloco, fica com: {s.deliverable}
+                    No fim deste bloco, ficas com: {s.deliverable}
                   </p>
                 </div>
               </div>

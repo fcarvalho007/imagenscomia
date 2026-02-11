@@ -11,7 +11,7 @@ const forWhom = [
 
 const notFor = [
   { main: "Designer profissional à procura de IA técnica avançada", sub: "este webinar é para quem não tem formação em design" },
-  { main: "Quem procura ferramenta mágica sem método", sub: "há método. Ensino o método." },
+  { main: "Quem procura ferramenta mágica sem método", sub: "há método. Ensino-te o método." },
 ];
 
 export const AudienceSection = () => (

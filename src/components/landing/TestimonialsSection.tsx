@@ -108,7 +108,7 @@ export const TestimonialsSection = () => (
 
               {/* Footer */}
               <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: "#FBBC05" }}>★★★★★</span>
+                <span className="text-[14px]" style={{ color: "#FBBC05" }}>★★★★★</span>
                 <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.35)" }}>Google Reviews</span>
               </div>
             </div>

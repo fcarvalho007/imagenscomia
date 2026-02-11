@@ -33,7 +33,7 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2}>
-          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[640px] mx-auto mb-6">
+          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[720px] mx-auto mb-6">
             De briefing a imagem profissional em menos de 3 minutos — demonstrado ao vivo.
           </p>
         </ScrollReveal>

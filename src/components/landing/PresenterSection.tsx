@@ -2,15 +2,15 @@ import { ScrollReveal } from "./ScrollReveal";
 import fredericoImg from "@/assets/frederico-carvalho.jpg";
 
 const credentials = [
-  { emoji: "🎓", title: "Professor Universitário", sub: "FEUC · Univ. Europeia · Univ. Autónoma · IPAM" },
-  { emoji: "📚", title: "Autor", sub: "\"Marketing Digital para Empresas\" · \"Guia Essencial SEO\"" },
+  { emoji: "🎓", title: "Professor Universitário", sub: "Universidade de Coimbra (FEUC) · Univ. Europeia (IPAM) · Univ. Autónoma · Univ. Aveiro" },
+  { emoji: "📚", title: "Autor", sub: "\"Guia Essencial SEO\" e Co-Autor \"Marketing Digital para Empresas\"" },
   { emoji: "🎙️", title: "Host Semanal · RFM", sub: "Podcast Marketing por Idiotas" },
   { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · 700+ empresas · L'Oréal · BMW · 3M" },
 ];
 
 const stats = [
   { number: "700+", label: "empresas" },
-  { number: "29", label: "anos de experiência" },
+  { number: "20", label: "anos de experiência" },
   { number: "1 194", label: "avaliações 5★ Google" },
 ];
 
@@ -56,9 +56,7 @@ export const PresenterSection = () => (
               Frederico Carvalho
             </h2>
             <p className="font-medium text-[17px] text-ink-500 leading-[1.5] mb-7">
-              29 anos a implementar marketing digital e IA
-              <br />
-              em empresas portuguesas
+              20 anos a implementar marketing digital e IA em empresas portuguesas
             </p>
 
             <div className="border-t border-border mb-7" />
