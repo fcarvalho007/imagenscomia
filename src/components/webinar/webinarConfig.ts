@@ -26,7 +26,7 @@ export const WEBINAR_CONFIG = {
     endDate: "2026-02-18",
     endTime: "11:15",
     timeZone: "Europe/Lisbon",
-    location: "Online",
+    location: "https://imagenscomia.com/live",
     organizer: "Frederico Carvalho|fredericodigital@gmail.com",
   },
 

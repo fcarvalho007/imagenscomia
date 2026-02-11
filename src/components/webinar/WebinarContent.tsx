@@ -2,10 +2,8 @@ import { CheckCircle2 } from "lucide-react";
 
 const bullets = [
   "Como escolher a ferramenta certa (gratuita ou paga) para cada objetivo",
-  "Variáveis que mudam o resultado: estilo, consistência e controlo",
   "Prompts práticos para criar imagens com aspeto profissional",
   "Checklist para acelerar produção sem perder qualidade",
-  "Erros comuns que fazem tudo parecer 'stock' ou genérico",
 ];
 
 export const WebinarContent = () => (
