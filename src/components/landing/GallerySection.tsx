@@ -1,27 +1,28 @@
 import { ScrollReveal } from "./ScrollReveal";
 
+import imgPorto from "@/assets/galeria/6_frederico_carvalho_porto_ribeirinha.jpeg";
+import imgEscritorio from "@/assets/galeria/1_frederico_carvalho_escritorio_1.jpeg";
+import imgSerum from "@/assets/galeria/3_frederico_carvalho_serum_exemplo.jpeg";
+import imgBolsa from "@/assets/galeria/8_frederico_carvalho_bolsa_mulher.png";
+import imgCama from "@/assets/galeria/2_frederico_carvalho_na_cama_1.png";
+import imgSapatos from "@/assets/galeria/7_frederico_carvalho_sapatos.jpeg";
+import imgCappucino from "@/assets/galeria/5_frederico_carvalho_cappucino_background.jpeg";
+import imgCaricatura from "@/assets/galeria/4_frederico_carvalho_caricatura.jpeg";
+
 const slots = [
-  { n: 1, gradient: "linear-gradient(135deg, #1e3a5f, #3b82f6)", ratio: "4/5", tag: "Post Instagram", category: "redes-sociais" },
-  { n: 2, gradient: "linear-gradient(135deg, #064e3b, #10b981)", ratio: "16/9", tag: "LinkedIn Banner", category: "linkedin" },
-  { n: 3, gradient: "linear-gradient(135deg, #7c2d12, #f97316)", ratio: "1/1", tag: "Imagem de Produto", category: "produto" },
-  { n: 4, gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed)", ratio: "9/16", tag: "Story Instagram", category: "redes-sociais" },
-  { n: 5, gradient: "linear-gradient(135deg, #0c4a6e, #0284c7)", ratio: "4/3", tag: "Anúncio Facebook", category: "anuncios" },
-  { n: 6, gradient: "linear-gradient(135deg, #134e4a, #0d9488)", ratio: "3/2", tag: "E-commerce", category: "ecommerce" },
-  { n: 7, gradient: "linear-gradient(135deg, #18181b, #52525b)", ratio: "1/1", tag: "Branding", category: "branding" },
-  { n: 8, gradient: "linear-gradient(135deg, #1a1a2e, #e11d48)", ratio: "2/3", tag: "Newsletter Header", category: "newsletter" },
+  { n: 1, image: imgPorto, ratio: "4/5", tag: "Post Instagram", alt: "Post Instagram — vista ribeirinha do Porto", category: "redes-sociais" },
+  { n: 2, image: imgEscritorio, ratio: "16/9", tag: "LinkedIn Banner", alt: "LinkedIn Banner — escritório profissional", category: "linkedin" },
+  { n: 3, image: imgSerum, ratio: "1/1", tag: "Imagem de Produto", alt: "Imagem de Produto — sérum cosmético", category: "produto" },
+  { n: 4, image: imgBolsa, ratio: "9/16", tag: "Story Instagram", alt: "Story Instagram — bolsa de mulher", category: "redes-sociais" },
+  { n: 5, image: imgCama, ratio: "4/3", tag: "Anúncio Facebook", alt: "Anúncio Facebook — lifestyle na cama", category: "anuncios" },
+  { n: 6, image: imgSapatos, ratio: "3/2", tag: "E-commerce", alt: "E-commerce — sapatos elegantes", category: "ecommerce" },
+  { n: 7, image: imgCappucino, ratio: "1/1", tag: "Branding", alt: "Branding — cappuccino artístico", category: "branding" },
+  { n: 8, image: imgCaricatura, ratio: "2/3", tag: "Newsletter Header", alt: "Newsletter Header — caricatura ilustrada", category: "newsletter" },
 ];
 
 export const GallerySection = () => {
-
   return (
     <section id="galeria-exemplos" className="bg-off-white py-14 md:py-20 px-4">
-      {/* <!-- GALERIA DE EXEMPLOS — 8 slots para imagens reais
-        Para substituir cada placeholder:
-        1. Carregar imagem em /public/galeria/
-        2. No slot correspondente, substituir o div placeholder por:
-           <img src="/galeria/nome-ficheiro.jpg" alt="[descrição]" ... />
-        Os aspect-ratios e tags de categoria mantêm-se.
-      --> */}
       <div className="mx-auto max-w-[1080px]">
         {/* Header */}
         <ScrollReveal>
@@ -38,20 +39,11 @@ export const GallerySection = () => {
           </div>
         </ScrollReveal>
 
-
         {/* Masonry grid */}
-        <div
-          id="galeria-grid"
-          style={{ columnCount: 3, columnGap: 16 }}
-        >
-          {/* Responsive column count via CSS */}
+        <div id="galeria-grid" style={{ columnCount: 3, columnGap: 16 }}>
           <style>{`
-            @media (max-width: 1023px) {
-              #galeria-grid { column-count: 2 !important; column-gap: 14px !important; }
-            }
-            @media (max-width: 767px) {
-              #galeria-grid { column-count: 2 !important; column-gap: 10px !important; }
-            }
+            @media (max-width: 1023px) { #galeria-grid { column-count: 2 !important; column-gap: 14px !important; } }
+            @media (max-width: 767px) { #galeria-grid { column-count: 2 !important; column-gap: 10px !important; } }
           `}</style>
           {slots.map((slot, i) => (
             <ScrollReveal key={slot.n} delay={i * 0.04}>
@@ -61,30 +53,23 @@ export const GallerySection = () => {
                 data-slot={`galeria-${String(slot.n).padStart(2, "0")}`}
                 data-category={slot.category}
               >
-                {/* Placeholder */}
-                <div
-                  className="flex flex-col items-center justify-center"
-                  style={{
-                    background: slot.gradient,
-                    aspectRatio: slot.ratio,
-                  }}
-                >
-                  <span className="text-3xl mb-1">🖼️</span>
-                  <span className="text-[13px] text-white/60">
-                    Imagem {slot.n}
-                  </span>
-                </div>
+                <img
+                  src={slot.image}
+                  alt={slot.alt}
+                  loading="lazy"
+                  className="w-full object-cover"
+                  style={{ aspectRatio: slot.ratio }}
+                />
 
                 {/* Hover overlay */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
                   style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }}
                 />
 
                 {/* Tag */}
                 <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/95 rounded-md px-2.5 py-[5px]">
-                  <span className="font-medium text-[12px] text-ink-700">
-                    {slot.tag}
-                  </span>
+                  <span className="font-medium text-[12px] text-ink-700">{slot.tag}</span>
                 </div>
               </div>
             </ScrollReveal>
