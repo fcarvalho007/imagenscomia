@@ -1,10 +1,4 @@
-import { useState } from "react";
 import { ScrollReveal } from "./ScrollReveal";
-
-const filters = [
-  "Todos", "Redes Sociais", "Anúncios", "Produto",
-  "Branding", "E-commerce", "LinkedIn", "Newsletter",
-];
 
 const slots = [
   { n: 1, gradient: "linear-gradient(135deg, #1e3a5f, #3b82f6)", ratio: "4/5", tag: "Post Instagram", category: "redes-sociais" },
@@ -18,7 +12,6 @@ const slots = [
 ];
 
 export const GallerySection = () => {
-  const [activeFilter, setActiveFilter] = useState("Todos");
 
   return (
     <section id="galeria-exemplos" className="bg-off-white py-14 md:py-20 px-4">
@@ -40,30 +33,11 @@ export const GallerySection = () => {
               Imagens criadas com o método
             </h2>
             <p className="text-base text-ink-500 mt-2 max-w-[560px] mx-auto">
-              Criadas durante sessões anteriores por empresas portuguesas —
-              sem designer, sem agência, em menos de 3 minutos cada.
+              Todas as imagens foram criadas com IA — sem designer, sem agência, em menos de 3 minutos cada.
             </p>
           </div>
         </ScrollReveal>
 
-        {/* Filters */}
-        <ScrollReveal delay={0.05}>
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
-            {filters.map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`rounded-full px-4 py-[7px] text-[13px] cursor-pointer transition-colors ${
-                  activeFilter === f
-                    ? "border border-blue-600 bg-blue-600 text-white font-heading font-semibold"
-                    : "border border-border bg-white text-ink-700 font-medium hover:border-blue-300 hover:bg-blue-50"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </ScrollReveal>
 
         {/* Masonry grid */}
         <div
