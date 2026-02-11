@@ -255,13 +255,13 @@ const CaptureView = ({
         onChange={(e) => setAcceptedTerms(e.target.checked)}
         className="mt-1 w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/20 shrink-0"
       />
-      <span className="text-[11px] text-ink-400 leading-relaxed">
+      <span className="text-[14px] text-ink-400 leading-relaxed">
         Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing. Os dados pessoais serão tratados pela Fomentar Sonhos, Lda.{" "}
         <a href="#" className="underline hover:text-ink-600">Política de Privacidade</a> e{" "}
         <a href="#" className="underline hover:text-ink-600">Termos e Condições</a>.
       </span>
     </label>
-    <p className="text-[11px] text-ink-400 mb-5 ml-6">Sem spam. Cancelamento a qualquer momento.</p>
+    <p className="text-[14px] text-ink-400 mb-5 ml-6">Sem spam. Cancelamento a qualquer momento.</p>
 
     {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
 
@@ -281,7 +281,7 @@ const CaptureView = ({
     </motion.button>
 
 
-    <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-ink-400">
+    <div className="flex items-center justify-center gap-2 mt-2 text-[14px] text-ink-400">
       <Shield className="w-3 h-3" />
       Sem spam · Dados protegidos RGPD
     </div>
@@ -314,7 +314,7 @@ const UpsellView = ({
     </div>
 
     <p className="text-[15px] text-ink-500 mb-4">
-      Antes de concluir, escolha o formato de participação.
+      Antes de concluir, escolhe o formato de participação.
     </p>
 
     <p className="text-[14px] text-ink-500 mb-3">
@@ -344,7 +344,7 @@ const UpsellView = ({
         <Sparkles className="w-5 h-5" />
         Sim, quero o Premium (€15 + IVA)
       </motion.button>
-      <p className="text-[11px] text-ink-400 text-center">Pagamento seguro. Acesso imediato após o evento.</p>
+      <p className="text-[14px] text-ink-400 text-center">Pagamento seguro. Acesso imediato após o evento.</p>
 
       <motion.button
         whileHover={{ scale: 1.02 }}
@@ -353,10 +353,10 @@ const UpsellView = ({
         className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100"
       >
         <Gift className="w-4 h-4" />
-        Preferir convidar 2 pessoas e obter o Premium
+        Prefiro convidar 2 pessoas e obter o Premium
       </motion.button>
-      <p className="text-[11px] text-ink-400 text-center">
-        Será gerado um link pessoal para convidar 2 pessoas. Assim que 2 inscrições forem confirmadas, o Premium fica ativo.
+      <p className="text-[14px] text-ink-400 text-center">
+        Vais receber um link pessoal. Assim que 2 amigos se inscreverem, o Premium fica ativo.
       </p>
 
       <button
@@ -420,7 +420,7 @@ const ConfirmationView = ({
       <h3 className="font-heading text-2xl font-bold mb-2 text-ink-900">
         {name ? `Inscrição Confirmada, ${name.trim().split(" ")[0]}!` : "Inscrição Confirmada!"}
       </h3>
-      <p className="text-ink-500 text-sm mb-1">Verifique o email</p>
+      <p className="text-ink-500 text-sm mb-1">Verifica o teu email</p>
       <span className="inline-block bg-blue-50 text-blue-600 font-medium text-sm px-3 py-1 rounded-full mb-4">
         {email}
       </span>
@@ -434,8 +434,8 @@ const ConfirmationView = ({
         >
           {/* Upgrade CTA */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-[13px] text-ink-600 mb-3">
-              Enviámos as instruções para o email. Entretanto, é possível fazer upgrade para Premium.
+            <p className="text-[14px] text-ink-600 mb-3">
+              Enviámos as instruções para o teu email. Entretanto, podes fazer upgrade para Premium.
             </p>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -454,7 +454,7 @@ const ConfirmationView = ({
               <Gift className="w-5 h-5 text-amber-600" />
               <h4 className="font-heading font-bold text-[15px] text-ink-900">Ou ganha Premium grátis!</h4>
             </div>
-            <p className="text-[13px] text-ink-600 mb-4">
+            <p className="text-[14px] text-ink-600 mb-4">
               Convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar.
             </p>
 
@@ -494,7 +494,7 @@ const ConfirmationView = ({
 
             <a
               href={`/convites?email=${encodeURIComponent(email)}`}
-              className="mt-3 text-[12px] text-blue-600 hover:underline flex items-center justify-center gap-1"
+              className="mt-3 text-[14px] text-blue-600 hover:underline flex items-center justify-center gap-1"
             >
               Ver estado dos convites
               <ExternalLink className="w-3 h-3" />

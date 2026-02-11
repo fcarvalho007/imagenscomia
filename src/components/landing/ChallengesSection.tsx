@@ -20,7 +20,7 @@ export const ChallengesSection = () => (
         {challenges.map((c, i) => (
           <ScrollReveal key={i} delay={i * 0.06}>
             <div className="bg-background border border-border rounded-lg p-6 h-full shadow-card">
-              <span className="font-heading font-bold text-[11px] text-[hsl(262,83%,58%)]/40 tracking-[0.1em]">{c.num}</span>
+              <span className="font-heading font-bold text-[14px] text-[hsl(262,83%,58%)]/40 tracking-[0.1em]">{c.num}</span>
               <h3 className="font-heading font-semibold text-[17px] text-ink-900 mt-2">{c.title}</h3>
             </div>
           </ScrollReveal>

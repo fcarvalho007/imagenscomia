@@ -7,7 +7,7 @@ const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
     <span className="bg-white/20 rounded px-2 py-1 font-heading font-bold text-[16px] text-white min-w-[34px] text-center">
       {String(value).padStart(2, "0")}
     </span>
-    <span className="text-[9px] text-white/70 mt-0.5">{label}</span>
+    <span className="text-[10px] text-white/70 mt-0.5">{label}</span>
   </div>
 );
 
