@@ -39,7 +39,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
       {/* Tag */}
-      <span className="inline-block text-[12px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-md bg-ink-100 text-ink-700 mb-4">
+      <span className="inline-block text-[12px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-md bg-ink-100 text-ink-700 mb-3">
         IMAGEM → VÍDEO
       </span>
 
@@ -81,11 +81,6 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
         ))}
       </div>
 
-      {/* Scarcity line */}
-      <p className="text-[14px] text-ink-400 text-center mt-4">
-        Grupo limitado para garantir acompanhamento.
-      </p>
-
       {/* CTA */}
       <button
         onClick={onAddMasterclass}
@@ -97,12 +92,12 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
         Garantir lugar na Masterclass →
       </button>
       <p className="text-[13px] text-ink-400 text-center mt-2">
-        Pagamento único · acesso à gravação incluído
+        Grupo limitado para garantir acompanhamento.
       </p>
     </div>
 
     {/* Separator */}
-    <div className="flex items-center gap-3 my-4">
+    <div className="flex items-center gap-3 my-3">
       <div className="flex-grow h-px bg-border" />
       <span className="text-[14px] text-ink-300">ou</span>
       <div className="flex-grow h-px bg-border" />
@@ -111,7 +106,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
     {/* Skip link */}
     <p
       onClick={onSkip}
-      className="text-[13px] text-ink-300 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="text-[13px] text-ink-400 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
     >
       Continuar sem implementação guiada →
     </p>
