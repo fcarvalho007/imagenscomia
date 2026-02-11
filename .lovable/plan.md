@@ -1,75 +1,105 @@
 
 
-# Associar pagamentos aos utilizadores e notificar
+## Integração E-goi no momento da primeira inscrição
 
-## Problema atual
-Quando alguém paga na EuPago, nao ha forma de saber quem pagou porque os links fixos do PayByLink nao incluem identificacao do utilizador. O webhook recebe a confirmacao mas nao faz nada com ela.
+### Contexto atual
+- Quando o utilizador clica "Reservar o meu lugar" no `CaptureView`, a função `register-free` é chamada
+- Os dados são guardados na BD (`registrations`)
+- O utilizador é redirecionado para `/upgrade`
+- E-goi ainda não está integrado
 
-## Solucao (4 partes)
+### Solução proposta
 
-### 1. Adicionar campos na tabela `registrations`
-- `paid_at` (timestamp) — quando o pagamento foi confirmado
-- `eupago_ref` (text) — referencia da transacao EuPago
+#### 1. Guardar secret EGOI_API_KEY
+- Valor: `ecd755f3532e7fa23cfd618c308ce6988d1c30a0`
 
-### 2. Mudar de links fixos para links dinamicos (API PayByLink)
-Em vez de redirecionar para URLs fixas, voltar a usar a edge function `create-payment` que ja existe no projeto mas nao esta a ser usada. Esta funcao:
-- Cria um link de pagamento via API da EuPago
-- Inclui o `identifier` com o email do utilizador (ex: `WEBINAR-PREMIUM-joao@email.com-1707...`)
-- Define o `callbackUrl` para o webhook automaticamente
-- A EuPago envia o `identifier` no webhook, permitindo identificar quem pagou
+#### 2. Criar nova edge function `sync-egoi`
+Função dedicada que:
+- Recebe dados do contacto (first_name, last_name, email, cellphone)
+- Envia POST para `https://api.egoiapp.com/lists/5/contacts` com:
+  - `base`: first_name, last_name, email, cellphone (whatsapp)
+  - `extra_field_40`: referral_code (para personalização posterior)
+  - `tags`: ["webinar_imagens_com_ia_18_fev"]
+- Usa header `Apikey` com o secret
+- Trata erros gracefully (não bloqueia o registo se E-goi falhar)
 
-Alteracao no `Upsell.tsx`: substituir o redirect para URLs fixas por chamada a `create-payment`, que devolve o link dinamico.
+#### 3. Atualizar `register-free/index.ts`
+Após inserir com sucesso na BD:
+- Chamar `sync-egoi` com os dados do novo contacto
+- Passar também o `referral_code` para o campo extra #40
+- Log de sucesso/erro, mas continua o fluxo normal
 
-### 3. Atualizar o webhook `eupago-webhook`
-Quando recebe confirmacao de pagamento (`transactionStatus === "Success"`):
-- Extrair o email do `identifier`
-- Atualizar `registrations` com `paid_at` e `eupago_ref`
-- Enviar notificacao por email (usando a API do Resend ou similar) OU simplesmente guardar na BD para o CRM mostrar
+#### 4. Atualizar `supabase/config.toml`
+- Adicionar `[functions.sync-egoi]` com `verify_jwt = false`
 
-### 4. CRM: ler dados reais da base de dados
-Substituir o mock data por queries reais a tabela `registrations`. O CRM passara a mostrar:
-- Quem se inscreveu
-- Quem clicou em pagar (`upgrade_clicked_at`)
-- Quem realmente pagou (`paid_at` preenchido)
-- O plano e valor correspondente
+### Fluxo final
 
-## Configuracao EuPago (manual)
-No backoffice da EuPago, no campo URL da notificacao, colocar:
 ```
-https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/eupago-webhook
+Utilizador preenche form + clica "Reservar o meu lugar"
+         ↓
+register-free insere na BD
+         ↓
+register-free chama sync-egoi
+         ↓
+sync-egoi envia contacto para E-goi (List 5) com tag
+         ↓
+E-goi recebe contacto + tag "webinar_imagens_com_ia_18_fev"
+         ↓
+Automações E-goi disparam (email + SMS)
+         ↓
+Utilizador vai para /upgrade (fluxo normal continua)
 ```
 
-## Detalhes tecnicos
+### Variáveis no E-goi (para você configurar os templates)
 
-### Ficheiros a criar/editar
+No painel E-goi, nestes templates terá disponíveis:
+- `!first_name` — Frederico
+- `!last_name` — Carvalho
+- `!email` — frederico@email.com
+- `!cellphone` — 912345678
+- `!extra_field_40` — A8K2X9 (referral_code)
 
-| Ficheiro | Acao |
+**Nota importante**: Os dados fixos do evento (data 18 Fevereiro, hora 10h00, links) devem ser inseridos diretamente nos templates/automações do E-goi — não vêm da BD.
+
+### Sugestões de melhoria (para mais tarde)
+
+1. **Segmentação por pagamento**: No futuro, quando quiser diferenciar quem pagou vs não pagou:
+   - Usar um webhook do CRM ou função adicional para atualizar o contacto no E-goi com nova tag (`pagou_premium_18_fev` ou similar)
+   - Ou criar automações internas no E-goi com base em delay (ex: "Se não pagou em 24h, enviar email de relembrança")
+
+2. **Histórico de eventos**: Guardar qual webinar cada contacto se inscreveu (útil se tiver múltiplos webinars)
+   - Adicionar campo extra no E-goi tipo `webinar_name` para referência futura
+
+3. **Double-opt-in**: Se quiser confirmação de email antes de enviar automações
+   - Configurar no E-goi como "status: pending" em vez de "active" na primeira inscrição
+
+### Ficheiros a modificar
+
+| Ficheiro | Ação |
 |----------|------|
-| Migracao SQL | Adicionar colunas `paid_at` e `eupago_ref` a `registrations` |
-| `supabase/functions/eupago-webhook/index.ts` | Processar webhook: extrair email do identifier, atualizar BD |
-| `supabase/functions/create-payment/index.ts` | Incluir email no identifier para rastreio |
-| `src/pages/Upsell.tsx` | Usar `create-payment` em vez de URLs fixas |
-| `src/hooks/useInscritos.ts` | Fetch de dados reais da tabela `registrations` |
-| `src/pages/crm/mockData.ts` | Manter tipos, remover mock data |
+| Secret | Guardar `EGOI_API_KEY` |
+| `supabase/functions/sync-egoi/index.ts` | Criar — envia contacto para E-goi com tag |
+| `supabase/functions/register-free/index.ts` | Editar — chamar sync-egoi após registo bem-sucedido |
+| `supabase/config.toml` | Editar — adicionar config sync-egoi |
 
-### Fluxo apos implementacao
+### Detalhes técnicos
 
+**Payload para E-goi API** (POST `/lists/5/contacts`):
+```json
+{
+  "base": {
+    "status": "active",
+    "first_name": "Frederico",
+    "last_name": "Carvalho",
+    "email": "frederico@email.com",
+    "cellphone": "351912345678"
+  },
+  "extra": [
+    { "field_id": 40, "value": "A8K2X9" }
+  ],
+  "tags": ["webinar_imagens_com_ia_18_fev"]
+}
 ```
-Utilizador preenche form → dados guardados na BD
-         ↓
-Clica em pagar → create-payment gera link com email no identifier
-         ↓
-Paga na EuPago → EuPago envia webhook com identifier
-         ↓
-Webhook extrai email → atualiza paid_at na BD
-         ↓
-CRM mostra: "Frederico pagou Premium as 21:35"
-```
 
-### Sobre notificacoes
-Ha duas opcoes para ser notificado quando alguem paga:
-- **Opcao A**: Ativar "Receber notificacao de referencias por e-mail" no EuPago (ja tens essa checkbox na imagem) — recebes email direto da EuPago
-- **Opcao B**: Adicionar envio de email no webhook (requer servico de email tipo Resend)
-
-A Opcao A e imediata e nao requer codigo. Basta ativar a checkbox no backoffice.
+**Headers**: `{ "Apikey": "ecd755f3532e7fa23cfd618c308ce6988d1c30a0", "Content-Type": "application/json" }`
 
