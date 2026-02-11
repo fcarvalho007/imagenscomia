@@ -1,5 +1,6 @@
-import { Clock, CalendarPlus, Radio } from "lucide-react";
+import { Clock, Radio } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
+import WebinarCalendarButton from "./AddToCalendarButton";
 
 interface CountdownValues {
   days: number;
@@ -105,14 +106,7 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
           O vídeo fica disponível automaticamente perto da hora de início.
         </p>
 
-        <a
-          href={WEBINAR_CONFIG.CALENDAR_URL}
-          className="inline-flex items-center gap-2 text-[14px] font-medium text-white/70 hover:text-white transition-colors border border-white/15 rounded-lg px-4 py-2 hover:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/30"
-          aria-label="Adicionar webinar ao calendário"
-        >
-          <CalendarPlus className="w-4 h-4" />
-          Adicionar ao calendário
-        </a>
+        <WebinarCalendarButton />
       </div>
     </div>
   );

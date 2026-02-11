@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Check, Loader2, Copy, Calendar } from "lucide-react";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Check, Loader2, Copy } from "lucide-react";
+import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import type { OrderState } from "@/pages/Upsell";
 import { formatPrice, getTotal } from "@/pages/Upsell";
 
@@ -14,27 +14,6 @@ interface Props {
   referralCode: string;
 }
 
-const generateICS = () => {
-  const ics = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//Webinar IA//PT",
-    "BEGIN:VEVENT",
-    "DTSTART:20250218T100000Z",
-    "DTEND:20250218T111500Z",
-    "SUMMARY:Webinar IA — Frederico Carvalho",
-    "DESCRIPTION:Como Criar Imagens Profissionais com IA para a Tua Empresa",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-  const blob = new Blob([ics], { type: "text/calendar" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "webinar-ia.ics";
-  a.click();
-  URL.revokeObjectURL(url);
-};
 
 /* ── Variante A — Só Gratuito ── */
 const VariantFree = ({ userName, referralCode }: { userName: string; referralCode: string }) => {
@@ -70,31 +49,7 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
       </div>
 
       {/* Calendar button */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <button className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-ink-900 bg-background border border-ink-700 py-3 rounded-xl hover:bg-surface transition-colors mb-5">
-            📅 Guardar no calendário
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="center" sideOffset={6}>
-          <a
-            href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Webinar+IA+%E2%80%94+Frederico+Carvalho&dates=20260218T100000Z/20260218T111500Z&details=Como+Criar+Imagens+Profissionais+com+IA+para+a+Tua+Empresa"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface cursor-pointer transition-colors text-[14px] font-medium text-ink-700"
-          >
-            <img src="/google-cal-icon.svg" alt="" className="w-5 h-5" />
-            Google Calendar
-          </a>
-          <button
-            onClick={generateICS}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-surface cursor-pointer transition-colors text-[14px] font-medium text-ink-700"
-          >
-            <Calendar className="w-5 h-5" />
-            Apple Calendar
-          </button>
-        </PopoverContent>
-      </Popover>
+      <WebinarCalendarButton className="mb-5" />
 
       {/* Referral block — destaque reforçado */}
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
