@@ -1,27 +1,20 @@
 
 
-## Mover botao calendario para fora da caixa de video e refinar visualmente
+## Correcoes na pagina /live
 
-### Alteracoes
+### 1. Atualizar URL do Instagram no `webinarConfig.ts`
+- Mudar `INSTAGRAM_URL` de `"https://instagram.com/fredericocarvalho"` para `"https://www.instagram.com/frederico.m.carvalho/"`
 
-#### 1. `WebinarVideoArea.tsx` - Remover calendario de dentro da caixa
-- Remover o `<WebinarCalendarButton />` do waiting state (linha 112)
-- Remover o import de `WebinarCalendarButton`
-- Remover as duas linhas de texto informativo ("O video fica disponivel..." e "Sugestao: entrar 3-5 min antes") - ficam dentro da caixa apenas o badge "A transmissao comeca em breve" e o countdown
-- Refinar visualmente a caixa: adicionar uma borda subtil (`border border-white/5`), melhorar o gradiente de fundo, e dar mais padding vertical para respirar
+### 2. Mover texto informativo para dentro da caixa de video (`WebinarVideoArea.tsx`)
+- Adicionar o texto "O video fica disponivel automaticamente 30 min antes do inicio. Sugestao: entrar 3-5 min antes." dentro da caixa preta, abaixo do countdown
+- Estilo: texto branco com opacidade baixa (`text-white/40`), tamanho pequeno, centrado
 
-#### 2. `WebinarLive.tsx` - Adicionar calendario abaixo da caixa de video
-- Importar `WebinarCalendarButton`
-- Adicionar um bloco entre `<WebinarVideoArea>` e `<WebinarContent>` (apenas no estado waiting, nao live/ended):
-  - Texto pequeno: "O video fica disponivel automaticamente 30 min antes do inicio. Sugestao: entrar 3-5 min antes."
-  - O botao `<WebinarCalendarButton />` 
-  - Estilo: centrado, com spacing adequado (`py-4`), texto em `text-ink-400`
-
-#### 3. Sobre a questao do link direto
-- O `add-to-calendar-button` ja oferece menu com Apple, Google, Outlook e Microsoft 365 - e a melhor UX porque cada pessoa escolhe o seu calendario
-- Nao e necessario dar apenas o link do Google; o componente ja resolve isso automaticamente
+### 3. Atualizar bloco abaixo da caixa em `WebinarLive.tsx`
+- Remover o paragrafo de texto (ja esta dentro da caixa)
+- Manter apenas o botao `<WebinarCalendarButton />` centrado abaixo da caixa
 
 ### Ficheiros a modificar
-1. `src/components/webinar/WebinarVideoArea.tsx` - limpar interior da caixa
-2. `src/pages/WebinarLive.tsx` - adicionar calendario + texto abaixo da caixa
+1. `src/components/webinar/webinarConfig.ts` - URL Instagram
+2. `src/components/webinar/WebinarVideoArea.tsx` - adicionar texto dentro da caixa
+3. `src/pages/WebinarLive.tsx` - remover texto duplicado, manter so calendario
 
