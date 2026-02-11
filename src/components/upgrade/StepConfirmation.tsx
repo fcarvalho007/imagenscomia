@@ -124,6 +124,8 @@ const VariantPayment = ({
 }) => {
   const { premium, masterclass } = orderState;
   const total = getTotal(orderState);
+  const subtotal = (premium ? 15 : 0) + (masterclass ? 47 : 0);
+  const iva = total - subtotal;
 
   let title = "Premium Pass adicionado! Confirma o pagamento.";
   let plan = "premium";
@@ -166,6 +168,18 @@ const VariantPayment = ({
               <span className="text-[14px] text-ink-700">€47 <span className="text-[12px] text-ink-400">+ IVA</span></span>
             </div>
           )}
+
+          <div className="h-px bg-border my-2" />
+
+          <div className="flex justify-between items-center">
+            <span className="font-medium text-[13px] text-ink-700">Subtotal (sem IVA)</span>
+            <span className="font-medium text-[13px] text-ink-700">{formatPrice(subtotal)}</span>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="font-semibold text-[13px] text-amber-600">IVA (23%)</span>
+            <span className="font-semibold text-[13px] text-amber-600">{formatPrice(iva)}</span>
+          </div>
 
           <div className="h-px bg-border my-2" />
 
