@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Search, MessageSquare, StickyNote, ExternalLink } from "lucide-react";
+import { Search, MessageSquare, StickyNote, ExternalLink, MessageCircle } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 
 interface PipelineViewProps {
@@ -79,19 +79,25 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
       <div className="flex gap-3 overflow-x-auto pb-4">
         {COLUMNS.map((col) => {
           const items = filtered.filter(col.filter);
+          const colRevenue = items.reduce((s, i) => s + i.valor, 0);
           return (
             <div key={col.title} className="min-w-[220px] max-w-[240px] flex-shrink-0">
               {/* Column header */}
               <div className="rounded-t-lg overflow-hidden">
                 <div className="h-1" style={{ background: col.color }} />
-                <div className="flex items-center justify-between px-3 pt-2.5 pb-2 bg-white border-x border-border">
-                  <span className="font-heading font-semibold text-[13px] text-ink-700">{col.title}</span>
-                  <span
-                    className="font-heading font-bold text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: `${col.color}26`, color: col.color }}
-                  >
-                    {items.length}
-                  </span>
+                <div className="px-3 pt-2.5 pb-2 bg-white border-x border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="font-heading font-semibold text-[13px] text-ink-700">{col.title}</span>
+                    <span
+                      className="font-heading font-bold text-xs px-2 py-0.5 rounded-full"
+                      style={{ background: `${col.color}26`, color: col.color }}
+                    >
+                      {items.length}
+                    </span>
+                  </div>
+                  <p className="text-[12px] font-medium mt-0.5" style={{ color: col.color, opacity: 0.8 }}>
+                    €{colRevenue.toFixed(2)}
+                  </p>
                 </div>
               </div>
 
@@ -103,7 +109,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                   return (
                     <div
                       key={inscrito.id}
-                      className="bg-white border border-border rounded-[10px] p-3.5 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer"
+                      className="bg-white border border-border rounded-[10px] p-3.5 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer relative group"
                       onClick={() => onSelectInscrito(inscrito)}
                     >
                       {/* Name */}
@@ -156,6 +162,20 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                           <ExternalLink size={12} className="text-ink-300 hover:text-blue-600" />
                         </div>
                       </div>
+                      {/* WhatsApp hover button */}
+                      {inscrito.whatsapp && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank");
+                          }}
+                          className="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-1 px-2 py-1 rounded-lg text-white text-[11px]"
+                          style={{ background: "#25D366", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
+                          title="WhatsApp directo"
+                        >
+                          <MessageCircle size={14} />
+                        </button>
+                      )}
                     </div>
                   );
                 })}

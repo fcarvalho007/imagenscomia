@@ -4,7 +4,7 @@ import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import DashboardView from "@/components/crm/DashboardView";
 import PipelineView from "@/components/crm/PipelineView";
 import TableView from "@/components/crm/TableView";
-import InscritoSlideOver from "@/components/crm/InscritoSlideOver";
+import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
 
@@ -49,15 +49,22 @@ export default function CRM() {
           <PipelineView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />
         )}
         {activeView === "tabela" && (
-          <TableView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />
+          <TableView
+            inscritos={inscritos}
+            onSelectInscrito={setSelectedInscrito}
+            onToggleFollowUp={toggleFollowUp}
+            onArchive={(id) => updateStatus(id, "arquivado")}
+          />
         )}
       </div>
 
-      {/* Slide-over */}
+      {/* Modal */}
       {currentInscrito && (
-        <InscritoSlideOver
+        <InscritoModal
           inscrito={currentInscrito}
+          todos={inscritos.filter((i) => i.status === "activo")}
           onClose={() => setSelectedInscrito(null)}
+          onSelectInscrito={setSelectedInscrito}
           onAddNota={addNota}
           onRemoveNota={removeNota}
           onToggleFollowUp={toggleFollowUp}
