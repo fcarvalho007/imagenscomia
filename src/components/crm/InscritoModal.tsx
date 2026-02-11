@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import {
   X, ChevronLeft, ChevronRight, Check, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 
 interface InscritoModalProps {
@@ -78,6 +79,7 @@ export default function InscritoModal({
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
+  const isMobile = useIsMobile();
 
   const gradIdx = parseInt(inscrito.id, 10) % GRADIENTS.length;
   const planInfo = PLAN_INFO[inscrito.plan];
@@ -101,7 +103,7 @@ export default function InscritoModal({
       events.push({ type: "pagamento", text: `Pagamento confirmado · €${inscrito.valor} (${planInfo.label})`, date: inscrito.paid_at });
     }
     inscrito.notas.forEach((n) => {
-      events.push({ type: "nota", text: `Nota adicionada: ${n.texto.slice(0, 40)}${n.texto.length > 40 ? "…" : ""}`, date: n.timestamp });
+      events.push({ type: "nota", text: `Nota adicionada: ${n.texto}`, date: n.timestamp });
     });
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return events;
@@ -139,34 +141,42 @@ export default function InscritoModal({
 
       {/* Modal Card */}
       <div
-        className="fixed z-[101] flex flex-col overflow-hidden"
-        style={{
-          top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-          width: "min(880px, 95vw)", maxHeight: "90vh",
-          borderRadius: "20px", boxShadow: "0 32px 80px rgba(0,0,0,0.25)", background: "white",
-        }}
+        className={`fixed z-[101] flex flex-col overflow-hidden ${
+          isMobile ? "inset-0" : ""
+        }`}
+        style={
+          isMobile
+            ? { background: "white" }
+            : {
+                top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+                width: "min(880px, 95vw)", maxHeight: "90vh",
+                borderRadius: "20px", boxShadow: "0 32px 80px rgba(0,0,0,0.25)", background: "white",
+              }
+        }
       >
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-6 border-b border-border shrink-0" style={{ height: 56 }}>
-          <div className="text-[13px]">
+        <div className="flex items-center justify-between px-4 md:px-6 border-b border-border shrink-0" style={{ height: 56 }}>
+          <div className="text-[13px] min-w-0">
             <span className="text-ink-400">Ficha</span>
             <span className="text-ink-300"> · </span>
-            <span className="font-semibold text-ink-800 text-[14px]">{inscrito.nome}</span>
+            <span className="font-semibold text-ink-800 text-[14px] truncate">{inscrito.nome}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
             <button
               onClick={() => hasPrev && onSelectInscrito(todos[currentIdx - 1])}
               disabled={!hasPrev}
-              className="flex items-center gap-1 px-3 py-1.5 text-[13px] font-medium text-ink-600 border border-border rounded-lg hover:bg-off-white disabled:opacity-40 transition-colors"
+              className="flex items-center gap-0.5 md:gap-1 px-2 md:px-3 py-1.5 text-[12px] md:text-[13px] font-medium text-ink-600 border border-border rounded-lg hover:bg-off-white disabled:opacity-40 transition-colors"
             >
-              <ChevronLeft size={14} /> Anterior
+              <ChevronLeft size={14} />
+              <span className="hidden sm:inline">Anterior</span>
             </button>
             <button
               onClick={() => hasNext && onSelectInscrito(todos[currentIdx + 1])}
               disabled={!hasNext}
-              className="flex items-center gap-1 px-3 py-1.5 text-[13px] font-medium text-ink-600 border border-border rounded-lg hover:bg-off-white disabled:opacity-40 transition-colors"
+              className="flex items-center gap-0.5 md:gap-1 px-2 md:px-3 py-1.5 text-[12px] md:text-[13px] font-medium text-ink-600 border border-border rounded-lg hover:bg-off-white disabled:opacity-40 transition-colors"
             >
-              Próximo <ChevronRight size={14} />
+              <span className="hidden sm:inline">Próximo</span>
+              <ChevronRight size={14} />
             </button>
             <button onClick={onClose} className="p-1 rounded-lg hover:bg-surface text-ink-400 transition-colors" aria-label="Fechar">
               <X size={20} />
@@ -175,145 +185,200 @@ export default function InscritoModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-[280px_1fr]" style={{ height: "calc(90vh - 56px)" }}>
+        <div
+          className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-[280px_1fr]"
+          style={isMobile ? {} : { height: "calc(90vh - 56px)" }}
+        >
           {/* LEFT PANEL */}
-          <div className="overflow-y-auto p-5 md:p-7 md:sticky md:top-0 text-center md:text-left" style={{ background: "#0F172A" }}>
-            {/* Avatar */}
-            <div className="flex justify-center md:justify-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[22px]"
-                style={{ background: GRADIENTS[gradIdx] }}
-              >
-                {getInitials(inscrito.nome)}
-              </div>
-            </div>
-            <h2 className="font-heading font-bold text-[18px] text-white mt-3">{inscrito.nome}</h2>
-            <p className="text-[13px] mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
-
-            {/* WhatsApp clickable */}
-            <button
-              onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
-              className="w-full mt-3 flex items-center gap-2 justify-center rounded-lg px-3 py-2 transition-colors"
-              style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.20)" }}
-            >
-              <MessageSquare size={14} color="#25D366" />
-              <span className="text-[13px] font-medium" style={{ color: "#4ADE80" }}>{inscrito.whatsapp}</span>
-            </button>
-            <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>Abrir WhatsApp</p>
-
-            {/* Plan badge */}
-            <div className="flex justify-center mt-3">
-              <span className="font-heading font-bold text-[13px] px-3.5 py-1.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
-                {planInfo.label}
-              </span>
-            </div>
-
-            {/* Timestamp */}
-            <p className="text-[12px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Inscrito em {fmtDate(inscrito.timestamp)}
-            </p>
-
-            {/* Divider */}
-            <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
-
-            {/* Progress */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Progresso</p>
-            <div className="space-y-0 text-left">
-              {STEPS.map((step, idx) => {
-                const stepNum = idx + 1;
-                const reached = inscrito.step_reached >= stepNum;
-                const converted = stepConverted(inscrito, stepNum);
-                const status = step.getStatus(inscrito);
-                return (
-                  <div key={idx}>
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold"
-                        style={
-                          reached && converted
-                            ? { background: planColor, color: "white" }
-                            : reached
-                            ? { background: "transparent", border: `2px solid ${planColor}`, color: planColor }
-                            : { background: "rgba(255,255,255,0.06)", color: "hsl(var(--ink-400))" }
-                        }
-                      >
-                        {reached ? <Check size={12} style={{ opacity: converted ? 1 : 0.5 }} /> : stepNum}
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>{step.name}</p>
-                        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>{status}</p>
-                      </div>
-                    </div>
-                    {idx < STEPS.length - 1 && (
-                      <div className="ml-3 h-3" style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }} />
-                    )}
+          <div
+            className={`overflow-y-auto ${isMobile ? "p-4" : "p-5 md:p-7 md:sticky md:top-0 text-center md:text-left"}`}
+            style={{ background: "#0F172A" }}
+          >
+            {isMobile ? (
+              /* ── Mobile: compact horizontal header ── */
+              <div>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[18px] shrink-0"
+                    style={{ background: GRADIENTS[gradIdx] }}
+                  >
+                    {getInitials(inscrito.nome)}
                   </div>
-                );
-              })}
-            </div>
+                  <div className="min-w-0">
+                    <h2 className="font-heading font-bold text-[16px] text-white truncate">{inscrito.nome}</h2>
+                    <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-heading font-bold text-[11px] px-2.5 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
+                        {planInfo.label}
+                      </span>
+                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                        Passo {inscrito.step_reached}/5
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {/* Compact actions row */}
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium"
+                    style={{ background: "rgba(37,211,102,0.12)", color: "#4ADE80" }}
+                  >
+                    <MessageSquare size={13} /> WhatsApp
+                  </button>
+                  <button
+                    onClick={() => window.open(`mailto:${inscrito.email}`, "_blank")}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium"
+                    style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}
+                  >
+                    <Mail size={13} /> Email
+                  </button>
+                  <button
+                    onClick={() => onToggleFollowUp(inscrito.id)}
+                    className="flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-medium"
+                    style={{
+                      background: inscrito.follow_up ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.08)",
+                      color: inscrito.follow_up ? "hsl(var(--amber-300))" : "rgba(255,255,255,0.7)",
+                    }}
+                  >
+                    <Star size={13} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ── Desktop: full left panel ── */
+              <>
+                <div className="flex justify-center md:justify-center">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[22px]"
+                    style={{ background: GRADIENTS[gradIdx] }}
+                  >
+                    {getInitials(inscrito.nome)}
+                  </div>
+                </div>
+                <h2 className="font-heading font-bold text-[18px] text-white mt-3">{inscrito.nome}</h2>
+                <p className="text-[13px] mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
 
-            {/* Divider */}
-            <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
+                <button
+                  onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
+                  className="w-full mt-3 flex items-center gap-2 justify-center rounded-lg px-3 py-2 transition-colors"
+                  style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.20)" }}
+                >
+                  <MessageSquare size={14} color="#25D366" />
+                  <span className="text-[13px] font-medium" style={{ color: "#4ADE80" }}>{inscrito.whatsapp}</span>
+                </button>
+                <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>Abrir WhatsApp</p>
 
-            {/* Quick Actions */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Acções</p>
-            <div className="space-y-1.5 text-left">
-              <button
-                onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-              >
-                <MessageSquare size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
-                <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar WhatsApp</span>
-              </button>
-              <button
-                onClick={() => window.open(`mailto:${inscrito.email}`, "_blank")}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-              >
-                <Mail size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
-                <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar Email</span>
-              </button>
-              <button
-                onClick={() => onToggleFollowUp(inscrito.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                style={{
-                  background: inscrito.follow_up ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!inscrito.follow_up) e.currentTarget.style.background = "rgba(255,255,255,0.10)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!inscrito.follow_up) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                }}
-              >
-                <Star size={14} style={{ color: inscrito.follow_up ? "hsl(var(--amber-400))" : "rgba(255,255,255,0.50)" }} />
-                <span className="text-[13px] font-medium" style={{ color: inscrito.follow_up ? "hsl(var(--amber-300))" : "rgba(255,255,255,0.70)" }}>
-                  {inscrito.follow_up ? "Remover Follow-up" : "Marcar Follow-up"}
-                </span>
-              </button>
-              <button
-                onClick={() => { onArchive(inscrito.id); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                style={{ background: "rgba(255,255,255,0.06)" }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.10)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-              >
-                <Archive size={14} style={{ color: "rgba(255,255,255,0.50)" }} className="group-hover:text-red-400" />
-                <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Arquivar inscrito</span>
-              </button>
-            </div>
+                <div className="flex justify-center mt-3">
+                  <span className="font-heading font-bold text-[13px] px-3.5 py-1.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
+                    {planInfo.label}
+                  </span>
+                </div>
+                <p className="text-[12px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  Inscrito em {fmtDate(inscrito.timestamp)}
+                </p>
+
+                <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
+
+                {/* Progress */}
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Progresso</p>
+                <div className="space-y-0 text-left">
+                  {STEPS.map((step, idx) => {
+                    const stepNum = idx + 1;
+                    const reached = inscrito.step_reached >= stepNum;
+                    const converted = stepConverted(inscrito, stepNum);
+                    const status = step.getStatus(inscrito);
+                    return (
+                      <div key={idx}>
+                        <div className="flex items-center gap-2.5">
+                          <div
+                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold"
+                            style={
+                              reached && converted
+                                ? { background: planColor, color: "white" }
+                                : reached
+                                ? { background: "transparent", border: `2px solid ${planColor}`, color: planColor }
+                                : { background: "rgba(255,255,255,0.06)", color: "hsl(var(--ink-400))" }
+                            }
+                          >
+                            {reached ? <Check size={12} style={{ opacity: converted ? 1 : 0.5 }} /> : stepNum}
+                          </div>
+                          <div>
+                            <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>{step.name}</p>
+                            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>{status}</p>
+                          </div>
+                        </div>
+                        {idx < STEPS.length - 1 && (
+                          <div className="ml-3 h-3" style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
+
+                {/* Quick Actions */}
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Acções</p>
+                <div className="space-y-1.5 text-left">
+                  <button
+                    onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                  >
+                    <MessageSquare size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar WhatsApp</span>
+                  </button>
+                  <button
+                    onClick={() => window.open(`mailto:${inscrito.email}`, "_blank")}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                  >
+                    <Mail size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar Email</span>
+                  </button>
+                  <button
+                    onClick={() => onToggleFollowUp(inscrito.id)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    style={{
+                      background: inscrito.follow_up ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!inscrito.follow_up) e.currentTarget.style.background = "rgba(255,255,255,0.10)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!inscrito.follow_up) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                    }}
+                  >
+                    <Star size={14} style={{ color: inscrito.follow_up ? "hsl(var(--amber-400))" : "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[13px] font-medium" style={{ color: inscrito.follow_up ? "hsl(var(--amber-300))" : "rgba(255,255,255,0.70)" }}>
+                      {inscrito.follow_up ? "Remover Follow-up" : "Marcar Follow-up"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => { onArchive(inscrito.id); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.10)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                  >
+                    <Archive size={14} style={{ color: "rgba(255,255,255,0.50)" }} className="group-hover:text-red-400" />
+                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Arquivar inscrito</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* RIGHT PANEL */}
-          <div className="overflow-y-auto p-5 md:p-7 bg-white">
+          <div className="overflow-y-auto p-4 md:p-7 bg-white">
             {/* Detalhes */}
             <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-4">Detalhes</h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-off-white border border-border rounded-xl p-4">
                 <p className="text-[11px] text-ink-400 mb-1">Plano</p>
                 <div className="flex items-center gap-1.5">
@@ -335,8 +400,8 @@ export default function InscritoModal({
                 <p className="text-[11px] text-ink-400 mb-1">Ref. EuPago</p>
                 {inscrito.eupago_ref ? (
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-[13px] text-ink-700">{inscrito.eupago_ref}</span>
-                    <button onClick={copyRef} className="text-ink-300 hover:text-blue-600 transition-colors" aria-label="Copiar referência">
+                    <span className="font-medium text-[13px] text-ink-700 break-all">{inscrito.eupago_ref}</span>
+                    <button onClick={copyRef} className="text-ink-300 hover:text-blue-600 transition-colors shrink-0" aria-label="Copiar referência">
                       <Copy size={12} />
                     </button>
                     {copiedRef && <span className="text-[10px] text-green-600">Copiado!</span>}
@@ -389,7 +454,7 @@ export default function InscritoModal({
             {inscrito.duvida && (
               <>
                 <hr className="border-border my-6" />
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                   <h3 className="font-heading font-bold text-[14px] text-ink-800">Maior Dúvida</h3>
                   <span className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-600">Passo 2 preenchido</span>
                 </div>
