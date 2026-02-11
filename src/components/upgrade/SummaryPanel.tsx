@@ -67,7 +67,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
                 <p className="text-[12px] text-ink-400 mt-0.5">Gravação · Q&A · Guia</p>
               </div>
               <div className="flex items-center gap-2">
-                <p className="font-heading font-bold text-[16px] text-ink-900">€18,45</p>
+                <p className="font-heading font-bold text-[14px] text-ink-900">€15 <span className="text-[11px] font-normal text-ink-400">+ IVA</span></p>
                 <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("premium")} />
               </div>
             </motion.div>
@@ -84,7 +84,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
                   <p className="text-[12px] text-ink-400 mt-0.5">3h · Online · Máx. 30</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="font-heading font-bold text-[16px] text-ink-900">€57,81</p>
+                  <p className="font-heading font-bold text-[14px] text-ink-900">€47 <span className="text-[11px] font-normal text-ink-400">+ IVA</span></p>
                   <Trash2 className="w-4 h-4 text-ink-400 hover:text-red-500 cursor-pointer transition-colors duration-150" onClick={() => onRemove?.("masterclass")} />
                 </div>
               </div>
@@ -92,25 +92,6 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
           )}
         </AnimatePresence>
 
-        {/* IVA lines */}
-        <AnimatePresence>
-          {orderState.premium && (
-            <motion.div variants={lineVariants} initial="initial" animate="animate"
-              className="flex justify-between items-start py-2">
-              <p className="text-[13px] text-ink-400">IVA (Premium)</p>
-              <p className="text-[13px] text-ink-400">€3,45</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <AnimatePresence>
-          {orderState.masterclass && (
-            <motion.div variants={lineVariants} initial="initial" animate="animate"
-              className="flex justify-between items-start py-2">
-              <p className="text-[13px] text-ink-400">IVA (Masterclass)</p>
-              <p className="text-[13px] text-ink-400">€10,81</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* Total */}

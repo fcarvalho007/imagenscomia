@@ -84,7 +84,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "hsl(var(--ink-900))")}
       >
-        Reservar Masterclass — €57,81 →
+        Reservar Masterclass →
       </button>
     </div>
 
