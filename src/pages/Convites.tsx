@@ -197,11 +197,14 @@ const ConvitesContent = () => {
                       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ver os meus convites"}
                     </button>
                   </form>
+                  <p className="text-xs text-ink-400 mt-4 mb-2 text-center">
+                    Para participar nesta dinâmica de convites, precisas de estar registado no webinar.
+                  </p>
                   <button
                     onClick={() => open("free")}
-                    className="w-full mt-3 text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                    className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
                   >
-                    Ainda não te inscreveste? Inscreve-te aqui →
+                    Ainda não estás inscrito no webinar? Regista-te gratuitamente aqui →
                   </button>
                 </div>
               </div>
