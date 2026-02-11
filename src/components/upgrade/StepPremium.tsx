@@ -47,7 +47,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
             PREMIUM PASS
           </p>
           <p className="font-heading font-black text-[36px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[14px] text-ink-400">Para implementar com calma, sem depender do direto.</p>
+          <p className="text-[14px] text-ink-400">Implementar com calma, sem depender do direto.</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2 min-w-[160px] whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] text-amber-700">Early bird: €15 + IVA</p>
@@ -71,11 +71,6 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         ))}
       </div>
 
-      {/* Positioning line */}
-      <p className="text-[13px] text-ink-400 text-center mt-4">
-        Upgrade ideal para aplicar o método depois do webinar.
-      </p>
-
       {/* CTA */}
       <button
         onClick={onAddPremium}
@@ -84,7 +79,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         Garantir Premium Pass →
       </button>
       <p className="text-[13px] text-ink-400 text-center mt-2">
-        Pagamento único · acesso à gravação incluído
+        Upgrade ideal para aplicar o método depois do webinar.
       </p>
     </div>
 
@@ -98,7 +93,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
     {/* Skip link */}
     <p
       onClick={onSkip}
-      className="text-[13px] text-ink-300 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="text-[13px] text-ink-400 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
     >
       Continuar sem gravação, Q&A nem guia →
     </p>
