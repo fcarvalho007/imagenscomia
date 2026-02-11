@@ -10,19 +10,17 @@ export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props
   const maxChars = 300;
 
   return (
-    <div className="max-w-[480px]">
+    <div className="max-w-[560px]">
       <h2 className="font-heading font-bold text-[24px] text-ink-900">
         A tua maior dúvida sobre imagens com IA
       </h2>
       <p className="text-[17px] text-ink-500 mt-2 mb-2">
-        O Frederico vai ler antes do webinar.
-        <br />
-        Quanto mais específico, mais útil para ti.
+        O Frederico vai ler antes do webinar. Quanto mais específico, mais útil para ti.
       </p>
 
       {/* Blue note */}
       <div
-        className="rounded-r-lg p-3 mb-5"
+        className="rounded-r-lg p-2.5 mb-4"
         style={{
           backgroundColor: "hsl(var(--blue-50))",
           borderLeft: "3px solid hsl(var(--blue-600))",
@@ -56,7 +54,7 @@ export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props
 
       <p
         onClick={onSkip}
-        className="text-[14px] text-ink-400 cursor-pointer mt-2.5 text-center hover:underline"
+        className="text-[13px] text-ink-300 cursor-pointer mt-2.5 text-center hover:underline"
       >
         Saltar — responder depois
       </p>
