@@ -149,7 +149,7 @@ export default function InscritoModal({
             ? { background: "white" }
             : {
                 top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-                width: "min(880px, 95vw)", maxHeight: "90vh",
+                width: "min(880px, 95vw)", maxHeight: "95vh",
                 borderRadius: "20px", boxShadow: "0 32px 80px rgba(0,0,0,0.25)", background: "white",
               }
         }
@@ -187,7 +187,7 @@ export default function InscritoModal({
         {/* Body */}
         <div
           className="flex-1 overflow-hidden grid grid-cols-1 md:grid-cols-[280px_1fr]"
-          style={isMobile ? {} : { height: "calc(90vh - 56px)" }}
+          style={isMobile ? {} : { height: "calc(95vh - 56px)" }}
         >
           {/* LEFT PANEL */}
           <div
@@ -250,18 +250,18 @@ export default function InscritoModal({
               <>
                 <div className="flex justify-center md:justify-center">
                   <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[22px]"
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[20px]"
                     style={{ background: GRADIENTS[gradIdx] }}
                   >
                     {getInitials(inscrito.nome)}
                   </div>
                 </div>
-                <h2 className="font-heading font-bold text-[18px] text-white mt-3">{inscrito.nome}</h2>
-                <p className="text-[13px] mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
+                <h2 className="font-heading font-bold text-[17px] text-white mt-2">{inscrito.nome}</h2>
+                <p className="text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
 
                 <button
                   onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
-                  className="w-full mt-3 flex items-center gap-2 justify-center rounded-lg px-3 py-2 transition-colors"
+                  className="w-full mt-2 flex items-center gap-2 justify-center rounded-lg px-3 py-1.5 transition-colors"
                   style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.20)" }}
                 >
                   <MessageSquare size={14} color="#25D366" />
@@ -269,19 +269,19 @@ export default function InscritoModal({
                 </button>
                 <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>Abrir WhatsApp</p>
 
-                <div className="flex justify-center mt-3">
-                  <span className="font-heading font-bold text-[13px] px-3.5 py-1.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
+                <div className="flex justify-center mt-2">
+                  <span className="font-heading font-bold text-[12px] px-3 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
                     {planInfo.label}
                   </span>
                 </div>
-                <p className="text-[12px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>
                   Inscrito em {fmtDate(inscrito.timestamp)}
                 </p>
 
-                <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
+                <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
 
                 {/* Progress */}
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>Progresso</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Progresso</p>
                 <div className="space-y-0 text-left">
                   {STEPS.map((step, idx) => {
                     const stepNum = idx + 1;
@@ -309,41 +309,31 @@ export default function InscritoModal({
                           </div>
                         </div>
                         {idx < STEPS.length - 1 && (
-                          <div className="ml-3 h-3" style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }} />
+                          <div className="ml-3 h-2" style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }} />
                         )}
                       </div>
                     );
                   })}
                 </div>
 
-                <div className="my-5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
+                <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
 
                 {/* Quick Actions */}
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Acções</p>
-                <div className="space-y-1.5 text-left">
-                  <button
-                    onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                  >
-                    <MessageSquare size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
-                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar WhatsApp</span>
-                  </button>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Acções</p>
+                <div className="space-y-1 text-left">
                   <button
                     onClick={() => window.open(`mailto:${inscrito.email}`, "_blank")}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
                     style={{ background: "rgba(255,255,255,0.06)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
                   >
-                    <Mail size={14} style={{ color: "rgba(255,255,255,0.50)" }} />
-                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar Email</span>
+                    <Mail size={13} style={{ color: "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Enviar Email</span>
                   </button>
                   <button
                     onClick={() => onToggleFollowUp(inscrito.id)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
                     style={{
                       background: inscrito.follow_up ? "rgba(245,158,11,0.15)" : "rgba(255,255,255,0.06)",
                     }}
@@ -354,20 +344,20 @@ export default function InscritoModal({
                       if (!inscrito.follow_up) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
                     }}
                   >
-                    <Star size={14} style={{ color: inscrito.follow_up ? "hsl(var(--amber-400))" : "rgba(255,255,255,0.50)" }} />
-                    <span className="text-[13px] font-medium" style={{ color: inscrito.follow_up ? "hsl(var(--amber-300))" : "rgba(255,255,255,0.70)" }}>
+                    <Star size={13} style={{ color: inscrito.follow_up ? "hsl(var(--amber-400))" : "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[12px] font-medium" style={{ color: inscrito.follow_up ? "hsl(var(--amber-300))" : "rgba(255,255,255,0.70)" }}>
                       {inscrito.follow_up ? "Remover Follow-up" : "Marcar Follow-up"}
                     </span>
                   </button>
                   <button
                     onClick={() => { onArchive(inscrito.id); }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
                     style={{ background: "rgba(255,255,255,0.06)" }}
                     onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.10)"; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                   >
-                    <Archive size={14} style={{ color: "rgba(255,255,255,0.50)" }} className="group-hover:text-red-400" />
-                    <span className="text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Arquivar inscrito</span>
+                    <Archive size={13} style={{ color: "rgba(255,255,255,0.50)" }} />
+                    <span className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>Arquivar inscrito</span>
                   </button>
                 </div>
               </>
