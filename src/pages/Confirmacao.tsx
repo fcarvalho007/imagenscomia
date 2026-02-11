@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft, MessageCircle, Gift, Copy, Send, ExternalLink } from "lucide-react";
+import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 
 const CONFIRMATIONS: Record<string, { title: string; emoji: string; items: string[]; next: string }> = {
   free: {
@@ -146,6 +147,8 @@ const Confirmacao = () => {
         <p className="text-[12px] text-ink-400 mt-6">
           Questões? frederico@digitalfc.pt
         </p>
+
+        <ConfirmacaoExtras referralLink={searchParams.get("ref") ? `${window.location.origin}/?ref=${searchParams.get("ref")}` : `${window.location.origin}/`} />
       </motion.div>
     </div>
   );
