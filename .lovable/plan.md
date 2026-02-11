@@ -1,45 +1,65 @@
 
-
-# Adicionar imagens reais a galeria de exemplos
+# Alteracoes de texto no fluxo /upgrade
 
 ## Resumo
 
-Substituir os 8 placeholders (gradientes) da seccao "Imagens criadas com o metodo" pelas 8 imagens enviadas, usando `object-cover` para adaptar cada imagem ao aspect-ratio do slot.
-
-## Mapeamento imagens → slots
-
-| Slot | Aspect Ratio | Tag | Imagem |
-|------|-------------|-----|--------|
-| 01 | 4/5 | Post Instagram | `6_frederico_carvalho_porto_ribeirinha.jpeg` |
-| 02 | 16/9 | LinkedIn Banner | `1_frederico_carvalho_escritorio_1.jpeg` |
-| 03 | 1/1 | Imagem de Produto | `3_frederico_carvalho_serum_exemplo.jpeg` |
-| 04 | 9/16 | Story Instagram | `8_frederico_carvalho_bolsa_mulher.png` |
-| 05 | 4/3 | Anuncio Facebook | `2_frederico_carvalho_na_cama_1.png` |
-| 06 | 3/2 | E-commerce | `7_frederico_carvalho_sapatos.jpeg` |
-| 07 | 1/1 | Branding | `5_frederico_carvalho_cappucino_background.jpeg` |
-| 08 | 2/3 | Newsletter Header | `4_frederico_carvalho_caricatura.jpeg` |
+Actualizar textos em 4 passos do funil de upgrade e reescrever o conteudo da Masterclass para reflectir a transicao imagem-para-video.
 
 ## Alteracoes
 
-### 1. Copiar imagens para `src/assets/galeria/`
+### 1. Passo 1 — StepQualification.tsx
 
-Copiar as 8 imagens para a pasta `src/assets/galeria/` para que possam ser importadas como modulos ES6 (melhor bundling e optimizacao automatica pelo Vite).
+| Linha | Antes | Depois |
+|-------|-------|--------|
+| 42-43 | "Quase pronto — so 2 perguntas rapidas" | "(nome), so 2 perguntas muito rapidas" |
 
-### 2. Editar `src/components/landing/GallerySection.tsx`
+O nome vem do `userData.nome` no Upsell.tsx. Sera necessario passar o `userName` como prop ao StepQualification e extrair o primeiro nome.
 
-- Adicionar imports das 8 imagens
-- Adicionar campo `image` ao array `slots` com a referencia importada
-- Substituir o `div` placeholder (com gradiente e emoji) por um `<img>` com:
-  - `src={slot.image}`
-  - `alt` descritivo baseado na tag
-  - `loading="lazy"` para performance
-  - `className="w-full h-full object-cover"`
-  - O aspect-ratio continua definido no container pai
-- Manter toda a restante estrutura: hover overlay, tags, data-attributes, ScrollReveal
+### 2. Passo 2 — StepPersonalization.tsx
 
-### Optimizacao de performance
+| Linha | Antes | Depois |
+|-------|-------|--------|
+| 18 | "Frederico vai ler antes do webinar." | "O Frederico vai ler antes do webinar." |
 
-- Todas as imagens usam `loading="lazy"` (estao abaixo da dobra)
-- O Vite faz optimizacao automatica de assets importados de `src/assets/`
-- O `object-cover` garante que cada imagem preenche o seu slot sem distorcao, cortando apenas o excesso
+### 3. Passo 3 — StepPremium.tsx
 
+| Linha | Antes | Depois |
+|-------|-------|--------|
+| 26-27 | "A tua inscricao gratuita esta confirmada." | "(nome), a tua inscricao gratuita esta confirmada." |
+| 28 | "Antes de terminar — queres adicionar o Premium Pass?" | "Mas queres adicionar o Premium Pass para mais tranquilidade?" |
+
+Sera necessario passar `userName` como prop ao StepPremium e extrair o primeiro nome.
+
+### 4. Passo 4 — StepMasterclass.tsx
+
+**Subtitulo** (linhas 27-30):
+
+Antes:
+```
+O webinar ensina o metodo. A Masterclass
+executa-o na tua empresa, com Frederico, ao vivo.
+```
+
+Depois:
+```
+O webinar ensina o metodo.
+A Masterclass aprofunda para um grupo restrito ao vivo, com o Frederico.
+```
+
+**Descricao dos bullets** (linhas 34-36): Trocar "3 horas de implementacao ao vivo:" por um texto que reflicta a transicao de imagem para video. Novos bullets:
+
+- "Da imagem ao video — domina a proxima fronteira" / "Aprende a criar video com IA usando o mesmo metodo das imagens."
+- "Casos reais de empresas portuguesas" / "Trabalho feito durante a sessao, no teu sector."
+- "Gravacao vitalicia + certificado Professor FEUC" / "Rever sempre que precisares."
+
+Label antes dos bullets: "3 horas de implementacao ao vivo:" passa a "Da imagem ao video — ao vivo com o Frederico:"
+
+### 5. Props adicionais — Upsell.tsx
+
+Passar `userName={userData.nome}` ao StepQualification e StepPremium para que possam personalizar os titulos com o primeiro nome.
+
+## Detalhes tecnicos
+
+- **Ficheiros editados**: `StepQualification.tsx`, `StepPersonalization.tsx`, `StepPremium.tsx`, `StepMasterclass.tsx`, `Upsell.tsx`
+- Extraccao do primeiro nome: `userName.trim().split(" ")[0]` (padrao ja usado noutros componentes do projecto)
+- Sem alteracoes de layout, cores ou estrutura — apenas texto e 2 props novas
