@@ -1,64 +1,59 @@
 
 
-# Refinamento do Premium Pass + Layout do Upsell
+# Melhorias UX/UI dos Passos 1-4 do Upsell
 
-## Parte 1 — StepPremium.tsx (copy + UX)
-
-### Bullets (remover tom negativo)
-Substituir os 3 bullets atuais por versoes orientadas a beneficio:
-1. **"Gravacao HD (acesso continuo)"** — "Rever e aplicar quando for mais conveniente."
-2. **"Q&A exclusivo (60 min)"** — "Duvidas respondidas com foco no caso real."
-3. **"Guia completo de prompts (30+ paginas)"** — "Estruturas prontas para acelerar resultados."
-
-### Cabecalho de preco
-- Manter "PREMIUM PASS" e "€15 + IVA"
-- Substituir microcopy "€18,45 total · pagamento unico" por: **"Para implementar com calma, sem depender do direto."**
-
-### Badge early bird
-- De: "Sobe para €27 / depois do webinar"
-- Para: **"Early bird: €15 + IVA" / "Depois do webinar: €27 + IVA"**
-
-### Remover label "Com o Premium tens acesso a:"
-- Os bullets sao autoexplicativos
-
-### Linha de posicionamento (antes do CTA)
-Adicionar: **"Upgrade ideal para aplicar o metodo depois do webinar."** (texto pequeno, discreto)
-
-### CTA
-- De: "Adicionar Premium Pass →"
-- Para: **"Garantir Premium Pass →"**
-- Adicionar microcopy abaixo: **"Pagamento unico · acesso a gravacao incluido"**
-
-### Skip link
-- Manter "Continuar sem gravacao, Q&A nem guia →" (ja esta neutro)
-
----
-
-## Parte 2 — Layout e UX (Upsell.tsx + SummaryPanel.tsx + StepMasterclass.tsx)
-
-### Grelha (Upsell.tsx)
-- Reduzir coluna esquerda: `lg:grid-cols-[340px_1fr]` para **`lg:grid-cols-[280px_1fr]`**
-- Aumentar max-w dos cards de `max-w-[480px]` para **`max-w-[560px]`** (StepPremium e StepMasterclass)
-- Cards internos de `max-w-[460px]` para **`max-w-[520px]`**
-
-### SummaryPanel.tsx — simplificar
-- Reduzir padding lateral de 28px para **24px**
-- Compactar subtextos: "18 Fev · 10h00 · 75 minutos" para **"18 Fev · 10h00"**
-- "Gravacao · Q&A · Guia" para **"Gravacao + Q&A + Guia"** (mais curto)
-
-### StepMasterclass.tsx — remover repeticao de data
-- No rodape com icones, remover a data (ja esta no cabecalho):
-  - De: `["📅 5 de Marco (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Max. 30"]`
-  - Para: **`["💻 Online", "⏱ 3 horas", "👥 Max. 30"]`**
-
----
-
-## Ficheiros a editar
+## Ficheiros a editar (5)
 
 | Ficheiro | Alteracoes |
 |----------|-----------|
-| `StepPremium.tsx` | Bullets, badge, CTA, microcopy, linha posicionamento |
-| `Upsell.tsx` | Grelha 280px coluna esquerda |
-| `SummaryPanel.tsx` | Padding, textos compactos |
-| `StepMasterclass.tsx` | Remover data duplicada do rodape, max-w 560/520 |
+| `Upsell.tsx` | Progress bar max-w 560px, container max-w |
+| `StepQualification.tsx` | max-w 560px, line-height, skip mais discreto |
+| `StepPersonalization.tsx` | max-w 560px, caixa azul compacta, skip discreto |
+| `StepPremium.tsx` | max-w 620px, card 560px, badge min-w/nowrap, skip discreto |
+| `StepMasterclass.tsx` | max-w 620px, card 560px, bullets curtos, remover Max 30, badge nowrap, skip discreto |
+
+---
+
+## 1. Layout global (Upsell.tsx)
+
+- Progress bar: `max-w-[480px]` para `max-w-[560px]` (acompanhar a largura dos cards)
+- Sidebar ja esta a 280px (ok, manter)
+
+## 2. Passos 1-2 (Qualification + Personalization)
+
+### StepQualification.tsx
+- `max-w-[480px]` para `max-w-[560px]`
+- Skip link: reduzir para `text-[13px]` e `text-ink-300` (mais discreto)
+
+### StepPersonalization.tsx
+- `max-w-[480px]` para `max-w-[560px]`
+- Caixa azul: reduzir padding de `p-3` para `p-2.5`, remover `mb-5` para `mb-4`
+- Subtitulo: juntar as 2 linhas (remover `<br />`) para ser mais compacto
+- Skip link: `text-[13px]` e `text-ink-300`
+
+## 3. Passo 3 — StepPremium.tsx
+
+- Container: `max-w-[560px]` para `max-w-[620px]`
+- Card: `max-w-[520px]` para `max-w-[560px]`
+- Badge early bird: adicionar `whitespace-nowrap` e `min-w-[160px]` para evitar que "+ IVA" quebre de linha
+- Preco grande (€15): reduzir de `text-[40px]` para `text-[36px]` para consistencia com Masterclass
+- Bullets: adicionar `leading-[1.5]` ao microcopy para melhor leitura
+- Skip link: `text-[13px]` e `text-ink-300`
+
+## 4. Passo 4 — StepMasterclass.tsx
+
+- Container: `max-w-[560px]` para `max-w-[620px]`
+- Card: `max-w-[520px]` para `max-w-[560px]`
+- Bullets encurtados (titulos mais curtos):
+  1. "Imagem → video: do estatico ao clip" / "Fluxo pratico para gerar video utilizavel."
+  2. "Ferramentas certas (sem confusao)" / "Curadoria por objetivo: gratuitas e pagas."
+  3. "Prompts para video (reutilizaveis)" / "Estruturas para consistencia e controlo."
+  4. "Gravacao incluida" / "Rever e replicar quando necessario."
+- Rodape icones: remover "👥 Max. 30", manter apenas `["💻 Online", "⏱ 3 horas"]`
+- Badge early bird: adicionar `whitespace-nowrap`
+- Skip link: `text-[13px]` e `text-ink-300`
+
+## 5. SummaryPanel.tsx
+
+- Linha da Masterclass: "3h · Online · Max. 30" para "3h · Online" (remover Max. 30)
 
