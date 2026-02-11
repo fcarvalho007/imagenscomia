@@ -1,67 +1,58 @@
 
 
-# Melhorar UX/UI da pagina /confirmacao
+# Mostrar valores + IVA e remover "Reembolso 14 dias"
 
-## Problemas identificados
+## Resumo
 
-1. **Conteudo duplicado** — O `ReferralWidget` (plano referral) e o `ConfirmacaoExtras` mostram ambos blocos de referral, criando redundancia
-2. **Hierarquia visual plana** — Todos os blocos tem o mesmo peso visual, sem fluxo claro
-3. **Emoji no topo e texto simples** — Sem animacao de sucesso envolvente
-4. **Botao "Voltar ao site" demasiado proeminente** — Fundo escuro full-width compete com as accoes importantes
-5. **Link WhatsApp com numero ficticio** (351000000000)
-6. **Sem animacoes sequenciais** — Os blocos aparecem todos ao mesmo tempo
-7. **Blocos extras (referral, calendario, Instagram) sem coesao** — Estilos inline inconsistentes, espacamento irregular
-8. **Email de contacto "orfao"** — Texto solto entre botoes e extras
-9. **Mobile: padding apertado** — p-4 exterior + p-8 interior em ecras pequenos
+Adicionar a notacao "+ IVA" ao Premium Pass (que actualmente mostra apenas "€15") para consistencia com a Masterclass, e remover todas as mencoes a "Reembolso 14 dias" na pagina /upgrade.
 
 ---
 
 ## Alteracoes
 
-### Ficheiro: `src/pages/Confirmacao.tsx`
+### 1. `src/components/upgrade/StepPremium.tsx`
 
-**1. Animacao de entrada melhorada**
-- Substituir o emoji de texto por um circulo animado com icone Check (lucide-react) dentro, fundo verde claro, com escala spring
-- Manter emoji como fallback visual pequeno abaixo
+- Linha 46: Mudar `€15` para `€15 + IVA`
+- Linha 47: Adicionar subtexto `€18,45 total · pagamento unico` (15 * 1.23 = 18.45)
+- Linha 78 (botao CTA): Mudar `€15` para `€18,45`
 
-**2. Animacoes sequenciais (staggered)**
-- Usar `motion.div` com delays incrementais (0.1, 0.2, 0.3...) para cada bloco aparecer em cascata
-- Fade-in + translateY suave (opacity 0 para 1, y 12px para 0)
+### 2. `src/components/upgrade/SummaryPanel.tsx`
 
-**3. Remover ReferralWidget duplicado**
-- Remover o componente `ReferralWidget` inline (linhas 157-234) — a funcionalidade de referral ja esta no `ConfirmacaoExtras`
-- Remover a condicao `showReferralWidget` e a renderizacao do widget
-- Limpar imports nao utilizados (Gift, Copy, Send, ExternalLink)
+- Linha 70: Premium mostra `€15` — mudar para `€15 + IVA` ou mostrar `€18,45`
+- Linha 87: Masterclass mostra `€47` — ja esta correcto mas adicionar sub-texto `+ IVA` se nao tiver
+- Linhas 95-104: Reformular a linha de IVA para cobrir Premium tambem (IVA Premium €3,45 + IVA Masterclass €10,81)
+- Linha 123: Remover `· Reembolso 14 dias` da linha de seguranca, ficando apenas `🔒 Pagamento seguro EuPago`
 
-**4. Reorganizar hierarquia dos botoes**
-- "Voltar ao site" passa a link discreto no fundo (texto simples, sem fundo escuro)
-- Botao WhatsApp: remover numero ficticio, usar link generico do grupo ou esconder se nao houver link real
-- Mover email de contacto para rodape com separador subtil
+### 3. `src/pages/Upsell.tsx`
 
-**5. Melhorar espacamento mobile**
-- Container exterior: `p-4 sm:p-6`
-- Card interior: `p-6 sm:p-8 md:p-10`
-- Garantir que os blocos extras nao transbordam
+- Linha 18: Actualizar `getTotal` — Premium passa de 15 para 18.45 (15 + 23% IVA): `(o.premium ? 18.45 : 0) + (o.masterclass ? 57.81 : 0)`
 
-**6. Agrupar blocos extras visualmente**
-- Adicionar `mt-8` e separador fino antes dos extras
-- Os 3 blocos (referral, calendario, Instagram) ficam dentro de um wrapper com espacamento consistente
+### 4. `src/components/upgrade/StepConfirmation.tsx`
 
-### Ficheiro: `src/components/landing/ConfirmacaoExtras.tsx`
+- Linha 158: Premium mostra `€15` — mudar para `€15 + IVA` com sub-linha de IVA (€3,45), tal como ja existe para Masterclass
+- Linha 181: O total ja usa `getTotal()` portanto actualiza automaticamente
+- Linha 202: Remover `· Reembolso 14 dias`, ficando apenas `🔒 Pagamento seguro EuPago`
 
-**7. Melhorar estilo dos botoes extras**
-- Remover estilos inline (`style={}`) e usar classes Tailwind puras
-- Espacamento uniforme entre blocos: `mt-3` para todos
-- Botao Instagram: usar classe `bg-[#E1306C]` em vez de style inline
-- Botao referral: hover state mais visivel
+---
+
+## Resumo dos valores actualizados
+
+| Produto | Base | IVA (23%) | Total |
+|---------|------|-----------|-------|
+| Premium Pass | €15 | €3,45 | €18,45 |
+| Masterclass | €47 | €10,81 | €57,81 |
+| Ambos | €62 | €14,26 | €76,26 |
 
 ---
 
 ## Ficheiros a editar
 
-| Ficheiro | Tipo de alteracao |
-|----------|-------------------|
-| `src/pages/Confirmacao.tsx` | Remover ReferralWidget duplicado, melhorar animacoes, reorganizar hierarquia, ajustar spacing |
-| `src/components/landing/ConfirmacaoExtras.tsx` | Substituir estilos inline por Tailwind, espacamento uniforme |
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/upgrade/StepPremium.tsx` | Precos com "+ IVA", total €18,45 |
+| `src/components/upgrade/SummaryPanel.tsx` | IVA no Premium, remover "Reembolso 14 dias" |
+| `src/pages/Upsell.tsx` | getTotal: premium = 18.45 |
+| `src/components/upgrade/StepConfirmation.tsx` | IVA no Premium, remover "Reembolso 14 dias" |
 
-Sem dependencias novas. Apenas reorganizacao e polish visual.
+Sem dependencias novas.
+
