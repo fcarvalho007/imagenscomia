@@ -1,51 +1,45 @@
 
 
-# Remover Premium da landing page e uniformizar CTAs verdes
+# Adicionar botao de remover (lixo) nas linhas pagas do painel esquerdo
 
 ## Resumo
 
-Eliminar todas as referencias ao Premium Pass, blocos de referral e texto associado na landing page. Substituir todos os botoes por um unico estilo verde com "Inscrever-me gratis".
+Adicionar um icone de caixote de lixo nas linhas do Premium Pass e Masterclass no painel lateral esquerdo, permitindo ao utilizador remover opcoes pagas directamente do resumo do pedido.
 
 ---
 
-## Alteracoes por ficheiro
+## Alteracoes
 
-### 1. `src/components/landing/PricingCardsSection.tsx`
+### 1. `src/components/upgrade/SummaryPanel.tsx`
 
-**Remover completamente:**
-- O card Premium inteiro (linhas 65-113)
-- O texto "O Premium e recomendado..." (linhas 116-120)
-- O bloco "Ou ganha Premium gratis" com o referral (linhas 122-140)
-- As linhas RGPD/Reembolso (linhas 142-148)
-- O aviso "Nota: sem acesso a gravacao apos o webinar" (linhas 49-52)
-- Imports nao utilizados: `AlertTriangle`, `Gift`, `premiumFeatures`
+**Props**: Adicionar callback `onRemove: (item: "premium" | "masterclass") => void` na interface Props.
 
-**Alterar:**
-- Remover o grid de 2 colunas — fica so 1 card centrado (`max-w-[420px] mx-auto`)
-- Botao do card gratuito: mudar de gradiente roxo para verde (`bg-green-600 hover:bg-green-700`), texto "Inscrever-me gratis →"
-- Sombra do botao: `shadow-[0_4px_14px_0_rgba(22,163,74,0.35)]`
-- Manter apenas "Sem compromisso" como nota abaixo do card
+**Linha Premium (linha 2)**: Adicionar um icone `Trash2` (lucide-react) ao lado direito, entre o preco e a borda. Ao clicar, chama `onRemove("premium")`.
 
-### 2. `src/components/landing/CTAFinalSection.tsx`
+**Linha Masterclass (linha 3)**: Mesmo icone `Trash2`, chama `onRemove("masterclass")`.
 
-**Remover:**
-- O segundo botao "Garantir Premium €15" (linhas 41-48)
-- As linhas RGPD/Reembolso/Spam (linhas 52-58)
+**Estilo do icone**:
+- `w-4 h-4`, cor `--ink-400`, hover `--red-500`
+- `cursor-pointer`, `transition-colors 150ms`
+- Posicionado a direita do preco com `ml-2`
+- O layout da direita passa a ser `flex items-center gap-2` para alinhar preco + icone
 
-**Alterar:**
-- Botao unico: mudar de gradiente roxo para verde (`bg-green-600 hover:bg-green-700`), texto "Inscrever-me gratis →"
-- Sombra verde: `shadow-[0_4px_14px_0_rgba(22,163,74,0.35)]`
-- Centrar o botao (remover flex-row, manter so `flex justify-center`)
+**Mobile bar**: Sem alteracao (nao ha espaco para lixo na barra compacta).
 
-### 3. `src/components/landing/StickyTopBar.tsx`
+### 2. `src/pages/Upsell.tsx`
 
-**Alterar:**
-- Botao: mudar de gradiente neon para verde (`bg-green-600 hover:bg-green-700`), texto "Inscrever-me gratis →"
-- Remover `shadow-neon-purple`, usar sombra verde subtil
+**Passar `onRemove` ao SummaryPanel**: Criar handler que faz `setOrderState(s => ({ ...s, [item]: false }))`.
+
+Nao altera o step actual — o utilizador pode estar no passo 5 e remover uma opcao, o resumo e total actualizam sem mudar de passo.
 
 ---
 
-## Resultado final
+## Ficheiros a editar
 
-Toda a landing page tera apenas um tipo de CTA — botao verde "Inscrever-me gratis →" — sem qualquer mencao a Premium, precos, referrals ou reembolso. A mensagem e clara: o webinar e 100% gratuito.
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/upgrade/SummaryPanel.tsx` | Adicionar icone Trash2 nas linhas Premium e Masterclass com callback onRemove |
+| `src/pages/Upsell.tsx` | Passar prop onRemove ao SummaryPanel |
+
+Sem dependencias novas (Trash2 ja existe no lucide-react).
 
