@@ -1,36 +1,67 @@
 
 
-# Adicionar 3 blocos no final da pagina /confirmacao
+# Melhorar UX/UI da pagina /confirmacao
 
-## Resumo
+## Problemas identificados
 
-Adicionar 3 blocos (Referral, Calendario, Instagram) abaixo do conteudo existente na pagina `/confirmacao`, sem alterar nada do que ja existe.
+1. **Conteudo duplicado** — O `ReferralWidget` (plano referral) e o `ConfirmacaoExtras` mostram ambos blocos de referral, criando redundancia
+2. **Hierarquia visual plana** — Todos os blocos tem o mesmo peso visual, sem fluxo claro
+3. **Emoji no topo e texto simples** — Sem animacao de sucesso envolvente
+4. **Botao "Voltar ao site" demasiado proeminente** — Fundo escuro full-width compete com as accoes importantes
+5. **Link WhatsApp com numero ficticio** (351000000000)
+6. **Sem animacoes sequenciais** — Os blocos aparecem todos ao mesmo tempo
+7. **Blocos extras (referral, calendario, Instagram) sem coesao** — Estilos inline inconsistentes, espacamento irregular
+8. **Email de contacto "orfao"** — Texto solto entre botoes e extras
+9. **Mobile: padding apertado** — p-4 exterior + p-8 interior em ecras pequenos
+
+---
 
 ## Alteracoes
 
 ### Ficheiro: `src/pages/Confirmacao.tsx`
 
-Dentro do `motion.div` principal, **depois** do bloco `<p>` com "Questoes? frederico@digitalfc.pt" (linha 107), adicionar:
+**1. Animacao de entrada melhorada**
+- Substituir o emoji de texto por um circulo animado com icone Check (lucide-react) dentro, fundo verde claro, com escala spring
+- Manter emoji como fallback visual pequeno abaixo
 
-**Bloco 1 — Referral Bonus**
-- Fundo amber-50, border rgba(217,119,6,0.25), rounded-xl, p-5, mt-5
-- Titulo: "Convida 2 amigos — ganha acesso ao Q&A Bonus de 25 Fev"
-- Texto explicativo
-- Botao "Copiar o meu link de convite" com feedback "Link copiado" durante 2s
-- Usar estado `copied` (ja existe no ReferralWidget mas este bloco e independente — adicionar estado local)
-- O link de referral usa `searchParams.get("ref")` ou fallback para origin
+**2. Animacoes sequenciais (staggered)**
+- Usar `motion.div` com delays incrementais (0.1, 0.2, 0.3...) para cada bloco aparecer em cascata
+- Fade-in + translateY suave (opacity 0 para 1, y 12px para 0)
 
-**Bloco 2 — Botao Calendario**
-- mt-3, full-width, border ink-700, fundo branco
-- Gera ficheiro .ics com data 18 Fev 2026 10h00-11h15
+**3. Remover ReferralWidget duplicado**
+- Remover o componente `ReferralWidget` inline (linhas 157-234) — a funcionalidade de referral ja esta no `ConfirmacaoExtras`
+- Remover a condicao `showReferralWidget` e a renderizacao do widget
+- Limpar imports nao utilizados (Gift, Copy, Send, ExternalLink)
 
-**Bloco 3 — Botao Instagram**
-- mt-2.5, full-width, fundo #E1306C
-- Abre link Instagram em novo separador
+**4. Reorganizar hierarquia dos botoes**
+- "Voltar ao site" passa a link discreto no fundo (texto simples, sem fundo escuro)
+- Botao WhatsApp: remover numero ficticio, usar link generico do grupo ou esconder se nao houver link real
+- Mover email de contacto para rodape com separador subtil
 
-### Detalhes tecnicos
+**5. Melhorar espacamento mobile**
+- Container exterior: `p-4 sm:p-6`
+- Card interior: `p-6 sm:p-8 md:p-10`
+- Garantir que os blocos extras nao transbordam
 
-- Mover o `useState` para `copied` para o componente `Confirmacao` (ou adicionar um novo estado local) para o botao de copiar do bloco 1
-- Os 3 blocos aparecem para **todos** os planos, nao so para o plano referral
-- Nenhum conteudo existente e alterado — sao insercoes puras no final do card
+**6. Agrupar blocos extras visualmente**
+- Adicionar `mt-8` e separador fino antes dos extras
+- Os 3 blocos (referral, calendario, Instagram) ficam dentro de um wrapper com espacamento consistente
 
+### Ficheiro: `src/components/landing/ConfirmacaoExtras.tsx`
+
+**7. Melhorar estilo dos botoes extras**
+- Remover estilos inline (`style={}`) e usar classes Tailwind puras
+- Espacamento uniforme entre blocos: `mt-3` para todos
+- Botao Instagram: usar classe `bg-[#E1306C]` em vez de style inline
+- Botao referral: hover state mais visivel
+
+---
+
+## Ficheiros a editar
+
+| Ficheiro | Tipo de alteracao |
+|----------|-------------------|
+| `src/pages/Confirmacao.tsx` | Remover ReferralWidget duplicado, melhorar animacoes, reorganizar hierarquia, ajustar spacing |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Substituir estilos inline por Tailwind, espacamento uniforme |
+
+Sem dependencias novas. Apenas reorganizacao e polish visual.
