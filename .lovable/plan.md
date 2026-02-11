@@ -1,100 +1,81 @@
 
-## Avaliação da página Webinar Live: Melhorias e Refinamentos Propostos
+## Integração do `add-to-calendar-button` no Fluxo de Webinar
 
-### ✅ O que está bem implementado
-- **Estrutura limpa e modular**: Componentes bem separados (VideoArea, Sidebar, Content, Footer)
-- **Estados claros**: Waiting, Live e Ended implementados correctamente
-- **Countdown dinâmico**: Actualiza-se a cada segundo
-- **Config centralizado**: Fácil de reutilizar para futuros webinars
-- **Tipografia consistente**: Montserrat para títulos, Inter para corpo
-- **Responsiveness**: Layout 2-col em desktop, 1-col em mobile
-- **Accessibility básica**: Contraste, spacing, tags semânticas
+### Contexto Atual
+O código utiliza um sistema manual de calendário com:
+1. **Em `/upgrade` (StepConfirmation.tsx)**: Um `Popover` com links para Google Calendar e um botão para descarregar .ics para Apple Calendar
+2. **Em `/live` (WebinarLive.tsx)**: Um `Popover` similar com as mesmas opções
 
----
+O package `add-to-calendar-button` não está actualmente instalado, mas pode ser instalado via npm/yarn.
 
-### 🎯 Melhorias propostas (5 áreas)
+### Solução Proposta
 
-#### 1. **Refinamento visual do card de aguardar**
-**Problema**: Card de espera no estado "waiting" é visualmente simples; grid pattern muito subtil (~4% opacity).
+#### 1. **Instalar o package**
+```
+add-to-calendar-button
+```
+Verificar a documentação oficial do package para a versão mais estável.
 
-**Solução**:
-- Aumentar opacity do grid pattern para ~8-12% para mais definição visual
-- Adicionar animação suave ao badge "A transmissão começa em breve" (pulse leve)
-- Melhorar o contraste do texto do countdown: usar `text-white` em vez de `text-ink-900` para clareza na escuridão
+#### 2. **Criar um novo componente wrapper**
+Criar `src/components/webinar/AddToCalendarButton.tsx` que:
+- Importa `add-to-calendar-button` (Web Component)
+- Recebe props do `WEBINAR_CONFIG` 
+- Renderiza o componente com as props exactas que o utilizador especificou:
+  - `name`: "Webinar ao vivo — Cria Imagens Profissionais com IA"
+  - `description`: descrição detalhada do evento
+  - `startDate`, `startTime`, `endDate`, `endTime`: "2026-02-18", "10:00", "2026-02-18", "11:15"
+  - `timeZone`: "Europe/Lisbon"
+  - `location`: "Online"
+  - `organizer`: "Frederico Carvalho|fredericodigital@gmail.com"
+  - `options`: Apple, Google, Outlook.com, Microsoft365
+  - `label`: "Adicionar ao calendário"
+  - `language`: "pt"
 
-#### 2. **Visibilidade do estado "Live" com badge de urgência**
-**Problema**: Quando live começa, não há feedback visual claro para utilizadores que estão na página.
+#### 3. **Atualizar webinarConfig.ts**
+Adicionar campos para os detalhes do calendário:
+```typescript
+calendarEvent: {
+  name: "Webinar ao vivo — Cria Imagens Profissionais com IA",
+  description: "Aprender um método prático para transformar um briefing simples em imagens prontas a publicar, com consistência visual e controlo do resultado. - Quarta-feira, 18 Fev 2026",
+  startTime: "10:00",
+  endTime: "11:15",
+  timeZone: "Europe/Lisbon",
+  location: "Online",
+  organizer: "Frederico Carvalho|fredericodigital@gmail.com",
+}
+```
 
-**Solução**:
-- Implementar "Live badge" sticky na header quando `isLive === true`
-- Adicionar transição suave (fade-in) quando muda de waiting → live
-- Usar badge vermelha com pulse animation quando em direto
+#### 4. **Substituir Popover em StepConfirmation.tsx**
+- Remover o `<Popover>` com as opções manuais (linhas 73-97)
+- Substituir por um único botão que renderiza o novo `AddToCalendarButton`
+- Manter o mesmo styling (w-full, py-3, rounded-xl, etc.)
 
-#### 3. **Layout sidebar em mobile (melhoria UX)**
-**Problema**: Sidebar full-width em mobile pode parecer desconectada da área de vídeo.
+#### 5. **Substituir Popover em WebinarVideoArea.tsx**
+- Localizar o Popover com calendário (se existe)
+- Substituir pela mesma abordagem com `AddToCalendarButton`
 
-**Solução**:
-- Em mobile, mover sidebar ABAIXO do vídeo e conteúdo (não acima)
-- Adicionar separador visual entre conteúdo principal e offers
-- Tornar sticky a barra de ofertas em desktop apenas (já está, mas confirmar comportamento)
+#### 6. **Simplificar o código**
+- Remover a função `generateICS` em StepConfirmation.tsx (já não será necessária)
+- Remover imports de `Calendar` icon se não usado em outro lugar
+- Limpar imports de `Popover` se não usado em outro lugar
 
-#### 4. **Melhorias no FAQ accordion**
-**Problema**: FAQ importa `ScrollReveal` mas não o usa; accordion sem espaçamento entre questões.
+### Benefícios
+- ✅ UX melhorada: utilizadores têm mais opções de calendário (Outlook, Microsoft 365)
+- ✅ Código mais limpo: não precisa de gerir múltiplos fluxos manuais
+- ✅ Consistência: mesmo botão com o mesmo comportamento em ambos os locais
+- ✅ Manutenção: centralizados os dados do evento no `webinarConfig.ts`
 
-**Solução**:
-- Remover import não utilizado de `ScrollReveal`
-- Aumentar gap entre acordeões de `space-y-2` para `space-y-3`
-- Adicionar animação suave ao abrir (já tem via Radix, mas verificar timing)
-- Adicionar border-bottom subtil no último item para definição
+### Ficheiros a Modificar
+1. `package.json` — Instalar `add-to-calendar-button`
+2. `src/components/webinar/webinarConfig.ts` — Adicionar dados do calendário
+3. `src/components/webinar/AddToCalendarButton.tsx` — Criar novo componente (NEW)
+4. `src/components/upgrade/StepConfirmation.tsx` — Substituir Popover
+5. `src/components/webinar/WebinarVideoArea.tsx` — Verificar e substituir se necessário
 
-#### 5. **Tratamento de edge cases e acessibilidade**
-**Problema**: Link "Adicionar ao calendário" apontando para `#`; falta de aria-labels.
-
-**Solução**:
-- Adicionar `aria-label` descritivo em links e botões
-- Alterar CALENDAR_URL para placeholder mais realista (ex: Google Calendar link template)
-- Adicionar skip link invisível no topo para acessibilidade (keyboard nav)
-- Melhorar focus states em links (actualmente via hover, mas falta focus ring)
-
-#### 6. **Performance e SEO**
-**Problema**: Sem meta tags (title, description) ou structured data para webinar.
-
-**Solução**:
-- Adicionar `useEffect` para actualizar `document.title` quando página carrega
-- Considerar adicionar schema.org Event JSON-LD na página
-- Adicionar meta description dinâmica baseada em WEBINAR_CONFIG
-
-#### 7. **Refinamento do CTA no Premium Pass**
-**Problema**: Card Premium tem gradient sutil que pode passar despercebido em mobile.
-
-**Solução**:
-- Aumentar ligeiramente o gradiente visual (ajustar `from-blue-50/60` para `from-blue-50/80`)
-- Adicionar subtle shadow no card accent para depth
-- Assegurar CTA "Garantir Premium Pass" está claramente destacado
-
----
-
-### 🔧 Implementação proposta
-
-**Prioridade ALTA** (impact visual + UX):
-1. Aumentar visibilidade do grid pattern no waiting state
-2. Adicionar live badge na header quando `isLive === true`
-3. Melhorar espaçamento e definição do FAQ
-4. Refinar focus/hover states nos links
-
-**Prioridade MÉDIA** (polish):
-5. Adicionar aria-labels e accessibility improvements
-6. Melhorar card accent gradient
-7. Actualizar CALENDAR_URL com template real
-
-**Prioridade BAIXA** (futura):
-8. Adicionar schema.org Event JSON-LD
-9. Implementar analytics tracking
-
----
-
-### 📋 Resumo das mudanças
-- Ficheiros a modificar: `WebinarVideoArea.tsx`, `WebinarSidebar.tsx`, `WebinarContent.tsx`, `WebinarLive.tsx`
-- Linhas estimadas a alterar: ~15-20 mudanças pequenas, focadas em CSS classes + accessibility
-- Tempo estimado: 15-20 minutos
+### Notas Técnicas
+- O `add-to-calendar-button` é um Web Component, compatível com React
+- Suporta download directo para vários calendários (sem popover manual)
+- A data debe estar em formato "YYYY-MM-DD"
+- A hora em formato "HH:mm" (24h)
+- O componente é auto-contido e responsivo
 
