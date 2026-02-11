@@ -27,14 +27,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { name, email, whatsapp, referredBy } = await req.json();
+    const { firstName, lastName, email, whatsapp, referredBy } = await req.json();
 
-    if (!name || !email) {
+    if (!firstName || !lastName || !email) {
       return new Response(
         JSON.stringify({ error: "Nome e email são obrigatórios" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    const name = `${firstName.trim()} ${lastName.trim()}`;
 
     // Check if email already exists
     const { data: existing } = await supabase
@@ -72,7 +74,9 @@ serve(async (req) => {
 
     // Insert new registration
     const { error: insertError } = await supabase.from("registrations").insert({
-      name: name.trim(),
+      name,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
       email: email.toLowerCase().trim(),
       whatsapp: whatsapp?.trim() || null,
       referral_code: referralCode,
