@@ -1,31 +1,44 @@
 
 
-## Alteracoes na pagina /live e calendario
+## Modal de compra na sidebar da pagina /live
 
-### 1. Atualizar `webinarConfig.ts` - location do calendario
-- Mudar `location` de `"Online"` para `"https://imagenscomia.com/live"`
+### Problema actual
+Os botoes "Garantir Premium Pass" e "Garantir lugar na Masterclass" na sidebar apontam para `/upgrade` e `#` respectivamente. O utilizador quer que cada botao abra um modal simples (nome + email), e depois redirecione para o link de pagamento EuPago correspondente.
 
-### 2. Header em `WebinarLive.tsx`
-- Substituir "DIGITALFC" por "Frederico Carvalho" com estilo mais suave (font-weight medium em vez de bold, tracking normal)
+### Solucao
 
-### 3. Remover WhatsApp da caixa de video (`WebinarVideoArea.tsx`)
-- Apagar o link WhatsApp e o microcopy "Problemas com acesso ou audio?" do waiting state
-- Manter apenas countdown + texto + botao calendario
-- Remover import de `MessageCircle`
+#### 1. Criar componente `PurchaseModal.tsx`
+Novo ficheiro: `src/components/webinar/PurchaseModal.tsx`
 
-### 4. Remover 2 bullets do conteudo (`WebinarContent.tsx`)
-- Apagar "Variaveis que mudam o resultado: estilo, consistencia e controlo"
-- Apagar "Erros comuns que fazem tudo parecer 'stock' ou generico"
-- Ficam apenas 3 bullets
+- Modal com Dialog (Radix) contendo:
+  - Titulo dinamico baseado no plano ("Premium Pass" ou "Masterclass")
+  - Campo Nome (primeiro + ultimo nome em 2 inputs)
+  - Campo Email
+  - Botao "Ir para pagamento" que:
+    1. Valida inputs (nome e email obrigatorios)
+    2. Chama a edge function `create-payment` com `{ plan, email, nome }`
+    3. Recebe `paymentLink` na resposta
+    4. Faz `window.location.href = paymentLink` para redirecionar para EuPago
+  - Estado de loading enquanto gera o link
+  - Mensagem de erro se falhar
 
-### 5. Botao calendario ja esta funcional
-- O componente `AddToCalendarButton.tsx` ja usa `add-to-calendar-button-react` com os dados do `webinarConfig.ts`
-- Ja esta presente na `/live` (WebinarVideoArea) e no `/upgrade` step 5 (StepConfirmation)
-- Basta atualizar o `location` no config para refletir a nova URL
+#### 2. Modificar `WebinarSidebar.tsx`
+- Adicionar state para controlar qual modal esta aberto (`null | "premium" | "masterclass"`)
+- Mudar os `<a>` dos CTAs para `<button>` que abrem o modal com o plano correcto
+- Renderizar `<PurchaseModal>` com as props adequadas
 
-### Ficheiros a modificar
-1. `src/components/webinar/webinarConfig.ts` - location
-2. `src/pages/WebinarLive.tsx` - header text
-3. `src/components/webinar/WebinarVideoArea.tsx` - remover WhatsApp
-4. `src/components/webinar/WebinarContent.tsx` - remover 2 bullets
+#### 3. Mapeamento de planos
+- "Garantir Premium Pass" -> plan = `"premium"` (€15)
+- "Garantir lugar na Masterclass" -> plan = `"masterclass"` (€52)
+- A edge function `create-payment` ja suporta ambos os planos
 
+### Ficheiros a criar/modificar
+1. `src/components/webinar/PurchaseModal.tsx` (NOVO)
+2. `src/components/webinar/WebinarSidebar.tsx` (modificar CTAs)
+
+### Detalhes tecnicos
+- Usa `supabase.functions.invoke("create-payment", { body: { plan, email, nome } })` para gerar o link
+- A edge function retorna `{ paymentLink, reference }` em caso de sucesso
+- Redirect via `window.location.href` para o checkout hosted da EuPago
+- Validacao: nome nao vazio, email com formato valido (regex basico)
+- O modal usa os componentes Dialog do Radix ja existentes no projecto
