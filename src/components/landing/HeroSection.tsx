@@ -10,7 +10,7 @@ export const HeroSection = () => {
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
         <ScrollReveal delay={0.05}>
-          <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.08em] text-blue-600 mb-4">
+          <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 mb-4">
             WEBINAR GRATUITO · 18 FEVEREIRO · 10H00
           </p>
         </ScrollReveal>
@@ -48,7 +48,7 @@ export const HeroSection = () => {
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
                 <Icon className="w-6 h-6 text-blue-600 shrink-0" />
-                <span className="text-[15px] sm:text-[16px] font-semibold text-ink-700">{text}</span>
+                <span className="text-[16px] font-semibold text-ink-700">{text}</span>
               </div>
             ))}
           </div>
@@ -63,7 +63,7 @@ export const HeroSection = () => {
             <div className="w-[60px] h-[60px] rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
               <Play className="w-6 h-6 text-white ml-1" fill="white" />
             </div>
-            <p className="text-xs text-ink-400">Pré-visualização · 90 segundos</p>
+            <p className="text-[14px] text-ink-400">Pré-visualização · 90 segundos</p>
           </motion.div>
         </ScrollReveal>
 
@@ -78,7 +78,7 @@ export const HeroSection = () => {
               Inscrever-me grátis →
             </motion.button>
           </div>
-          <p className="text-[13px] text-ink-400 mt-3">
+          <p className="text-[14px] text-ink-400 mt-3">
             Sem spam. Dados protegidos (RGPD). Cancelamento simples.
           </p>
         </ScrollReveal>
@@ -98,7 +98,7 @@ export const HeroSection = () => {
                   <span className="font-heading font-bold text-[14px] text-ink-900">5,0</span>
                   <span className="text-[13px] leading-none" style={{ color: '#FBBC05' }}>★★★★★</span>
                 </div>
-                <span className="text-[11px] text-ink-400">1 194 avaliações no Google</span>
+                <span className="text-[14px] text-ink-400">1 194 avaliações no Google</span>
               </div>
             </div>
           </div>

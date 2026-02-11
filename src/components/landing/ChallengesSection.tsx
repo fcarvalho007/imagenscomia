@@ -11,7 +11,7 @@ export const ChallengesSection = () => (
   <section className="py-16 md:py-24 bg-off-white">
     <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
-        <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-12">
+        <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-12">
           Algum disto soa familiar?
         </h2>
       </ScrollReveal>
@@ -28,7 +28,7 @@ export const ChallengesSection = () => (
       </div>
 
       <ScrollReveal delay={0.4}>
-        <p className="text-center text-[16px] text-ink-500 mt-8">
+        <p className="text-center text-[17px] text-ink-500 mt-8">
           Se te identificaste com pelo menos 2 destes problemas, este webinar vai poupar-te meses de tentativa e erro.
         </p>
       </ScrollReveal>

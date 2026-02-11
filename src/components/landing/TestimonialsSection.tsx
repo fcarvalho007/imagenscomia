@@ -44,10 +44,10 @@ export const TestimonialsSection = () => (
       {/* Header */}
       <ScrollReveal>
         <div className="text-center mb-12">
-          <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.1em] mb-2.5" style={{ color: "rgba(99,179,237,0.9)" }}>
+          <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] mb-2.5" style={{ color: "rgba(99,179,237,0.9)" }}>
             O QUE DIZEM
           </p>
-          <h2 className="font-heading font-extrabold text-2xl md:text-[32px] text-white">
+          <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-white">
             O que dizem sobre o Frederico
           </h2>
 
@@ -60,7 +60,7 @@ export const TestimonialsSection = () => (
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             <span className="font-semibold text-sm text-white">5,0 <span style={{ color: "#FBBC05" }}>★★★★★</span></span>
-            <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.6)" }}>· 1 194 avaliações verificadas no Google</span>
+            <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.6)" }}>· 1 194 avaliações verificadas no Google</span>
           </div>
         </div>
       </ScrollReveal>
@@ -95,21 +95,21 @@ export const TestimonialsSection = () => (
                   </div>
                   <div>
                     <p className="font-heading font-bold text-sm text-white">{t.name}</p>
-                    <p className="text-xs mt-[1px]" style={{ color: "rgba(255,255,255,0.5)" }}>{t.role}</p>
+                    <p className="text-[14px] mt-[1px]" style={{ color: "rgba(255,255,255,0.5)" }}>{t.role}</p>
                   </div>
                 </div>
                 <span className="font-heading font-extrabold text-5xl leading-none -mt-2" style={{ color: "rgba(99,179,237,0.25)" }}>"</span>
               </div>
 
               {/* Quote */}
-              <p className="text-[15px] leading-[1.65] mb-4 flex-grow" style={{ color: "rgba(255,255,255,0.80)" }}>
+              <p className="text-[16px] leading-[1.65] mb-4 flex-grow" style={{ color: "rgba(255,255,255,0.80)" }}>
                 {t.quote}
               </p>
 
               {/* Footer */}
               <div className="flex items-center justify-between">
                 <span className="text-[13px]" style={{ color: "#FBBC05" }}>★★★★★</span>
-                <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>Google Reviews</span>
+                <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.35)" }}>Google Reviews</span>
               </div>
             </div>
           </ScrollReveal>

@@ -42,10 +42,10 @@ export const ProgramSection = () => (
   <section className="py-16 md:py-24 bg-off-white">
     <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
-        <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 text-center mb-2">
+        <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 text-center mb-2">
           PROGRAMA
         </p>
-        <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-2">
+        <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
           O que vais aprender em 75 minutos
         </h2>
         <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
@@ -62,20 +62,20 @@ export const ProgramSection = () => (
                 <div className="flex-1">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <h3 className="font-heading font-semibold text-lg text-ink-900">{s.title}</h3>
-                    <span className="shrink-0 bg-blue-50 text-blue-600 font-heading font-semibold text-[11px] px-2.5 py-1 rounded-full">
+                    <span className="shrink-0 bg-blue-50 text-blue-600 font-heading font-semibold text-[14px] px-2.5 py-1 rounded-full">
                       AO VIVO
                     </span>
                   </div>
-                  <p className="text-[16px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
+                  <p className="text-[17px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
                   <div className="space-y-1.5 mb-3">
                     {s.bullets.map((b) => (
-                      <p key={b} className="text-sm text-ink-700 flex items-start gap-2">
+                      <p key={b} className="text-[15px] text-ink-700 flex items-start gap-2">
                         <span className="text-blue-600 shrink-0">→</span>
                         {b}
                       </p>
                     ))}
                   </div>
-                  <p className="text-[13px] font-medium text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-1.5 inline-block">
+                  <p className="text-[14px] font-medium text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-1.5 inline-block">
                     No fim deste bloco, fica com: {s.deliverable}
                   </p>
                 </div>
