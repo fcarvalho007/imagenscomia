@@ -27,13 +27,13 @@ export const GallerySection = () => {
         {/* Header */}
         <ScrollReveal>
           <div className="text-center mb-12">
-            <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.1em] text-blue-600 mb-2.5">
+            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] text-blue-600 mb-2.5">
               EXEMPLOS REAIS
             </p>
-            <h2 className="font-heading font-extrabold text-2xl md:text-[32px] text-ink-900">
+            <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-ink-900">
               Imagens criadas com método
             </h2>
-            <p className="text-base text-ink-500 mt-2 max-w-[560px] mx-auto">
+            <p className="text-[17px] text-ink-500 mt-2 max-w-[560px] mx-auto">
               Todas as imagens foram criadas com IA — sem designer, sem agência, em menos de 3 minutos cada.
             </p>
           </div>

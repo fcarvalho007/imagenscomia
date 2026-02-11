@@ -36,10 +36,10 @@ export const PresenterSection = () => (
                 boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
               }}
             >
-              <p className="font-heading font-bold text-[13px] text-ink-900">
+              <p className="font-heading font-bold text-[14px] text-ink-900">
                 ⭐ 5,0 · 1 194 avaliações no Google
               </p>
-              <p className="text-[12px] text-ink-500 mt-[2px]">
+              <p className="text-[14px] text-ink-500 mt-[2px]">
                 Frederico Carvalho · DIGITALFC
               </p>
             </div>
@@ -49,7 +49,7 @@ export const PresenterSection = () => (
         {/* Text column */}
         <ScrollReveal delay={0.1} className="flex-grow w-full">
           <div className="text-center md:text-left">
-            <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.1em] text-blue-600 mb-2">
+            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] text-blue-600 mb-2">
               QUEM APRESENTA
             </p>
             <h2 className="font-heading font-extrabold text-[26px] md:text-[32px] text-ink-900 mb-1">
@@ -72,8 +72,8 @@ export const PresenterSection = () => (
                 >
                   <span className="text-[20px] leading-none shrink-0">{c.emoji}</span>
                   <div>
-                    <p className="font-heading font-semibold text-[13px] text-ink-900">{c.title}</p>
-                    <p className="text-[12px] text-ink-500">{c.sub}</p>
+                    <p className="font-heading font-semibold text-[14px] text-ink-900">{c.title}</p>
+                    <p className="text-[14px] text-ink-500">{c.sub}</p>
                   </div>
                 </div>
               ))}
@@ -88,7 +88,7 @@ export const PresenterSection = () => (
                   )}
                   <div className="flex flex-col items-center text-center px-1">
                     <span className="font-heading font-extrabold text-[22px] text-blue-600">{s.number}</span>
-                    <span className="text-[12px] text-ink-500 mt-[1px]">{s.label}</span>
+                    <span className="text-[14px] text-ink-500 mt-[1px]">{s.label}</span>
                   </div>
                 </div>
               ))}

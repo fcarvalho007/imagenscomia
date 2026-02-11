@@ -16,7 +16,7 @@ export const PricingCardsSection = () => {
     <section id="form-gratis" className="py-16 md:py-24 bg-off-white">
       <div className="container mx-auto px-4 sm:px-6 max-w-[920px]">
         <ScrollReveal>
-          <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
+          <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
             Como participar
           </h2>
         </ScrollReveal>
@@ -24,9 +24,9 @@ export const PricingCardsSection = () => {
         <div className="max-w-[420px] mx-auto">
           <ScrollReveal>
             <div className="bg-background border border-border rounded-lg p-8 flex flex-col shadow-card">
-              <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
+              <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
               <span className="font-heading font-extrabold text-4xl text-ink-900 mb-1">€0</span>
-              <p className="text-[12px] text-ink-500 font-medium mb-4">Ideal para quem vai estar ao vivo</p>
+              <p className="text-[14px] text-ink-500 font-medium mb-4">Ideal para quem vai estar ao vivo</p>
 
               <div className="w-full h-px bg-border mb-6" />
 
@@ -34,7 +34,7 @@ export const PricingCardsSection = () => {
                 {freeFeatures.map((f) => (
                   <li key={f} className="flex items-start gap-2.5">
                     <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                    <span className="text-[16px] text-ink-700">{f}</span>
+                    <span className="text-[17px] text-ink-700">{f}</span>
                   </li>
                 ))}
               </ul>
@@ -52,7 +52,7 @@ export const PricingCardsSection = () => {
         </div>
 
         <ScrollReveal>
-          <p className="text-center text-[13px] text-ink-400 mt-6">
+          <p className="text-center text-[14px] text-ink-400 mt-6">
             ✓ Sem compromisso
           </p>
         </ScrollReveal>

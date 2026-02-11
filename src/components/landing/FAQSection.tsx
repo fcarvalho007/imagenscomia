@@ -41,7 +41,7 @@ export const FAQSection = () => (
   <section className="py-16 md:py-24 bg-background">
     <div className="container mx-auto px-4 sm:px-6 max-w-[760px]">
       <ScrollReveal>
-        <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
+        <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
           Perguntas frequentes
         </h2>
       </ScrollReveal>
@@ -54,10 +54,10 @@ export const FAQSection = () => (
               value={`faq-${i}`}
               className="bg-background border border-border rounded-lg px-5 py-1 overflow-hidden"
             >
-              <AccordionTrigger className="text-base font-heading font-semibold text-ink-900 hover:no-underline text-left py-5 [&[data-state=open]>svg]:text-blue-600 [&>svg]:text-blue-600">
+              <AccordionTrigger className="text-[17px] font-heading font-semibold text-ink-900 hover:no-underline text-left py-5 [&[data-state=open]>svg]:text-blue-600 [&>svg]:text-blue-600">
                 {faq.q}
               </AccordionTrigger>
-              <AccordionContent className="text-[16px] text-ink-500 leading-relaxed pb-5">
+              <AccordionContent className="text-[17px] text-ink-500 leading-relaxed pb-5">
                 {faq.a}
               </AccordionContent>
             </AccordionItem>

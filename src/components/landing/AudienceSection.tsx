@@ -18,7 +18,7 @@ export const AudienceSection = () => (
   <section className="py-12 md:py-24 bg-background">
     <div className="container mx-auto px-4 sm:px-6 max-w-[800px]">
       <ScrollReveal>
-        <h2 className="font-heading font-bold text-[22px] sm:text-[28px] md:text-[30px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
+        <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-10 md:mb-14">
           Para quem é este webinar
         </h2>
       </ScrollReveal>
@@ -27,7 +27,7 @@ export const AudienceSection = () => (
         {/* For whom */}
         <div>
           <div className="border-t-[3px] border-t-green-600 pt-4 mb-4">
-            <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-green-600">
+            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-green-600">
               CERTO PARA TI SE:
             </p>
           </div>
@@ -36,7 +36,7 @@ export const AudienceSection = () => (
               <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0 font-bold" />
-                  <p className="text-[16px] text-ink-700">{item}</p>
+                  <p className="text-[17px] text-ink-700">{item}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -46,7 +46,7 @@ export const AudienceSection = () => (
         {/* Not for */}
         <div>
           <div className="border-t-[3px] border-t-border-strong pt-4 mb-4">
-            <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400">
+            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-400">
               NÃO É PARA TI SE:
             </p>
           </div>
@@ -55,10 +55,10 @@ export const AudienceSection = () => (
               <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-2.5">
                   <X className="w-4 h-4 text-ink-400 mt-0.5 shrink-0" />
-                  <p className="text-[16px] text-ink-500">
+                  <p className="text-[17px] text-ink-500">
                     {item.main}
                     <br />
-                    <span className="text-[13px]">({item.sub})</span>
+                    <span className="text-[14px]">({item.sub})</span>
                   </p>
                 </div>
               </ScrollReveal>
