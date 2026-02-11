@@ -1,4 +1,4 @@
-import { Play, Check, Sparkles, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
+import { Play, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
@@ -65,24 +65,14 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.4}>
-          <div id="inscrever" className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
+          <div id="inscrever" className="flex justify-center mt-8">
             <motion.button
               onClick={() => open("free")}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-8 py-4 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2"
+              className="w-full max-w-[320px] text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
             >
-              <Check className="w-5 h-5" />
-              Reservar Lugar Grátis!
-            </motion.button>
-            <motion.button
-              onClick={() => open("free")}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full sm:w-auto text-center border-2 border-neon-cyan text-neon-cyan bg-transparent hover:bg-neon-cyan/10 font-heading font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
-            >
-              <Sparkles className="w-5 h-5" />
-              Ver Premium (€15 + IVA)
+              Inscrever-me grátis →
             </motion.button>
           </div>
           <p className="text-[13px] text-ink-400 mt-3">
