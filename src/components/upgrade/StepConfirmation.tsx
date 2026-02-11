@@ -68,9 +68,17 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         ))}
       </div>
 
-      {/* Referral block */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-5">
-        <p className="font-heading font-bold text-[15px] text-amber-800 mb-2">
+      {/* Calendar button */}
+      <button
+        onClick={generateICS}
+        className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-ink-900 bg-background border border-ink-700 py-3 rounded-xl hover:bg-surface transition-colors mb-5"
+      >
+        📅 Guardar no calendário
+      </button>
+
+      {/* Referral block — destaque reforçado */}
+      <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
+        <p className="font-heading font-bold text-[16px] text-amber-800 mb-2">
           🎁 Convida 2 amigos — ganhas acesso ao Q&A Bónus de 25 Fev
         </p>
         <p className="text-[14px] text-amber-700 mb-3.5">
@@ -79,32 +87,23 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         </p>
         <button
           onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] py-3 rounded-xl transition-colors bg-amber-50 text-amber-700"
-          style={{ border: "1px solid hsl(var(--amber-500))" }}
+          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] py-3 rounded-xl transition-colors bg-amber-100 text-amber-700 border border-amber-400 hover:bg-amber-200"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? "Link copiado!" : "Copiar o meu link de convite"}
         </button>
       </div>
 
-      {/* Actions */}
-      <div className="space-y-2.5">
-        <button
-          onClick={generateICS}
-          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-ink-900 bg-background border border-ink-700 py-3 rounded-xl hover:bg-surface transition-colors"
-        >
-          📅 Guardar no calendário
-        </button>
-        <a
-          href="https://www.instagram.com/frederico.m.carvalho/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-xl transition-colors"
-          style={{ backgroundColor: "#E1306C" }}
-        >
-          📸 Seguir no Instagram
-        </a>
-      </div>
+      {/* Instagram */}
+      <a
+        href="https://www.instagram.com/frederico.m.carvalho/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-xl transition-colors"
+        style={{ backgroundColor: "#E1306C" }}
+      >
+        📸 Seguir no Instagram
+      </a>
     </div>
   );
 };
