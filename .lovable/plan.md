@@ -1,40 +1,37 @@
 
 
-# Hero Section — Cards maiores e texto revisto
+# Hero Section — Refinamento visual dos info cards e texto
 
 ---
 
-## Problemas identificados (screenshot)
+## Estado actual
 
-1. Os 4 info cards sao demasiado pequenos e apertados — icones e texto com 13px mal se leem
-2. O paragrafo descritivo ("O metodo que transforma...") parte em 3 linhas de forma pouco natural no mobile
-3. Os cards parecem genericos e pouco apelativos visualmente
+Os cards estao visiveis mas ainda parecem "flat" e pouco destacados. O texto descritivo esta melhor mas pode ter mais respiro. Os cards precisam de mais presenca visual.
 
 ---
 
 ## Alteracoes
 
-### 1. Info Cards — Maiores e mais apelativos
+### 1. Info Cards — Mais presenca visual
 
-Aumentar os cards para serem mais visiveis e scan-friendly:
+- Aumentar padding vertical: de `py-4` para `py-5`
+- Adicionar fundo com gradiente subtil: `bg-gradient-to-b from-white to-surface` em vez de `bg-surface` simples
+- Aumentar sombra: de `shadow-sm` para `shadow-card`
+- Icones maiores em mobile: `w-6 h-6` (era `w-5 h-5`)
+- Texto: `text-[15px] sm:text-[16px]` com `font-semibold` (era `text-[14px] sm:text-[15px]` com `font-medium`)
+- Cor do icone: manter `text-blue-600`
+- Layout interno: mudar para `flex-col items-center gap-1.5` para empilhar icone sobre texto (mais apelativo visualmente, especialmente em mobile)
+- Aumentar `max-w` do grid para `680px` para dar mais espaco a cada card
 
-- Layout: manter `grid-cols-2 md:grid-cols-4` mas aumentar o `max-w` de `560px` para `640px`
-- Padding interno: de `px-3 py-3` para `px-4 py-4`
-- Icones: de `w-4 h-4` para `w-5 h-5`
-- Texto: de `text-[13px]` para `text-[14px] sm:text-[15px]`
-- Gap entre cards: de `gap-3` para `gap-3 md:gap-4`
-- Adicionar `justify-center` para centrar conteudo dentro de cada card
-- Margem inferior: manter `mb-10`
+### 2. Texto descritivo — Mais respiro
 
-### 2. Paragrafo descritivo — Reescrever para nao partir
+- Aumentar `max-w` de `600px` para `640px`
+- Aumentar `mb-4` para `mb-6` para separar melhor dos cards
+- Manter o texto actual ("De briefing a imagem profissional em menos de 3 minutos — demonstrado ao vivo.")
 
-Texto actual (parte em 3 linhas):
-"O metodo que transforma um briefing em imagem utilizavel em menos de 3 minutos. Demonstrado ao vivo, no ecra."
+### 3. Espacamento entre cards e video
 
-Novo texto (mais curto, uma frase limpa):
-"De briefing a imagem profissional em menos de 3 minutos — demonstrado ao vivo."
-
-Isto evita a quebra de linha incomoda e mantem a mesma mensagem. Aumentar `max-w` de `560px` para `600px` para dar mais respiro.
+- Aumentar `mb-10` para `mb-12` para dar mais respiro antes do video placeholder
 
 ---
 
@@ -42,7 +39,7 @@ Isto evita a quebra de linha incomoda e mantem a mesma mensagem. Aumentar `max-w
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/HeroSection.tsx` | Cards maiores (padding, icone, texto); paragrafo descritivo reescrito e com max-w ajustado |
+| `src/components/landing/HeroSection.tsx` | Cards com layout vertical (icone em cima, texto em baixo), maiores, com gradiente e sombra reforçada; espacamento ajustado |
 
 Sem dependencias novas.
 
