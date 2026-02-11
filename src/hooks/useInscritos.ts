@@ -1,24 +1,61 @@
 import { useState, useCallback, useEffect } from "react";
-import { MOCK_DATA, type Inscrito, type Nota } from "@/pages/crm/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import type { Inscrito, Nota } from "@/pages/crm/mockData";
 
-// TODO: substituir MOCK_DATA por fetch() da API
+const PLAN_VALUES: Record<string, number> = {
+  premium: 15,
+  masterclass: 57.81,
+  bundle: 72.81,
+};
 
-const STORAGE_KEY = "crm_data";
-
-function loadInscritos(): Inscrito[] {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return MOCK_DATA;
+function mapRegistration(r: any): Inscrito {
+  const plan = r.paid_at
+    ? (r.plan_selected || "free")
+    : "free";
+  return {
+    id: r.id,
+    nome: r.name,
+    email: r.email,
+    whatsapp: r.whatsapp || "",
+    timestamp: r.created_at || new Date().toISOString(),
+    step_reached: r.plan_selected ? 5 : r.duvida ? 2 : r.sources ? 1 : 1 as 1 | 2 | 3 | 4 | 5,
+    source: r.sources ? r.sources.split(", ").filter(Boolean) : [],
+    source_outro: "",
+    duvida: r.duvida || "",
+    plan: plan as Inscrito["plan"],
+    valor: PLAN_VALUES[plan] || 0,
+    paid_at: r.paid_at || null,
+    eupago_ref: r.eupago_ref || null,
+    notas: [],
+    status: "activo",
+    follow_up: false,
+    plan_selected: r.plan_selected || null,
+    sources_text: r.sources || null,
+    duvida_text: r.duvida || null,
+    upgrade_clicked_at: r.upgrade_clicked_at || null,
+  };
 }
 
 export function useInscritos() {
-  const [inscritos, setInscritos] = useState<Inscrito[]>(loadInscritos);
+  const [inscritos, setInscritos] = useState<Inscrito[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(inscritos));
-  }, [inscritos]);
+    async function fetch() {
+      const { data, error } = await supabase
+        .from("registrations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching registrations:", error);
+      } else {
+        setInscritos((data || []).map(mapRegistration));
+      }
+      setLoading(false);
+    }
+    fetch();
+  }, []);
 
   const addNota = useCallback((inscritoId: string, texto: string) => {
     const nota: Nota = {
@@ -64,5 +101,5 @@ export function useInscritos() {
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
   }, []);
 
-  return { inscritos, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
+  return { inscritos, loading, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
 }

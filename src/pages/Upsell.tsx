@@ -48,12 +48,6 @@ const Upsell = () => {
     if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const PLAN_URLS: Record<string, string> = {
-    premium: "https://clientes.eupago.pt/api/extern/paybylink/form/f92e7b5a02894539ac7528aaa56d08a5",
-    masterclass: "https://clientes.eupago.pt/api/extern/paybylink/form/d3e170f1d73546ca96b5267e25ac12e2",
-    "premium-masterclass": "https://clientes.eupago.pt/api/extern/paybylink/form/04fcd2e6b72947f6a71f05bc96b213f3",
-  };
-
   const handlePayment = useCallback(async (plan: string) => {
     setLoading(true);
     setError(null);
@@ -70,13 +64,15 @@ const Upsell = () => {
         } as any)
         .eq("email", userData.email);
 
-      // Redirect to EuPago
-      const url = PLAN_URLS[plan];
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error("Plano inválido");
-      }
+      // Create dynamic payment link via edge function
+      const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
+        body: { plan: planLabel, email: userData.email, nome: userData.nome },
+      });
+
+      if (fnError) throw fnError;
+      if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
+
+      window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tenta novamente.");
