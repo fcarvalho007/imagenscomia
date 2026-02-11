@@ -49,8 +49,8 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
           <p className="font-heading font-semibold text-[14px] text-ink-500 uppercase tracking-[0.08em]">
             MASTERCLASS ONLINE
           </p>
-          <p className="font-heading font-black text-[36px] text-ink-900 leading-none">€47 + IVA</p>
-          <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março (quinta-feira)</p>
+          <p className="font-heading font-black text-[36px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
+          <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2 shrink-0 ml-3 whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] text-amber-700">Early bird: €47 + IVA</p>
@@ -68,7 +68,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
             </div>
             <div>
               <p className="font-semibold text-[15px] text-ink-900">{b.title}</p>
-              <p className="text-[14px] text-ink-500">{b.sub}</p>
+              <p className="text-[14px] text-ink-500 leading-[1.5]">{b.sub}</p>
             </div>
           </div>
         ))}
