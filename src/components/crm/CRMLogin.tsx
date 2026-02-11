@@ -7,15 +7,11 @@ interface CRMLoginProps {
 
 export default function CRMLogin({ onLogin }: CRMLoginProps) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      email === "fredericodigital@gmail.com" &&
-      password === "fc2026crm"
-    ) {
+    if (email === "fredericodigital@gmail.com") {
       sessionStorage.setItem("crm_auth", "1");
       onLogin();
     } else {
@@ -59,23 +55,6 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
           onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
         />
 
-        <label className="block text-[13px] font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
-          Password
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(false); }}
-          placeholder="••••••••"
-          className="w-full rounded-lg px-3.5 py-2.5 text-sm text-white outline-none"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "rgba(99,179,237,0.6)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-        />
-
         <button
           type="submit"
           className="w-full mt-6 py-3 rounded-[10px] font-heading font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors"
@@ -85,7 +64,7 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
 
         {error && (
           <p className="text-[13px] text-center mt-2.5" style={{ color: "#f87171" }}>
-            Credenciais inválidas.
+            Email não autorizado.
           </p>
         )}
       </form>

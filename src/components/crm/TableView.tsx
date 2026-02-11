@@ -40,7 +40,7 @@ const VALOR_COLORS: Record<number, string> = {
   72.81: "hsl(var(--green-600))",
 };
 
-type SortKey = "nome" | "email" | "plan" | "valor" | "step_reached" | "timestamp";
+type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 
 export default function TableView({ inscritos, onSelectInscrito }: TableViewProps) {
   const [search, setSearch] = useState("");
@@ -156,6 +156,7 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
                 {([
                   { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
                   { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
+                  { key: "whatsapp" as SortKey, label: "WhatsApp", cls: "min-w-[140px] max-md:hidden" },
                   { key: "plan" as SortKey, label: "Plano", cls: "min-w-[100px]" },
                   { key: "valor" as SortKey, label: "Valor", cls: "min-w-[80px]" },
                   { key: "step_reached" as SortKey, label: "Passo", cls: "min-w-[80px]" },
@@ -198,6 +199,7 @@ export default function TableView({ inscritos, onSelectInscrito }: TableViewProp
                       </div>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
+                    <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>
                     <td className="px-4 py-3">
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
                         {badge.label}
