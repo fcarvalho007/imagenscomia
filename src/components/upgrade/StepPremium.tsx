@@ -8,23 +8,23 @@ interface Props {
 
 const bullets = [
   {
-    title: "Gravação HD — para sempre",
-    sub: "Sem Premium perdes o acesso quando o directo terminar.",
+    title: "Gravação HD (acesso contínuo)",
+    sub: "Rever e aplicar quando for mais conveniente.",
   },
   {
-    title: "Sessão Q&A exclusiva — 60 minutos",
-    sub: "O único momento para falar directamente com Frederico.",
+    title: "Q&A exclusivo (60 min)",
+    sub: "Dúvidas respondidas com foco no caso real.",
   },
   {
-    title: "Guia completo de prompts — 30+ páginas",
-    sub: "Testado em empresas portuguesas. Não disponível a inscritos gratuitos.",
+    title: "Guia completo de prompts (30+ páginas)",
+    sub: "Estruturas prontas para acelerar resultados.",
   },
 ];
 
 export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   const firstName = userName?.trim().split(" ")[0] || "";
   return (
-  <div className="max-w-[480px]">
+  <div className="max-w-[560px]">
     <h2 className="font-heading font-bold text-[24px] text-ink-900">
       {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
     </h2>
@@ -34,7 +34,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
 
     {/* Premium Card */}
     <div
-      className="bg-background rounded-2xl p-6 max-w-[460px]"
+      className="bg-background rounded-2xl p-6 max-w-[520px]"
       style={{
         border: "2px solid hsl(var(--blue-600))",
         boxShadow: "0 4px 20px rgba(37,99,235,0.12)",
@@ -47,17 +47,15 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
             PREMIUM PASS
           </p>
           <p className="font-heading font-black text-[40px] text-blue-600 leading-none">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[14px] text-ink-400">€18,45 total · pagamento único</p>
+          <p className="text-[14px] text-ink-400">Para implementar com calma, sem depender do direto.</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="text-[14px] text-amber-700">Sobe para €27</p>
-          <p className="text-[14px] text-amber-600">depois do webinar</p>
+          <p className="font-semibold text-[14px] text-amber-700">Early bird: €15 + IVA</p>
+          <p className="text-[14px] text-amber-600">Depois do webinar: €27 + IVA</p>
         </div>
       </div>
 
       <div className="w-full h-px bg-border my-4" />
-
-      <p className="font-semibold text-[14px] text-ink-700 mb-3">Com o Premium tens acesso a:</p>
 
       <div className="space-y-3">
         {bullets.map((b) => (
@@ -73,13 +71,21 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         ))}
       </div>
 
+      {/* Positioning line */}
+      <p className="text-[13px] text-ink-400 text-center mt-4">
+        Upgrade ideal para aplicar o método depois do webinar.
+      </p>
+
       {/* CTA */}
       <button
         onClick={onAddPremium}
-        className="w-full mt-5 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors shadow-blue"
+        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors shadow-blue"
       >
-        Adicionar Premium Pass →
+        Garantir Premium Pass →
       </button>
+      <p className="text-[13px] text-ink-400 text-center mt-2">
+        Pagamento único · acesso à gravação incluído
+      </p>
     </div>
 
     {/* Separator */}
