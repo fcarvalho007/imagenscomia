@@ -1,5 +1,9 @@
-import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
+import { PurchaseModal } from "./PurchaseModal";
+
+type PlanKey = "premium" | "masterclass" | null;
 
 const OfferCard = ({
   title,
@@ -7,7 +11,7 @@ const OfferCard = ({
   benefits,
   dateLine,
   ctaLabel,
-  ctaUrl,
+  onCtaClick,
   priceNote,
   accent = false,
 }: {
@@ -16,7 +20,7 @@ const OfferCard = ({
   benefits: { icon: React.ReactNode; text: string }[];
   dateLine?: string;
   ctaLabel: string;
-  ctaUrl: string;
+  onCtaClick: () => void;
   priceNote: React.ReactNode;
   accent?: boolean;
 }) => (
@@ -48,86 +52,86 @@ const OfferCard = ({
       </p>
     )}
 
-    <a
-      href={ctaUrl}
+    <button
+      onClick={onCtaClick}
       className="block w-full text-center font-heading font-semibold text-[15px] rounded-lg py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:ring-offset-2 bg-ink-900 text-white hover:bg-ink-700"
       aria-label={ctaLabel}
     >
       {ctaLabel}
-    </a>
+    </button>
 
     <div className="text-[12px] text-ink-400 text-center mt-2">{priceNote}</div>
   </div>
 );
 
-export const WebinarSidebar = () => (
-  <div className="lg:sticky lg:top-[72px] space-y-4">
-    <p className="font-heading font-bold text-[14px] uppercase tracking-wider text-ink-400 mb-1">
-      Upgrade ao conhecimento
-    </p>
+export const WebinarSidebar = () => {
+  const [activePlan, setActivePlan] = useState<PlanKey>(null);
 
-    <OfferCard
-      title="Premium Pass"
-      price="€15 + IVA"
-      accent
-      benefits={[
-        { icon: <Video className="w-4 h-4" />, text: "Gravação HD (acesso contínuo)" },
-        { icon: <Headphones className="w-4 h-4" />, text: "Q&A exclusivo (60 min)" },
-        { icon: <FileText className="w-4 h-4" />, text: "Guia completo de prompts (30+ páginas)" },
-      ]}
-      ctaLabel="Garantir Premium Pass"
-      ctaUrl={WEBINAR_CONFIG.PREMIUM_URL}
-      priceNote={
-        <>
-          <span className="block">Early bird: €15 + IVA</span>
-          <span className="block">Depois do webinar: €27 + IVA</span>
-        </>
-      }
-    />
+  return (
+    <div className="lg:sticky lg:top-[72px] space-y-4">
+      <p className="font-heading font-bold text-[14px] uppercase tracking-wider text-ink-400 mb-1">
+        Upgrade ao conhecimento
+      </p>
 
-    <OfferCard
-      title="Masterclass Imagem → Vídeo"
-      price="€47 + IVA"
-      benefits={[
-        { icon: <Sparkles className="w-4 h-4" />, text: "Fluxo imagem → vídeo (clip utilizável)" },
-        { icon: <Video className="w-4 h-4" />, text: "Ferramentas por objetivo (gratuitas e pagas)" },
-        { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
-      ]}
-      dateLine="5 de Março (quinta-feira) · Online · 3 horas"
-      ctaLabel="Garantir lugar na Masterclass"
-      ctaUrl={WEBINAR_CONFIG.MASTERCLASS_URL}
-      priceNote={
-        <>
-          <span className="block">Early bird: €47 + IVA</span>
-          <span className="block">Depois: €97 + IVA</span>
-        </>
-      }
-    />
+      <OfferCard
+        title="Premium Pass"
+        price="€15 + IVA"
+        accent
+        benefits={[
+          { icon: <Video className="w-4 h-4" />, text: "Gravação HD (acesso contínuo)" },
+          { icon: <Headphones className="w-4 h-4" />, text: "Q&A exclusivo (60 min)" },
+          { icon: <FileText className="w-4 h-4" />, text: "Guia completo de prompts (30+ páginas)" },
+        ]}
+        ctaLabel="Garantir Premium Pass"
+        onCtaClick={() => setActivePlan("premium")}
+        priceNote={
+          <>
+            <span className="block">Early bird: €15 + IVA</span>
+            <span className="block">Depois do webinar: €27 + IVA</span>
+          </>
+        }
+      />
 
-    {/* Social row */}
-    <div className="flex items-center justify-center gap-5 pt-1">
-      <a
-        href={WEBINAR_CONFIG.INSTAGRAM_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-[13px] font-medium text-ink-400 hover:text-purple-600 transition-colors"
-        aria-label="Instagram do Frederico"
-      >
-        <Instagram className="w-4 h-4 text-purple-500" />
-        Instagram (bastidores e exemplos)
-      </a>
+      <OfferCard
+        title="Masterclass Imagem → Vídeo"
+        price="€47 + IVA"
+        benefits={[
+          { icon: <Sparkles className="w-4 h-4" />, text: "Fluxo imagem → vídeo (clip utilizável)" },
+          { icon: <Video className="w-4 h-4" />, text: "Ferramentas por objetivo (gratuitas e pagas)" },
+          { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
+        ]}
+        dateLine="5 de Março (quinta-feira) · Online · 3 horas"
+        ctaLabel="Garantir lugar na Masterclass"
+        onCtaClick={() => setActivePlan("masterclass")}
+        priceNote={
+          <>
+            <span className="block">Early bird: €47 + IVA</span>
+            <span className="block">Depois: €97 + IVA</span>
+          </>
+        }
+      />
+
+      {/* Social row */}
+      <div className="flex items-center justify-center gap-5 pt-1">
+        <a
+          href={WEBINAR_CONFIG.INSTAGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 text-[13px] font-medium text-ink-400 hover:text-purple-600 transition-colors"
+          aria-label="Instagram do Frederico"
+        >
+          <Instagram className="w-4 h-4 text-purple-500" />
+          Instagram (bastidores e exemplos)
+        </a>
+      </div>
+
+      {/* Purchase Modal */}
+      <PurchaseModal
+        open={activePlan !== null}
+        onOpenChange={(open) => { if (!open) setActivePlan(null); }}
+        plan={activePlan || "premium"}
+        planLabel={activePlan === "masterclass" ? "Masterclass Imagem → Vídeo" : "Premium Pass"}
+      />
     </div>
-
-    {/* WhatsApp support */}
-    <a
-      href="https://api.whatsapp.com/send?phone=351915015508&text=WebinarAI"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center justify-center gap-1.5 text-[12px] text-ink-400 hover:text-green-600 transition-colors"
-      aria-label="Suporte WhatsApp"
-    >
-      <MessageCircle className="w-3.5 h-3.5 text-green-500" />
-      Suporte WhatsApp
-    </a>
-  </div>
-);
+  );
+};
