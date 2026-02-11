@@ -31,7 +31,7 @@ export const GallerySection = () => {
               EXEMPLOS REAIS
             </p>
             <h2 className="font-heading font-extrabold text-2xl md:text-[32px] text-ink-900">
-              Imagens criadas com o método
+              Imagens criadas com método
             </h2>
             <p className="text-base text-ink-500 mt-2 max-w-[560px] mx-auto">
               Todas as imagens foram criadas com IA — sem designer, sem agência, em menos de 3 minutos cada.
@@ -61,16 +61,6 @@ export const GallerySection = () => {
                   style={{ aspectRatio: slot.ratio }}
                 />
 
-                {/* Hover overlay */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                  style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }}
-                />
-
-                {/* Tag */}
-                <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/95 rounded-md px-2.5 py-[5px]">
-                  <span className="font-medium text-[12px] text-ink-700">{slot.tag}</span>
-                </div>
               </div>
             </ScrollReveal>
           ))}

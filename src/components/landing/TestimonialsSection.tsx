@@ -2,34 +2,34 @@ import { ScrollReveal } from "./ScrollReveal";
 
 const testimonials = [
   {
-    initials: "AC", gradient: "linear-gradient(135deg, #1e3a5f, #3b82f6)",
-    name: "Ana Costa", role: "Responsável Marketing · PME Lisboa",
-    quote: "Saí do webinar com um sistema que funciona. Em 3 dias já tinha 12 imagens novas para o feed do Instagram — feitas por mim, com a identidade da marca.",
+    initials: "MR", gradient: "linear-gradient(135deg, #1e3a5f, #3b82f6)",
+    name: "Maria Rocha", role: "2 críticas",
+    quote: "As aulas do prof Frederico Carvalho foram extremanente produtivas e a sua excelente pedagogia torna conteúdos complexos em algo simples, prático e aplicável. Recomendo vivamente.",
   },
   {
-    initials: "RM", gradient: "linear-gradient(135deg, #064e3b, #10b981)",
-    name: "Rui Mendes", role: "CEO · E-commerce Porto",
-    quote: "Há meses que sabia que a IA podia ajudar mas não sabia por onde começar. O Frederico explica de forma directa e prática. Recomendo sem reservas.",
+    initials: "RF", gradient: "linear-gradient(135deg, #064e3b, #10b981)",
+    name: "Ricardo Fernandes", role: "3 críticas · 2 fotos",
+    quote: "O Frederico é muito conhecedor dos seus temas, tem uma forma muito natural de passar essa informação e não deixa que nada falte a quem está do outro lado. Continuação de um excelente trabalho!",
   },
   {
-    initials: "SP", gradient: "linear-gradient(135deg, #7c2d12, #f97316)",
-    name: "Sofia Pereira", role: "Gestora de Produto · Startup Lisboa",
-    quote: "As imagens que criámos durante o webinar ficaram melhores do que as que tínhamos no site. Ainda no próprio dia substituí três peças da campanha activa.",
+    initials: "RB", gradient: "linear-gradient(135deg, #7c2d12, #f97316)",
+    name: "Rui Brito", role: "Guia local · 18 críticas · 1 foto",
+    quote: "Já fiz mais do que uma formação com o Frederico e é realmente uma mais valia o conhecimento que se adquire, com casos práticos e muito boa interação com os formandos. Materiais de apoio muito profissionais e formação adaptada ao contexto da empresa. Recomendo 100%",
   },
   {
-    initials: "JF", gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed)",
-    name: "João Fernandes", role: "Consultor Independente · Braga",
-    quote: "Já fiz vários webinars de IA e este é diferente — não é sobre ferramentas, é sobre método. Essa distinção vale todo o investimento de tempo.",
+    initials: "DR", gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed)",
+    name: "Dilen Ratanji", role: "Guia local · 71 críticas · 106 fotos",
+    quote: "Profissional de excelência! Prático, assertivo e altamente competente!",
   },
   {
-    initials: "MG", gradient: "linear-gradient(135deg, #0c4a6e, #0284c7)",
-    name: "Maria Gomes", role: "Directora Criativa · Agência Digital",
-    quote: "Fiquei surpreendida com a qualidade dos resultados para contexto empresarial português. Nada de imagens genéricas — o método funciona mesmo para marcas locais.",
+    initials: "AA", gradient: "linear-gradient(135deg, #0c4a6e, #0284c7)",
+    name: "Ana Amaral", role: "4 críticas",
+    quote: "Cuidado, preparação, organização que se resume em excelência! Parabéns!",
   },
   {
-    initials: "PL", gradient: "linear-gradient(135deg, #134e4a, #0d9488)",
-    name: "Pedro Lopes", role: "Gestor E-commerce · Moda Lisboa",
-    quote: "Precisava de fotografias de produto escaláveis sem contratar fotógrafo. Em 75 minutos aprendi um processo que já poupou centenas de euros no catálogo.",
+    initials: "JC", gradient: "linear-gradient(135deg, #134e4a, #0d9488)",
+    name: "Joao Correia", role: "Guia local · 47 críticas · 45 fotos",
+    quote: "Top só isso",
   },
 ];
 
@@ -48,7 +48,7 @@ export const TestimonialsSection = () => (
             O QUE DIZEM
           </p>
           <h2 className="font-heading font-extrabold text-2xl md:text-[32px] text-white">
-            Quem já passou pelo método
+            O que dizem sobre o Frederico
           </h2>
 
           {/* Google badge */}
