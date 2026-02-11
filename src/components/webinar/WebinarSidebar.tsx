@@ -23,7 +23,7 @@ const OfferCard = ({
   <div
     className={`rounded-xl border p-5 ${
       accent
-        ? "border-blue-600/30 bg-gradient-to-b from-blue-50/60 to-white"
+        ? "border-blue-600/30 bg-gradient-to-b from-blue-50/80 to-white shadow-sm"
         : "border-border bg-white"
     }`}
   >
@@ -50,11 +50,12 @@ const OfferCard = ({
 
     <a
       href={ctaUrl}
-      className={`block w-full text-center font-heading font-semibold text-[15px] rounded-lg py-2.5 transition-all ${
+      className={`block w-full text-center font-heading font-semibold text-[15px] rounded-lg py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-blue-600/50 focus:ring-offset-2 ${
         accent
           ? "bg-ink-900 text-white hover:bg-ink-700"
           : "bg-ink-900 text-white hover:bg-ink-700"
       }`}
+      aria-label={ctaLabel}
     >
       {ctaLabel}
     </a>
