@@ -48,25 +48,34 @@ const Upsell = () => {
     if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
+  const PLAN_URLS: Record<string, string> = {
+    premium: "https://clientes.eupago.pt/api/extern/paybylink/form/f92e7b5a02894539ac7528aaa56d08a5",
+    masterclass: "https://clientes.eupago.pt/api/extern/paybylink/form/d3e170f1d73546ca96b5267e25ac12e2",
+    "premium-masterclass": "https://clientes.eupago.pt/api/extern/paybylink/form/04fcd2e6b72947f6a71f05bc96b213f3",
+  };
+
   const handlePayment = useCallback(async (plan: string) => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: {
-          plan,
-          email: userData.email,
-          nome: userData.nome,
-          whatsapp: userData.whatsapp,
-          source: sources.join(", "),
+      const planLabel = plan === "premium-masterclass" ? "bundle" : plan;
+      // Save upgrade data to registrations
+      await supabase
+        .from("registrations")
+        .update({
+          plan_selected: planLabel,
+          sources: sources.join(", "),
           duvida,
-        },
-      });
-      if (fnError) throw fnError;
-      if (data?.paymentLink) {
-        window.location.href = data.paymentLink;
+          upgrade_clicked_at: new Date().toISOString(),
+        } as any)
+        .eq("email", userData.email);
+
+      // Redirect to EuPago
+      const url = PLAN_URLS[plan];
+      if (url) {
+        window.location.href = url;
       } else {
-        throw new Error("Link de pagamento não recebido");
+        throw new Error("Plano inválido");
       }
     } catch (err) {
       console.error("Payment error:", err);

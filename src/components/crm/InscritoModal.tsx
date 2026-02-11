@@ -93,6 +93,10 @@ export default function InscritoModal({
     for (let s = 1; s <= inscrito.step_reached; s++) {
       events.push({ type: "passo", text: `Completou o passo ${s} (${STEPS[s - 1].name})`, date: inscrito.timestamp });
     }
+    if (inscrito.upgrade_clicked_at && inscrito.plan_selected) {
+      const planLabel = inscrito.plan_selected.charAt(0).toUpperCase() + inscrito.plan_selected.slice(1);
+      events.push({ type: "passo", text: `Clicou para pagar (${planLabel})`, date: inscrito.upgrade_clicked_at });
+    }
     if (inscrito.paid_at) {
       events.push({ type: "pagamento", text: `Pagamento confirmado · €${inscrito.valor} (${planInfo.label})`, date: inscrito.paid_at });
     }
@@ -350,6 +354,18 @@ export default function InscritoModal({
                   <span className="font-heading font-bold text-[14px] text-ink-900">{inscrito.step_reached} de 5</span>
                 </div>
               </div>
+              {inscrito.plan_selected && (
+                <div className="bg-off-white border border-border rounded-xl p-4">
+                  <p className="text-[11px] text-ink-400 mb-1">Plano seleccionado (upgrade)</p>
+                  <span className="text-[13px] font-semibold text-ink-800 capitalize">{inscrito.plan_selected}</span>
+                </div>
+              )}
+              {inscrito.upgrade_clicked_at && (
+                <div className="bg-off-white border border-border rounded-xl p-4">
+                  <p className="text-[11px] text-ink-400 mb-1">Clicou em pagar</p>
+                  <p className="font-semibold text-[14px] text-ink-800">{fmtDate(inscrito.upgrade_clicked_at)}</p>
+                </div>
+              )}
             </div>
 
             {/* Origem */}

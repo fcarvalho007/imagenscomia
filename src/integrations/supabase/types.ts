@@ -17,38 +17,50 @@ export type Database = {
       registrations: {
         Row: {
           created_at: string | null
+          duvida: string | null
           email: string
           first_name: string | null
           id: string
           last_name: string | null
           name: string
+          plan_selected: string | null
           premium_unlocked: boolean | null
           referral_code: string
           referred_by: string | null
+          sources: string | null
+          upgrade_clicked_at: string | null
           whatsapp: string | null
         }
         Insert: {
           created_at?: string | null
+          duvida?: string | null
           email: string
           first_name?: string | null
           id?: string
           last_name?: string | null
           name: string
+          plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code: string
           referred_by?: string | null
+          sources?: string | null
+          upgrade_clicked_at?: string | null
           whatsapp?: string | null
         }
         Update: {
           created_at?: string | null
+          duvida?: string | null
           email?: string
           first_name?: string | null
           id?: string
           last_name?: string | null
           name?: string
+          plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code?: string
           referred_by?: string | null
+          sources?: string | null
+          upgrade_clicked_at?: string | null
           whatsapp?: string | null
         }
         Relationships: []

@@ -21,6 +21,10 @@ export type Inscrito = {
   notas: Nota[];
   status: "activo" | "arquivado" | "perdido";
   follow_up: boolean;
+  plan_selected: string | null;
+  sources_text: string | null;
+  duvida_text: string | null;
+  upgrade_clicked_at: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];
