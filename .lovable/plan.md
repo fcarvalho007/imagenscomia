@@ -1,71 +1,47 @@
 
 
-# Simplificar botoes CTA e formatar precos no painel lateral
+# Alteracoes na seccao Hero da landing page
 
-## Resumo
+## Alteracao 1 — Headline principal (H1)
 
-Remover os valores dos botoes CTA (Premium e Masterclass), e no painel lateral (SummaryPanel) mostrar os precos base "+ IVA" em vez dos totais com IVA ja incluido. O total final continua a mostrar o valor com IVA incluido.
+No ficheiro `src/components/landing/HeroSection.tsx`, substituir o H1 actual por duas linhas com pesos e tamanhos diferentes:
 
----
+- **Linha 1**: "Cria Imagens Profissionais com IA" — `font-extrabold` (800), tamanho actual (32/40/48px), cor `text-ink-900`
+- **Linha 2**: "para a Tua Empresa" — `font-bold` (700), 65% do tamanho (21/26/31px), cor `text-ink-500`
 
-## Alteracoes
+A linha 2 fica num `span` ou `div` separado dentro do mesmo `h1`, com classes de tamanho e cor proprias.
 
-### 1. `src/components/upgrade/StepPremium.tsx`
+## Alteracao 2 — Badge Google Reviews
 
-- Linha 78: Mudar de `Adicionar Premium Pass — €18,45 →` para `Adicionar Premium Pass →`
+Adicionar um novo bloco entre os 4 cards de info e o video placeholder, com:
 
-### 2. `src/components/upgrade/StepMasterclass.tsx`
+- Container `inline-flex` centrado, fundo branco, border, border-radius 12px, padding 10px 18px, sombra subtil
+- Logo Google: SVG inline colorido (20x20px)
+- Separador vertical: 1px, 18px altura, cor border
+- Bloco de texto: "5,0" (Montserrat 700, 14px) + 5 estrelas amarelas (#FBBC05, 13px) na primeira linha; "1 194 avaliacoes no Google" (Inter 400, 11px, ink-400) na segunda linha
+- Margem: `mt-6 mb-6` (24px top/bottom)
+- Nao clicavel, sem hover state
 
-- Linha 87: Mudar de `Reservar Masterclass — €57,81 →` para `Reservar Masterclass →`
+O SVG do logo Google sera copiado do ficheiro uploaded para `src/assets/google_g_icon.svg` e importado no componente.
 
-### 3. `src/components/upgrade/SummaryPanel.tsx`
+## Ordem visual resultante
 
-- Linha 66-67 (Premium line): Mudar subtexto para "Gravacao . Q&A . Guia" e preco para "€15 + IVA" em vez de "€18,45"
-- Linha 83-84 (Masterclass line): Mudar preco para "€47 + IVA" em vez de "€57,81"
-- Linhas 95-113 (IVA lines separadas): Remover — ja nao sao necessarias porque os precos base + IVA estao indicados nas linhas principais
-- O TOTAL continua a mostrar o valor com IVA incluido (€18,45 / €57,81 / €76,26) via `formatPrice(total)` — sem alteracao
+1. Label — WEBINAR GRATUITO 18 FEVEREIRO 10H00
+2. H1 linha 1 — Cria Imagens Profissionais com IA
+3. H1 linha 2 (menor) — para a Tua Empresa
+4. Tagline — Sem equipa criativa...
+5. Sub — De briefing a imagem profissional...
+6. 4 cards — Ao vivo / 10h00 / 75 min / Gratuito
+7. **Badge Google Reviews** (novo)
+8. Video placeholder
+9. Botao CTA — Inscrever-me gratis
 
-### 4. `src/components/upgrade/StepConfirmation.tsx`
-
-- Linha 159: Premium mostra "€15" — adicionar texto "+ IVA" ao lado
-- Linhas 161-164: Remover a linha separada de IVA Premium (€3,45) — ja indicado no preco
-- Linha 174: Masterclass mostra "€47" — adicionar texto "+ IVA" ao lado
-- Linhas 176-179: Remover a linha separada de IVA Masterclass (€10,81) — ja indicado no preco
-- O TOTAL continua a mostrar o valor total com IVA incluido, e deve indicar "(c/ IVA)" ao lado
-
----
-
-## Resultado visual esperado
-
-**Painel lateral (SummaryPanel):**
-```text
-Premium Pass
-Gravacao . Q&A . Guia          €15 + IVA
-
-Masterclass Online
-3h . Online . Max. 30          €47 + IVA
-
-────────────────────────────────
-TOTAL                          €76,26
-```
-
-**Step 5 (Confirmacao com pagamento):**
-```text
-Premium Pass                   €15 + IVA
-Masterclass Online             €47 + IVA
-────────────────────────────────
-TOTAL (c/ IVA)                 €76,26
-```
-
----
-
-## Ficheiros a editar
+## Ficheiro a editar
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/upgrade/StepPremium.tsx` | Remover preco do botao CTA |
-| `src/components/upgrade/StepMasterclass.tsx` | Remover preco do botao CTA |
-| `src/components/upgrade/SummaryPanel.tsx` | Precos base + IVA, remover linhas IVA separadas |
-| `src/components/upgrade/StepConfirmation.tsx` | Precos base + IVA, remover linhas IVA separadas, total c/ IVA |
+| `src/components/landing/HeroSection.tsx` | Headline em duas linhas com hierarquia visual, badge Google Reviews |
+| `src/assets/google_g_icon.svg` | Copiar SVG do upload |
 
 Sem dependencias novas.
+
