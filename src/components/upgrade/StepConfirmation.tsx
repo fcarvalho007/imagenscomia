@@ -151,39 +151,27 @@ const VariantPayment = ({
           </div>
 
           {premium && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
-                  <Check className="w-4 h-4 text-blue-600" /> Premium Pass
-                </span>
-                <span className="text-[14px] text-ink-700">€15</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-ink-400 ml-6">+ IVA (Premium)</span>
-                <span className="text-[13px] text-ink-400">€3,45</span>
-              </div>
-            </>
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+                <Check className="w-4 h-4 text-blue-600" /> Premium Pass
+              </span>
+              <span className="text-[14px] text-ink-700">€15 <span className="text-[12px] text-ink-400">+ IVA</span></span>
+            </div>
           )}
 
           {masterclass && (
-            <>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
-                  <Check className="w-4 h-4 text-blue-600" /> Masterclass Online
-                </span>
-                <span className="text-[14px] text-ink-700">€47</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[13px] text-ink-400 ml-6">+ IVA (Masterclass)</span>
-                <span className="text-[13px] text-ink-400">€10,81</span>
-              </div>
-            </>
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+                <Check className="w-4 h-4 text-blue-600" /> Masterclass Online
+              </span>
+              <span className="text-[14px] text-ink-700">€47 <span className="text-[12px] text-ink-400">+ IVA</span></span>
+            </div>
           )}
 
           <div className="h-px bg-border my-2" />
 
           <div className="flex justify-between items-center">
-            <span className="font-heading font-bold text-[16px] text-ink-900">TOTAL</span>
+            <span className="font-heading font-bold text-[16px] text-ink-900">TOTAL <span className="text-[12px] font-normal text-ink-400">(c/ IVA)</span></span>
             <span className="font-heading font-bold text-[16px] text-ink-900">{formatPrice(total)}</span>
           </div>
         </div>
