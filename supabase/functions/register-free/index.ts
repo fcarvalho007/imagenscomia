@@ -108,6 +108,31 @@ serve(async (req) => {
       }
     }
 
+    // Sync to E-goi (non-blocking — don't fail registration if E-goi fails)
+    try {
+      const egoiResponse = await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            email: email.toLowerCase().trim(),
+            cellphone: whatsapp?.trim() || null,
+            referral_code: referralCode,
+          }),
+        }
+      );
+      const egoiResult = await egoiResponse.text();
+      console.log(`E-goi sync result: ${egoiResponse.status} - ${egoiResult}`);
+    } catch (egoiError) {
+      console.error("E-goi sync failed (non-blocking):", egoiError);
+    }
+
     const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
 
     return new Response(

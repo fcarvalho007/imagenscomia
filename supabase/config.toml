@@ -2,3 +2,6 @@ project_id = "gwphpsehcnhwjiypyolg"
 
 [functions.eupago-webhook]
 verify_jwt = false
+
+[functions.sync-egoi]
+verify_jwt = false
