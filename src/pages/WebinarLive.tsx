@@ -3,6 +3,7 @@ import { Radio } from "lucide-react";
 import { WebinarVideoArea } from "@/components/webinar/WebinarVideoArea";
 import { WebinarSidebar } from "@/components/webinar/WebinarSidebar";
 import { WebinarContent } from "@/components/webinar/WebinarContent";
+import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import { WebinarFooter } from "@/components/webinar/WebinarFooter";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 import { useCountdown } from "@/hooks/useCountdown";
@@ -75,6 +76,14 @@ const WebinarLive = () => {
               isEnded={isEnded}
               countdown={countdown}
             />
+            {!isLive && !isEnded && (
+              <div className="text-center py-4 mb-4">
+                <p className="text-[13px] text-ink-400 mb-3">
+                  O vídeo fica disponível automaticamente 30 min antes do início. Sugestão: entrar 3–5 min antes.
+                </p>
+                <WebinarCalendarButton />
+              </div>
+            )}
             <WebinarContent />
           </div>
 
