@@ -33,5 +33,5 @@ export const WEBINAR_CONFIG = {
   // ─── URLs ───
   PREMIUM_URL: "/upgrade",
   MASTERCLASS_URL: "#",
-  INSTAGRAM_URL: "https://instagram.com/fredericocarvalho",
+  INSTAGRAM_URL: "https://www.instagram.com/frederico.m.carvalho/",
 } as const;

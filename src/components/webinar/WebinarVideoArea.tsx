@@ -100,6 +100,10 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
             <CountdownBlock value={countdown.seconds} label="seg" />
           </div>
         )}
+
+        <p className="text-[12px] text-white/40 mt-6 max-w-sm">
+          O vídeo fica disponível automaticamente 30 min antes do início. Sugestão: entrar 3–5 min antes.
+        </p>
       </div>
     </div>
   );
