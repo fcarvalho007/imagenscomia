@@ -1,6 +1,5 @@
 import { Clock, Radio } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
-import WebinarCalendarButton from "./AddToCalendarButton";
 
 interface CountdownValues {
   days: number;
@@ -73,10 +72,10 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
 
   // Waiting state
   return (
-    <div className="aspect-video rounded-xl bg-gradient-to-br from-ink-900 via-[#0f1b33] to-ink-900 flex items-center justify-center mb-6 relative overflow-hidden">
+    <div className="aspect-video rounded-xl bg-gradient-to-br from-[#0a0f1e] via-[#0f1b33] to-[#0a1628] border border-white/[0.06] flex items-center justify-center mb-4 relative overflow-hidden shadow-2xl">
       {/* Subtle grid pattern */}
       <div
-        className="absolute inset-0 opacity-[0.10]"
+        className="absolute inset-0 opacity-[0.06]"
         style={{
           backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
           backgroundSize: "40px 40px",
@@ -84,14 +83,14 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
       />
 
       <div className="relative z-10 text-center px-6">
-        <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-[13px] font-medium px-3 py-1 rounded-full mb-5 animate-pulse">
-          <Clock className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-[13px] font-medium px-3 py-1 rounded-full mb-6">
+          <Clock className="w-3.5 h-3.5 animate-pulse" />
           A transmissão começa em breve
         </div>
 
         {/* Countdown */}
         {!countdown.isExpired && (
-          <div className="flex items-center justify-center gap-4 sm:gap-6 mb-6">
+          <div className="flex items-center justify-center gap-4 sm:gap-6">
             <CountdownBlock value={countdown.days} label="dias" />
             <span className="text-white/20 text-[24px] font-light mt-[-16px]">:</span>
             <CountdownBlock value={countdown.hours} label="horas" />
@@ -101,15 +100,6 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
             <CountdownBlock value={countdown.seconds} label="seg" />
           </div>
         )}
-
-        <p className="text-[14px] text-white/40 mb-2 max-w-sm mx-auto">
-          O vídeo fica disponível automaticamente 30 min antes do início.
-        </p>
-        <p className="text-[13px] text-white/30 mb-5 max-w-sm mx-auto">
-          Sugestão: entrar 3–5 min antes.
-        </p>
-
-        <WebinarCalendarButton />
       </div>
     </div>
   );
