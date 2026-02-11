@@ -19,10 +19,12 @@ export type Database = {
           created_at: string | null
           duvida: string | null
           email: string
+          eupago_ref: string | null
           first_name: string | null
           id: string
           last_name: string | null
           name: string
+          paid_at: string | null
           plan_selected: string | null
           premium_unlocked: boolean | null
           referral_code: string
@@ -35,10 +37,12 @@ export type Database = {
           created_at?: string | null
           duvida?: string | null
           email: string
+          eupago_ref?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           name: string
+          paid_at?: string | null
           plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code: string
@@ -51,10 +55,12 @@ export type Database = {
           created_at?: string | null
           duvida?: string | null
           email?: string
+          eupago_ref?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
           name?: string
+          paid_at?: string | null
           plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code?: string
