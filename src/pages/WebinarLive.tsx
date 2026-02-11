@@ -34,8 +34,8 @@ const WebinarLive = () => {
       {/* Header bar */}
       <header className="border-b border-border bg-white/80 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <span className="font-heading font-bold text-[15px] tracking-tight text-ink-900">
-            DIGITALFC
+          <span className="font-heading font-medium text-[15px] tracking-normal text-ink-900">
+            Frederico Carvalho
           </span>
           {isLive && (
             <span className="inline-flex items-center gap-1.5 bg-red-500/10 text-red-600 text-[12px] font-semibold px-2.5 py-1 rounded-full">
