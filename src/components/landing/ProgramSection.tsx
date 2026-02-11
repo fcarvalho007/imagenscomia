@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
+import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const systems = [
   {
@@ -38,7 +39,9 @@ const systems = [
   },
 ];
 
-export const ProgramSection = () => (
+export const ProgramSection = () => {
+  const { open } = useRegistrationModal();
+  return (
   <section className="py-16 md:py-24 bg-off-white">
     <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
@@ -87,16 +90,17 @@ export const ProgramSection = () => (
 
       <ScrollReveal>
         <div className="text-center mt-10">
-          <motion.a
-            href="#form-gratis"
+          <motion.button
+            onClick={() => open("free")}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="inline-block bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
           >
             Reservar lugar gratuito
-          </motion.a>
+          </motion.button>
         </div>
       </ScrollReveal>
     </div>
   </section>
-);
+  );
+};
