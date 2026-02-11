@@ -25,7 +25,7 @@ const bullets = [
 ];
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
-  <div className="max-w-[480px]">
+  <div className="max-w-[560px]">
     <h2 className="font-heading font-bold text-[24px] text-ink-900">
       Transformar imagens em vídeo com IA — ao vivo
     </h2>
@@ -35,7 +35,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
     {/* Masterclass Card */}
     <div
-      className="bg-background rounded-2xl p-6 max-w-[460px]"
+      className="bg-background rounded-2xl p-6 max-w-[520px]"
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
       {/* Tag */}
@@ -76,7 +76,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
       {/* Event details */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {["📅 5 de Março (quinta-feira)", "💻 Online", "⏱ 3 horas", "👥 Máx. 30"].map((d) => (
+        {["💻 Online", "⏱ 3 horas", "👥 Máx. 30"].map((d) => (
           <span key={d} className="text-[14px] text-ink-400">{d}</span>
         ))}
       </div>

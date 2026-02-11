@@ -27,7 +27,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
 
   return (
     <aside className="hidden lg:flex flex-col sticky top-0 h-screen bg-background border-r border-border overflow-hidden"
-      style={{ padding: "40px 28px" }}>
+      style={{ padding: "40px 24px" }}>
       {/* Header */}
       <div>
         <p className="font-heading font-bold text-[16px] text-ink-900">Frederico Carvalho</p>
@@ -47,7 +47,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
         <div className="flex justify-between items-start py-3 border-b border-border">
           <div>
             <p className="font-semibold text-[14px] text-ink-900">Webinar Gratuito</p>
-            <p className="text-[14px] text-ink-400 mt-0.5">18 Fev · 10h00 · 75 minutos</p>
+            <p className="text-[14px] text-ink-400 mt-0.5">18 Fev · 10h00</p>
           </div>
           <div className="text-right">
             <p className="font-heading font-bold text-[16px] text-ink-900">€0</p>
@@ -62,7 +62,7 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
               className="flex justify-between items-start py-3 border-b border-border">
               <div>
                 <p className="font-semibold text-[14px] text-ink-900">Premium Pass</p>
-                <p className="text-[14px] text-ink-400 mt-0.5">Gravação · Q&A · Guia</p>
+                <p className="text-[14px] text-ink-400 mt-0.5">Gravação + Q&A + Guia</p>
               </div>
               <div className="flex items-center gap-2">
                 <p className="font-heading font-bold text-[14px] text-ink-900">€15 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>

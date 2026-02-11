@@ -92,7 +92,7 @@ const Upsell = () => {
       {/* Mobile summary bar */}
       <MobileSummaryBar orderState={orderState} total={total} />
 
-      <div className="lg:grid lg:grid-cols-[340px_1fr] lg:min-h-screen">
+      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:min-h-screen">
         {/* Desktop left panel */}
         <SummaryPanel orderState={orderState} total={total} onRemove={(item) => setOrderState(s => ({ ...s, [item]: false }))} />
 
