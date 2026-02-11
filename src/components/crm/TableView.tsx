@@ -1,0 +1,282 @@
+import { useMemo, useState } from "react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
+import type { Inscrito } from "@/pages/crm/mockData";
+
+interface TableViewProps {
+  inscritos: Inscrito[];
+  onSelectInscrito: (i: Inscrito) => void;
+}
+
+const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+  free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
+  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium" },
+  masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
+  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
+};
+
+const GRADIENTS = [
+  "linear-gradient(135deg,#1e3a5f,#3b82f6)",
+  "linear-gradient(135deg,#064e3b,#10b981)",
+  "linear-gradient(135deg,#7c2d12,#f97316)",
+  "linear-gradient(135deg,#1e1b4b,#7c3aed)",
+  "linear-gradient(135deg,#0c4a6e,#0284c7)",
+  "linear-gradient(135deg,#134e4a,#0d9488)",
+];
+
+function getInitials(name: string) {
+  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  return `${d.getDate()} ${months[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+const VALOR_COLORS: Record<number, string> = {
+  0: "hsl(var(--ink-400))",
+  15: "hsl(var(--blue-600))",
+  57.81: "#7C3AED",
+  72.81: "hsl(var(--green-600))",
+};
+
+type SortKey = "nome" | "email" | "plan" | "valor" | "step_reached" | "timestamp";
+
+export default function TableView({ inscritos, onSelectInscrito }: TableViewProps) {
+  const [search, setSearch] = useState("");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [stepFilter, setStepFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("timestamp");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(0);
+  const PER_PAGE = 10;
+
+  const active = useMemo(() => inscritos.filter((i) => i.status === "activo"), [inscritos]);
+
+  const filtered = useMemo(() => {
+    let list = active;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
+    }
+    if (planFilter !== "all") list = list.filter((i) => i.plan === planFilter);
+    if (stepFilter !== "all") list = list.filter((i) => i.step_reached === Number(stepFilter));
+
+    list = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "nome" || sortKey === "email" || sortKey === "plan") {
+        cmp = (a[sortKey] as string).localeCompare(b[sortKey] as string);
+      } else if (sortKey === "valor" || sortKey === "step_reached") {
+        cmp = (a[sortKey] as number) - (b[sortKey] as number);
+      } else {
+        cmp = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [active, search, planFilter, stepFilter, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ChevronsUpDown size={12} className="inline ml-1 text-ink-300" />;
+    return sortDir === "asc"
+      ? <ChevronUp size={12} className="inline ml-1 text-blue-600" />
+      : <ChevronDown size={12} className="inline ml-1 text-blue-600" />;
+  };
+
+  const exportCSV = () => {
+    const BOM = "\uFEFF";
+    const header = "Nome;Email;WhatsApp;Plano;Valor;Passo;Dúvida;Inscrição;Notas";
+    const rows = filtered.map((i) =>
+      [i.nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
+    );
+    const csv = BOM + header + "\n" + rows.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "inscritos_crm.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
+      <div className="mb-5">
+        <h1 className="font-heading font-bold text-[22px] text-ink-900">Tabela</h1>
+        <p className="text-sm text-ink-500">{active.length} inscritos no total</p>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap gap-2.5 mb-4">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+          <input
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            placeholder="Pesquisar nome ou email..."
+            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
+          />
+        </div>
+        <select
+          value={planFilter}
+          onChange={(e) => { setPlanFilter(e.target.value); setPage(0); }}
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+        >
+          <option value="all">Todos os planos</option>
+          <option value="free">Gratuito</option>
+          <option value="premium">Premium</option>
+          <option value="masterclass">Masterclass</option>
+          <option value="bundle">Bundle</option>
+        </select>
+        <select
+          value={stepFilter}
+          onChange={(e) => { setStepFilter(e.target.value); setPage(0); }}
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+        >
+          <option value="all">Todos os passos</option>
+          {[1,2,3,4,5].map((s) => <option key={s} value={s}>Passo {s}</option>)}
+        </select>
+        <button onClick={exportCSV} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white">
+          <Download size={14} /> Exportar CSV
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white border border-border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-off-white border-b-2 border-border">
+                {([
+                  { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
+                  { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
+                  { key: "plan" as SortKey, label: "Plano", cls: "min-w-[100px]" },
+                  { key: "valor" as SortKey, label: "Valor", cls: "min-w-[80px]" },
+                  { key: "step_reached" as SortKey, label: "Passo", cls: "min-w-[80px]" },
+                ] as const).map((col) => (
+                  <th
+                    key={col.key}
+                    className={`px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider cursor-pointer select-none ${col.cls}`}
+                    onClick={() => toggleSort(col.key)}
+                  >
+                    {col.label}<SortIcon col={col.key} />
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">Dúvida</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[110px] cursor-pointer select-none" onClick={() => toggleSort("timestamp")}>
+                  Inscrição<SortIcon col="timestamp" />
+                </th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[60px]">Notas</th>
+                <th className="px-4 py-3 w-[50px]"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((i) => {
+                const badge = PLAN_BADGE[i.plan];
+                const gradIdx = parseInt(i.id, 10) % GRADIENTS.length;
+                return (
+                  <tr
+                    key={i.id}
+                    className="border-b border-border hover:bg-off-white cursor-pointer transition-colors"
+                    onClick={() => onSelectInscrito(i)}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white font-heading font-bold text-[11px]"
+                          style={{ background: GRADIENTS[gradIdx] }}
+                        >
+                          {getInitials(i.nome)}
+                        </div>
+                        <span className="font-medium text-ink-900">{i.nome}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-heading font-bold text-[13px]" style={{ color: VALOR_COLORS[i.valor] || "hsl(var(--ink-400))" }}>
+                        €{i.valor}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-12 h-1 rounded-full bg-surface overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-600" style={{ width: `${(i.step_reached / 5) * 100}%` }} />
+                        </div>
+                        <span className="text-xs text-ink-500">{i.step_reached}/5</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 max-lg:hidden">
+                      {i.duvida ? (
+                        <span className="text-xs text-ink-700 block truncate max-w-[200px]" title={i.duvida}>
+                          {i.duvida.length > 60 ? i.duvida.slice(0, 60) + "…" : i.duvida}
+                        </span>
+                      ) : (
+                        <span className="text-ink-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-ink-500">{formatDate(i.timestamp)}</td>
+                    <td className="px-4 py-3">
+                      {i.notas.length > 0 ? (
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+                          {i.notas.length}
+                        </span>
+                      ) : (
+                        <span className="text-ink-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onSelectInscrito(i); }}
+                        className="text-ink-400 hover:text-blue-600 transition-colors"
+                        title="Ver ficha"
+                        aria-label="Ver ficha"
+                      >
+                        <ExternalLink size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border text-sm">
+            <span className="text-ink-400">
+              Mostrando {page * PER_PAGE + 1}-{Math.min((page + 1) * PER_PAGE, filtered.length)} de {filtered.length}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1 rounded border border-border text-ink-700 disabled:opacity-40 hover:bg-off-white"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-3 py-1 rounded border border-border text-ink-700 disabled:opacity-40 hover:bg-off-white"
+              >
+                Próximo
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

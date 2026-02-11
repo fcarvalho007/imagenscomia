@@ -8,6 +8,7 @@ import Confirmacao from "./pages/Confirmacao";
 import Upsell from "./pages/Upsell";
 import Convites from "./pages/Convites";
 import NotFound from "./pages/NotFound";
+import CRM from "./pages/CRM";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/confirmacao" element={<Confirmacao />} />
           <Route path="/upgrade" element={<Upsell />} />
           <Route path="/convites" element={<Convites />} />
+          <Route path="/crm" element={<CRM />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
