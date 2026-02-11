@@ -1,27 +1,47 @@
 
+# Botao Calendario com opcoes Google Calendar / Apple Calendar
 
-# Fix: quebra de "direto." no Premium Pass
+## Contexto
+Atualmente, o botao "Guardar no calendario" gera diretamente um ficheiro .ics. A alteracao transforma-o num popover com duas opcoes claras.
 
-## Ficheiro: `StepPremium.tsx`
+## Ficheiros a editar (2)
 
-### Problema
-A microcopy "Implementar com calma, sem depender do direto." quebra a palavra "direto." para a linha seguinte porque o badge early bird (com `min-w-[160px]`) ocupa demasiado espaco horizontal.
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/landing/ConfirmacaoExtras.tsx` | Substituir botao simples por Popover com 2 opcoes |
+| `src/components/upgrade/StepConfirmation.tsx` | Mesma alteracao no VariantFree |
 
-### Solucao (2 alteracoes na mesma zona)
+## Comportamento
 
-1. **Encurtar a microcopy** (linha 50)
-   - De: `"Implementar com calma, sem depender do direto."`
-   - Para: `"Sem depender do direto. Ao teu ritmo."`
-   - Alternativa ainda mais curta: `"Aplica ao teu ritmo, sem depender do direto."`
+Ao clicar em "Guardar no calendario", abre um pequeno popover (usando o componente Popover ja existente no projeto) com duas opcoes:
 
-2. **Adicionar `shrink-0` ao left div e `gap-3`** (linha 44)
-   - Alterar o flex container de `flex justify-between items-start mb-4` para `flex justify-between items-start mb-4 gap-3`
-   - Isto garante espaco minimo entre o preco e o badge, evitando sobreposicao
+1. **Google Calendar** — abre link direto para criar evento no Google Calendar (URL publica, sem autenticacao)
+2. **Apple Calendar** — descarrega ficheiro .ics (comportamento atual)
 
-3. **Reduzir badge min-width** (linha 52)
-   - De: `min-w-[160px]` para `min-w-[150px]`
-   - O badge ja tem `whitespace-nowrap`, portanto nao precisa de min-width tao largo — o nowrap ja protege contra quebras internas
+O popover fecha ao selecionar uma opcao ou ao clicar fora.
 
-### Resultado esperado
-A frase da microcopy fica toda numa unica linha, e o badge mantem o texto intacto sem "+" IVA" a quebrar.
+## Detalhes tecnicos
 
+### URL Google Calendar
+```
+https://calendar.google.com/calendar/render?action=TEMPLATE
+&text=Webinar+IA+%E2%80%94+Frederico+Carvalho
+&dates=20260218T100000Z/20260218T111500Z
+&details=Como+Criar+Imagens+Profissionais+com+IA+para+a+Tua+Empresa
+```
+Abre em nova aba (`target="_blank"`).
+
+### Apple Calendar
+Mantemos a funcao `generateICS()` existente que descarrega o ficheiro .ics.
+
+### UI do Popover
+- Largura fixa `w-[220px]`, sem padding extra
+- Duas opcoes em lista vertical, cada uma com icone + texto
+- Google: icone do Google (SVG inline pequeno ou emoji) + "Google Calendar"
+- Apple: icone Apple (emoji ou Lucide `Calendar` icon) + "Apple Calendar"
+- Cada opcao com `hover:bg-surface`, `rounded-lg`, `px-4 py-3`, `cursor-pointer`
+- Sem titulo no popover — direto nas opcoes (claro e objetivo)
+
+### Imports necessarios
+- `Popover, PopoverTrigger, PopoverContent` de `@/components/ui/popover`
+- `Calendar` de `lucide-react` (para icone Apple Calendar)
