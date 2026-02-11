@@ -4,6 +4,7 @@ import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import DashboardView from "@/components/crm/DashboardView";
 import PipelineView from "@/components/crm/PipelineView";
 import TableView from "@/components/crm/TableView";
+import TrashView from "@/components/crm/TrashView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -15,7 +16,7 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, addNota, removeNota, updateStatus, toggleFollowUp } = useInscritos();
+  const { inscritos, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito } = useInscritos();
 
   const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_auth");
@@ -54,6 +55,14 @@ export default function CRM() {
             onSelectInscrito={setSelectedInscrito}
             onToggleFollowUp={toggleFollowUp}
             onArchive={(id) => updateStatus(id, "arquivado")}
+            onDelete={deleteInscrito}
+          />
+        )}
+        {activeView === "lixo" && (
+          <TrashView
+            inscritos={inscritos}
+            onDelete={deleteInscrito}
+            onRestore={(id) => updateStatus(id, "activo")}
           />
         )}
       </div>
@@ -70,6 +79,10 @@ export default function CRM() {
           onToggleFollowUp={toggleFollowUp}
           onArchive={(id) => {
             updateStatus(id, "arquivado");
+            setSelectedInscrito(null);
+          }}
+          onDelete={(id) => {
+            deleteInscrito(id);
             setSelectedInscrito(null);
           }}
         />
