@@ -17,8 +17,20 @@ export const WEBINAR_CONFIG = {
    */
   EMBED_IFRAME_HTML: "",
 
-  // ─── URLs (replace with real values) ───
-  CALENDAR_URL: "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cria+Imagens+Profissionais+com+IA&dates=20260218T100000Z/20260218T111500Z&details=Webinar+gratuito+com+Frederico+Carvalho&location=Online",
+  // ─── Calendar Event Details ───
+  calendarEvent: {
+    name: "Webinar ao vivo — Cria Imagens Profissionais com IA",
+    description: "Aprender um método prático para transformar um briefing simples em imagens prontas a publicar, com consistência visual e controlo do resultado. - Quarta-feira, 18 Fev 2026",
+    startDate: "2026-02-18",
+    startTime: "10:00",
+    endDate: "2026-02-18",
+    endTime: "11:15",
+    timeZone: "Europe/Lisbon",
+    location: "Online",
+    organizer: "Frederico Carvalho|fredericodigital@gmail.com",
+  },
+
+  // ─── URLs ───
   PREMIUM_URL: "/upgrade",
   MASTERCLASS_URL: "#",
   INSTAGRAM_URL: "https://instagram.com/fredericocarvalho",
