@@ -39,7 +39,7 @@ const systems = [
 ];
 
 export const ProgramSection = () => (
-  <section className="py-16 md:py-24 bg-background">
+  <section className="py-16 md:py-24 bg-off-white">
     <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
         <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-blue-600 text-center mb-2">
