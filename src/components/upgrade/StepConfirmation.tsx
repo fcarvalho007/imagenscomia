@@ -50,7 +50,7 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
 
   return (
     <div className="max-w-[480px]">
-      <h2 className="font-heading font-bold text-[22px]" style={{ color: "hsl(var(--green-700))" }}>
+      <h2 className="font-heading font-bold text-[24px]" style={{ color: "hsl(var(--green-700))" }}>
         Estás inscrito! Até dia 18 🎉
       </h2>
 
@@ -63,7 +63,7 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         ].map((item) => (
           <div key={item} className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-700 shrink-0" />
-            <span className="font-medium text-[14px] text-green-700">{item}</span>
+            <span className="font-medium text-[15px] text-green-700">{item}</span>
           </div>
         ))}
       </div>
@@ -78,10 +78,10 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
 
       {/* Referral block — destaque reforçado */}
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
-        <p className="font-heading font-bold text-[16px] text-amber-800 mb-2">
+        <p className="font-heading font-bold text-[17px] text-amber-800 mb-2">
           🎁 Convida 2 amigos — ganhas acesso ao Q&A Bónus de 25 Fev
         </p>
-        <p className="text-[14px] text-amber-700 mb-3.5">
+        <p className="text-[15px] text-amber-700 mb-3.5">
           Partilha o teu link. Quando 2 amigos se inscreverem,
           entras gratuitamente na sessão extra de Q&A.
         </p>
@@ -139,52 +139,52 @@ const VariantPayment = ({
 
   return (
     <div className="max-w-[480px]">
-      <h2 className="font-heading font-bold text-[22px] text-ink-900">{title}</h2>
+      <h2 className="font-heading font-bold text-[24px] text-ink-900">{title}</h2>
 
       {/* Order summary */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mt-5 mb-5">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+            <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
               <Check className="w-4 h-4 text-blue-600" /> Webinar ao vivo — 18 Fev · 10h00
             </span>
-            <span className="text-[14px] text-ink-700">€0</span>
+            <span className="text-[15px] text-ink-700">€0</span>
           </div>
 
           {premium && (
             <div className="flex justify-between items-center">
-              <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+              <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
                 <Check className="w-4 h-4 text-blue-600" /> Premium Pass
               </span>
-              <span className="text-[14px] text-ink-700">€15 <span className="text-[12px] text-ink-400">+ IVA</span></span>
+              <span className="text-[15px] text-ink-700">€15 <span className="text-[14px] text-ink-400">+ IVA</span></span>
             </div>
           )}
 
           {masterclass && (
             <div className="flex justify-between items-center">
-              <span className="flex items-center gap-2 font-medium text-[14px] text-ink-700">
+              <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
                 <Check className="w-4 h-4 text-blue-600" /> Masterclass Online
               </span>
-              <span className="text-[14px] text-ink-700">€47 <span className="text-[12px] text-ink-400">+ IVA</span></span>
+              <span className="text-[15px] text-ink-700">€47 <span className="text-[14px] text-ink-400">+ IVA</span></span>
             </div>
           )}
 
           <div className="h-px bg-border my-2" />
 
           <div className="flex justify-between items-center">
-            <span className="font-medium text-[13px] text-ink-700">Subtotal (sem IVA)</span>
-            <span className="font-medium text-[13px] text-ink-700">{formatPrice(subtotal)}</span>
+            <span className="font-medium text-[14px] text-ink-700">Subtotal (sem IVA)</span>
+            <span className="font-medium text-[14px] text-ink-700">{formatPrice(subtotal)}</span>
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="font-semibold text-[13px] text-amber-600">IVA (23%)</span>
-            <span className="font-semibold text-[13px] text-amber-600">{formatPrice(iva)}</span>
+            <span className="font-semibold text-[14px] text-amber-600">IVA (23%)</span>
+            <span className="font-semibold text-[14px] text-amber-600">{formatPrice(iva)}</span>
           </div>
 
           <div className="h-px bg-border my-2" />
 
           <div className="flex justify-between items-center">
-            <span className="font-heading font-bold text-[16px] text-ink-900">TOTAL <span className="text-[12px] font-normal text-ink-400">(c/ IVA)</span></span>
+            <span className="font-heading font-bold text-[16px] text-ink-900">TOTAL <span className="text-[14px] font-normal text-ink-400">(c/ IVA)</span></span>
             <span className="font-heading font-bold text-[16px] text-ink-900">{formatPrice(total)}</span>
           </div>
         </div>
@@ -205,7 +205,7 @@ const VariantPayment = ({
         )}
       </button>
 
-      <p className="text-center text-[12px] text-ink-400 mt-2">
+      <p className="text-center text-[14px] text-ink-400 mt-2">
         🔒 Pagamento seguro EuPago
       </p>
 
@@ -213,7 +213,7 @@ const VariantPayment = ({
 
       <p
         onClick={onBack}
-        className="text-[13px] text-ink-400 cursor-pointer text-center mt-4 hover:underline"
+        className="text-[14px] text-ink-400 cursor-pointer text-center mt-4 hover:underline"
       >
         Voltar e alterar escolha
       </p>

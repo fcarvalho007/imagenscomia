@@ -107,7 +107,7 @@ const Upsell = () => {
                   style={{ width: `${progress}%`, transition: "width 400ms ease" }}
                 />
               </div>
-              <p className="text-right text-[13px] text-ink-400 font-medium mt-1.5">
+              <p className="text-right text-[14px] text-ink-400 font-medium mt-1.5">
                 Passo {step} de 5
               </p>
             </div>

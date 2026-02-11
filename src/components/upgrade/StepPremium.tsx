@@ -25,10 +25,10 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   const firstName = userName?.trim().split(" ")[0] || "";
   return (
   <div className="max-w-[480px]">
-    <h2 className="font-heading font-bold text-[22px] text-ink-900">
+    <h2 className="font-heading font-bold text-[24px] text-ink-900">
       {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
     </h2>
-    <p className="text-[15px] text-ink-500 mt-2 mb-6">
+    <p className="text-[17px] text-ink-500 mt-2 mb-6">
       Mas queres adicionar o Premium Pass para mais tranquilidade?
     </p>
 
@@ -43,21 +43,21 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
       {/* Price row */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <p className="font-heading font-semibold text-[11px] text-blue-600 uppercase tracking-[0.08em]">
+          <p className="font-heading font-semibold text-[14px] text-blue-600 uppercase tracking-[0.08em]">
             PREMIUM PASS
           </p>
           <p className="font-heading font-black text-[40px] text-blue-600 leading-none">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[12px] text-ink-400">€18,45 total · pagamento único</p>
+          <p className="text-[14px] text-ink-400">€18,45 total · pagamento único</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="text-[11px] text-amber-700">Sobe para €27</p>
-          <p className="text-[10px] text-amber-600">depois do webinar</p>
+          <p className="text-[14px] text-amber-700">Sobe para €27</p>
+          <p className="text-[14px] text-amber-600">depois do webinar</p>
         </div>
       </div>
 
       <div className="w-full h-px bg-border my-4" />
 
-      <p className="font-semibold text-[13px] text-ink-700 mb-3">Com o Premium tens acesso a:</p>
+      <p className="font-semibold text-[14px] text-ink-700 mb-3">Com o Premium tens acesso a:</p>
 
       <div className="space-y-3">
         {bullets.map((b) => (
@@ -66,8 +66,8 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
               <Check className="w-2.5 h-2.5 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-[14px] text-ink-900">{b.title}</p>
-              <p className="text-[12px] text-ink-500">{b.sub}</p>
+              <p className="font-semibold text-[15px] text-ink-900">{b.title}</p>
+              <p className="text-[14px] text-ink-500">{b.sub}</p>
             </div>
           </div>
         ))}
@@ -85,7 +85,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
     {/* Separator */}
     <div className="flex items-center gap-3 my-4">
       <div className="flex-grow h-px bg-border" />
-      <span className="text-[13px] text-ink-300">ou</span>
+      <span className="text-[14px] text-ink-300">ou</span>
       <div className="flex-grow h-px bg-border" />
     </div>
 
