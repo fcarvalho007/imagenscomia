@@ -15,7 +15,7 @@ export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props
         A tua maior dúvida sobre imagens com IA
       </h2>
       <p className="text-[15px] text-ink-500 mt-2 mb-2">
-        Frederico vai ler antes do webinar.
+        O Frederico vai ler antes do webinar.
         <br />
         Quanto mais específico, mais útil para ti.
       </p>
