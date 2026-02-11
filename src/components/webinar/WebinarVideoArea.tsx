@@ -1,4 +1,4 @@
-import { Clock, Radio } from "lucide-react";
+import { Clock, Radio, MessageCircle } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
 import WebinarCalendarButton from "./AddToCalendarButton";
 
@@ -102,11 +102,26 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
           </div>
         )}
 
-        <p className="text-[14px] text-white/40 mb-5 max-w-sm mx-auto">
-          O vídeo fica disponível automaticamente perto da hora de início.
+        <p className="text-[14px] text-white/40 mb-2 max-w-sm mx-auto">
+          O vídeo fica disponível automaticamente 30 min antes do início.
+        </p>
+        <p className="text-[13px] text-white/30 mb-5 max-w-sm mx-auto">
+          Sugestão: entrar 3–5 min antes.
         </p>
 
         <WebinarCalendarButton />
+
+        <a
+          href="https://api.whatsapp.com/send?phone=351915015508&text=WebinarAI"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-white/50 hover:text-white/80 transition-colors mt-4"
+          aria-label="Suporte WhatsApp"
+        >
+          <MessageCircle className="w-3.5 h-3.5 text-green-400" />
+          Suporte WhatsApp
+        </a>
+        <p className="text-[11px] text-white/25 mt-1">Problemas com acesso ou áudio? Ajuda rápida.</p>
       </div>
     </div>
   );
