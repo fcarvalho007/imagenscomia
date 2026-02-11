@@ -100,7 +100,7 @@ const Upsell = () => {
         <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen">
           <div className="px-4 pt-6 pb-10 lg:px-12 lg:pt-10 lg:pb-10">
             {/* Progress bar */}
-            <div className="max-w-[480px] mb-8">
+            <div className="max-w-[560px] mb-8">
               <div className="w-full h-1.5 rounded-full bg-border overflow-hidden">
                 <div
                   className="h-full bg-blue-600 rounded-full"

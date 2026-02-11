@@ -41,7 +41,7 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
     };
 
     return (
-      <div ref={ref} className="max-w-[480px]">
+      <div ref={ref} className="max-w-[560px]">
         <h2 className="font-heading font-bold text-[24px] text-ink-900">
           {firstName ? `${firstName}, só` : "Só"} 2 perguntas muito rápidas
         </h2>
@@ -125,7 +125,7 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
 
         <p
           onClick={onSkip}
-          className="text-[14px] text-ink-400 cursor-pointer mt-2.5 text-center hover:underline"
+          className="text-[13px] text-ink-300 cursor-pointer mt-2.5 text-center hover:underline"
         >
           Saltar esta pergunta
         </p>

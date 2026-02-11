@@ -7,25 +7,25 @@ interface Props {
 
 const bullets = [
   {
-    title: "Imagem → vídeo com IA: do visual estático ao clip pronto",
-    sub: "Fluxo prático para transformar uma imagem em vídeo utilizável.",
+    title: "Imagem → vídeo: do estático ao clip",
+    sub: "Fluxo prático para gerar vídeo utilizável.",
   },
   {
-    title: "Ferramentas certas (gratuitas e pagas) — sem confusão",
-    sub: "Seleção curada por objetivo, para guardar e usar.",
+    title: "Ferramentas certas (sem confusão)",
+    sub: "Curadoria por objetivo: gratuitas e pagas.",
   },
   {
-    title: "Guia de prompts para vídeo (pronto a reutilizar)",
-    sub: "Estruturas testadas para consistência e melhor controlo do resultado.",
+    title: "Prompts para vídeo (reutilizáveis)",
+    sub: "Estruturas para consistência e controlo.",
   },
   {
     title: "Gravação incluída",
-    sub: "Rever e replicar sempre que necessário.",
+    sub: "Rever e replicar quando necessário.",
   },
 ];
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
-  <div className="max-w-[560px]">
+  <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] text-ink-900">
       Transformar imagens em vídeo com IA — ao vivo
     </h2>
@@ -35,7 +35,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
     {/* Masterclass Card */}
     <div
-      className="bg-background rounded-2xl p-6 max-w-[520px]"
+      className="bg-background rounded-2xl p-6 max-w-[560px]"
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
       {/* Tag */}
@@ -52,7 +52,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
           <p className="font-heading font-black text-[36px] text-ink-900 leading-none">€47 + IVA</p>
           <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março (quinta-feira)</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2 shrink-0 ml-3" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+        <div className="bg-amber-50 rounded-lg p-2 shrink-0 ml-3 whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] text-amber-700">Early bird: €47 + IVA</p>
           <p className="text-[14px] text-amber-600">Depois: €97 + IVA</p>
         </div>
@@ -76,7 +76,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
       {/* Event details */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {["💻 Online", "⏱ 3 horas", "👥 Máx. 30"].map((d) => (
+        {["💻 Online", "⏱ 3 horas"].map((d) => (
           <span key={d} className="text-[14px] text-ink-400">{d}</span>
         ))}
       </div>
@@ -111,7 +111,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
     {/* Skip link */}
     <p
       onClick={onSkip}
-      className="text-[14px] text-ink-400 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="text-[13px] text-ink-300 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
     >
       Continuar sem implementação guiada →
     </p>
