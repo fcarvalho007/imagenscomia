@@ -38,12 +38,9 @@ const ConfirmacaoExtras = ({ referralLink }: Props) => {
   };
 
   return (
-    <>
+    <div className="w-full flex flex-col items-center gap-3">
       {/* Bloco 1 — Referral Bónus */}
-      <div
-        className="w-full max-w-[560px] rounded-xl p-5 mt-5 text-left"
-        style={{ backgroundColor: "hsl(var(--amber-50, 48 96% 89%))", border: "1px solid rgba(217,119,6,0.25)" }}
-      >
+      <div className="w-full max-w-[560px] rounded-xl p-5 text-left bg-amber-50 border border-amber-200">
         <p className="font-heading font-bold text-[15px] text-amber-800 mb-2">
           🎁 Convida 2 amigos — ganha acesso ao Q&A Bónus de 25 Fev
         </p>
@@ -54,8 +51,7 @@ const ConfirmacaoExtras = ({ referralLink }: Props) => {
         </p>
         <button
           onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-amber-700 py-3 rounded-[10px] transition-colors bg-transparent"
-          style={{ border: "1px solid hsl(var(--amber-500, 38 92% 50%))" }}
+          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-amber-700 py-3 rounded-[10px] transition-colors bg-transparent border border-amber-400 hover:bg-amber-100"
         >
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           {copied ? "Link copiado ✓" : "Copiar o meu link de convite"}
@@ -65,7 +61,7 @@ const ConfirmacaoExtras = ({ referralLink }: Props) => {
       {/* Bloco 2 — Calendário */}
       <button
         onClick={generateICS}
-        className="w-full max-w-[560px] flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-ink-900 bg-background border border-ink-700 py-3 rounded-[10px] hover:bg-surface transition-colors mt-3"
+        className="w-full max-w-[560px] flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-ink-900 bg-background border border-ink-700 py-3 rounded-[10px] hover:bg-surface transition-colors"
       >
         📅 Guardar no calendário
       </button>
@@ -75,12 +71,11 @@ const ConfirmacaoExtras = ({ referralLink }: Props) => {
         href="https://www.instagram.com/frederico.m.carvalho/"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full max-w-[560px] flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors mt-2.5"
-        style={{ backgroundColor: "#E1306C" }}
+        className="w-full max-w-[560px] flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#E1306C] hover:bg-[#c72d5e]"
       >
         📸 Seguir no Instagram
       </a>
-    </>
+    </div>
   );
 };
 
