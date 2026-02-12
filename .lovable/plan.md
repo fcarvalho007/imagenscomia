@@ -1,86 +1,29 @@
 
 
-## Melhorias de SEO e Meta Tags
+## Correcoes Mobile: StickyTopBar e Hero
 
-### Problemas Identificados
+### Problemas (vistos no screenshot)
 
-1. **index.html - Structured Data com ano errado**: O JSON-LD tem `"startDate": "2025-02-18"` em vez de `2026-02-18`
-2. **index.html - Description redundante**: O texto tem "Gratuito" repetido no final da description que o utilizador colou
-3. **Paginas sem meta tags proprias**: `/upgrade`, `/confirmacao`, `/convites` nao definem `document.title` nem meta description -- herdam os da landing page, o que e mau para SEO e partilha social
-4. **Apenas `/live` define title dinamico** via useEffect, mas de forma incompleta (so title + description, sem OG)
-5. **Sem gestao centralizada de meta tags**: Cada pagina faz (ou nao) a sua propria logica
+1. **Botao da StickyTopBar cortado** - "Inscrever-me gratis" e demasiado longo e fica cortado a direita
+2. **Titulo do Hero quebra em 3 linhas** - "IA" fica sozinho na terceira linha porque `text-[32px]` e grande demais para ~375px
+3. **Barra sticky ocupa muito espaco horizontal** - o countdown + botao competem pelo espaco
 
-### Solucao
+### Alteracoes
 
-Criar um hook reutilizavel `usePageMeta` e aplica-lo em todas as paginas.
+#### A) `src/components/landing/StickyTopBar.tsx`
+- Mudar texto do botao de "Inscrever-me gratis" para "Inscricao Gratis"
+- Reduzir padding do botao em mobile: `px-5` para `max-sm:px-3`
+- Reduzir padding geral da barra: `py-2.5` para `max-sm:py-2`
+- Reduzir tamanho dos blocos do countdown em mobile: font de `text-[16px]` para `max-sm:text-[14px]`, min-width de `min-w-[34px]` para `max-sm:min-w-[28px]`
+- Reduzir gap entre elementos: `gap-3` para `max-sm:gap-2`
 
-### Alteracoes por ficheiro
+#### B) `src/components/landing/HeroSection.tsx`
+- Reduzir titulo de `text-[32px]` para `text-[28px]` em mobile para que "Cria Imagens Profissionais com IA" caiba em 2 linhas sem "IA" sozinho
 
-#### A) Novo ficheiro: `src/hooks/usePageMeta.ts`
-- Hook que recebe `{ title, description }` e actualiza `document.title` e a meta description via useEffect
-- Restaura os valores originais ao desmontar (cleanup)
-
-#### B) `index.html`
-- Corrigir ano no JSON-LD: `2025` para `2026`
-- Limpar description (remover "Gratuito" duplicado no final)
-- Actualizar `og:title` e `twitter:title` para consistencia
-
-#### C) `src/pages/Upsell.tsx`
-- Adicionar `usePageMeta({ title: "Upgrade — Webinar Imagens com IA", description: "Escolhe o teu plano e garante acesso Premium ou Masterclass." })`
-
-#### D) `src/pages/Confirmacao.tsx`
-- Adicionar `usePageMeta({ title: "Inscricao Confirmada — Webinar Imagens com IA", description: "A tua inscricao foi confirmada. Adiciona ao calendario e partilha." })`
-
-#### E) `src/pages/Convites.tsx`
-- Adicionar `usePageMeta({ title: "Programa de Convites — Webinar Imagens com IA", description: "Convida amigos e ganha premios exclusivos." })`
-
-#### F) `src/pages/WebinarLive.tsx`
-- Substituir useEffect manual pelo `usePageMeta`
-
-#### G) `src/pages/Index.tsx`
-- Adicionar `usePageMeta` com o title/description principal para garantir restauro correcto ao navegar entre paginas
-
-#### H) `src/pages/NotFound.tsx`
-- Adicionar `usePageMeta({ title: "Pagina nao encontrada", description: "..." })`
-
-### Detalhe Tecnico
-
-```typescript
-// src/hooks/usePageMeta.ts
-import { useEffect } from "react";
-
-export function usePageMeta({ title, description }: { title: string; description?: string }) {
-  useEffect(() => {
-    const prevTitle = document.title;
-    document.title = title;
-
-    let prevDesc: string | null = null;
-    if (description) {
-      const meta = document.querySelector('meta[name="description"]');
-      if (meta) {
-        prevDesc = meta.getAttribute("content");
-        meta.setAttribute("content", description);
-      }
-    }
-
-    return () => {
-      document.title = prevTitle;
-      if (description && prevDesc !== null) {
-        const meta = document.querySelector('meta[name="description"]');
-        if (meta) meta.setAttribute("content", prevDesc);
-      }
-    };
-  }, [title, description]);
-}
-```
+### Resumo
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/usePageMeta.ts` | Novo hook reutilizavel |
-| `index.html` | Corrigir ano JSON-LD, limpar description |
-| `src/pages/Upsell.tsx` | Adicionar usePageMeta |
-| `src/pages/Confirmacao.tsx` | Adicionar usePageMeta |
-| `src/pages/Convites.tsx` | Adicionar usePageMeta |
-| `src/pages/WebinarLive.tsx` | Substituir useEffect por usePageMeta |
-| `src/pages/Index.tsx` | Adicionar usePageMeta |
-| `src/pages/NotFound.tsx` | Adicionar usePageMeta |
+| `StickyTopBar.tsx` | Texto "Inscricao Gratis", countdown e botao mais compactos em mobile |
+| `HeroSection.tsx` | Titulo reduzido para `text-[28px]` para evitar 3 linhas |
+
