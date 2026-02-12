@@ -2,7 +2,6 @@ import { useMemo, useState, useCallback } from "react";
 import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
-import { genderEmoji } from "@/lib/genderDetection";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -18,19 +17,6 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
 };
-
-const GRADIENTS = [
-  "linear-gradient(135deg,#1e3a5f,#3b82f6)",
-  "linear-gradient(135deg,#064e3b,#10b981)",
-  "linear-gradient(135deg,#7c2d12,#f97316)",
-  "linear-gradient(135deg,#1e1b4b,#7c3aed)",
-  "linear-gradient(135deg,#0c4a6e,#0284c7)",
-  "linear-gradient(135deg,#134e4a,#0d9488)",
-];
-
-function getInitials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -236,7 +222,6 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
             <tbody>
               {paged.map((i) => {
                 const badge = PLAN_BADGE[i.plan];
-                const gradIdx = parseInt(i.id, 10) % GRADIENTS.length;
                 const isSelected = selected.has(i.id);
                 return (
                   <tr
@@ -248,15 +233,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(i.id)} aria-label={`Seleccionar ${i.nome}`} />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white font-heading font-bold text-[11px]"
-                          style={{ background: GRADIENTS[gradIdx] }}
-                        >
-                          {getInitials(i.nome)}
-                        </div>
-                        <span className="font-semibold text-[15px] text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
-                      </div>
+                      <span className="font-semibold text-[15px] text-ink-900">{i.nome}</span>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
                     <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>

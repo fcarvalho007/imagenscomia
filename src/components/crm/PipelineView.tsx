@@ -1,22 +1,12 @@
 import { useMemo, useState } from "react";
-import { Search, MessageSquare, StickyNote, ExternalLink, MessageCircle, ChevronDown } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
-import { genderEmoji } from "@/lib/genderDetection";
 
 interface PipelineViewProps {
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
 }
-
-const GRADIENTS = [
-  "linear-gradient(135deg,#1e3a5f,#3b82f6)",
-  "linear-gradient(135deg,#064e3b,#10b981)",
-  "linear-gradient(135deg,#7c2d12,#f97316)",
-  "linear-gradient(135deg,#1e1b4b,#7c3aed)",
-  "linear-gradient(135deg,#0c4a6e,#0284c7)",
-  "linear-gradient(135deg,#134e4a,#0d9488)",
-];
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
@@ -24,10 +14,6 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
 };
-
-function getInitials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -52,66 +38,22 @@ const COLUMNS: Column[] = [
 
 function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSelectInscrito: (i: Inscrito) => void }) {
   const badge = PLAN_BADGE[inscrito.plan];
-  const gradIdx = parseInt(inscrito.id, 10) % GRADIENTS.length;
   return (
     <div
-      className="bg-white border border-border rounded-[10px] p-3.5 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer relative group"
+      className="bg-white border border-border rounded-[10px] p-3 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer"
       onClick={() => onSelectInscrito(inscrito)}
     >
-      <div className="flex items-center gap-2">
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white font-heading font-bold text-[11px]"
-          style={{ background: GRADIENTS[gradIdx] }}
-        >
-          {getInitials(inscrito.nome)}
-        </div>
-        <span className="font-heading font-semibold text-[14px] text-ink-900 truncate">
-          {genderEmoji(inscrito.gender)} {inscrito.nome}
-        </span>
-      </div>
-      <p className="text-[11px] text-ink-400 mt-1.5 truncate">{inscrito.email}</p>
-      <div className="flex items-center gap-1.5 mt-2">
-        <span
-          className="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-          style={{ background: badge.bg, color: badge.color }}
-        >
-          {badge.label}
-        </span>
-        <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-surface text-ink-500">
-          Passo {inscrito.step_reached}/5
-        </span>
-      </div>
-      {inscrito.duvida && (
-        <div className="flex items-center gap-1 mt-2">
-          <MessageSquare size={12} className="text-ink-400 shrink-0" />
-          <span className="text-[11px] text-ink-400 truncate max-w-[160px]">
-            {inscrito.duvida}
-          </span>
-        </div>
-      )}
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-[11px] text-ink-400">{formatDate(inscrito.timestamp)}</span>
-        <div className="flex items-center gap-1">
-          <StickyNote
-            size={12}
-            style={{ color: inscrito.notas.length > 0 ? "hsl(var(--amber-500))" : "hsl(var(--ink-300))" }}
-          />
-          <ExternalLink size={12} className="text-ink-300 hover:text-blue-600" />
-        </div>
-      </div>
-      {inscrito.whatsapp && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank");
-          }}
-          className="absolute bottom-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-1 px-2 py-1 rounded-lg text-white text-[11px]"
-          style={{ background: "#25D366", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
-          title="WhatsApp directo"
-        >
-          <MessageCircle size={14} />
-        </button>
-      )}
+      <span className="font-heading font-semibold text-[14px] text-ink-900 truncate block">
+        {inscrito.nome}
+      </span>
+      <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
+      <span
+        className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full mt-1"
+        style={{ background: badge.bg, color: badge.color }}
+      >
+        {badge.label}
+      </span>
+      <p className="text-[11px] text-ink-400 mt-1">{formatDate(inscrito.timestamp)}</p>
     </div>
   );
 }
