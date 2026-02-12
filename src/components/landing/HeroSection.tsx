@@ -19,18 +19,18 @@ export const HeroSection = () => {
         src={heroBg}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.48] pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.60] pointer-events-none"
       />
       {/* Overlay for legibility */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.85) 25%, rgba(255,255,255,0.4) 55%, rgba(255,255,255,0.15) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.70) 25%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.10) 100%)",
         }}
       />
       {/* Top/bottom fade for smooth edges */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white/80 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-white/60 pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
         {/* Neon badge */}
@@ -50,41 +50,40 @@ export const HeroSection = () => {
 
         <motion.div {...fade(0.1)}>
           <h1 className="mb-3">
-            <span className="block font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900">
+            <span
+              className="block font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900"
+              style={{ textShadow: "0 1px 8px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,0.7)" }}
+            >
               Cria Imagens Profissionais com IA
             </span>
           </h1>
         </motion.div>
 
         <motion.div {...fade(0.15)}>
-          <p className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-6">
+          <p
+            className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-6"
+            style={{ textShadow: "0 1px 6px rgba(255,255,255,0.8)" }}
+          >
             Sem equipa criativa. Sem agência. Sem meses de tentativa e erro.
           </p>
         </motion.div>
 
         <motion.div {...fade(0.25)}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[720px] mx-auto mb-10">
             {[
-              {
-                icon: Calendar,
-                lines: ["ONLINE & AO VIVO", "18 Fev."],
-              },
-              { icon: Clock, text: "10h00 (Portugal)" },
-              { icon: Timer, text: "60 minutos" },
-              { icon: GraduationCap, text: "Gratuito" },
+              { icon: Calendar, label: "ONLINE & AO VIVO", value: "18 de Fevereiro" },
+              { icon: Clock, label: "HORÁRIO", value: "10h00 (Portugal)" },
+              { icon: Timer, label: "DURAÇÃO", value: "60 minutos" },
+              { icon: GraduationCap, label: "INVESTIMENTO", value: "Gratuito" },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
                 <div key={idx} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
                   <Icon className="w-6 h-6 text-blue-600 shrink-0" />
-                  {"lines" in item ? (
-                    <div className="text-center">
-                      <span className="block text-[14px] font-bold text-ink-700 uppercase tracking-wide">{item.lines![0]}</span>
-                      <span className="block text-[15px] font-semibold text-ink-500 mt-0.5">{item.lines![1]}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[16px] font-semibold text-ink-700">{item.text}</span>
-                  )}
+                  <div className="text-center">
+                    <span className="block text-[13px] font-bold text-ink-700 uppercase tracking-wide">{item.label}</span>
+                    <span className="block text-[15px] font-semibold text-ink-500 mt-0.5">{item.value}</span>
+                  </div>
                 </div>
               );
             })}
