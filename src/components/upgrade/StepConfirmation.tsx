@@ -31,7 +31,7 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
 
   return (
     <div className="max-w-[480px]">
-      <h2 className="font-heading font-bold text-[24px]" style={{ color: "hsl(var(--green-700))" }}>
+      <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px]" style={{ color: "hsl(var(--green-700))" }}>
         Estás inscrito! Até dia 18 🎉
       </h2>
 
@@ -149,7 +149,7 @@ const VariantPayment = ({
     <div className="max-w-[480px]">
       {showRedirect && <RedirectOverlay />}
 
-      <h2 className="font-heading font-bold text-[24px] text-ink-900">{title}</h2>
+      <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">{title}</h2>
 
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mt-5 mb-5">
         <div className="space-y-2">

@@ -42,10 +42,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
 
     return (
       <div ref={ref} className="max-w-[560px]">
-        <h2 className="font-heading font-bold text-[24px] text-ink-900">
+        <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
           {firstName ? `${firstName}, só` : "Só"} 2 perguntas muito rápidas
         </h2>
-        <p className="text-[17px] text-ink-500 mt-2 mb-7">
+        <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-7">
           Para garantir que o webinar cobre o que precisas.
         </p>
 
@@ -123,9 +123,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
           Próximo passo →
         </button>
 
+        <div className="w-full h-px bg-border mt-6 mb-3" />
         <p
           onClick={onSkip}
-          className="text-[13px] text-ink-300 cursor-pointer mt-2.5 text-center hover:underline"
+          className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
         >
           Saltar esta pergunta
         </p>
