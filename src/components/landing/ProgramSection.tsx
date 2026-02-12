@@ -5,36 +5,36 @@ import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 const systems = [
   {
     num: "01",
-    title: "Estado da Arte: IA para Imagens (2026)",
+    title: "Ferramentas certas (sem confusão)",
     borderColor: "border-l-blue-600",
-    desc: "Antes de escolher a ferramenta, convém perceber o \"tabuleiro\": modelos diferentes, resultados diferentes.",
+    desc: "Antes de escolher a ferramenta, convém perceber o que funciona hoje.",
     bullets: [
-      "Benchmarks simples para distinguir \"amador\" de \"publicável\"",
-      "Lista curada de ferramentas gratuitas e pagas (para guardar nos favoritos)",
+      "Comparações rápidas entre ferramentas gratuitas e pagas",
+      "Lista curada para guardar nos favoritos",
     ],
-    deliverable: "mapa rápido de decisão + atalhos para poupar semanas",
+    deliverable: "Mapa de decisão rápido para escolher a ferramenta certa.",
   },
   {
     num: "02",
-    title: "Prompting Profissional: do Briefing ao Resultado",
+    title: "Instruções profissionais (do briefing ao resultado)",
     borderColor: "border-l-[#0891B2]",
-    desc: "Um prompt não é inspiração. Em contexto empresarial, é especificação — com variáveis que mudam tudo.",
+    desc: "Em contexto empresarial, uma instrução bem escrita muda tudo.",
     bullets: [
-      "Framework prático para transformar briefing em prompt reutilizável",
-      "Checklist anti-erros (o que faz a IA falhar — e como corrigir)",
+      "Passo a passo para transformar briefing em instrução reutilizável",
+      "Checklist anti-erros: o que faz a IA falhar e como corrigir",
     ],
-    deliverable: "prompts-base e um método consistente para qualquer marca",
+    deliverable: "Instruções-base e um método consistente para qualquer marca.",
   },
   {
     num: "03",
-    title: "Imagens para Redes Sociais e Anúncios (Prontas a Publicar)",
+    title: "Imagens para redes sociais e anúncios (prontas a usar)",
     borderColor: "border-l-green-600",
-    desc: "Criar imagens é fácil. Criar imagens que funcionam em social e anúncios é outra conversa.",
+    desc: "Criar imagens é fácil. Criar imagens que funcionam é outra conversa.",
     bullets: [
-      "Do objetivo ao criativo: formatos, variações e consistência visual",
-      "Como sair com peças publicáveis em minutos (sem parecer stock)",
+      "Do objetivo ao criativo: formatos, variações e consistência",
+      "Como sair com peças prontas a publicar em minutos",
     ],
-    deliverable: "processo simples para produzir criativos com qualidade e coerência",
+    deliverable: "Processo simples para produzir criativos com qualidade.",
   },
 ];
 
@@ -48,10 +48,10 @@ export const ProgramSection = () => {
           PROGRAMA
         </p>
         <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
-          O que vais aprender em 75 minutos
+          O que se aprende em 75 minutos
         </h2>
         <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
-          3 sistemas práticos. Demos ao vivo. Sais a criar imagens no dia seguinte.
+          3 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
         </p>
       </ScrollReveal>
 
@@ -78,7 +78,7 @@ export const ProgramSection = () => {
                     ))}
                   </div>
                   <p className="text-[14px] font-medium text-green-700 bg-green-50 border border-green-100 rounded-md px-3 py-1.5 inline-block">
-                    No fim deste bloco, ficas com: {s.deliverable}
+                    {s.deliverable}
                   </p>
                 </div>
               </div>

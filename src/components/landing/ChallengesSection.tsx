@@ -5,6 +5,8 @@ const challenges = [
   { num: "02", title: "Sem consistência visual entre publicações" },
   { num: "03", title: "Difícil saber qual ferramenta usar para quê" },
   { num: "04", title: "Mais volume sem aumentar equipa" },
+  { num: "05", title: "Precisar de algo rapidamente e o designer vai levar horas ou dias" },
+  { num: "06", title: "Não querer gastar dinheiro e perder tempo em sessões fotográficas" },
 ];
 
 export const ChallengesSection = () => (
@@ -12,7 +14,7 @@ export const ChallengesSection = () => (
     <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
       <ScrollReveal>
         <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-12">
-          Algum disto soa familiar?
+          Isto soa-te familiar?
         </h2>
       </ScrollReveal>
 
@@ -29,7 +31,7 @@ export const ChallengesSection = () => (
 
       <ScrollReveal delay={0.4}>
         <p className="text-center text-[17px] text-ink-500 mt-8">
-          Se te identificaste com pelo menos 2 destes problemas, este webinar vai poupar-te meses de tentativa e erro.
+          Identificação com pelo menos 2 destes problemas? Este webinar poupa meses de tentativa e erro.
         </p>
       </ScrollReveal>
 

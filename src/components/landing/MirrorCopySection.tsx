@@ -1,9 +1,9 @@
 import { ScrollReveal } from "./ScrollReveal";
 
 const points = [
-  "Precisas de imagens profissionais para redes sociais e anúncios sem depender de designer",
-  "Sabes que a IA pode fazer muito mais, mas ninguém te mostrou como aplicar ao teu negócio",
-  "Queres consistência visual na tua marca sem orçamento para agência criativa",
+  "Para quem precisa de imagens para redes sociais e anúncios sem depender de terceiros.",
+  "Para quem sabe que a IA pode fazer mais, mas ninguém mostrou como aplicar ao negócio.",
+  "Para quem quer consistência visual na marca sem orçamento de agência.",
 ];
 
 export const MirrorCopySection = () => (

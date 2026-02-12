@@ -5,13 +5,7 @@ const credentials = [
   { emoji: "🎓", title: "Professor Universitário", sub: "Universidade de Coimbra (FEUC) · Univ. Europeia (IPAM) · Univ. Autónoma · Univ. Aveiro" },
   { emoji: "📚", title: "Autor", sub: "\"Guia Essencial SEO\" e Co-Autor \"Marketing Digital para Empresas\"" },
   { emoji: "🎙️", title: "Host Semanal · RFM", sub: "Podcast Marketing por Idiotas" },
-  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC · 700+ empresas · L'Oréal · BMW · 3M" },
-];
-
-const stats = [
-  { number: "700+", label: "empresas" },
-  { number: "20", label: "anos de experiência" },
-  { number: "1 194", label: "avaliações 5★ Google" },
+  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC consultoria com auditoria digital a mais de 700+ empresas. L'Oréal. BMW. 3M" },
 ];
 
 export const PresenterSection = () => (
@@ -62,7 +56,7 @@ export const PresenterSection = () => (
             <div className="border-t border-border mb-7" />
 
             {/* Credentials grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {credentials.map((c, i) => (
                 <div
                   key={i}
@@ -72,21 +66,6 @@ export const PresenterSection = () => (
                   <div>
                     <p className="font-heading font-semibold text-[14px] text-ink-900">{c.title}</p>
                     <p className="text-[14px] text-ink-500">{c.sub}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Stat bar */}
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex justify-between flex-wrap gap-3">
-              {stats.map((s, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  {i > 0 && (
-                    <div className="w-px h-8 bg-blue-100 self-center" />
-                  )}
-                  <div className="flex flex-col items-center text-center px-1">
-                    <span className="font-heading font-extrabold text-[22px] text-blue-600">{s.number}</span>
-                    <span className="text-[14px] text-ink-500 mt-[1px]">{s.label}</span>
                   </div>
                 </div>
               ))}

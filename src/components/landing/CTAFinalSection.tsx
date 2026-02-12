@@ -23,8 +23,14 @@ export const CTAFinalSection = () => {
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <p className="text-[18px] text-white/65 mb-10">
+          <p className="text-[18px] text-white/65 mb-6">
             75 minutos. Sem custo. Método pronto a usar no dia seguinte.
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal delay={0.15}>
+          <p className="text-[16px] text-white/50 italic mb-10 max-w-[600px] mx-auto">
+            Sessão especial preparada com poucos dias de antecedência para manter o grupo prático. Se fizer sentido, vale a pena convidar um colega ou amigo.
           </p>
         </ScrollReveal>
 
