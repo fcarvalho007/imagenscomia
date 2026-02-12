@@ -1,54 +1,92 @@
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Copy, Check, Linkedin, Twitter } from "lucide-react";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
+import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 
+const SITE_URL = "https://imagenscomia.lovable.app";
+const SHARE_TEXT = `Vou assistir ao webinar gratuito "${WEBINAR_CONFIG.title}" com Frederico Carvalho! 🚀`;
 
-interface Props {
-  referralLink: string;
-}
-
-const ConfirmacaoExtras = ({ referralLink }: Props) => {
+const ConfirmacaoExtras = () => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(SITE_URL);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(SITE_URL)}`;
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(SITE_URL)}`;
+
   return (
-    <div className="w-full flex flex-col items-center gap-3">
-      {/* Bloco 1 — Referral Bónus */}
-      <div className="w-full max-w-[560px] rounded-xl p-5 text-left bg-amber-50 border border-amber-200">
-        <p className="font-heading font-bold text-[15px] text-amber-800 mb-2">
-          🎁 Convida 2 amigos — ganha acesso ao Q&A Bónus de 25 Fev
-        </p>
-        <p className="text-[14px] text-amber-700 leading-relaxed mb-4">
-          Partilha o teu link com 2 amigos. Quando ambos se inscreverem,
-          entras gratuitamente na sessão extra de Q&A com Frederico
-          no dia 25 de Fevereiro.
-        </p>
-        <button
-          onClick={handleCopy}
-          className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-amber-700 py-3 rounded-[10px] transition-colors bg-transparent border border-amber-400 hover:bg-amber-100"
+    <div className="w-full flex flex-col gap-4">
+      {/* Passo 1 — Instagram */}
+      <div className="flex items-start gap-3">
+        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">1</span>
+        <a
+          href="https://www.instagram.com/frederico.m.carvalho/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#E1306C] hover:bg-[#c72d5e]"
         >
-          {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-          {copied ? "Link copiado ✓" : "Copiar o meu link de convite"}
-        </button>
+          📸 Seguir no Instagram
+        </a>
       </div>
 
-      {/* Bloco 2 — Calendário */}
-      <WebinarCalendarButton className="w-full max-w-[560px]" />
+      {/* Passo 2 — Calendário */}
+      <div className="flex items-start gap-3">
+        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">2</span>
+        <WebinarCalendarButton className="flex-1" />
+      </div>
 
-      {/* Bloco 3 — Instagram */}
-      <a
-        href="https://www.instagram.com/frederico.m.carvalho/"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full max-w-[560px] flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#E1306C] hover:bg-[#c72d5e]"
-      >
-        📸 Seguir no Instagram
-      </a>
+      {/* Passo 3 — Social Share Card */}
+      <div className="flex items-start gap-3">
+        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">3</span>
+        <div className="flex-1 rounded-xl border border-border bg-surface p-4">
+          <p className="font-heading font-semibold text-[13px] text-ink-500 mb-3">
+            Partilha com os teus amigos
+          </p>
+
+          {/* Mini social card preview */}
+          <div className="rounded-lg bg-ink-50 border border-ink-100 p-3 mb-3">
+            <p className="font-heading font-bold text-[14px] text-ink-800 leading-tight">
+              {WEBINAR_CONFIG.title}
+            </p>
+            <p className="text-[12px] text-ink-400 mt-1">
+              {WEBINAR_CONFIG.metaLine} · Frederico Carvalho
+            </p>
+          </div>
+
+          {/* Share buttons */}
+          <div className="flex gap-2">
+            <a
+              href={linkedInUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white py-2.5 rounded-lg bg-[#0A66C2] hover:bg-[#004182] transition-colors"
+            >
+              <Linkedin className="w-4 h-4" />
+              LinkedIn
+            </a>
+            <a
+              href={twitterUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-white py-2.5 rounded-lg bg-[#1DA1F2] hover:bg-[#0d8bd9] transition-colors"
+            >
+              <Twitter className="w-4 h-4" />
+              X / Twitter
+            </a>
+            <button
+              onClick={handleCopyLink}
+              className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-ink-600 py-2.5 rounded-lg border border-ink-200 hover:bg-ink-50 transition-colors"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? "Copiado!" : "Copiar link"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
