@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Loader2, Copy, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import livroGuiaSeo from "@/assets/livro-guia-seo.png";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import type { OrderState } from "@/pages/Upsell";
 import { formatPrice, getTotal } from "@/pages/Upsell";
@@ -50,7 +51,7 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
         <div className="flex gap-4 mb-3.5">
           <img
-            src="/guia-essencial-seo.png"
+            src={livroGuiaSeo}
             alt="Guia Essencial SEO"
             className="w-auto h-[120px] rounded-lg shadow-sm shrink-0 object-contain"
           />
