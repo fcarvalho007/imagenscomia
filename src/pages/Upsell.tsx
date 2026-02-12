@@ -39,6 +39,8 @@ const Upsell = () => {
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
   const [duvida, setDuvida] = useState("");
+  const [duvidas, setDuvidas] = useState<string[]>([]);
+  const [outraDuvida, setOutraDuvida] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -126,7 +128,10 @@ const Upsell = () => {
               {step === 2 && (
                 <motion.div key="s2" variants={stepVariants} initial="initial" animate="animate" exit="exit">
                   <StepPersonalization
-                    duvida={duvida}
+                    duvidas={duvidas}
+                    setDuvidas={setDuvidas}
+                    outraDuvida={outraDuvida}
+                    setOutraDuvida={setOutraDuvida}
                     setDuvida={setDuvida}
                     onNext={() => advanceStep(3)}
                     onSkip={() => advanceStep(3)}
