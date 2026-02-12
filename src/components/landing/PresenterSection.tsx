@@ -50,7 +50,7 @@ export const PresenterSection = () => (
               Frederico Carvalho
             </h2>
             <p className="font-medium text-[17px] text-ink-500 leading-[1.5] mb-7">
-              20 anos a implementar marketing digital e IA em empresas portuguesas
+              20 anos de experiência em marketing digital para empresas
             </p>
 
             <div className="border-t border-border mb-7" />

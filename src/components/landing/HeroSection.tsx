@@ -1,4 +1,4 @@
-import { Play, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
+import { Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import heroBg from "@/assets/hero-bg.jpeg";
@@ -33,10 +33,19 @@ export const HeroSection = () => {
       <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white/80 pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
+        {/* Neon badge */}
         <motion.div {...fade(0.05)}>
-          <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 mb-4">
-            WEBINAR GRATUITO · 18 FEVEREIRO · 10H00
-          </p>
+          <div className="flex justify-center mb-5">
+            <span
+              className="inline-block bg-white/90 backdrop-blur-sm font-heading font-bold text-[13px] uppercase tracking-[0.12em] text-blue-600 px-5 py-2 rounded-full border border-blue-100"
+              style={{
+                boxShadow:
+                  "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
+              }}
+            >
+              WEBINAR GRATUITO
+            </span>
+          </div>
         </motion.div>
 
         <motion.div {...fade(0.1)}>
@@ -54,35 +63,35 @@ export const HeroSection = () => {
         </motion.div>
 
         <motion.div {...fade(0.25)}>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-10">
             {[
-              { icon: Calendar, text: "Ao vivo — 18 Fevereiro" },
+              {
+                icon: Calendar,
+                lines: ["ONLINE & AO VIVO", "18 Fev."],
+              },
               { icon: Clock, text: "10h00 (Portugal)" },
-              { icon: Timer, text: "75 minutos" },
+              { icon: Timer, text: "60 minutos" },
               { icon: GraduationCap, text: "Gratuito" },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
-                <Icon className="w-6 h-6 text-blue-600 shrink-0" />
-                <span className="text-[16px] font-semibold text-ink-700">{text}</span>
-              </div>
-            ))}
+            ].map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <div key={idx} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
+                  <Icon className="w-6 h-6 text-blue-600 shrink-0" />
+                  {"lines" in item ? (
+                    <div className="text-center">
+                      <span className="block text-[14px] font-bold text-ink-700 uppercase tracking-wide">{item.lines![0]}</span>
+                      <span className="block text-[15px] font-semibold text-ink-500 mt-0.5">{item.lines![1]}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[16px] font-semibold text-ink-700">{item.text}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </motion.div>
 
         <motion.div {...fade(0.3)}>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="max-w-[640px] mx-auto aspect-video bg-surface rounded-xl border border-border shadow-card-md flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-card-lg transition-shadow mb-10"
-          >
-            <div className="w-[60px] h-[60px] rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
-              <Play className="w-6 h-6 text-white ml-1" fill="white" />
-            </div>
-            <p className="text-[14px] text-ink-400">Pré-visualização · 90 segundos</p>
-          </motion.div>
-        </motion.div>
-
-        <motion.div {...fade(0.4)}>
           <div id="inscrever" className="flex justify-center">
             <motion.button
               onClick={() => open("free")}
@@ -98,7 +107,7 @@ export const HeroSection = () => {
           </p>
         </motion.div>
 
-        <motion.div {...fade(0.45)}>
+        <motion.div {...fade(0.35)}>
           <div className="flex justify-center mt-4">
             <div className="inline-flex items-center gap-[10px] bg-white border border-border rounded-xl px-[18px] py-[10px] shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
               <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">

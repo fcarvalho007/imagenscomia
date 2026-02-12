@@ -11,7 +11,7 @@ export const WebinarContent = () => (
     {/* What you'll learn */}
     <section>
       <h2 className="font-heading font-bold text-[20px] sm:text-[22px] text-ink-900 mb-5">
-        O que vai aprender <span className="text-ink-400 font-normal text-[16px]">(em 75 min)</span>
+        O que vai aprender <span className="text-ink-400 font-normal text-[16px]">(em 60 min)</span>
       </h2>
       <ul className="space-y-3">
         {bullets.map((text, i) => (
