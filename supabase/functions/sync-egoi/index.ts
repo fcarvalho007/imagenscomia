@@ -54,7 +54,7 @@ serve(async (req) => {
     console.log(`E-goi response status: ${response.status}, body: ${responseText}`);
 
     if (!response.ok) {
-      // If contact already exists (409), add tag via PATCH
+      // If contact already exists (409), add tag
       if (response.status === 409) {
         console.log("Contact already exists in E-goi, attempting to add tag...");
 
@@ -67,27 +67,54 @@ serve(async (req) => {
         }
 
         if (contactId) {
-          // Attach tag to existing contact
-          const tagResponse = await fetch(
-            `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
+          // First, look up the numeric tag ID by name
+          const tagSearchResp = await fetch(
+            `https://api.egoiapp.com/tags?name=${encodeURIComponent(TAG)}`,
             {
-              method: "POST",
-              headers: {
-                "Apikey": apiKey,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                tag_id: TAG,
-                contacts: [contactId],
-              }),
+              method: "GET",
+              headers: { "Apikey": apiKey },
             }
           );
+          const tagSearchText = await tagSearchResp.text();
+          console.log(`E-goi tag search response: ${tagSearchResp.status}, body: ${tagSearchText}`);
 
-          const tagText = await tagResponse.text();
-          console.log(`E-goi attach-tag response: ${tagResponse.status}, body: ${tagText}`);
+          let numericTagId: number | null = null;
+          try {
+            const tagData = JSON.parse(tagSearchText);
+            // E-goi returns { items: [{ tag_id, name, ... }] } or an array
+            const items = tagData?.items || tagData;
+            if (Array.isArray(items) && items.length > 0) {
+              numericTagId = items[0].tag_id;
+            }
+          } catch {
+            console.error("Could not parse tag search response");
+          }
 
-          if (!tagResponse.ok) {
-            console.error(`Failed to attach tag to existing contact ${contactId}`);
+          if (numericTagId) {
+            // Attach tag using numeric ID
+            const tagResponse = await fetch(
+              `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
+              {
+                method: "POST",
+                headers: {
+                  "Apikey": apiKey,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  tag_id: numericTagId,
+                  contacts: [contactId],
+                }),
+              }
+            );
+
+            const tagText = await tagResponse.text();
+            console.log(`E-goi attach-tag response: ${tagResponse.status}, body: ${tagText}`);
+
+            if (!tagResponse.ok) {
+              console.error(`Failed to attach tag (id=${numericTagId}) to contact ${contactId}`);
+            }
+          } else {
+            console.error(`Could not find numeric tag_id for tag name "${TAG}"`);
           }
         }
 

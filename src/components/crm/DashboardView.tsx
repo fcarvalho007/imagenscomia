@@ -47,6 +47,7 @@ export default function DashboardView({ inscritos, onSelectInscrito }: Dashboard
     // Sources
     const srcMap: Record<string, number> = {};
     active.forEach((i) => i.source.forEach((s) => {
+      if (s === "SKIPPED") return;
       const key = abbreviateSource(s);
       srcMap[key] = (srcMap[key] || 0) + 1;
     }));
@@ -58,7 +59,7 @@ export default function DashboardView({ inscritos, onSelectInscrito }: Dashboard
     active.forEach((i) => { planCounts[i.plan]++; });
 
     // Duvidas
-    const comDuvida = active.filter((i) => i.duvida !== "");
+    const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
 
     const nPremium = planCounts.premium;
     const nMC = planCounts.masterclass;

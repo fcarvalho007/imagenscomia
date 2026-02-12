@@ -45,7 +45,8 @@ export function useInscritos() {
       const { data, error } = await supabase
         .from("registrations")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(5000);
 
       if (error) {
         console.error("Error fetching registrations:", error);

@@ -32,7 +32,7 @@ const Upsell = () => {
   const [orderState, setOrderState] = useState<OrderState>({ premium: false, masterclass: false });
   const [userData] = useState({
     nome: searchParams.get("name") || "",
-    email: searchParams.get("email") || "",
+    email: (searchParams.get("email") || "").toLowerCase().trim(),
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
