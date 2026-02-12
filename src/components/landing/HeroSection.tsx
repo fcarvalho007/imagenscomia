@@ -19,14 +19,14 @@ export const HeroSection = () => {
         src={heroBg}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.35] pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.48] pointer-events-none"
       />
       {/* Overlay for legibility */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.92) 30%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0.25) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.85) 25%, rgba(255,255,255,0.4) 55%, rgba(255,255,255,0.15) 100%)",
         }}
       />
       {/* Top/bottom fade for smooth edges */}
