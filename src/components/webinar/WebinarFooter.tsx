@@ -6,7 +6,7 @@ export const WebinarFooter = () => (
       </p>
       <div className="flex gap-5 text-[13px] text-ink-400">
         <a href="#" className="hover:text-ink-700 transition-colors">Privacidade</a>
-        <a href="#" className="hover:text-ink-700 transition-colors">Termos</a>
+        <a href="/termos" className="hover:text-ink-700 transition-colors">Termos</a>
       </div>
     </div>
   </footer>

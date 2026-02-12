@@ -265,7 +265,7 @@ const CaptureView = ({
       <span className="text-[14px] text-ink-400 leading-relaxed">
         Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing do Frederico Carvalho. Os dados pessoais serão tratados pela sua empresa Fomentar Sonhos.{" "}
         <a href="#" className="underline hover:text-ink-600">Política de Privacidade</a> e{" "}
-        <a href="#" className="underline hover:text-ink-600">Termos e Condições</a>.
+        <a href="/termos" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink-600">Termos e Condições</a>.
       </span>
     </label>
 
