@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
+import { supabase } from "@/integrations/supabase/client";
 
 interface DashboardViewProps {
   inscritos: Inscrito[];
@@ -289,8 +290,99 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       </div>
 
+      {/* Leaderboard de Convites */}
+      <LeaderboardConvites />
+
       {/* Para Fazer Hoje */}
       <ParaFazerHoje inscritos={inscritos} onSelectInscrito={onSelectInscrito} />
+    </div>
+  );
+}
+
+/* ── Leaderboard de Convites ── */
+
+interface LeaderboardEntry {
+  name: string;
+  count: number;
+  referralCode: string;
+}
+
+const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
+
+function LeaderboardConvites() {
+  const [data, setData] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetch() {
+      try {
+        const { data: res } = await supabase.functions.invoke("get-leaderboard");
+        if (Array.isArray(res)) setData(res);
+      } catch (e) {
+        console.error("Leaderboard error:", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetch();
+  }, []);
+
+  const habilitados = data.filter((d) => d.count >= 2).length;
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5 mt-5">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Trophy size={18} className="text-amber-500" />
+          <h3 className="font-heading font-bold text-sm text-ink-900">Leaderboard de Convites</h3>
+        </div>
+        {habilitados > 0 && (
+          <span className="flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-full bg-green-50 text-green-700">
+            <BookOpen size={12} />
+            {habilitados} habilitado{habilitados !== 1 ? "s" : ""} ao livro
+          </span>
+        )}
+      </div>
+      <p className="text-xs text-ink-400 mb-4">Quem convidou 2+ amigos ganha o livro "Guia Essencial SEO"</p>
+
+      {loading ? (
+        <p className="text-[13px] text-ink-400 py-6 text-center">A carregar...</p>
+      ) : data.length === 0 ? (
+        <p className="text-[13px] text-ink-400 py-6 text-center">Ainda sem convites registados.</p>
+      ) : (
+        <div className="space-y-0">
+          {data.map((entry, idx) => {
+            const eligible = entry.count >= 2;
+            return (
+              <div
+                key={entry.referralCode}
+                className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded ${idx < data.length - 1 ? "border-b border-border" : ""} ${eligible ? "bg-green-50/50" : ""}`}
+              >
+                {/* Position / Medal */}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{
+                  background: idx < 3 ? MEDAL_COLORS[idx] : "hsl(var(--surface))",
+                  color: idx < 3 ? "#fff" : "hsl(var(--ink-500))",
+                }}>
+                  {idx + 1}
+                </div>
+
+                {/* Name */}
+                <span className="flex-1 text-[14px] font-semibold text-ink-800">{entry.name}</span>
+
+                {/* Count */}
+                <span className="font-heading font-bold text-[14px] text-ink-700">{entry.count} <span className="text-[11px] font-normal text-ink-400">convite{entry.count !== 1 ? "s" : ""}</span></span>
+
+                {/* Eligible check */}
+                {eligible && (
+                  <span className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center shrink-0">
+                    <Check size={12} className="text-white" />
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
