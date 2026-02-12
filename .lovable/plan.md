@@ -1,31 +1,49 @@
 
 
-## Correcao: EuPago API Key Invalid
+## Correcao: Campo de resposta da EuPago incorreto
 
-### Diagnostico
+### Problema
 
-O erro `APIKEY_INVALID` ocorre apesar de:
-- O codigo estar correcto (header `Authorization: ApiKey xxx`)
-- O endpoint estar correcto (`clientes.eupago.pt` para producao)
-- O secret `EUPAGO_API_KEY` existir no sistema
+A funcao `create-payment` recebe resposta de sucesso da EuPago (status 200, `transactionStatus: "Success"`), mas os nomes dos campos na resposta JSON sao diferentes do que o codigo espera:
+- O codigo procura `data.paymentLink` e `data.reference`
+- A EuPago provavelmente devolve campos com nomes diferentes (ex: `url`, `redirectUrl`, `payment_url`)
+- Como os campos nao existem, `JSON.stringify` omite-os e devolve `{}` ao cliente
+- O cliente ve "Link de pagamento nao recebido"
 
-A causa mais provavel e que o valor do secret foi guardado com formatacao incorrecta (espacos extra, quebras de linha, ou caracteres invisíveis). Isto acontece frequentemente quando se copia/cola chaves.
+### Solucao (2 passos)
 
-### Solucao
+**Passo 1 - Adicionar logging completo da resposta EuPago**
 
-1. **Re-guardar o secret `EUPAGO_API_KEY`** com o valor exacto `1e04-056e-7941-e503-7239`, garantindo que nao ha espacos antes ou depois.
+Modificar `supabase/functions/create-payment/index.ts` para registar a resposta completa da API antes de extrair campos:
 
-2. **Re-deploy da edge function `create-payment`** para que apanhe o valor actualizado do secret.
+```typescript
+const data = await eupagoResponse.json();
+console.log("EuPago full response:", JSON.stringify(data));
+```
 
-3. **Testar o pagamento** chamando a funcao directamente para confirmar que a EuPago aceita a chave.
+Isto permite ver os nomes exactos dos campos na resposta.
+
+**Passo 2 - Corrigir o mapeamento dos campos**
+
+Depois de confirmar os nomes dos campos, actualizar a linha de retorno para usar os campos correctos. Provavelmente a resposta usa campos como `url` ou `redirectUrl` em vez de `paymentLink`:
+
+```typescript
+return new Response(
+  JSON.stringify({
+    paymentLink: data.url || data.redirectUrl || data.paymentLink,
+    reference: data.reference || data.referencia
+  }),
+  ...
+);
+```
 
 ### Alteracoes tecnicas
 
-Nenhuma alteracao de codigo e necessaria. Apenas:
-
-| Accao | Detalhe |
+| Ficheiro | Alteracao |
 |---|---|
-| Actualizar secret | `EUPAGO_API_KEY` = `1e04-056e-7941-e503-7239` (sem espacos) |
-| Re-deploy | Edge function `create-payment` |
-| Teste | Chamar `create-payment` com um plano valido e confirmar resposta 200 |
+| `supabase/functions/create-payment/index.ts` | Adicionar `console.log` da resposta completa + corrigir nomes dos campos de resposta |
+
+### Verificacao
+
+Apos o deploy, testar o fluxo de pagamento para confirmar que o link EuPago e devolvido correctamente e o redirect funciona.
 
