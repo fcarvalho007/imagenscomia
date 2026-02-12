@@ -1,29 +1,27 @@
 
+## Remover Indicador Visual e Alterar Texto do Botão no StickyTopBar
 
-## Correcoes Mobile: StickyTopBar e Hero
+### Problemas Identificados
+1. **Luz vermelha piscante**: O StickyTopBar tem dois elementos `<span>` com `bg-red-500 animate-pulse` que piscam
+   - Uma versão para desktop (hidden em mobile) na linha 26
+   - Uma versão para mobile (hidden em desktop) na linha 31
+2. **Texto do botão**: Precisa mudar de "Inscrição Grátis →" para "Quero inscrever-me!"
 
-### Problemas (vistos no screenshot)
+### Solução
 
-1. **Botao da StickyTopBar cortado** - "Inscrever-me gratis" e demasiado longo e fica cortado a direita
-2. **Titulo do Hero quebra em 3 linhas** - "IA" fica sozinho na terceira linha porque `text-[32px]` e grande demais para ~375px
-3. **Barra sticky ocupa muito espaco horizontal** - o countdown + botao competem pelo espaco
+#### `src/components/landing/StickyTopBar.tsx`
+- **Remover linha 26**: O `<span>` com `bg-red-500 animate-pulse` que aparece antes de "AO VIVO · 18 FEV · 10H00"
+- **Remover linha 31**: O `<span>` com `bg-red-500 animate-pulse mr-1` que aparece antes do countdown em mobile
+- **Alterar linha 45**: Mudar texto do botão de `"Inscrição Grátis →"` para `"Quero inscrever-me!"`
 
-### Alteracoes
+### Resultado Final
+O StickyTopBar terá:
+- ✅ Sem indicadores visuais vermelhos piscantes (em desktop e mobile)
+- ✅ Botão com novo texto "Quero inscrever-me!" sem seta
+- ✅ Countdown timer mantém-se intacto
+- ✅ Texto "AO VIVO · 18 FEV · 10H00" mantém-se em desktop
 
-#### A) `src/components/landing/StickyTopBar.tsx`
-- Mudar texto do botao de "Inscrever-me gratis" para "Inscricao Gratis"
-- Reduzir padding do botao em mobile: `px-5` para `max-sm:px-3`
-- Reduzir padding geral da barra: `py-2.5` para `max-sm:py-2`
-- Reduzir tamanho dos blocos do countdown em mobile: font de `text-[16px]` para `max-sm:text-[14px]`, min-width de `min-w-[34px]` para `max-sm:min-w-[28px]`
-- Reduzir gap entre elementos: `gap-3` para `max-sm:gap-2`
-
-#### B) `src/components/landing/HeroSection.tsx`
-- Reduzir titulo de `text-[32px]` para `text-[28px]` em mobile para que "Cria Imagens Profissionais com IA" caiba em 2 linhas sem "IA" sozinho
-
-### Resumo
-
-| Ficheiro | Alteracao |
+| Ficheiro | Alteração |
 |---|---|
-| `StickyTopBar.tsx` | Texto "Inscricao Gratis", countdown e botao mais compactos em mobile |
-| `HeroSection.tsx` | Titulo reduzido para `text-[28px]` para evitar 3 linhas |
+| `src/components/landing/StickyTopBar.tsx` | Remover 2 spans vermelhos piscantes, alterar texto botão |
 
