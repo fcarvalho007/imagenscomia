@@ -2,23 +2,12 @@ import { Play, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-import logoImagens from "@/assets/logo-imagens-com-ia.png";
 
 export const HeroSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section className="relative py-16 md:py-24 bg-background overflow-hidden">
-      {/* Logo 3D — background upper right */}
-      <motion.img
-        src={logoImagens}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-8 -right-12 md:-top-4 md:-right-8 w-[260px] md:w-[380px] lg:w-[440px] opacity-[0.07] select-none"
-        initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
-        animate={{ opacity: 0.07, scale: 1, rotate: 0 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
+    <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
         <ScrollReveal delay={0.05}>
           <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 mb-4">
@@ -61,7 +50,7 @@ export const HeroSection = () => {
           <motion.div
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="max-w-[640px] mx-auto aspect-video bg-surface rounded-xl border border-border shadow-card-md flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-card-lg transition-shadow"
+            className="max-w-[640px] mx-auto aspect-video bg-surface rounded-xl border border-border shadow-card-md flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-card-lg transition-shadow mb-6"
           >
             <div className="w-[60px] h-[60px] rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
               <Play className="w-6 h-6 text-white ml-1" fill="white" />

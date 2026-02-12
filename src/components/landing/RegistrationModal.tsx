@@ -281,10 +281,9 @@ const CaptureView = ({
     </motion.button>
 
 
-    <div className="flex items-center justify-center gap-2 mt-2 text-[14px] text-ink-400">
-      <Shield className="w-3 h-3" />
-      Sem spam · Dados protegidos RGPD
-    </div>
+    <p className="text-center mt-2 text-[13px] text-ink-400">
+      (não inclui gravação da sessão)
+    </p>
   </>
 );
 
