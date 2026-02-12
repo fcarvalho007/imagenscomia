@@ -37,8 +37,6 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
       <div className="bg-green-50 border border-green-100 rounded-xl p-5 mt-5 mb-5 space-y-2">
         {[
           "Webinar ao vivo — 18 Fev · 10h00",
-          "Link Zoom enviado para o teu email",
-          "Grupo WhatsApp do evento (link enviado por email)",
         ].map((item) => (
           <div key={item} className="flex items-center gap-2">
             <Check className="w-4 h-4 text-green-700 shrink-0" />
