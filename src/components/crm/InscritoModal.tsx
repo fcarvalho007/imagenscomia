@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji, type Gender } from "@/lib/genderDetection";
 
 interface InscritoModalProps {
   inscrito: Inscrito;
@@ -15,6 +16,7 @@ interface InscritoModalProps {
   onToggleFollowUp: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete?: (id: string) => void;
+  onSetGender?: (id: string, gender: Gender) => void;
 }
 
 const GRADIENTS = [
@@ -76,7 +78,7 @@ function stepConverted(i: Inscrito, step: number): boolean {
 }
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -206,7 +208,7 @@ export default function InscritoModal({
                     {getInitials(inscrito.nome)}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-heading font-bold text-[16px] text-white truncate">{inscrito.nome}</h2>
+                    <h2 className="font-heading font-bold text-[16px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
                     <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-heading font-bold text-[11px] px-2.5 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
@@ -257,7 +259,25 @@ export default function InscritoModal({
                     {getInitials(inscrito.nome)}
                   </div>
                 </div>
-                <h2 className="font-heading font-bold text-[17px] text-white mt-2">{inscrito.nome}</h2>
+                <h2 className="font-heading font-bold text-[17px] text-white mt-2">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                {onSetGender && (
+                  <div className="flex justify-center gap-1.5 mt-1.5">
+                    {(["M","F","U"] as Gender[]).map((g) => (
+                      <button
+                        key={g}
+                        onClick={() => onSetGender(inscrito.id, g)}
+                        className="text-[14px] w-7 h-7 rounded-full flex items-center justify-center transition-all"
+                        style={{
+                          background: inscrito.gender === g ? "rgba(255,255,255,0.20)" : "rgba(255,255,255,0.05)",
+                          border: inscrito.gender === g ? "2px solid rgba(255,255,255,0.40)" : "2px solid transparent",
+                        }}
+                        title={g === "M" ? "Masculino" : g === "F" ? "Feminino" : "Indefinido"}
+                      >
+                        {genderEmoji(g)}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
 
                 <button

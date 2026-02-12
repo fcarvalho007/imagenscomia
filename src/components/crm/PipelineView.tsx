@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, MessageSquare, StickyNote, ExternalLink, MessageCircle, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji } from "@/lib/genderDetection";
 
 interface PipelineViewProps {
   inscritos: Inscrito[];
@@ -65,7 +66,7 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
           {getInitials(inscrito.nome)}
         </div>
         <span className="font-heading font-semibold text-[13px] text-ink-900 truncate">
-          {inscrito.nome}
+          {genderEmoji(inscrito.gender)} {inscrito.nome}
         </span>
       </div>
       <p className="text-[11px] text-ink-400 mt-1.5 truncate">{inscrito.email}</p>
