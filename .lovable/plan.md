@@ -1,109 +1,86 @@
 
 
-## Refinamentos Adicionais para Mobile da Página /upgrade
+## Melhorias de SEO e Meta Tags
 
-Após revisar a página em viewport mobile (375px), identifiquei os seguintes refinamentos específicos:
+### Problemas Identificados
 
-### **Problemas Identificados**
+1. **index.html - Structured Data com ano errado**: O JSON-LD tem `"startDate": "2025-02-18"` em vez de `2026-02-18`
+2. **index.html - Description redundante**: O texto tem "Gratuito" repetido no final da description que o utilizador colou
+3. **Paginas sem meta tags proprias**: `/upgrade`, `/confirmacao`, `/convites` nao definem `document.title` nem meta description -- herdam os da landing page, o que e mau para SEO e partilha social
+4. **Apenas `/live` define title dinamico** via useEffect, mas de forma incompleta (so title + description, sem OG)
+5. **Sem gestao centralizada de meta tags**: Cada pagina faz (ou nao) a sua propria logica
 
-1. **Passo 3 (Premium) - Badge "Early bird" ocupa espaço excessive**
-   - O badge com fundo amarelo fica muito grande e comprime o card
-   - Em mobile, o texto "Depois do webinar: €27 + IVA" quebra em 2 linhas desnecessariamente
-   - A caixa de badge deveria ser mais compacta
+### Solucao
 
-2. **Passo 4 (Masterclass) - Tag "IMAGEM → VÍDEO" e detalhes desalinhados**
-   - O tag é muito largo para ecrãs pequenos
-   - O texto "Pagamento único · lugares limitados · 5 de Março" é muito denso e quebra em múltiplas linhas
-   - O badge "Early bird" também fica desalinhado visualmente
+Criar um hook reutilizavel `usePageMeta` e aplica-lo em todas as paginas.
 
-3. **Progress bar spacing insuficiente**
-   - A marginagem entre a progress bar e o conteúdo poderia ser otimizada
-   - Em ecrãs muito pequenos (< 360px), a proporção fica desequilibrada
+### Alteracoes por ficheiro
 
-4. **Títulos ainda muito grandes em alguns pontos**
-   - "Transformar imagens em vídeo com IA — ao vivo" (Step 4) é muito longo e quebra em 3 linhas
-   - Poderia reduzir para `max-sm:text-[18px]` em vez de manter `text-[24px]`
+#### A) Novo ficheiro: `src/hooks/usePageMeta.ts`
+- Hook que recebe `{ title, description }` e actualiza `document.title` e a meta description via useEffect
+- Restaura os valores originais ao desmontar (cleanup)
 
-5. **Bullets/Features - tamanho de ícone e espaçamento**
-   - Os ícones dos bullets (Check, dark circle) poderiam ser ligeiramente menores em mobile
-   - O espaçamento entre linhas está OK, mas o padding dos cards poderia ser otimizado
-
-6. **CTA button - padding vertical muito generoso**
-   - O botão principal "Garantir Premium Pass" e "Garantir lugar na Masterclass" tem `py-4` que é 16px
-   - Em mobile, `py-3` (12px) seria mais adequado para economizar espaço
-
-7. **Texto subtítulo muito denso (Step 4)**
-   - "O webinar ensina o método. A Masterclass mostra como o usar para gerar vídeo — com ferramentas certas, prompts prontos e um fluxo replicável." é muito longo
-   - Poderia reduzir font-size para `max-sm:text-[14px]` ou quebrar em formato mais amigável
-
-8. **Mobile summary bar position**
-   - A barra sticky "A tua inscrição | €0" está OK, mas poderia ter padding reduzido em mobile muito pequenos
-
-### **Alterações Propostas por Ficheiro**
-
-#### A) `src/components/upgrade/StepPremium.tsx`
-- Reduzir tamanho do badge "Early bird" com `max-sm:p-1.5` (reduzido de `p-2`)
-- Reduzir tamanho da fonte do badge de `text-[14px]` para `max-sm:text-[13px]`
-- Mudar o badge para uma única linha usando `whitespace-nowrap` e reduzindo padding
-- Reduzir button padding de `py-4` para `max-sm:py-3`
-- Ajustar título para `max-sm:text-[20px]` (já está, OK)
-- Adicionar `max-sm:text-[13px]` no subtítulo para ganhar espaço
-
-#### B) `src/components/upgrade/StepMasterclass.tsx`
-- Reduzir tamanho do badge "IMAGEM → VÍDEO" com `max-sm:text-[11px]` e `max-sm:px-2` (mais compacto)
-- Reduzir tamanho do título para `max-sm:text-[18px]` (mais curto que 24px)
-- Reduzir subtítulo para `max-sm:text-[14px]`
-- Reduzir tamanho do badge "Early bird" do Masterclass para `max-sm:text-[13px]`
-- Reduzir button padding de `py-4` para `max-sm:py-3`
-- Reduzir tamanho dos ícones de detalhes ("💻 Online", "⏱ 3 horas") para `max-sm:text-[13px]`
-- Tornar o texto de detalhes ("Pagamento único · lugares limitados · 5 de Março") mais conciso ou reduzir para `max-sm:text-[13px]`
+#### B) `index.html`
+- Corrigir ano no JSON-LD: `2025` para `2026`
+- Limpar description (remover "Gratuito" duplicado no final)
+- Actualizar `og:title` e `twitter:title` para consistencia
 
 #### C) `src/pages/Upsell.tsx`
-- Ajustar padding do container content de `pt-6` para `max-sm:pt-4` (ganhar espaço)
-- A progress bar já tem `mb-5` em mobile, está OK
-- Verificar se `pb-24` está funcionando corretamente (deve estar)
+- Adicionar `usePageMeta({ title: "Upgrade — Webinar Imagens com IA", description: "Escolhe o teu plano e garante acesso Premium ou Masterclass." })`
 
-#### D) `src/components/upgrade/SummaryPanel.tsx`
-- Mobile bar já é compacta, sem alterações necessárias
+#### D) `src/pages/Confirmacao.tsx`
+- Adicionar `usePageMeta({ title: "Inscricao Confirmada — Webinar Imagens com IA", description: "A tua inscricao foi confirmada. Adiciona ao calendario e partilha." })`
 
-### **Detalhe Técnico**
+#### E) `src/pages/Convites.tsx`
+- Adicionar `usePageMeta({ title: "Programa de Convites — Webinar Imagens com IA", description: "Convida amigos e ganha premios exclusivos." })`
 
-Exemplos de alterações com Tailwind:
+#### F) `src/pages/WebinarLive.tsx`
+- Substituir useEffect manual pelo `usePageMeta`
 
-```tsx
-// Badge compacto em mobile (StepPremium)
-<div className="bg-amber-50 rounded-lg p-2 max-sm:p-1.5 max-sm:text-[13px] whitespace-nowrap">
-  <p className="font-semibold text-[14px] max-sm:text-[13px] text-amber-700">Early bird: €15 + IVA</p>
-  <p className="text-[14px] max-sm:text-[13px] text-amber-600">Depois: €27 + IVA</p>
-</div>
+#### G) `src/pages/Index.tsx`
+- Adicionar `usePageMeta` com o title/description principal para garantir restauro correcto ao navegar entre paginas
 
-// Título mais curto em mobile (StepMasterclass)
-<h2 className="font-heading font-bold text-[24px] max-sm:text-[18px] text-ink-900">
-  Transformar imagens em vídeo com IA — ao vivo
-</h2>
+#### H) `src/pages/NotFound.tsx`
+- Adicionar `usePageMeta({ title: "Pagina nao encontrada", description: "..." })`
 
-// Button com menos padding em mobile
-<button className="w-full mt-4 py-4 max-sm:py-3 ...">
-  Garantir Premium Pass →
-</button>
+### Detalhe Tecnico
 
-// Tag mais compacto
-<span className="inline-block text-[12px] max-sm:text-[11px] font-bold px-2.5 max-sm:px-2 py-1 rounded-md">
-  IMAGEM → VÍDEO
-</span>
+```typescript
+// src/hooks/usePageMeta.ts
+import { useEffect } from "react";
+
+export function usePageMeta({ title, description }: { title: string; description?: string }) {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = title;
+
+    let prevDesc: string | null = null;
+    if (description) {
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) {
+        prevDesc = meta.getAttribute("content");
+        meta.setAttribute("content", description);
+      }
+    }
+
+    return () => {
+      document.title = prevTitle;
+      if (description && prevDesc !== null) {
+        const meta = document.querySelector('meta[name="description"]');
+        if (meta) meta.setAttribute("content", prevDesc);
+      }
+    };
+  }, [title, description]);
+}
 ```
 
-| Ficheiro | Alterações |
+| Ficheiro | Alteracao |
 |---|---|
-| `src/components/upgrade/StepPremium.tsx` | Badge compacto, button `py-3`, subtítulo reduzido em mobile |
-| `src/components/upgrade/StepMasterclass.tsx` | Tag/badge compactos, título `text-[18px]`, button `py-3`, detalhes `text-[13px]` |
-| `src/pages/Upsell.tsx` | Padding superior reduzido em mobile para `pt-4` |
-
-### **Impacto**
-
-- Melhor utilização do espaço vertical em ecrãs pequenos (< 375px)
-- Cards mais equilibrados visualmente
-- Texto não fica tão denso
-- Buttons e CTAs continuam clicáveis e acessíveis
-- Mantém consistência com tipografia responsiva existente
-
+| `src/hooks/usePageMeta.ts` | Novo hook reutilizavel |
+| `index.html` | Corrigir ano JSON-LD, limpar description |
+| `src/pages/Upsell.tsx` | Adicionar usePageMeta |
+| `src/pages/Confirmacao.tsx` | Adicionar usePageMeta |
+| `src/pages/Convites.tsx` | Adicionar usePageMeta |
+| `src/pages/WebinarLive.tsx` | Substituir useEffect por usePageMeta |
+| `src/pages/Index.tsx` | Adicionar usePageMeta |
+| `src/pages/NotFound.tsx` | Adicionar usePageMeta |
