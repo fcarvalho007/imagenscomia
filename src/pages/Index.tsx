@@ -2,8 +2,6 @@ import { RegistrationModalProvider } from "@/hooks/useRegistrationModal";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { StickyTopBar } from "@/components/landing/StickyTopBar";
 import { MirrorCopySection } from "@/components/landing/MirrorCopySection";
-import { motion } from "framer-motion";
-import logoImagens from "@/assets/logo-imagens-com-ia.png";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PricingCardsSection } from "@/components/landing/PricingCardsSection";
 import { PresenterSection } from "@/components/landing/PresenterSection";
@@ -23,20 +21,6 @@ const Index = () => {
       <main className="overflow-x-hidden pt-[52px]">
         <StickyTopBar />
         <HeroSection />
-
-        {/* Logo 3D separator */}
-        <div className="py-6 md:py-10 bg-background flex justify-center">
-          <motion.img
-            src={logoImagens}
-            alt="Imagens com IA"
-            className="w-[120px] md:w-[140px] drop-shadow-[0_4px_20px_rgba(0,0,0,0.12)]"
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          />
-        </div>
-
         <MirrorCopySection />
         <PresenterSection />
         <ChallengesSection />
