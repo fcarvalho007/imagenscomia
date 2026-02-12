@@ -1,47 +1,40 @@
 
 
-## Detectar emails duplicados no modal + garantir captura no CRM
+## Corrigir eliminacao de registos no CRM
 
-### Problema 1: Modal nao avisa quando o email ja esta registado
+### Problema raiz
 
-A edge function `register-free` ja devolve `alreadyRegistered: true` quando o email existe, mas o modal ignora esse campo e navega sempre para `/upgrade` sem avisar o utilizador.
+A funcao `deleteInscrito` no hook `useInscritos.ts` apenas remove o registo do estado local (memoria do browser). Nunca apaga da base de dados. Como o CRM faz refresh automatico a cada 30 segundos, o registo "volta" porque continua na base de dados.
 
-### Problema 2: CRM pode nao mostrar registos recentes
-
-O CRM carrega os dados uma unica vez ao montar o componente (`useEffect` sem dependencias). Se alguem se regista enquanto o CRM esta aberto, o novo registo so aparece ao recarregar a pagina.
-
----
+Como consequencia, ao tentar registar o mesmo email, a edge function `register-free` encontra o registo na base de dados e devolve "ja esta inscrito".
 
 ### Solucao
 
-#### 1. Modal - mostrar aviso de email duplicado
+#### 1. Adicionar politica de DELETE na base de dados
 
-**Ficheiro:** `src/components/landing/RegistrationModal.tsx`
+A tabela `registrations` atualmente so permite SELECT e UPDATE. Precisa de uma politica que permita DELETE.
 
-- Na funcao `registerFree()`, verificar o campo `alreadyRegistered` da resposta
-- Se `alreadyRegistered === true`, mostrar uma mensagem de erro no formulario: "Este email ja esta inscrito. Usa outro email ou verifica a tua caixa de entrada."
-- Nao navegar para `/upgrade` neste caso - manter o utilizador no formulario para corrigir o email
-- Continuar a disparar `fbq('track', 'Lead')` apenas para registos novos
+**Migracao SQL:**
+```sql
+CREATE POLICY "allow_anon_delete"
+  ON public.registrations
+  FOR DELETE
+  USING (true);
+```
 
-#### 2. CRM - adicionar botao de refresh e/ou auto-refresh
+#### 2. Apagar da base de dados ao eliminar no CRM
 
 **Ficheiro:** `src/hooks/useInscritos.ts`
 
-- Expor uma funcao `refresh()` que re-executa a query a base de dados
-- Adicionar auto-refresh com intervalo de 30 segundos para manter os dados atualizados
+Alterar a funcao `deleteInscrito` para:
+- Primeiro apagar o registo da base de dados com `supabase.from("registrations").delete().eq("id", inscritoId)`
+- Depois remover do estado local
+- Mostrar erro na consola se a eliminacao falhar
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx`
+### Resumo
 
-- Adicionar um botao "Atualizar" no topo do dashboard para forcar o refresh manual
-
----
-
-### Alteracoes tecnicas
-
-| Ficheiro | Alteracao |
+| Alteracao | Detalhe |
 |---|---|
-| `src/components/landing/RegistrationModal.tsx` | Verificar `alreadyRegistered` na resposta e mostrar erro em vez de navegar |
-| `src/hooks/useInscritos.ts` | Expor funcao `refresh()` e adicionar auto-refresh a cada 30s |
-| `src/components/crm/DashboardView.tsx` | Botao "Atualizar" que chama `refresh()` |
-| `src/pages/CRM.tsx` | Passar `refresh` do hook para os componentes |
+| Migracao SQL | Adicionar politica DELETE na tabela `registrations` |
+| `src/hooks/useInscritos.ts` | `deleteInscrito` passa a apagar da base de dados antes de remover do estado local |
 
