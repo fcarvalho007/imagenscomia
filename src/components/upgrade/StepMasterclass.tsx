@@ -26,10 +26,10 @@ const bullets = [
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
   <div className="max-w-[620px]">
-    <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
+    <h2 className="font-heading font-bold text-[24px] max-sm:text-[18px] text-ink-900">
       Transformar imagens em vídeo com IA — ao vivo
     </h2>
-    <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-6">
+    <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
       O webinar ensina o método. A Masterclass mostra como o usar para gerar vídeo — com ferramentas certas, prompts prontos e um fluxo replicável.
     </p>
 
@@ -39,7 +39,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
       {/* Tag */}
-      <span className="inline-block text-[12px] font-bold tracking-[0.1em] uppercase px-2.5 py-1 rounded-md bg-ink-100 text-ink-700 mb-3">
+      <span className="inline-block text-[12px] max-sm:text-[11px] font-bold tracking-[0.1em] uppercase px-2.5 max-sm:px-2 py-1 rounded-md bg-ink-100 text-ink-700 mb-3">
         IMAGEM → VÍDEO
       </span>
 
@@ -50,11 +50,11 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
             MASTERCLASS ONLINE
           </p>
           <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março</p>
+          <p className="text-[14px] max-sm:text-[13px] text-ink-400">Pagamento único · 5 de Março</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2 shrink-0 max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="font-semibold text-[14px] text-amber-700">Early bird: €47 + IVA</p>
-          <p className="text-[14px] text-amber-600">Depois: €97 + IVA</p>
+        <div className="bg-amber-50 rounded-lg p-2 max-sm:p-1.5 shrink-0 max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+          <p className="font-semibold text-[14px] max-sm:text-[13px] text-amber-700">Early bird: €47 + IVA</p>
+          <p className="text-[14px] max-sm:text-[13px] text-amber-600">Depois: €97 + IVA</p>
         </div>
       </div>
 
@@ -77,14 +77,14 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       {/* Event details */}
       <div className="flex flex-wrap gap-2 mt-3">
         {["💻 Online", "⏱ 3 horas"].map((d) => (
-          <span key={d} className="text-[14px] text-ink-400">{d}</span>
+          <span key={d} className="text-[14px] max-sm:text-[13px] text-ink-400">{d}</span>
         ))}
       </div>
 
       {/* CTA */}
       <button
         onClick={onAddMasterclass}
-        className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors"
+        className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors"
         style={{ backgroundColor: "hsl(var(--ink-900))" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "hsl(var(--ink-900))")}

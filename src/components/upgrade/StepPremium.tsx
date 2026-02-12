@@ -28,7 +28,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
       {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
     </h2>
-    <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-6">
+    <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
       Mas queres adicionar o Premium Pass para mais tranquilidade?
     </p>
 
@@ -49,9 +49,9 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
           <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
           <p className="text-[14px] text-ink-400">Sem depender do direto. Ao teu ritmo.</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2 min-w-[150px] max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="font-semibold text-[14px] text-amber-700">Early bird: €15 + IVA</p>
-          <p className="text-[14px] text-amber-600">Depois do webinar: €27 + IVA</p>
+        <div className="bg-amber-50 rounded-lg p-2 max-sm:p-1.5 min-w-[150px] max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+          <p className="font-semibold text-[14px] max-sm:text-[13px] text-amber-700">Early bird: €15 + IVA</p>
+          <p className="text-[14px] max-sm:text-[13px] text-amber-600">Depois: €27 + IVA</p>
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
       {/* CTA */}
       <button
         onClick={onAddPremium}
-        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl transition-colors shadow-blue"
+        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors shadow-blue"
       >
         Garantir Premium Pass →
       </button>
