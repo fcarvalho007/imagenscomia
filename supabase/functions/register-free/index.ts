@@ -41,11 +41,36 @@ serve(async (req) => {
     // Check if email already exists
     const { data: existing } = await supabase
       .from("registrations")
-      .select("referral_code, premium_unlocked")
+      .select("referral_code, premium_unlocked, first_name, last_name, whatsapp")
       .eq("email", email.toLowerCase().trim())
       .maybeSingle();
 
     if (existing) {
+      // Sync to E-goi for existing registrations (non-blocking)
+      try {
+        const egoiResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              first_name: existing.first_name || "",
+              last_name: existing.last_name || "",
+              email: email.toLowerCase().trim(),
+              cellphone: existing.whatsapp || null,
+              referral_code: existing.referral_code,
+            }),
+          }
+        );
+        const egoiResult = await egoiResponse.text();
+        console.log(`E-goi sync (existing) result: ${egoiResponse.status} - ${egoiResult}`);
+      } catch (egoiError) {
+        console.error("E-goi sync failed for existing registration (non-blocking):", egoiError);
+      }
+
       const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
       return new Response(
         JSON.stringify({
