@@ -101,7 +101,16 @@ export function useInscritos() {
     );
   }, []);
 
-  const deleteInscrito = useCallback((inscritoId: string) => {
+  const deleteInscrito = useCallback(async (inscritoId: string) => {
+    const { error } = await supabase
+      .from("registrations")
+      .delete()
+      .eq("id", inscritoId);
+
+    if (error) {
+      console.error("Error deleting registration:", error);
+      return;
+    }
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
   }, []);
 
