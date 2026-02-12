@@ -20,9 +20,6 @@ export const HeroSection = () => {
             <span className="block font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900">
               Cria Imagens Profissionais com IA
             </span>
-            <span className="block font-heading font-bold text-[21px] sm:text-[26px] md:text-[31px] leading-[1.15] tracking-[-0.02em] text-ink-500">
-              para a Tua Empresa
-            </span>
           </h1>
         </ScrollReveal>
 
@@ -32,32 +29,6 @@ export const HeroSection = () => {
           </p>
         </ScrollReveal>
 
-        {/* Mini-bloco "Isto soa familiar?" */}
-        <ScrollReveal delay={0.18}>
-          <div className="max-w-[600px] mx-auto mb-4 text-left">
-            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-400 mb-3 text-center">
-              Isto soa familiar?
-            </p>
-            <div className="space-y-2">
-              {[
-                "O stock de imagens parece igual ao de toda a gente",
-                "Falta consistência visual entre publicações",
-                "A IA até \"faz\", mas sai genérico e sem identidade",
-              ].map((text) => (
-                <div key={text} className="flex items-start gap-2.5 text-[16px] text-ink-600">
-                  <span className="text-blue-600 shrink-0 mt-0.5">✗</span>
-                  <span>{text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </ScrollReveal>
-
-        <ScrollReveal delay={0.2}>
-          <p className="text-[19px] md:text-[21px] text-ink-500 font-medium max-w-[720px] mx-auto mb-6">
-            Ao vivo: de briefing a imagem pronto a publicar em minutos. Com método e exemplos reais.
-          </p>
-        </ScrollReveal>
 
         <ScrollReveal delay={0.25}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-8">
@@ -89,8 +60,24 @@ export const HeroSection = () => {
         </ScrollReveal>
 
         {/* Prova social movida para antes do CTA */}
-        <ScrollReveal delay={0.35}>
-          <div className="flex justify-center mt-6 mb-4">
+        <ScrollReveal delay={0.4}>
+          <div id="inscrever" className="flex justify-center">
+            <motion.button
+              onClick={() => open("free")}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full max-w-[640px] text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-lg py-5 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
+            >
+              Inscrever-me grátis →
+            </motion.button>
+          </div>
+          <p className="text-[14px] text-ink-400 mt-3">
+            Sem spam. Dados protegidos (RGPD). Cancelamento simples.
+          </p>
+        </ScrollReveal>
+
+        <ScrollReveal delay={0.45}>
+          <div className="flex justify-center mt-4">
             <div className="inline-flex items-center gap-[10px] bg-white border border-border rounded-xl px-[18px] py-[10px] shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
               <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -108,22 +95,6 @@ export const HeroSection = () => {
               </div>
             </div>
           </div>
-        </ScrollReveal>
-
-        <ScrollReveal delay={0.4}>
-          <div id="inscrever" className="flex justify-center">
-            <motion.button
-              onClick={() => open("free")}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full max-w-[380px] text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-lg py-5 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
-            >
-              Inscrever-me grátis →
-            </motion.button>
-          </div>
-          <p className="text-[14px] text-ink-400 mt-3">
-            Sem spam. Dados protegidos (RGPD). Cancelamento simples.
-          </p>
         </ScrollReveal>
 
       </div>
