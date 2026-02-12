@@ -23,12 +23,10 @@ export const StickyTopBar = () => {
     >
       <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
         <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
-          <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle animate-pulse" />
           AO VIVO · 18 FEV · 10H00
         </p>
 
         <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
-          <span className="sm:hidden inline-block w-2 h-2 rounded-full bg-red-500 mr-1 animate-pulse" />
           <CountdownBlock value={days} label="dias" />
           <span className="text-white/60 font-bold text-sm">:</span>
           <CountdownBlock value={hours} label="horas" />
@@ -42,7 +40,7 @@ export const StickyTopBar = () => {
           onClick={() => open()}
           className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)]"
         >
-          Inscrição Grátis →
+          Quero inscrever-me!
         </button>
       </div>
     </motion.div>
