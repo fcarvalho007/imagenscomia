@@ -1,35 +1,52 @@
 
 
-## Corrigir Tag E-goi - Aplicacao Explicita Apos Criacao
+## Instalar o Meta Pixel no site
 
-### Problema
+### 1. Codigo base no `<head>` (todas as paginas)
 
-Os contactos estao a ser criados no E-goi com sucesso, mas **sem a tag 31** (`webinar_imagens_com_ia_18_fev`). O campo `tags` no payload de criacao do contacto nao esta a funcionar como esperado pela API do E-goi.
+**Ficheiro:** `index.html`
 
-### Causa raiz
+Adicionar o Meta Pixel base code (ID `1461563193926022`) na seccao `<head>`, antes do fecho `</head>`. Isto dispara automaticamente `PageView` em todas as paginas (landing, confirmacao, upgrade, webinar, etc.).
 
-A API do E-goi aparentemente ignora o campo `tags: ["webinar_imagens_com_ia_18_fev"]` no payload de criacao. Apenas o endpoint dedicado `attach-tag` aplica tags de forma fiavel.
+### 2. Evento `Lead` apos inscricao gratuita
 
-### Solucao
+**Ficheiro:** `src/components/landing/RegistrationModal.tsx`
 
-**Ficheiro:** `supabase/functions/sync-egoi/index.ts`
+Apos o registo bem-sucedido (linha 49-52, depois de `registerFree()` retornar com sucesso), adicionar:
 
-1. Apos criar um contacto com sucesso (status 200/201), extrair o `contact_id` da resposta
-2. Chamar o endpoint `POST /lists/5/contacts/actions/attach-tag` com o `tag_id: 31` e o `contact_id`
-3. Isto garante que **todos** os contactos (novos e existentes) recebem a tag
+```
+fbq('track', 'Lead')
+```
 
-Alem disso, re-executar a funcao `bulk-sync-egoi` para aplicar a tag aos contactos que ja foram criados sem ela.
+Isto permite ao Meta saber que houve uma conversao de inscricao.
 
-### Alteracoes tecnicas
+### 3. Evento `Purchase` apos pagamento iniciado
+
+**Ficheiros:**
+- `src/pages/Upsell.tsx` - apos criacao de link de pagamento com sucesso
+- `src/components/webinar/PurchaseModal.tsx` - apos criacao de link de pagamento com sucesso
+
+Adicionar apos resposta OK do `create-payment`:
+
+```
+fbq('track', 'Purchase', {value: X.XX, currency: 'EUR'})
+```
+
+Nota: o valor sera dinamico consoante o plano escolhido.
+
+### 4. Declaracao TypeScript
+
+**Ficheiro:** `src/vite-env.d.ts`
+
+Adicionar declaracao de tipo para `fbq` no `window` global, para evitar erros de TypeScript.
+
+### Resumo de ficheiros a editar
 
 | Ficheiro | Alteracao |
 |---|---|
-| `supabase/functions/sync-egoi/index.ts` | Apos criacao bem-sucedida, extrair contact_id da resposta e chamar attach-tag explicitamente |
-
-### Passos de execucao
-
-1. Atualizar a funcao `sync-egoi` com a chamada explicita ao attach-tag
-2. Fazer deploy da funcao
-3. Re-executar `bulk-sync-egoi` para aplicar a tag a todos os contactos existentes no E-goi
-4. Verificar no E-goi que os contactos tem a tag 31
+| `index.html` | Meta Pixel base code no `<head>` |
+| `src/components/landing/RegistrationModal.tsx` | `fbq('track', 'Lead')` apos registo |
+| `src/pages/Upsell.tsx` | `fbq('track', 'Purchase')` apos pagamento |
+| `src/components/webinar/PurchaseModal.tsx` | `fbq('track', 'Purchase')` apos pagamento |
+| `src/vite-env.d.ts` | Declaracao de tipo para `fbq` |
 
