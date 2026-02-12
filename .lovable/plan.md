@@ -1,49 +1,65 @@
 
 
-## Correcao: Campo de resposta da EuPago incorreto
+## Tres Correcoes: Rastreio de Pagamento + Modal Pre-Redirect + Precos EuPago
 
-### Problema
+### 1. Corrigir precos enviados a EuPago
 
-A funcao `create-payment` recebe resposta de sucesso da EuPago (status 200, `transactionStatus: "Success"`), mas os nomes dos campos na resposta JSON sao diferentes do que o codigo espera:
-- O codigo procura `data.paymentLink` e `data.reference`
-- A EuPago provavelmente devolve campos com nomes diferentes (ex: `url`, `redirectUrl`, `payment_url`)
-- Como os campos nao existem, `JSON.stringify` omite-os e devolve `{}` ao cliente
-- O cliente ve "Link de pagamento nao recebido"
+Os valores enviados a EuPago devem incluir IVA (23%), pois e o valor final cobrado ao cliente:
 
-### Solucao (2 passos)
+| Plano | Base | c/ IVA (valor EuPago) | Actual (errado) |
+|---|---|---|---|
+| Premium | 15 | 18.45 | 15.00 |
+| Masterclass | 47 | 57.81 | 52.00 |
+| Bundle | 62 | 76.26 | 524.00 |
+| Workshop | (manter) | (manter) | 512.00 |
 
-**Passo 1 - Adicionar logging completo da resposta EuPago**
+**Ficheiro:** `supabase/functions/create-payment/index.ts` - actualizar os `value` no objecto PRODUCTS.
 
-Modificar `supabase/functions/create-payment/index.ts` para registar a resposta completa da API antes de extrair campos:
+---
 
-```typescript
-const data = await eupagoResponse.json();
-console.log("EuPago full response:", JSON.stringify(data));
-```
+### 2. Garantir rastreio 100% do pagamento
 
-Isto permite ver os nomes exactos dos campos na resposta.
+O sistema actual extrai o email do campo `identifier` (formato `WEBINAR-PLAN-email-timestamp`). Isto funciona na maioria dos casos, mas ha dois pontos frageis:
 
-**Passo 2 - Corrigir o mapeamento dos campos**
+- Se o email tiver formato inesperado, a extraccao pode falhar
+- O `transactionID` da EuPago (devolvido na criacao) nao e guardado, perdendo-se a ligacao directa
 
-Depois de confirmar os nomes dos campos, actualizar a linha de retorno para usar os campos correctos. Provavelmente a resposta usa campos como `url` ou `redirectUrl` em vez de `paymentLink`:
+**Solucao em duas partes:**
 
-```typescript
-return new Response(
-  JSON.stringify({
-    paymentLink: data.url || data.redirectUrl || data.paymentLink,
-    reference: data.reference || data.referencia
-  }),
-  ...
-);
-```
+**a) Guardar `transactionID` + `eupago_ref` na DB no momento da criacao do link** (antes do pagamento):
+- Na funcao `create-payment`, apos receber resposta da EuPago, fazer UPDATE na tabela `registrations` com o `transactionID` e o plano
+- Isto cria um registo previo que liga email -> transactionID
 
-### Alteracoes tecnicas
+**b) No webhook, usar dupla verificacao:**
+- Primeiro tentar localizar por `transactionID` (match exacto, 100% fiavel)
+- Se falhar, usar o metodo actual de extraccao de email como fallback
+
+**Ficheiros:**
+- `supabase/functions/create-payment/index.ts` - guardar transactionID na DB
+- `supabase/functions/eupago-webhook/index.ts` - procurar por transactionID primeiro
+
+---
+
+### 3. Modal de transicao antes do redirect
+
+Quando o utilizador clica "Confirmar e pagar", em vez de redirect imediato:
+
+1. Mostrar um modal/overlay com:
+   - "Vais ser redirecionado para a pagina de pagamento seguro"
+   - "Recebes um email de confirmacao apos o pagamento"
+   - Spinner + texto "A preparar..."
+2. Apos 2-3 segundos, fazer o redirect automatico para o link EuPago
+
+**Ficheiro:** `src/components/upgrade/StepConfirmation.tsx` - adicionar estado de modal e overlay antes do `window.location.href`
+
+---
+
+### Resumo tecnico de alteracoes
 
 | Ficheiro | Alteracao |
 |---|---|
-| `supabase/functions/create-payment/index.ts` | Adicionar `console.log` da resposta completa + corrigir nomes dos campos de resposta |
-
-### Verificacao
-
-Apos o deploy, testar o fluxo de pagamento para confirmar que o link EuPago e devolvido correctamente e o redirect funciona.
+| `supabase/functions/create-payment/index.ts` | Corrigir precos c/ IVA; guardar transactionID na DB |
+| `supabase/functions/eupago-webhook/index.ts` | Procurar por transactionID antes de extrair email |
+| `src/pages/Upsell.tsx` | Adicionar estado para modal pre-redirect |
+| `src/components/upgrade/StepConfirmation.tsx` | Mostrar modal de transicao antes do redirect |
 
