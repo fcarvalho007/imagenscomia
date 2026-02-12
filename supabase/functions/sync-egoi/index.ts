@@ -54,6 +54,29 @@ serve(async (req) => {
     const responseText = await response.text();
     console.log(`E-goi response status: ${response.status}, body: ${responseText}`);
 
+    // Helper to attach tag
+    const attachTag = async (contactId: string) => {
+      const tagResponse = await fetch(
+        `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
+        {
+          method: "POST",
+          headers: {
+            "Apikey": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            tag_id: TAG_ID,
+            contacts: [contactId],
+          }),
+        }
+      );
+      const tagText = await tagResponse.text();
+      console.log(`E-goi attach-tag response: ${tagResponse.status}, body: ${tagText}`);
+      if (!tagResponse.ok) {
+        console.error(`Failed to attach tag (id=${TAG_ID}) to contact ${contactId}`);
+      }
+    };
+
     if (!response.ok) {
       // If contact already exists (409), add tag
       if (response.status === 409) {
@@ -62,33 +85,16 @@ serve(async (req) => {
         let contactId: string | null = null;
         try {
           const conflictData = JSON.parse(responseText);
-          contactId = conflictData?.conflicts?.contact_id || null;
+          // E-goi returns contact_id in errors.contacts[0]
+          const contacts = conflictData?.errors?.contacts;
+          contactId = Array.isArray(contacts) && contacts.length > 0 ? contacts[0] : null;
+          console.log(`Extracted contact_id from 409: ${contactId}`);
         } catch {
           console.error("Could not parse 409 response for contact_id");
         }
 
         if (contactId) {
-          const tagResponse = await fetch(
-            `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
-            {
-              method: "POST",
-              headers: {
-                "Apikey": apiKey,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                tag_id: TAG_ID,
-                contacts: [contactId],
-              }),
-            }
-          );
-
-          const tagText = await tagResponse.text();
-          console.log(`E-goi attach-tag response: ${tagResponse.status}, body: ${tagText}`);
-
-          if (!tagResponse.ok) {
-            console.error(`Failed to attach tag (id=${TAG_ID}) to contact ${contactId}`);
-          }
+          await attachTag(contactId);
         }
 
         return new Response(
@@ -102,6 +108,21 @@ serve(async (req) => {
         JSON.stringify({ error: "E-goi sync failed", details: responseText }),
         { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Contact created successfully — now attach tag explicitly
+    let newContactId: string | null = null;
+    try {
+      const createdData = JSON.parse(responseText);
+      newContactId = createdData?.contact_id || null;
+    } catch {
+      console.error("Could not parse creation response for contact_id");
+    }
+
+    if (newContactId) {
+      await attachTag(newContactId);
+    } else {
+      console.error("Contact created but no contact_id returned, cannot attach tag");
     }
 
     return new Response(
