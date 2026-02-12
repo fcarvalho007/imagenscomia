@@ -1,44 +1,18 @@
 
-
-## Corrigir: chamar sync-egoi para registos existentes
+## Trocar imagem de fundo do Hero Section
 
 ### Problema
-Quando um email ja existe na base de dados, a funcao `register-free` retorna imediatamente sem chamar `sync-egoi`. A tag nunca e adicionada no E-goi e a automacao nao arranca.
+A imagem de fundo atual (`hero-bg.jpeg`) precisa ser substituída pela nova imagem que o utilizador enviou, que tem um estilo futurista com neon e efeitos 3D.
 
-### Confirmacao do E-goi
-- A configuracao do trigger "Tag adicionada" esta correta (tag 31, aceita re-entradas)
-- O `sync-egoi` ja lida corretamente com contactos existentes no E-goi (409 -> attach-tag)
-- O unico problema e que `register-free` nunca chama `sync-egoi` para emails ja registados na DB
+### Solução
+Copiar a nova imagem para `src/assets/hero-bg.jpeg`, substituindo a imagem existente. O componente `HeroSection.tsx` já está configurado para importar e usar esta imagem, portanto não será necessário alterar nenhum código.
 
-### Solucao
-Alterar `supabase/functions/register-free/index.ts` para adicionar uma chamada nao-bloqueante ao `sync-egoi` dentro do bloco `if (existing)`, antes do return.
+### Implementação
+1. Copiar a imagem do utilizador (`hf_20260212_112543_a1d2d603-1f2d-4250-b166-b8e28d2613cf-2.jpeg`) para `src/assets/hero-bg.jpeg`
+2. A imagem será automaticamente utilizada no Hero Section com a mesma opacidade (50%) e overlay radial existentes
 
-### Alteracao tecnica
-
-| Ficheiro | Alteracao |
-|---|---|
-| `supabase/functions/register-free/index.ts` | Adicionar select de `first_name`, `last_name`, `whatsapp` no query do existing. Adicionar chamada ao sync-egoi antes do return do bloco existing. |
-
-### Detalhes
-
-1. Alterar a query do existing para tambem buscar `first_name`, `last_name` e `whatsapp`:
-   - De: `.select("referral_code, premium_unlocked")`
-   - Para: `.select("referral_code, premium_unlocked, first_name, last_name, whatsapp")`
-
-2. Antes do return dentro do `if (existing)`, adicionar chamada nao-bloqueante ao sync-egoi (mesmo padrao ja usado para novos registos):
-   - Envia first_name, last_name, email, cellphone (whatsapp) e referral_code
-   - Wrapped em try/catch para nao falhar o registo se o E-goi falhar
-
-### Fluxo corrigido
-
-```text
-Email ja existe na DB?
-  SIM -> chama sync-egoi (nao-bloqueante) -> return dados existentes
-  NAO -> insere na DB -> chama sync-egoi (nao-bloqueante) -> return novos dados
-```
-
-### Resultado
-- Contacto novo no E-goi: criado com tag -> automacao arranca
-- Contacto existente no E-goi: tag adicionada via attach-tag -> automacao arranca
-- Em ambos os casos, a automacao "Tag adicionada" dispara corretamente
+### Resultado esperado
+- Hero section terá a nova imagem de fundo com o estilo futurista neon
+- O overlay branco radial continuará a garantir legibilidade do H1 e subtítulo
+- Nenhuma alteração de código necessária
 
