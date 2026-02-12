@@ -1,52 +1,38 @@
 
 
-## Tracking completo dos passos + sincronizacao E-goi para contactos existentes
+## Refinamentos necessarios ao tracking e E-goi
 
-### Problema 1: Passos nao estao a ser trackeados
+### Problemas encontrados
 
-Actualmente, os dados do funil (sources, duvida, plan_selected) so sao gravados na base de dados quando o utilizador clica "Confirmar e pagar" no Passo 5. Se abandonar antes, perde-se toda a informacao. Alem disso, nao ha forma de distinguir entre "saltou" e "nunca chegou la".
+**1. E-goi attach-tag usa tag name em vez de tag ID (critico)**
 
-### Solucao: Gravar cada transicao de passo em tempo real
+No `sync-egoi/index.ts`, quando um contacto ja existe (409), o codigo tenta anexar a tag com `tag_id: "webinar_imagens_com_ia_18_fev"`. A API do E-goi espera um **ID numerico** no campo `tag_id`, nao o nome da tag. Isto significa que o PATCH para contactos existentes esta a falhar silenciosamente.
 
-**1. Nova coluna na base de dados**
+Solucao: Antes de anexar, fazer GET a `/lists/5/contacts/{contactId}` ou usar a API de tags para obter o ID numerico. Em alternativa, usar o endpoint correcto que aceita tag por nome.
 
-Adicionar `step_reached` (integer) a tabela `registrations` para registar o passo maximo atingido.
+**2. Email case-sensitivity no saveStepData (critico)**
 
-**2. Gravar dados a cada avanço de passo no Upsell.tsx**
+O `register-free` guarda o email com `.toLowerCase().trim()`. Mas o `Upsell.tsx` le o email do URL param (`searchParams.get("email")`) e usa-o directamente no `.eq("email", userData.email)`. Se o email no URL tiver maiusculas, o update nao encontra o registo e falha silenciosamente.
 
-| Transicao | Dados gravados na DB |
-|---|---|
-| Passo 1 -> 2 | `sources`, `step_reached = 2` |
-| Passo 1 (skip) -> 2 | `sources = "SKIPPED"`, `step_reached = 2` |
-| Passo 2 -> 3 | `duvida`, `step_reached = 3` |
-| Passo 2 (skip) -> 3 | `duvida = "SKIPPED"`, `step_reached = 3` |
-| Passo 3 (add premium) -> 4 | `plan_selected = "premium"`, `step_reached = 4` |
-| Passo 3 (skip) -> 4 | `step_reached = 4` (plan_selected fica null) |
-| Passo 4 (add MC) -> 5 | `plan_selected` actualizado, `step_reached = 5` |
-| Passo 4 (skip) -> 5 | `step_reached = 5` |
+Solucao: Normalizar o email no Upsell com `.toLowerCase().trim()` antes de usar.
 
-Cada gravacao e feita com `supabase.from("registrations").update(...)` directamente no `advanceStep`, sem esperar pelo pagamento.
+**3. "SKIPPED" aparece como fonte no grafico de origens**
 
-**3. Actualizar useInscritos.ts**
+Quando o utilizador salta o Passo 1, grava-se `sources = "SKIPPED"`. No Dashboard, isto e interpretado como uma fonte real e aparece no grafico "Fontes de Origem" como "SKIPPED".
 
-Usar a nova coluna `step_reached` da DB em vez do calculo heuristico actual.
+Solucao: Filtrar "SKIPPED" no calculo de fontes no Dashboard.
 
-**4. Actualizar o funil no Dashboard**
+**4. Duvida "SKIPPED" aparece na lista de duvidas**
 
-O funil no CRM passa a usar o valor real de `step_reached` em vez de inferencias.
+Mesmo problema — duvidas com valor "SKIPPED" aparecem na seccao "Duvidas dos Inscritos".
 
----
+Solucao: Filtrar registos com `duvida === "SKIPPED"` da lista de duvidas.
 
-### Problema 2: Contactos existentes no E-goi
+**5. Limite de 1000 registos no CRM**
 
-O fluxo actual faz POST para criar contacto. Se ja existir (409), ignora. Contactos existentes nao recebem a tag nova nem entram na automacao.
+O `useInscritos` faz `.select("*")` sem paginacao. Com a base de 2000+ contactos mencionada, so aparecem os primeiros 1000.
 
-### Solucao: Actualizar contactos existentes
-
-Quando o E-goi devolve 409, o `sync-egoi` passa a:
-1. Extrair o `contact_id` da resposta 409
-2. Fazer PATCH para adicionar a tag `webinar_imagens_com_ia_18_fev` ao contacto existente
-3. Assim o contacto entra na automacao configurada por tag
+Solucao: Adicionar `.limit(5000)` ou implementar paginacao (para ja, um limite alto resolve).
 
 ---
 
@@ -54,16 +40,14 @@ Quando o E-goi devolve 409, o `sync-egoi` passa a:
 
 | Ficheiro | O que muda |
 |---|---|
-| **Migracao SQL** | `ALTER TABLE registrations ADD COLUMN step_reached integer DEFAULT 1` |
-| **src/pages/Upsell.tsx** | `advanceStep` passa a gravar dados na DB a cada transicao (sources, duvida, step_reached) |
-| **src/hooks/useInscritos.ts** | `mapRegistration` usa `r.step_reached` da DB em vez do calculo heuristico |
-| **src/components/crm/DashboardView.tsx** | Funil usa `step_reached` real para contagens precisas |
-| **supabase/functions/sync-egoi/index.ts** | No caso 409, faz PATCH para adicionar tag ao contacto existente |
+| `src/pages/Upsell.tsx` | Normalizar `userData.email` com `.toLowerCase().trim()` |
+| `src/components/crm/DashboardView.tsx` | Filtrar "SKIPPED" dos graficos de fontes e da lista de duvidas |
+| `src/hooks/useInscritos.ts` | Adicionar `.limit(5000)` ao query para suportar bases maiores |
+| `supabase/functions/sync-egoi/index.ts` | Corrigir attach-tag: usar endpoint que aceita tag por nome, ou fazer lookup do tag_id numerico primeiro |
 
-### Resultado
+### Prioridade
 
-- Cada passo do funil fica registado em tempo real na base de dados
-- O CRM mostra dados precisos de onde cada utilizador parou
-- Sabe-se se o utilizador saltou ou respondeu a cada pergunta
-- Contactos que ja existiam no E-goi recebem a tag e entram na automacao
-
+1. Email case-sensitivity (sem isto, o tracking nao funciona para muitos utilizadores)
+2. E-goi attach-tag (sem isto, contactos existentes nao entram na automacao)
+3. Filtrar SKIPPED (cosmetico mas confuso no CRM)
+4. Limite de registos (necessario quando a base crescer)
