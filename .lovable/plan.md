@@ -1,27 +1,44 @@
 
+## Aumentar tamanho do nome no CRM
 
-## Corrigir imagem do livro no Passo 5
+### Resumo
 
-### Problema
+O utilizador quer:
+1. **Remover** qualquer símbolo "(ft)" que possa estar abreviando nomes
+2. **Aumentar o tamanho/peso visual do nome** em toda a interface do CRM
 
-A imagem do livro "Guia Essencial SEO" nao aparece porque o ficheiro `guia-essencial-seo.png` nao existe no projeto. O codigo referencia `/guia-essencial-seo.png` mas a pasta `public/` nao contem esse ficheiro.
+### Investigação Realizada
 
-### Solucao
+Após revisar toda a interface CRM (TableView, PipelineView, DashboardView, InscritoModal, TrashView):
+- **Não encontrei** um símbolo literal "(ft)" no código
+- Os nomes estão atualmente acompanhados de **emojis de género** (🔵, 🌸, ⚪) que funcionam bem
+- Os nomes têm tamanhos variados dependendo da vista:
+  - **TableView**: `text-ink-900` (normal)
+  - **PipelineView**: `text-[13px]` (pequeno)
+  - **DashboardView**: `text-[13px]` (pequeno)
+  - **InscritoModal**: `text-[16px]` a `text-[17px]` (maior, apenas aqui)
 
-**Preciso que me envie a imagem do livro no chat** para a poder adicionar ao projeto.
+### Solução
 
-Assim que tiver a imagem:
+Padronizar e **aumentar o tamanho dos nomes** em todas as vistas do CRM:
 
-1. **Adicionar a imagem** a `public/guia-essencial-seo.png`
-2. **Verificar** que o `src` no componente aponta correctamente para `/guia-essencial-seo.png` (ja esta correcto no codigo)
+| Vista | Antes | Depois | Alteração |
+|---|---|---|---|
+| TableView | `text-ink-900` + emoji | `text-[15px] font-semibold` | Aumentar para 15px |
+| PipelineView | `text-[13px]` + emoji | `text-[14px] font-semibold` | Aumentar para 14px |
+| DashboardView | `text-[13px]` + emoji | `text-[14px] font-semibold` | Aumentar para 14px |
+| InscritoModal | `text-[16px]` a `text-[17px]` | `text-[18px] font-bold` | Aumentar para 18px |
+| TrashView | `text-[13px]` + emoji | `text-[14px] font-semibold` | Aumentar para 14px |
 
-### Alternativa (se nao tiver a imagem agora)
+Os **emojis de género** (🔵 🌸 ⚪) são mantidos, pois são úteis para identificação rápida.
 
-Posso temporariamente remover o bloco da imagem e manter apenas o texto, ate ter a imagem disponivel.
+### Ficheiros a Modificar
 
-### Resumo tecnico
-
-| Ficheiro | Alteracao |
-|---|---|
-| `public/guia-essencial-seo.png` | Adicionar imagem do livro (necessario upload pelo utilizador) |
+| Ficheiro | Linhas | Alteração |
+|---|---|---|
+| `src/components/crm/TableView.tsx` | 258 | Aumentar nome para `text-[15px] font-semibold` |
+| `src/components/crm/PipelineView.tsx` | 68-69 | Aumentar nome para `text-[14px] font-semibold` |
+| `src/components/crm/DashboardView.tsx` | 276, 362 | Aumentar nomes para `text-[14px] font-semibold` |
+| `src/components/crm/InscritoModal.tsx` | 211, 262 | Aumentar para `text-[18px] font-bold` |
+| `src/components/crm/TrashView.tsx` | 258 | Aumentar nome para `text-[14px] font-semibold` |
 
