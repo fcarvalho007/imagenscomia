@@ -1,28 +1,35 @@
 
-## Refinamento do Overlay do Hero — Mais Branco no Centro
+
+## Corrigir Tag E-goi - Aplicacao Explicita Apos Criacao
 
 ### Problema
-O overlay radial atual (linha 29) tem uma intensidade central de `0.70`, mas o utilizador quer **mais branco/claridade no meio** para melhor legibilidade e contraste com o fundo da imagem.
 
-### Solução
-Implementar um overlay radial mais intenso no centro, mantendo as bordas suaves:
+Os contactos estao a ser criados no E-goi com sucesso, mas **sem a tag 31** (`webinar_imagens_com_ia_18_fev`). O campo `tags` no payload de criacao do contacto nao esta a funcionar como esperado pela API do E-goi.
 
-**Ficheiro:** `src/components/landing/HeroSection.tsx` (linha 29)
+### Causa raiz
 
-Alterar o `radial-gradient` para:
-- **Centro (25%)**: `rgba(255,255,255,0.85)` (aumentar de 0.70 para 0.85)
-- **Meio (55%)**: `rgba(255,255,255,0.50)` (aumentar de 0.35 para 0.50)
-- **Bordas (100%)**: `rgba(255,255,255,0.15)` (manter ou ligeiramente aumentar de 0.10)
+A API do E-goi aparentemente ignora o campo `tags: ["webinar_imagens_com_ia_18_fev"]` no payload de criacao. Apenas o endpoint dedicado `attach-tag` aplica tags de forma fiavel.
 
-Isto cria um efeito de "vinheta invertida" — o centro fica significativamente mais branco/claro, garantindo que o texto (H1, subtítulo e caixas) se destaca bem contra qualquer parte da imagem de fundo, enquanto as bordas mantêm a suavidade visual.
+### Solucao
 
-### Resultado
-- Texto principal com **maior contraste** e legibilidade
-- Imagem de fundo **ainda visível**, mas com foco centralizado no conteúdo
-- Visual **elegante e equilibrado**, sem parecer excessivamente "blown out"
+**Ficheiro:** `supabase/functions/sync-egoi/index.ts`
 
-### Ficheiro a editar
-| Ficheiro | Linha | Alteração |
-|---|---|---|
-| `src/components/landing/HeroSection.tsx` | 29 | Aumentar opacidade radial: centro `0.85`, meio `0.50`, bordas `0.15` |
+1. Apos criar um contacto com sucesso (status 200/201), extrair o `contact_id` da resposta
+2. Chamar o endpoint `POST /lists/5/contacts/actions/attach-tag` com o `tag_id: 31` e o `contact_id`
+3. Isto garante que **todos** os contactos (novos e existentes) recebem a tag
+
+Alem disso, re-executar a funcao `bulk-sync-egoi` para aplicar a tag aos contactos que ja foram criados sem ela.
+
+### Alteracoes tecnicas
+
+| Ficheiro | Alteracao |
+|---|---|
+| `supabase/functions/sync-egoi/index.ts` | Apos criacao bem-sucedida, extrair contact_id da resposta e chamar attach-tag explicitamente |
+
+### Passos de execucao
+
+1. Atualizar a funcao `sync-egoi` com a chamada explicita ao attach-tag
+2. Fazer deploy da funcao
+3. Re-executar `bulk-sync-egoi` para aplicar a tag a todos os contactos existentes no E-goi
+4. Verificar no E-goi que os contactos tem a tag 31
 
