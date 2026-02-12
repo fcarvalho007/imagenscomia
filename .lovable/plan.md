@@ -1,18 +1,47 @@
 
-## Trocar imagem de fundo do Hero Section
 
-### Problema
-A imagem de fundo atual (`hero-bg.jpeg`) precisa ser substituída pela nova imagem que o utilizador enviou, que tem um estilo futurista com neon e efeitos 3D.
+## Simplificar cards do Pipeline e rever espaçamentos
 
-### Solução
-Copiar a nova imagem para `src/assets/hero-bg.jpeg`, substituindo a imagem existente. O componente `HeroSection.tsx` já está configurado para importar e usar esta imagem, portanto não será necessário alterar nenhum código.
+### O que muda
 
-### Implementação
-1. Copiar a imagem do utilizador (`hf_20260212_112543_a1d2d603-1f2d-4250-b166-b8e28d2613cf-2.jpeg`) para `src/assets/hero-bg.jpeg`
-2. A imagem será automaticamente utilizada no Hero Section com a mesma opacidade (50%) e overlay radial existentes
+**1. Remover avatar com iniciais e emojis de genero**
+- Pipeline cards: remover o circulo colorido com iniciais ("FT") e o emoji de genero (🔵/🌸/⚪) do nome
+- Tabela: remover o mesmo avatar e emoji da coluna Nome
 
-### Resultado esperado
-- Hero section terá a nova imagem de fundo com o estilo futurista neon
-- O overlay branco radial continuará a garantir legibilidade do H1 e subtítulo
-- Nenhuma alteração de código necessária
+**2. Simplificar o conteudo do card no Pipeline**
+Cada card passa a ter apenas:
+- Nome (sem avatar, sem emoji)
+- Email
+- Badge do plano (Gratuito / Premium / MC / Bundle)
+- Data de inscricao
 
+Elementos removidos do card:
+- Avatar com iniciais (circulo colorido)
+- Emoji de genero
+- Badge "Passo X/5"
+- Linha da duvida (icone + texto)
+- Icones de notas e link externo
+- Botao WhatsApp hover
+
+**3. Rever espaçamentos**
+- Reduzir padding interno dos cards de `p-3.5` para `p-3`
+- Ajustar gaps verticais entre elementos do card (mt-1.5 / mt-2 para mt-1)
+- Na tabela: remover avatar e emoji da coluna Nome, manter restante layout
+
+### Ficheiros alterados
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/PipelineView.tsx` | Simplificar `PipelineCard` removendo avatar, emoji, passo, duvida, notas, WhatsApp. Manter nome, email, badge plano, data. Ajustar spacing. |
+| `src/components/crm/TableView.tsx` | Remover avatar com iniciais e emoji de genero da coluna Nome. |
+
+### Estrutura do card simplificado (Pipeline)
+
+```text
++---------------------------+
+| Nome Completo             |
+| email@exemplo.pt          |
+| [Gratuito]                |
+| 12 Fev · 17:33            |
++---------------------------+
+```
