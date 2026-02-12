@@ -75,6 +75,9 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
+      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26 };
+      fbq('track', 'Purchase', { value: prices[plan] || 0, currency: 'EUR' });
+
       window.location.href = data.paymentLink;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro inesperado";

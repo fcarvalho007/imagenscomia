@@ -85,6 +85,9 @@ const Upsell = () => {
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26 };
+      fbq('track', 'Purchase', { value: prices[planLabel] || 0, currency: 'EUR' });
+
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);

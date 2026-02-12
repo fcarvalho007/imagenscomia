@@ -47,6 +47,7 @@ export const RegistrationModal = () => {
     setError(null);
     try {
       const data = await registerFree();
+      fbq('track', 'Lead');
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
