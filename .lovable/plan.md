@@ -1,68 +1,34 @@
 
 
-## Analise e correcoes — 4 pontos
+## Converter campo de duvida em escolha multipla com opcao "Outro"
 
-### Ponto 1: Pagina fica offline ao publicar
+### O que muda
 
-Isto e um comportamento normal da plataforma Lovable durante o processo de deploy. Enquanto a nova versao esta a ser carregada, ha um breve periodo em que aparece a mensagem "Publish or update your Lovable project". Nao e um bug nem algo que se possa corrigir no codigo — e uma limitacao do processo de deploy actual. Normalmente dura apenas alguns segundos.
+O Step 2 do /upgrade ("A tua maior duvida sobre imagens com IA") deixa de ser apenas uma textarea livre e passa a ter 5 opcoes pre-definidas seleccionaveis (multi-seleccao), mais uma opcao "Outro" com campo de texto livre. O visual seguira exactamente o mesmo padrao do Step 1 (StepQualification) para manter consistencia.
 
-**Accao:** Nenhuma alteracao de codigo necessaria. Publicar em momentos de menor trafego.
+### Opcoes pre-definidas
 
----
+1. "Nao sei descrever o estilo visual que quero"
+2. "Os resultados ficam sempre genericos, sem identidade"
+3. "Nao percebo que ferramenta usar (Midjourney, DALL-E, etc.)"
+4. "Quero criar imagens para a minha marca mas nao sei por onde comecar"
+5. "Tenho dificuldade em editar ou refinar as imagens geradas"
 
-### Ponto 2: Inscricoes nao aparecem no CRM
+### Alteracoes tecnicas
 
-**Causa identificada:** A tabela `registrations` tem Row Level Security (RLS) activada mas nao tem nenhuma politica definida. Isto significa que:
-- **Escrita funciona** (a edge function `register-free` usa a service role key, que ignora RLS)
-- **Leitura do CRM falha** (o hook `useInscritos` usa o cliente normal com a anon key, que e bloqueado pelo RLS)
+**Ficheiro: `src/pages/Upsell.tsx`**
+- Adicionar novo state `duvidas: string[]` (array, para multi-seleccao) e `outraDuvida: string` (texto livre)
+- O state `duvida: string` existente sera mantido para compatibilidade com o envio a base de dados -- sera preenchido automaticamente a partir da juncao das seleccoes
+- Passar os novos props ao `StepPersonalization`
 
-Confirmei que existem 5 registos na base de dados, mas o CRM recebe uma lista vazia `[]`.
+**Ficheiro: `src/components/upgrade/StepPersonalization.tsx`**
+- Substituir a textarea por uma lista de botoes seleccionaveis (mesmo estilo visual do StepQualification: borda azul quando activo, checkbox com icone Check)
+- Permitir multi-seleccao (clicar activa/desactiva)
+- Adicionar opcao "Outro" que, quando seleccionada, mostra um campo de texto livre
+- O campo de texto livre tera placeholder "Escreve a tua duvida..." e limite de 200 caracteres
+- O componente recebera novos props: `duvidas: string[]`, `setDuvidas`, `outraDuvida: string`, `setOutraDuvida`
+- Internamente, ao chamar `onNext`, combinara as seleccoes num unico string (separadas por ", ") e passara via `setDuvida` para manter compatibilidade com o envio a BD
 
-**Solucao:** Adicionar uma politica RLS que permite leitura publica (SELECT) na tabela `registrations`. Os dados desta tabela (nomes, emails) ja sao acedidos pelo CRM que e protegido por autenticacao no frontend.
+**Base de dados**: Sem alteracoes. O campo `duvida` na tabela `registrations` ja e texto livre e recebera as opcoes seleccionadas concatenadas (ex: "Nao sei descrever o estilo visual que quero, Outro: quero usar IA para logos").
 
-```sql
-CREATE POLICY "allow_anon_select" ON public.registrations
-  FOR SELECT USING (true);
-```
-
----
-
-### Ponto 3: Integracao E-goi
-
-**Analise do codigo:** O fluxo esta correctamente implementado:
-1. Utilizador preenche o modal de registo
-2. A edge function `register-free` insere na base de dados
-3. Imediatamente apos, chama `sync-egoi` (non-blocking)
-4. `sync-egoi` envia o contacto para a Lista 5 do E-goi com a tag `webinar_imagens_com_ia_18_fev`
-
-O codigo esta correcto e deve funcionar. Se houver duvida, posso testar a edge function directamente para confirmar que o E-goi recebe os dados.
-
-**Accao:** Nenhuma alteracao necessaria. Posso testar para confirmar se quiser.
-
----
-
-### Ponto 4: Pagamento continua com erro APIKEY_INVALID
-
-**Causa:** A chave `EUPAGO_API_KEY` guardada nos secrets continua invalida. O erro vem directamente da EuPago: `"API Key is invalid"`. O codigo esta correcto — e exclusivamente um problema com a credencial.
-
-**O que fazer:**
-1. Entrar no backoffice da EuPago (https://clientes.eupago.pt)
-2. Ir a Configuracoes > API Keys
-3. Copiar a chave correcta (formato: `xxxx-xxxx-xxxx-xxxx-xxxx`)
-4. Confirmar que e a chave de **producao** (nao sandbox)
-5. Partilhar a chave para eu a actualizar
-
-**Nota sobre vendas no CRM:** Quando o pagamento funcionar, as vendas feitas em /live ja serao visíveis no CRM porque o webhook `eupago-webhook` actualiza `paid_at` e `eupago_ref` na tabela `registrations`, e o CRM le dessa mesma tabela. Porem, o `PurchaseModal` em /live regista o nome e email antes de redirecionar para pagamento, mas **nao cria um registo na tabela `registrations`** — apenas chama `create-payment`. Isto significa que vendas feitas por pessoas que nao passaram pelo funil de registo nao aparecerao no CRM. Para resolver, o `PurchaseModal` deveria tambem inserir o registo na base de dados (via `register-free`) antes de criar o pagamento.
-
----
-
-### Resumo de accoes
-
-| # | Accao | Ficheiro |
-|---|-------|----------|
-| 1 | Nenhuma (comportamento da plataforma) | — |
-| 2 | Adicionar politica RLS SELECT na tabela `registrations` | Migracao SQL |
-| 3 | Nenhuma (ja esta implementado) | — |
-| 4a | Utilizador fornecer nova EUPAGO_API_KEY | Secret |
-| 4b | PurchaseModal em /live: chamar `register-free` antes de `create-payment` | `src/components/webinar/PurchaseModal.tsx` |
-
+**CRM**: Os dados ja serao visiveis no CRM tal como estao. Futuramente, pode-se adicionar filtragem/estatisticas por opcao.
