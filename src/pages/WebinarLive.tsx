@@ -1,5 +1,5 @@
-import { useEffect } from "react";
 import { Radio } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { WebinarVideoArea } from "@/components/webinar/WebinarVideoArea";
 import { WebinarSidebar } from "@/components/webinar/WebinarSidebar";
 import { WebinarContent } from "@/components/webinar/WebinarContent";
@@ -11,17 +11,7 @@ import { useCountdown } from "@/hooks/useCountdown";
 const WebinarLive = () => {
   const countdown = useCountdown(WEBINAR_CONFIG.startDate);
 
-  useEffect(() => {
-    document.title = `${WEBINAR_CONFIG.title} — DIGITALFC`;
-    const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", WEBINAR_CONFIG.summary);
-    else {
-      const tag = document.createElement("meta");
-      tag.name = "description";
-      tag.content = WEBINAR_CONFIG.summary;
-      document.head.appendChild(tag);
-    }
-  }, []);
+  usePageMeta({ title: `${WEBINAR_CONFIG.title} — DIGITALFC`, description: WEBINAR_CONFIG.summary });
   const now = new Date();
   const timeDiff = WEBINAR_CONFIG.startDate.getTime() - now.getTime();
   const isNearStart = timeDiff <= 30 * 60 * 1000 && timeDiff > 0;

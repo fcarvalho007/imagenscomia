@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Gift, Check, Copy, MessageCircle, Send, ArrowLeft, Loader2, Mail,
@@ -56,6 +57,7 @@ function formatInviteDate(isoDate: string): string {
 }
 
 const ConvitesContent = () => {
+  usePageMeta({ title: "Programa de Convites — Webinar Imagens com IA", description: "Convida amigos e ganha prémios exclusivos." });
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
   const [emailError, setEmailError] = useState<string | null>(null);
