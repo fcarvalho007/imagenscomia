@@ -37,12 +37,12 @@ export default function DashboardView({ inscritos, onSelectInscrito }: Dashboard
     const conversao = total ? (pagantes.length / total) * 100 : 0;
     const ticket = pagantes.length ? receita / pagantes.length : 0;
 
-    // Funnel
+    // Funnel (using real step_reached from DB)
     const step1 = active.length;
-    const step2 = active.filter((i) => i.step_reached >= 1).length;
-    const step3 = active.filter((i) => i.duvida !== "").length;
-    const step4 = active.filter((i) => i.step_reached >= 3).length;
-    const step5 = active.filter((i) => i.step_reached === 5).length;
+    const step2 = active.filter((i) => i.step_reached >= 2).length;
+    const step3 = active.filter((i) => i.step_reached >= 3).length;
+    const step4 = active.filter((i) => i.step_reached >= 4).length;
+    const step5 = active.filter((i) => i.step_reached >= 5).length;
 
     // Sources
     const srcMap: Record<string, number> = {};

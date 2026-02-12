@@ -18,7 +18,7 @@ function mapRegistration(r: any): Inscrito {
     email: r.email,
     whatsapp: r.whatsapp || "",
     timestamp: r.created_at || new Date().toISOString(),
-    step_reached: r.plan_selected ? 5 : r.duvida ? 2 : r.sources ? 1 : 1 as 1 | 2 | 3 | 4 | 5,
+    step_reached: (r.step_reached || 1) as 1 | 2 | 3 | 4 | 5,
     source: r.sources ? r.sources.split(", ").filter(Boolean) : [],
     source_outro: "",
     duvida: r.duvida || "",
