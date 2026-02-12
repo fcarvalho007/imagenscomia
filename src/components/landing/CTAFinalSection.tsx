@@ -24,7 +24,7 @@ export const CTAFinalSection = () => {
 
         <ScrollReveal delay={0.1}>
           <p className="text-[18px] text-white/65 mb-6">
-            75 minutos. Sem custo. Método pronto a usar no dia seguinte.
+            60 minutos. Sem custo. Método pronto a usar no dia seguinte.
           </p>
         </ScrollReveal>
 

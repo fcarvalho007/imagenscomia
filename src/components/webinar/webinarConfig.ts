@@ -6,7 +6,7 @@ export const WEBINAR_CONFIG = {
   metaLine: "Quarta-feira, 18 de Fevereiro · 10h00 (Portugal)",
   summary: "De briefing a imagem publicável em minutos — com método e exemplos reais.",
   startDate: new Date("2026-02-18T10:00:00+00:00"), // Europe/Lisbon = UTC in Feb
-  durationMinutes: 75,
+  durationMinutes: 60,
 
   /** Set to true to force the live/embed state regardless of time */
   isLive: false,
@@ -24,7 +24,7 @@ export const WEBINAR_CONFIG = {
     startDate: "2026-02-18",
     startTime: "10:00",
     endDate: "2026-02-18",
-    endTime: "11:15",
+    endTime: "11:00",
     timeZone: "Europe/Lisbon",
     location: "https://imagenscomia.com/live",
     organizer: "Frederico Carvalho|fredericodigital@gmail.com",

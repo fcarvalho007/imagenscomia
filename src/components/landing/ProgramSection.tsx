@@ -48,7 +48,7 @@ export const ProgramSection = () => {
           PROGRAMA
         </p>
         <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
-          O que se aprende em 75 minutos
+          O que se aprende em 60 minutos
         </h2>
         <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
           3 blocos práticos. Demos ao vivo. Resultados no dia seguinte.

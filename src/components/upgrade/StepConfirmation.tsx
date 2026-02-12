@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, Loader2, Copy } from "lucide-react";
+import { Check, Loader2, Copy, Shield } from "lucide-react";
+import { motion } from "framer-motion";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import type { OrderState } from "@/pages/Upsell";
 import { formatPrice, getTotal } from "@/pages/Upsell";
@@ -80,19 +81,25 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
 
 /* ── Modal de transição pré-redirect ── */
 const RedirectOverlay = () => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-    <div className="bg-white rounded-2xl p-8 max-w-[400px] mx-4 text-center shadow-xl">
-      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-      <h3 className="font-heading font-bold text-[18px] text-ink-900 mb-2">
-        A preparar o pagamento...
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="bg-white rounded-3xl p-10 max-w-[380px] mx-4 text-center"
+      style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)" }}
+    >
+      <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
+        <Shield className="w-7 h-7 text-blue-600" />
+      </div>
+      <Loader2 className="w-5 h-5 animate-spin text-blue-400 mx-auto mb-4" />
+      <h3 className="font-heading font-semibold text-[17px] text-ink-900 mb-1.5">
+        Pagamento seguro
       </h3>
-      <p className="text-[15px] text-ink-500 mb-1">
-        Vais ser redirecionado para a página de pagamento seguro.
+      <p className="text-[14px] text-ink-400 leading-relaxed">
+        A redirecionar... Receberás confirmação por email.
       </p>
-      <p className="text-[14px] text-ink-400">
-        Recebes um email de confirmação após o pagamento. 📩
-      </p>
-    </div>
+    </motion.div>
   </div>
 );
 

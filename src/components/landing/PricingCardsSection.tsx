@@ -4,7 +4,7 @@ import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const freeFeatures = [
-  "Webinar ao vivo (75 min)",
+  "Webinar ao vivo (60 min)",
   "Demonstração ao vivo",
   "Resumo PDF da sessão",
 ];
