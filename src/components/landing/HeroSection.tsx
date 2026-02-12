@@ -1,36 +1,51 @@
 import { Play, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
-import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
+import heroBg from "@/assets/hero-bg.jpeg";
+
+const fade = (delay: number) => ({
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.6, delay, ease: "easeOut" as const },
+});
 
 export const HeroSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section className="py-16 md:py-24 bg-background">
-      <div className="container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
-        <ScrollReveal delay={0.05}>
+    <section className="relative overflow-hidden py-16 md:py-24 bg-background">
+      {/* Background image */}
+      <img
+        src={heroBg}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.15] pointer-events-none"
+      />
+      {/* Overlay for legibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/80 to-white/90 pointer-events-none" />
+
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
+        <motion.div {...fade(0.05)}>
           <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 mb-4">
             WEBINAR GRATUITO · 18 FEVEREIRO · 10H00
           </p>
-        </ScrollReveal>
+        </motion.div>
 
-        <ScrollReveal delay={0.1}>
+        <motion.div {...fade(0.1)}>
           <h1 className="mb-3">
             <span className="block font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900">
               Cria Imagens Profissionais com IA
             </span>
           </h1>
-        </ScrollReveal>
+        </motion.div>
 
-        <ScrollReveal delay={0.15}>
+        <motion.div {...fade(0.15)}>
           <p className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-6">
             Sem equipa criativa. Sem agência. Sem meses de tentativa e erro.
           </p>
-        </ScrollReveal>
+        </motion.div>
 
-
-        <ScrollReveal delay={0.25}>
+        <motion.div {...fade(0.25)}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-[680px] mx-auto mb-8">
             {[
               { icon: Calendar, text: "Ao vivo — 18 Fevereiro" },
@@ -44,23 +59,22 @@ export const HeroSection = () => {
               </div>
             ))}
           </div>
-        </ScrollReveal>
+        </motion.div>
 
-        <ScrollReveal delay={0.3}>
+        <motion.div {...fade(0.3)}>
           <motion.div
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            className="max-w-[640px] mx-auto aspect-video bg-surface rounded-xl border border-border shadow-card-md flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-card-lg transition-shadow mb-6"
+            className="max-w-[640px] mx-auto aspect-video bg-surface rounded-xl border border-border shadow-card-md flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-card-lg transition-shadow mb-10"
           >
             <div className="w-[60px] h-[60px] rounded-full bg-blue-600 flex items-center justify-center shadow-lg">
               <Play className="w-6 h-6 text-white ml-1" fill="white" />
             </div>
             <p className="text-[14px] text-ink-400">Pré-visualização · 90 segundos</p>
           </motion.div>
-        </ScrollReveal>
+        </motion.div>
 
-        {/* Prova social movida para antes do CTA */}
-        <ScrollReveal delay={0.4}>
+        <motion.div {...fade(0.4)}>
           <div id="inscrever" className="flex justify-center">
             <motion.button
               onClick={() => open("free")}
@@ -74,9 +88,9 @@ export const HeroSection = () => {
           <p className="text-[14px] text-ink-400 mt-3">
             Sem spam. Dados protegidos (RGPD). Cancelamento simples.
           </p>
-        </ScrollReveal>
+        </motion.div>
 
-        <ScrollReveal delay={0.45}>
+        <motion.div {...fade(0.45)}>
           <div className="flex justify-center mt-4">
             <div className="inline-flex items-center gap-[10px] bg-white border border-border rounded-xl px-[18px] py-[10px] shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
               <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">
@@ -95,8 +109,7 @@ export const HeroSection = () => {
               </div>
             </div>
           </div>
-        </ScrollReveal>
-
+        </motion.div>
       </div>
     </section>
   );
