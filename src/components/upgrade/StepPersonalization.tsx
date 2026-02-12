@@ -1,13 +1,52 @@
+import { useState } from "react";
+import { Check } from "lucide-react";
+
+const DUVIDA_OPTIONS = [
+  "Não sei descrever o estilo visual que quero",
+  "Os resultados ficam sempre genéricos, sem identidade",
+  "Não percebo que ferramenta usar (Midjourney, DALL-E, etc.)",
+  "Quero criar imagens para a minha marca mas não sei por onde começar",
+  "Tenho dificuldade em editar ou refinar as imagens geradas",
+];
+
 interface Props {
-  duvida: string;
+  duvidas: string[];
+  setDuvidas: (s: string[]) => void;
+  outraDuvida: string;
+  setOutraDuvida: (s: string) => void;
   setDuvida: (s: string) => void;
   onNext: () => void;
   onSkip: () => void;
 }
 
-export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props) => {
-  const charCount = duvida.length;
-  const maxChars = 300;
+export const StepPersonalization = ({
+  duvidas, setDuvidas, outraDuvida, setOutraDuvida, setDuvida, onNext, onSkip,
+}: Props) => {
+  const [showOther, setShowOther] = useState(duvidas.includes("Outro"));
+
+  const toggle = (val: string) => {
+    setDuvidas(duvidas.includes(val) ? duvidas.filter((d) => d !== val) : [...duvidas, val]);
+  };
+
+  const toggleOther = () => {
+    if (showOther) {
+      setShowOther(false);
+      setDuvidas(duvidas.filter((d) => d !== "Outro"));
+      setOutraDuvida("");
+    } else {
+      setShowOther(true);
+      setDuvidas([...duvidas, "Outro"]);
+    }
+  };
+
+  const handleNext = () => {
+    const parts = duvidas.filter((d) => d !== "Outro");
+    if (showOther && outraDuvida.trim()) {
+      parts.push(`Outro: ${outraDuvida.trim()}`);
+    }
+    setDuvida(parts.join(", "));
+    onNext();
+  };
 
   return (
     <div className="max-w-[560px]">
@@ -18,7 +57,6 @@ export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props
         O Frederico vai ler antes do webinar. Quanto mais específico, mais útil para ti.
       </p>
 
-      {/* Blue note */}
       <div
         className="rounded-r-lg p-2.5 mb-4"
         style={{
@@ -31,23 +69,74 @@ export const StepPersonalization = ({ duvida, setDuvida, onNext, onSkip }: Props
         </p>
       </div>
 
-      <textarea
-        rows={4}
-        maxLength={maxChars}
-        value={duvida}
-        onChange={(e) => setDuvida(e.target.value)}
-        placeholder="Ex: 'Não sei como descrever o estilo visual da minha marca'&#10;ou 'Os resultados são sempre genéricos, sem identidade'"
-        className="w-full border border-border rounded-xl p-3.5 text-[16px] text-ink-700 bg-background resize-none focus:outline-none focus:border-blue-600 transition-colors"
-      />
-      <p className="text-right text-[14px] mt-1" style={{
-        color: charCount > 280 ? "hsl(var(--amber-500))" : "hsl(var(--ink-400))"
-      }}>
-        {charCount}/{maxChars}
-      </p>
+      <p className="text-[14px] text-ink-400 mb-3">(pode seleccionar mais de uma)</p>
+
+      <div className="space-y-2.5">
+        {DUVIDA_OPTIONS.map((opt) => {
+          const selected = duvidas.includes(opt);
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => toggle(opt)}
+              className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
+              style={{
+                borderColor: selected ? "hsl(var(--blue-600))" : "hsl(var(--border))",
+                backgroundColor: selected ? "hsl(var(--blue-50))" : "hsl(var(--background))",
+              }}
+            >
+              <div
+                className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
+                style={{
+                  backgroundColor: selected ? "hsl(var(--blue-600))" : "transparent",
+                  border: selected ? "none" : "2px solid hsl(var(--border))",
+                }}
+              >
+                {selected && <Check className="w-3 h-3 text-white" />}
+              </div>
+              <span className="text-[15px] text-ink-700">{opt}</span>
+            </button>
+          );
+        })}
+
+        {/* Other option */}
+        <button
+          type="button"
+          onClick={toggleOther}
+          className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
+          style={{
+            borderColor: showOther ? "hsl(var(--blue-600))" : "hsl(var(--border))",
+            backgroundColor: showOther ? "hsl(var(--blue-50))" : "hsl(var(--background))",
+          }}
+        >
+          <div
+            className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
+            style={{
+              backgroundColor: showOther ? "hsl(var(--blue-600))" : "transparent",
+              border: showOther ? "none" : "2px solid hsl(var(--border))",
+            }}
+          >
+            {showOther && <Check className="w-3 h-3 text-white" />}
+          </div>
+          <span className="text-[15px] text-ink-700">Outro</span>
+        </button>
+
+        {showOther && (
+          <input
+            type="text"
+            value={outraDuvida}
+            onChange={(e) => setOutraDuvida(e.target.value.slice(0, 200))}
+            placeholder="Escreve a tua dúvida..."
+            maxLength={200}
+            className="w-full border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600 ml-8"
+            style={{ maxWidth: "calc(100% - 2rem)" }}
+          />
+        )}
+      </div>
 
       <button
-        onClick={onNext}
-        className="mt-5 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-3 px-8 rounded-xl transition-colors"
+        onClick={handleNext}
+        className="mt-7 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-3 px-8 rounded-xl transition-colors"
       >
         Próximo passo →
       </button>
