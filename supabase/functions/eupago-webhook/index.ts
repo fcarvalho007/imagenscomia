@@ -16,40 +16,65 @@ serve(async (req) => {
     const body = await req.json();
     console.log("EuPago webhook received:", JSON.stringify(body));
 
-    const { transactionStatus, reference, amount, identifier, paymentMethod } = body;
+    const { transactionStatus, reference, amount, identifier, paymentMethod, transactionID, transaction_id } = body;
+    const txID = transactionID || transaction_id;
 
-    if (transactionStatus === "Success" && identifier) {
-      console.log(`✅ Payment confirmed: ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}`);
+    if (transactionStatus === "Success") {
+      console.log(`✅ Payment confirmed: ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${txID}`);
 
-      // Extract email from identifier format: WEBINAR-PLAN-email@example.com-timestamp
-      const parts = identifier.split("-");
-      // Remove first two parts (WEBINAR, PLAN) and last part (timestamp)
-      // Email is everything in between
-      let email = "";
-      if (parts.length >= 4) {
-        email = parts.slice(2, -1).join("-");
-      }
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-      if (email) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+      let matched = false;
 
-        const { error } = await supabase
+      // Strategy 1: Match by transactionID (saved at payment creation)
+      if (txID) {
+        const { data, error } = await supabase
           .from("registrations")
           .update({
             paid_at: new Date().toISOString(),
-            eupago_ref: reference || identifier,
+            eupago_ref: reference || txID,
           })
-          .eq("email", email);
+          .eq("eupago_ref", txID)
+          .select("email");
 
-        if (error) {
-          console.error("DB update error:", error);
+        if (!error && data && data.length > 0) {
+          console.log(`✅ Matched by transactionID: ${data[0].email}`);
+          matched = true;
         } else {
-          console.log(`✅ Updated registration for ${email} with paid_at`);
+          console.log(`⚠️ No match by transactionID=${txID}, trying email extraction...`);
         }
-      } else {
-        console.warn("⚠️ Could not extract email from identifier:", identifier);
+      }
+
+      // Strategy 2: Extract email from identifier (fallback)
+      if (!matched && identifier) {
+        const parts = identifier.split("-");
+        let email = "";
+        if (parts.length >= 4) {
+          email = parts.slice(2, -1).join("-");
+        }
+
+        if (email) {
+          const { error } = await supabase
+            .from("registrations")
+            .update({
+              paid_at: new Date().toISOString(),
+              eupago_ref: reference || identifier,
+            })
+            .eq("email", email);
+
+          if (error) {
+            console.error("DB update error (email fallback):", error);
+          } else {
+            console.log(`✅ Updated registration for ${email} via email fallback`);
+            matched = true;
+          }
+        }
+      }
+
+      if (!matched) {
+        console.warn("⚠️ Could not match payment to any registration. identifier:", identifier, "txID:", txID);
       }
     } else {
       console.log(`⚠️ Payment status: ${transactionStatus}, ref=${reference}`);

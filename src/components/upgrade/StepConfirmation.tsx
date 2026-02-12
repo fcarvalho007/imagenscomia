@@ -14,7 +14,6 @@ interface Props {
   referralCode: string;
 }
 
-
 /* ── Variante A — Só Gratuito ── */
 const VariantFree = ({ userName, referralCode }: { userName: string; referralCode: string }) => {
   const [copied, setCopied] = useState(false);
@@ -34,7 +33,6 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         Estás inscrito! Até dia 18 🎉
       </h2>
 
-      {/* Confirmation block */}
       <div className="bg-green-50 border border-green-100 rounded-xl p-5 mt-5 mb-5 space-y-2">
         {[
           "Webinar ao vivo — 18 Fev · 10h00",
@@ -48,10 +46,8 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         ))}
       </div>
 
-      {/* Calendar button */}
       <WebinarCalendarButton className="mb-5" />
 
-      {/* Referral block — destaque reforçado */}
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
         <p className="font-heading font-bold text-[17px] text-amber-800 mb-2">
           🎁 Convida 2 amigos — ganhas acesso ao Q&A Bónus de 25 Fev
@@ -69,7 +65,6 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
         </button>
       </div>
 
-      {/* Instagram */}
       <a
         href="https://www.instagram.com/frederico.m.carvalho/"
         target="_blank"
@@ -82,6 +77,24 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
     </div>
   );
 };
+
+/* ── Modal de transição pré-redirect ── */
+const RedirectOverlay = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl p-8 max-w-[400px] mx-4 text-center shadow-xl">
+      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+      <h3 className="font-heading font-bold text-[18px] text-ink-900 mb-2">
+        A preparar o pagamento...
+      </h3>
+      <p className="text-[15px] text-ink-500 mb-1">
+        Vais ser redirecionado para a página de pagamento seguro.
+      </p>
+      <p className="text-[14px] text-ink-400">
+        Recebes um email de confirmação após o pagamento. 📩
+      </p>
+    </div>
+  </div>
+);
 
 /* ── Variantes B/C/D — Com pagamento ── */
 const VariantPayment = ({
@@ -97,6 +110,7 @@ const VariantPayment = ({
   onPay: (plan: string) => void;
   onBack: () => void;
 }) => {
+  const [showRedirect, setShowRedirect] = useState(false);
   const { premium, masterclass } = orderState;
   const total = getTotal(orderState);
   const subtotal = (premium ? 15 : 0) + (masterclass ? 47 : 0);
@@ -112,11 +126,17 @@ const VariantPayment = ({
     plan = "masterclass";
   }
 
+  const handleClick = () => {
+    setShowRedirect(true);
+    onPay(plan);
+  };
+
   return (
     <div className="max-w-[480px]">
+      {showRedirect && <RedirectOverlay />}
+
       <h2 className="font-heading font-bold text-[24px] text-ink-900">{title}</h2>
 
-      {/* Order summary */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mt-5 mb-5">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
@@ -165,10 +185,9 @@ const VariantPayment = ({
         </div>
       </div>
 
-      {/* Pay button */}
       <button
         disabled={loading}
-        onClick={() => onPay(plan)}
+        onClick={handleClick}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl shadow-blue transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
