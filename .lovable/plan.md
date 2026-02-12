@@ -1,38 +1,105 @@
 
+## Revisão e Melhorias para Página /convites
 
-## Modais integrados para Termos e Politica de Privacidade (sem paginas separadas)
+### Problemas Identificados
 
-Em vez de navegar para paginas separadas, os textos de Termos e Politica de Privacidade abrem em modais (Dialog) diretamente onde o utilizador esta.
+1. **Dependência `checked` em useEffect**
+   - O estado `checked` previne re-execução, mas se o `email` mudar, a página não re-verifica automaticamente
+   - Quando o utilizador muda de email, a lógica não responde
 
-### O que muda
+2. **Falta de validação de email no input**
+   - O campo email aceita qualquer valor antes de enviar
+   - Sem feedback visual de erro antes do submit
 
-1. **Novo componente `LegalModal.tsx`** - Um modal reutilizavel (usando Radix Dialog) que recebe titulo e conteudo. Inclui scroll interno e botao de fechar. Sera usado para ambos os textos.
+3. **Carregamento inicial lento**
+   - Leaderboard carrega sempre em paralelo (pode demorar)
+   - Não há skeleton/placeholder durante o carregamento do leaderboard
 
-2. **Conteudo legal em componentes separados** - Criar `src/components/legal/TermosContent.tsx` e `src/components/legal/PrivacidadeContent.tsx` com o texto formatado (reutilizando o conteudo que ja existe em `Termos.tsx` e o texto de Privacidade do historico).
+4. **Refetch manual não funciona**
+   - O `onSubmit` do formulário chama `handleCheck()`, mas sem validação de email vazio
+   - Nenhum feedback de sucesso/erro visual após re-verificação
 
-3. **Atualizar FooterSection.tsx** - Os links "Privacidade" e "Termos" passam a abrir modais em vez de navegar. O componente fica com estado local para controlar qual modal esta aberto.
+5. **Copy feedback insuficiente**
+   - Toast aparece mas desaparece em 2.5s rapidamente
+   - Sem visual feedback no botão enquanto o texto está "Copiado!"
 
-4. **Atualizar WebinarFooter.tsx** - Mesma logica: links abrem modais inline.
+6. **Mobile: layout do "Como funciona" pode quebrar**
+   - Com 3 ícones lado a lado em mobile pequeno (< 360px) pode ficar apertado
+   - Sem wrapping ou ajuste responsivo
 
-5. **Atualizar RegistrationModal.tsx** - Os links "Politica de Privacidade" e "Termos e Condicoes" no texto de consentimento abrem os respetivos modais (sobrepostos ao modal de registo). Removem-se os `target="_blank"` e `href`.
+7. **Mensagem de data/hora incompleta**
+   - `toLocaleDateString` com opções `hour` e `minute` não funciona corretamente
+   - Deveria mostrar data + hora de forma clara
 
-6. **Manter a pagina `/termos`** - A rota continua a funcionar para quem aceder diretamente, mas os links internos usam modais.
+8. **Leaderboard sempre vazio ou com poucas entradas**
+   - Se houver < 5 entradas, o layout fica vazio visualmente
+   - Sem estado "Sem dados" claro
 
-### Ficheiros
+9. **WhatsApp link sem validação**
+   - Se `whatsappMsg` estiver vazio ou muito longo, pode quebrar
+   - Sem fallback se a função de encode falhar
 
-| Ficheiro | Acao |
+10. **Estado `checked` nunca reseta**
+    - Se o utilizador fechar e reabrir a página com outro email, fica preso no estado anterior
+    - Dependency array em useEffect precisa ser ajustado
+
+### Melhorias Propostas
+
+#### A) Lógica e Estados
+- **Remover `checked` e adicionar `hasSubmitted`**: Rastreia se já houve um submit, mas permite re-tentativas
+- **Adicionar validação real de email**: Validação antes de enviar (pattern + .test())
+- **Refetch automática**: Se o email no URL mudar, revalidar automaticamente
+- **Resetar estados ao desmontar**: Limpar dados ao navegar para fora
+
+#### B) UX e Feedback
+- **Melhorar toast**: Aumentar duração para 3.5s e adicionar cor diferente por tipo (sucesso vs erro)
+- **Loading states**: Adicionar skeleton/placeholders enquanto carrega leaderboard
+- **Estados vazios**: Cards mostrarem estado "Carregando..." quando aplicável
+- **Feedback visual**: Button "Copiar" com cor verde/check e transição suave
+
+#### C) Responsividade Mobile
+- **"Como funciona" em 2 linhas em mobile**: Em screens < 640px, mudar de 3 colunas para grid 2x2 ou stack
+- **Reduzir padding em mobile**: De p-5 para p-4 em mobile para economizar espaço
+- **Buttons stacked em mobile**: "Copiar link" + WhatsApp em vertical em mobile
+
+#### D) Data/Hora
+- **Usar função helper**: Criar função `formatDateTimeLocale()` que funcione corretamente em PT-PT
+- **Mostrar apenas data + hora**: "12 Fev · 10:30" mais legível
+
+#### E) Leaderboard
+- **Adicionar skeleton loading**: Durante fetch, mostrar 5 linhas falsas animadas
+- **Limite visual**: Mostrar "Top 10" e mensagem "Ver mais 5 participantes" se houver
+- **Highlight do utilizador**: Sempre visível se estiver no ranking, com ícone 👤
+
+#### F) Otimizações
+- **Memoizar funções**: `handleCopy`, `handleCopyMsg`, `handleCheck` com `useCallback`
+- **Lazy load do leaderboard**: Só carregar após 500ms da montagem para não bloquear render inicial
+- **URL update automática**: Salvar no `window.history` se houver dados (para reload manter contexto)
+
+### Ficheiros a Modificar
+
+| Ficheiro | Alterações |
 |---|---|
-| `src/components/legal/LegalModal.tsx` | **Novo** - Modal reutilizavel com scroll, titulo e conteudo |
-| `src/components/legal/TermosContent.tsx` | **Novo** - Conteudo JSX dos Termos (extraido de Termos.tsx) |
-| `src/components/legal/PrivacidadeContent.tsx` | **Novo** - Conteudo JSX da Politica de Privacidade (13 seccoes) |
-| `src/components/landing/FooterSection.tsx` | Botoes abrem LegalModal em vez de links |
-| `src/components/webinar/WebinarFooter.tsx` | Botoes abrem LegalModal em vez de links |
-| `src/components/landing/RegistrationModal.tsx` | Links no consentimento abrem LegalModal sobreposto |
+| `src/pages/Convites.tsx` | Refatorar lógica de estados, adicionar validação, melhorar UX, responsividade mobile, data/hora formatting, skeleton loading |
 
-### Detalhes tecnicos
+### Implementação
 
-- O `LegalModal` usa `@radix-ui/react-dialog` (ja instalado) com `z-[200]` para ficar acima do modal de registo (`z-[100]`)
-- Fundo escuro (`bg-[#060D1A]`) e texto branco para manter consistencia visual
-- Scroll interno com `max-h-[80vh]` e `overflow-y-auto`
-- Cada footer passa a ter estado local (`useState`) para controlar abertura/fecho dos modais
-- No modal de registo, os links "Politica de Privacidade" e "Termos e Condicoes" tornam-se `<button>` com estilo de link, que abrem o LegalModal por cima
+1. **Remover `checked`, usar `hasSubmitted`**: Permite re-verificação automática
+2. **Adicionar `useCallback`**: Para evitar re-renders desnecessários
+3. **Melhorar validação**: Email obrigatório + pattern before submit
+4. **Mobile-first layout**: Ajustar "Como funciona" e buttons em mobile
+5. **Loading states**: Skeleton para leaderboard, estado "Carregando..." para cards
+6. **Data/Hora melhorada**: Função helper para formatação PT-PT
+7. **Toast melhorado**: Duração 3.5s, tipos diferentes
+8. **Cleanup no unmount**: useEffect com cleanup
+
+### Detalhe Técnico
+
+- Usar `useCallback` para `handleCheck`, `handleCopy`, `handleCopyMsg`
+- Adicionar `useEffect` cleanup para resetar estados
+- Adicionar skeleton component ou usar `opacity-50` com animação de pulse para loading
+- Criar função helper de data/hora reutilizável: `formatInviteDate(isoDate: string): string`
+- Validação de email com regex simples: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+- Dependency array: `[searchParams]` apenas para re-check automático
+- Mobile breakpoints: `max-sm:` para < 640px
+
