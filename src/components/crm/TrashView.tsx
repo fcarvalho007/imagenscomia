@@ -141,7 +141,7 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
                             >
                               {getInitials(i.nome)}
                             </div>
-                            <span className="font-medium text-ink-700">{genderEmoji(i.gender)} {i.nome}</span>
+                            <span className="font-semibold text-[14px] text-ink-700">{genderEmoji(i.gender)} {i.nome}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-ink-500 max-md:hidden">{i.email}</td>

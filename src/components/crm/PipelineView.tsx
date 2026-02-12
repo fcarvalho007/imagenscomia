@@ -65,7 +65,7 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
         >
           {getInitials(inscrito.nome)}
         </div>
-        <span className="font-heading font-semibold text-[13px] text-ink-900 truncate">
+        <span className="font-heading font-semibold text-[14px] text-ink-900 truncate">
           {genderEmoji(inscrito.gender)} {inscrito.nome}
         </span>
       </div>
