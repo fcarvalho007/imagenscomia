@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 const DUVIDA_OPTIONS = [
   "Não sei descrever o estilo visual que quero",
   "Os resultados ficam sempre genéricos, sem identidade",
-  "Não percebo que ferramenta usar (Midjourney, DALL-E, etc.)",
+  "Não percebo que ferramenta usar (ChatGPT, Google, outros...)",
   "Quero criar imagens para a minha marca mas não sei por onde começar",
   "Tenho dificuldade em editar ou refinar as imagens geradas",
 ];
