@@ -25,31 +25,31 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   const firstName = userName?.trim().split(" ")[0] || "";
   return (
   <div className="max-w-[620px]">
-    <h2 className="font-heading font-bold text-[24px] text-ink-900">
+    <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
       {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
     </h2>
-    <p className="text-[17px] text-ink-500 mt-2 mb-6">
+    <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-6">
       Mas queres adicionar o Premium Pass para mais tranquilidade?
     </p>
 
     {/* Premium Card */}
     <div
-      className="bg-background rounded-2xl p-6 max-w-[560px]"
+      className="bg-background rounded-2xl p-6 max-sm:p-4 max-w-[560px]"
       style={{
         border: "2px solid hsl(var(--blue-600))",
         boxShadow: "0 4px 20px rgba(37,99,235,0.12)",
       }}
     >
       {/* Price row */}
-      <div className="flex justify-between items-start mb-4 gap-3">
+      <div className="flex max-sm:flex-col justify-between items-start mb-4 gap-3">
         <div>
           <p className="font-heading font-semibold text-[14px] text-blue-600 uppercase tracking-[0.08em]">
             PREMIUM PASS
           </p>
-          <p className="font-heading font-black text-[36px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
+          <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
           <p className="text-[14px] text-ink-400">Sem depender do direto. Ao teu ritmo.</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2 min-w-[150px] whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+        <div className="bg-amber-50 rounded-lg p-2 min-w-[150px] max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] text-amber-700">Early bird: €15 + IVA</p>
           <p className="text-[14px] text-amber-600">Depois do webinar: €27 + IVA</p>
         </div>
@@ -93,7 +93,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
     {/* Skip link */}
     <p
       onClick={onSkip}
-      className="text-[13px] text-ink-400 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
     >
       Continuar sem gravação, Q&A nem guia →
     </p>

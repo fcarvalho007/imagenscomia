@@ -26,16 +26,16 @@ const bullets = [
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
   <div className="max-w-[620px]">
-    <h2 className="font-heading font-bold text-[24px] text-ink-900">
+    <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
       Transformar imagens em vídeo com IA — ao vivo
     </h2>
-    <p className="text-[17px] text-ink-500 mt-2 mb-6">
+    <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-6">
       O webinar ensina o método. A Masterclass mostra como o usar para gerar vídeo — com ferramentas certas, prompts prontos e um fluxo replicável.
     </p>
 
     {/* Masterclass Card */}
     <div
-      className="bg-background rounded-2xl p-6 max-w-[560px]"
+      className="bg-background rounded-2xl p-6 max-sm:p-4 max-w-[560px]"
       style={{ border: "2px solid hsl(var(--ink-700))" }}
     >
       {/* Tag */}
@@ -44,15 +44,15 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       </span>
 
       {/* Price row */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex max-sm:flex-col justify-between items-start mb-4 gap-3">
         <div>
           <p className="font-heading font-semibold text-[14px] text-ink-500 uppercase tracking-[0.08em]">
             MASTERCLASS ONLINE
           </p>
-          <p className="font-heading font-black text-[36px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
+          <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
           <p className="text-[14px] text-ink-400">Pagamento único · lugares limitados · 5 de Março</p>
         </div>
-        <div className="bg-amber-50 rounded-lg p-2 shrink-0 ml-3 whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
+        <div className="bg-amber-50 rounded-lg p-2 shrink-0 max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] text-amber-700">Early bird: €47 + IVA</p>
           <p className="text-[14px] text-amber-600">Depois: €97 + IVA</p>
         </div>
@@ -106,7 +106,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
     {/* Skip link */}
     <p
       onClick={onSkip}
-      className="text-[13px] text-ink-400 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
     >
       Continuar sem implementação guiada →
     </p>
