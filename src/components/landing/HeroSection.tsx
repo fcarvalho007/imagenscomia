@@ -2,12 +2,23 @@ import { Play, Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
+import logoImagens from "@/assets/logo-imagens-com-ia.png";
 
 export const HeroSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section className="py-16 md:py-24 bg-background">
+    <section className="relative py-16 md:py-24 bg-background overflow-hidden">
+      {/* Logo 3D — background upper right */}
+      <motion.img
+        src={logoImagens}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -top-8 -right-12 md:-top-4 md:-right-8 w-[260px] md:w-[380px] lg:w-[440px] opacity-[0.07] select-none"
+        initial={{ opacity: 0, scale: 0.85, rotate: -8 }}
+        animate={{ opacity: 0.07, scale: 1, rotate: 0 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
+      />
       <div className="container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
         <ScrollReveal delay={0.05}>
           <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 mb-4">
