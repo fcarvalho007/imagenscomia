@@ -84,6 +84,7 @@ serve(async (req) => {
     );
 
     const data = await eupagoResponse.json();
+    console.log("EuPago full response:", JSON.stringify(data));
 
     if (!eupagoResponse.ok || data.transactionStatus !== "Success") {
       console.error("EuPago error:", JSON.stringify(data));
@@ -93,10 +94,13 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Payment link created: plan=${plan}, email=${email}, ref=${data.reference}`);
+    const paymentLink = data.url || data.redirectUrl || data.paymentLink || data.payment_url;
+    const reference = data.reference || data.referencia;
+
+    console.log(`Payment link created: plan=${plan}, email=${email}, ref=${reference}, link=${paymentLink}`);
 
     return new Response(
-      JSON.stringify({ paymentLink: data.paymentLink, reference: data.reference }),
+      JSON.stringify({ paymentLink, reference }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
