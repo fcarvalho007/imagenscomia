@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { toast } from "@/hooks/use-toast";
@@ -39,39 +40,57 @@ const MEDAL_COLORS = [
   "from-amber-600 to-amber-700",
 ];
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function formatInviteDate(isoDate: string): string {
+  try {
+    const d = new Date(isoDate);
+    const day = d.getDate();
+    const month = d.toLocaleDateString("pt-PT", { month: "short" }).replace(".", "");
+    const hours = d.getHours().toString().padStart(2, "0");
+    const minutes = d.getMinutes().toString().padStart(2, "0");
+    return `${day} ${month} · ${hours}:${minutes}`;
+  } catch {
+    return "";
+  }
+}
+
 const ConvitesContent = () => {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get("email") || "");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedMsg, setCopiedMsg] = useState(false);
-  const [checked, setChecked] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [msgTab, setMsgTab] = useState<"whatsapp" | "email">("whatsapp");
   const { open } = useRegistrationModal();
+  const lastCheckedEmail = useRef<string | null>(null);
 
-  useEffect(() => {
-    fetchLeaderboard();
-    const emailParam = searchParams.get("email");
-    if (emailParam && !checked) {
-      setEmail(emailParam);
-      handleCheck(emailParam);
-    }
-  }, [searchParams]);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
+    setLeaderboardLoading(true);
     try {
       const { data: lb, error } = await supabase.functions.invoke("get-leaderboard");
       if (!error && Array.isArray(lb)) setLeaderboard(lb);
     } catch { /* silent */ }
-  };
+    finally { setLeaderboardLoading(false); }
+  }, []);
 
-  const handleCheck = async (emailToCheck?: string) => {
-    const e = emailToCheck || email;
-    if (!e) return;
+  const handleCheck = useCallback(async (emailToCheck?: string) => {
+    const e = (emailToCheck || email).trim().toLowerCase();
+    if (!e) {
+      setEmailError("Introduzir o email de inscrição.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(e)) {
+      setEmailError("Email inválido. Verificar o formato.");
+      return;
+    }
+    setEmailError(null);
     setLoading(true);
     setError(null);
     try {
@@ -84,25 +103,50 @@ const ConvitesContent = () => {
         setData(null);
       } else {
         setData(result);
+        toast({ title: "Dados carregados ✅", description: `Olá, ${result.name?.split(" ")[0] || ""}!` });
       }
-      setChecked(true);
+      lastCheckedEmail.current = e;
     } catch {
       setError("Erro ao verificar. Tenta novamente.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [email]);
 
-  const handleCopy = () => {
+  // Auto-check on mount or when email param changes
+  useEffect(() => {
+    const emailParam = searchParams.get("email");
+    if (emailParam && emailParam !== lastCheckedEmail.current) {
+      setEmail(emailParam);
+      handleCheck(emailParam);
+    }
+  }, [searchParams, handleCheck]);
+
+  // Lazy-load leaderboard (500ms delay)
+  useEffect(() => {
+    const timer = setTimeout(fetchLeaderboard, 500);
+    return () => clearTimeout(timer);
+  }, [fetchLeaderboard]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setData(null);
+      setError(null);
+      lastCheckedEmail.current = null;
+    };
+  }, []);
+
+  const handleCopy = useCallback(() => {
     if (data) {
       navigator.clipboard.writeText(data.referralLink);
       setCopied(true);
       toast({ title: "Link copiado ✅", description: "Pronto para partilhar." });
-      setTimeout(() => setCopied(false), 2500);
+      setTimeout(() => setCopied(false), 3500);
     }
-  };
+  }, [data]);
 
-  const handleCopyMsg = () => {
+  const handleCopyMsg = useCallback(() => {
     if (!data) return;
     const msg = msgTab === "whatsapp"
       ? `Inscrição gratuita: webinar "Cria Imagens Profissionais com IA" (18 Fev, 10h). Link: ${data.referralLink}`
@@ -110,8 +154,8 @@ const ConvitesContent = () => {
     navigator.clipboard.writeText(msg);
     setCopiedMsg(true);
     toast({ title: "Mensagem copiada ✅" });
-    setTimeout(() => setCopiedMsg(false), 2500);
-  };
+    setTimeout(() => setCopiedMsg(false), 3500);
+  }, [data, msgTab]);
 
   const whatsappMsg = data
     ? encodeURIComponent(`Inscrição gratuita: webinar "Cria Imagens Profissionais com IA" (18 Fev, 10h). Link: ${data.referralLink}`)
@@ -121,12 +165,20 @@ const ConvitesContent = () => {
     : "";
 
   const referralCount = data?.referrals.length || 0;
-  const progressPercent = data ? (referralCount / data.totalNeeded) * 100 : 0;
+  const progressPercent = data ? Math.min((referralCount / data.totalNeeded) * 100, 100) : 0;
   const userLeaderboardPos = data
     ? leaderboard.findIndex((e) => e.referralCode === data.referralCode) + 1
     : 0;
 
   const shortLink = data ? data.referralLink.replace(/^https?:\/\//, "") : "";
+
+  const validateEmailOnBlur = useCallback(() => {
+    if (email && !EMAIL_REGEX.test(email.trim())) {
+      setEmailError("Email inválido. Verificar o formato.");
+    } else {
+      setEmailError(null);
+    }
+  }, [email]);
 
   return (
     <main className="min-h-screen bg-off-white flex flex-col">
@@ -148,17 +200,17 @@ const ConvitesContent = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center px-4 py-8">
-        <div className="w-full max-w-[600px] space-y-5">
+      <div className="flex-1 flex items-start justify-center px-4 py-8 max-sm:py-5">
+        <div className="w-full max-w-[600px] space-y-5 max-sm:space-y-4">
 
           {/* ═══ BLOCO 1: Pré-login — Hero + formulário ═══ */}
           {!data && (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-5"
+              className="space-y-5 max-sm:space-y-4"
             >
-              <div className="bg-background border border-border rounded-2xl p-6 sm:p-8 shadow-card text-center">
+              <div className="bg-background border border-border rounded-2xl p-6 sm:p-8 max-sm:p-4 shadow-card text-center">
                 <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
                   <Gift className="w-7 h-7 text-amber-600" />
                 </div>
@@ -169,23 +221,23 @@ const ConvitesContent = () => {
                   Partilha o link pessoal. Com 2 inscrições, o livro fica ao alcance.
                 </p>
 
-                {/* 3 steps */}
-                <div className="grid grid-cols-3 gap-4 mb-8">
+                {/* 3 steps — stacks on small mobile */}
+                <div className="grid grid-cols-3 max-sm:grid-cols-1 max-sm:gap-3 gap-4 mb-8">
                   {[
                     { icon: Link2, label: "Partilhar link pessoal", step: "1" },
                     { icon: Users, label: "2 pessoas inscrevem-se", step: "2" },
                     { icon: Gift, label: "Livro físico + surpresas", step: "3" },
                   ].map(({ icon: Icon, label, step }) => (
-                    <div key={step} className="flex flex-col items-center gap-2.5">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-                          <Icon className="w-5 h-5 text-blue-600" />
+                    <div key={step} className="flex flex-col max-sm:flex-row items-center gap-2.5 max-sm:gap-3">
+                      <div className="relative shrink-0">
+                        <div className="w-12 h-12 max-sm:w-10 max-sm:h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                          <Icon className="w-5 h-5 max-sm:w-4 max-sm:h-4 text-blue-600" />
                         </div>
                         <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center">
                           {step}
                         </span>
                       </div>
-                      <span className="text-xs text-ink-600 leading-tight text-center font-medium">{label}</span>
+                      <span className="text-xs text-ink-600 leading-tight text-center max-sm:text-left font-medium">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -204,11 +256,17 @@ const ConvitesContent = () => {
                         type="email"
                         placeholder="Email de inscrição"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+                        onBlur={validateEmailOnBlur}
                         required
-                        className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-xl text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+                        className={`w-full bg-surface border h-12 pl-10 pr-4 rounded-xl text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 transition-all text-sm ${
+                          emailError
+                            ? "border-red-400 focus:border-red-500 focus:ring-red-500/20"
+                            : "border-border focus:border-blue-600 focus:ring-blue-600/20"
+                        }`}
                       />
                     </div>
+                    {emailError && <p className="text-sm text-red-500">{emailError}</p>}
                     {error && <p className="text-sm text-red-500 text-center">{error}</p>}
                     <button
                       type="submit"
@@ -236,7 +294,7 @@ const ConvitesContent = () => {
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-5"
+              className="space-y-5 max-sm:space-y-4"
             >
               {/* Header */}
               <div className="text-center">
@@ -249,16 +307,16 @@ const ConvitesContent = () => {
               </div>
 
               {/* A) Como funciona — compact */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
                 <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400 mb-4">Como funciona</p>
-                <div className="flex items-start gap-4">
+                <div className="flex max-sm:flex-col items-start gap-4 max-sm:gap-3">
                   {[
                     { icon: Link2, label: "Partilhar link" },
                     { icon: Users, label: "2 inscrições" },
                     { icon: Gift, label: "Livro + surpresas" },
                   ].map(({ icon: Icon, label }, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-2 text-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <div key={i} className="flex-1 flex flex-col max-sm:flex-row items-center max-sm:items-center gap-2 max-sm:gap-3 text-center max-sm:text-left w-full">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                         <Icon className="w-4 h-4 text-blue-600" />
                       </div>
                       <span className="text-xs text-ink-600 font-medium leading-tight">{label}</span>
@@ -269,14 +327,13 @@ const ConvitesContent = () => {
               </div>
 
               {/* B) Progresso */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-heading font-semibold text-sm text-ink-700">Progresso</span>
                   <span className="font-heading font-bold text-lg text-ink-900">{referralCount}/{data.totalNeeded}</span>
                 </div>
                 <div className="relative mb-3">
                   <Progress value={progressPercent} className="h-3" />
-                  {/* Markers */}
                   <div className="absolute top-0 left-0 w-full h-3 flex items-center">
                     <div className="absolute left-1/2 w-0.5 h-3 bg-white/60" />
                   </div>
@@ -316,7 +373,7 @@ const ConvitesContent = () => {
               )}
 
               {/* C) Link pessoal + Partilha */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card space-y-4">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card space-y-4">
                 <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400">Link pessoal</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-surface border border-border rounded-xl px-4 py-3 text-sm text-ink-600 truncate font-mono">
@@ -325,13 +382,17 @@ const ConvitesContent = () => {
                   <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCopy}
-                    className="shrink-0 bg-ink-900 text-white text-sm font-semibold px-5 py-3 rounded-xl hover:bg-ink-700 transition-colors flex items-center gap-2"
+                    className={`shrink-0 text-sm font-semibold px-5 py-3 rounded-xl transition-all flex items-center gap-2 ${
+                      copied
+                        ? "bg-green-600 text-white"
+                        : "bg-ink-900 text-white hover:bg-ink-700"
+                    }`}
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     {copied ? "Copiado!" : "Copiar"}
                   </motion.button>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex max-sm:flex-col gap-3">
                   <motion.a
                     whileTap={{ scale: 0.97 }}
                     href={`https://wa.me/?text=${whatsappMsg}`}
@@ -353,7 +414,7 @@ const ConvitesContent = () => {
               </div>
 
               {/* D) Mensagem pronta */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
                 <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400 mb-3">Mensagem pronta</p>
                 <div className="flex gap-1 mb-3">
                   <button
@@ -377,7 +438,11 @@ const ConvitesContent = () => {
                 <motion.button
                   whileTap={{ scale: 0.97 }}
                   onClick={handleCopyMsg}
-                  className="w-full bg-surface hover:bg-ink-100 border border-border text-ink-700 text-sm font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className={`w-full border text-sm font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                    copiedMsg
+                      ? "bg-green-50 border-green-200 text-green-700"
+                      : "bg-surface hover:bg-ink-100 border-border text-ink-700"
+                  }`}
                 >
                   {copiedMsg ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
                   {copiedMsg ? "Copiada!" : "Copiar mensagem"}
@@ -385,7 +450,7 @@ const ConvitesContent = () => {
               </div>
 
               {/* E) Amigos registados */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
                 <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400 mb-4">Amigos registados</p>
                 {data.referrals.length === 0 && referralCount === 0 ? (
                   <div className="text-center py-4">
@@ -403,7 +468,7 @@ const ConvitesContent = () => {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-ink-900 truncate">{r.name || `Convidado #${i + 1}`}</p>
                           <p className="text-xs text-ink-400">
-                            Inscrito ✅ · {new Date(r.created_at).toLocaleDateString("pt-PT", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            Inscrito ✅ · {formatInviteDate(r.created_at)}
                           </p>
                         </div>
                       </div>
@@ -422,7 +487,7 @@ const ConvitesContent = () => {
               </div>
 
               {/* F) Recompensa */}
-              <div className="bg-background border border-border rounded-2xl p-5 shadow-card">
+              <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
                 <p className="font-heading font-semibold text-xs uppercase tracking-[0.08em] text-ink-400 mb-4">O que está em jogo</p>
                 <div className="flex items-start gap-4">
                   <img src={livroSeo} alt="Guia Essencial de SEO" className="w-20 h-auto rounded-lg shadow-sm shrink-0" />
@@ -466,12 +531,28 @@ const ConvitesContent = () => {
           )}
 
           {/* ═══ BLOCO 3: Leaderboard público ═══ */}
-          {leaderboard.length > 0 && (
+          {leaderboardLoading ? (
+            <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <p className="font-heading font-semibold text-sm text-ink-700">Ranking de Convites</p>
+              </div>
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl">
+                    <Skeleton className="w-7 h-7 rounded-full" />
+                    <Skeleton className="h-4 flex-1 max-w-[160px]" />
+                    <Skeleton className="h-4 w-16 ml-auto" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : leaderboard.length > 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="bg-background border border-border rounded-2xl p-5 shadow-card"
+              className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card"
             >
               <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-5 h-5 text-amber-500" />
@@ -507,7 +588,22 @@ const ConvitesContent = () => {
                   );
                 })}
               </div>
+              {leaderboard.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-sm text-ink-400">Sem dados de ranking disponíveis.</p>
+                </div>
+              )}
             </motion.div>
+          ) : (
+            <div className="bg-background border border-border rounded-2xl p-5 max-sm:p-4 shadow-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <p className="font-heading font-semibold text-sm text-ink-700">Ranking de Convites</p>
+              </div>
+              <div className="text-center py-4">
+                <p className="text-sm text-ink-400">Ainda sem participantes no ranking. Sê o primeiro!</p>
+              </div>
+            </div>
           )}
 
           {/* Footer micro */}
