@@ -1,47 +1,32 @@
 
 
-## Simplificar cards do Pipeline e rever espaçamentos
+## Adicionar pagina de Termos e Condicoes e atualizar links
 
 ### O que muda
 
-**1. Remover avatar com iniciais e emojis de genero**
-- Pipeline cards: remover o circulo colorido com iniciais ("FT") e o emoji de genero (🔵/🌸/⚪) do nome
-- Tabela: remover o mesmo avatar e emoji da coluna Nome
+1. **Nova pagina `/termos`** com o texto completo dos Termos e Condicoes formatado em HTML/componente React, com estilo consistente com o site (fundo escuro, tipografia existente).
 
-**2. Simplificar o conteudo do card no Pipeline**
-Cada card passa a ter apenas:
-- Nome (sem avatar, sem emoji)
-- Email
-- Badge do plano (Gratuito / Premium / MC / Bundle)
-- Data de inscricao
+2. **Atualizar todos os links "Termos"** para apontar para `/termos`:
+   - Footer da landing page (`FooterSection.tsx`): `href="#"` -> `href="/termos"`
+   - Footer do webinar (`WebinarFooter.tsx`): `href="#"` -> `href="/termos"`
+   - Modal de registo (`RegistrationModal.tsx`): `href="#"` -> `href="/termos"`
 
-Elementos removidos do card:
-- Avatar com iniciais (circulo colorido)
-- Emoji de genero
-- Badge "Passo X/5"
-- Linha da duvida (icone + texto)
-- Icones de notas e link externo
-- Botao WhatsApp hover
+3. **Nova rota** em `App.tsx`: adicionar `<Route path="/termos" element={<Termos />} />`
 
-**3. Rever espaçamentos**
-- Reduzir padding interno dos cards de `p-3.5` para `p-3`
-- Ajustar gaps verticais entre elementos do card (mt-1.5 / mt-2 para mt-1)
-- Na tabela: remover avatar e emoji da coluna Nome, manter restante layout
-
-### Ficheiros alterados
+### Ficheiros
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/PipelineView.tsx` | Simplificar `PipelineCard` removendo avatar, emoji, passo, duvida, notas, WhatsApp. Manter nome, email, badge plano, data. Ajustar spacing. |
-| `src/components/crm/TableView.tsx` | Remover avatar com iniciais e emoji de genero da coluna Nome. |
+| `src/pages/Termos.tsx` | **Novo** - Pagina com o texto completo dos T&C formatado com headings, paragrafos e listas |
+| `src/App.tsx` | Adicionar rota `/termos` |
+| `src/components/landing/FooterSection.tsx` | Link "Termos" aponta para `/termos` |
+| `src/components/webinar/WebinarFooter.tsx` | Link "Termos" aponta para `/termos` |
+| `src/components/landing/RegistrationModal.tsx` | Link "Termos e Condicoes" aponta para `/termos` (abre em novo separador com `target="_blank"`) |
 
-### Estrutura do card simplificado (Pipeline)
+### Detalhes da pagina Termos
 
-```text
-+---------------------------+
-| Nome Completo             |
-| email@exemplo.pt          |
-| [Gratuito]                |
-| 12 Fev · 17:33            |
-+---------------------------+
-```
+- Fundo escuro (`bg-[#060D1A]`) consistente com o resto do site
+- Texto branco com opacidade para hierarquia visual
+- Cada seccao (1 a 12) como heading + paragrafos
+- Link no topo para voltar a pagina principal
+- Responsivo e com scroll confortavel
