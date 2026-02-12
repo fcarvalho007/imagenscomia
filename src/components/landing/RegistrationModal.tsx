@@ -246,7 +246,7 @@ const CaptureView = ({
         <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
           type="tel"
-          placeholder="WhatsApp (opcional)"
+          placeholder="Whatsapp/Telemóvel"
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
           className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
