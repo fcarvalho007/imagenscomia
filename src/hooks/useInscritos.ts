@@ -40,23 +40,26 @@ export function useInscritos() {
   const [inscritos, setInscritos] = useState<Inscrito[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetch() {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5000);
+  const fetchData = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("registrations")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
-      if (error) {
-        console.error("Error fetching registrations:", error);
-      } else {
-        setInscritos((data || []).map(mapRegistration));
-      }
-      setLoading(false);
+    if (error) {
+      console.error("Error fetching registrations:", error);
+    } else {
+      setInscritos((data || []).map(mapRegistration));
     }
-    fetch();
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   const addNota = useCallback((inscritoId: string, texto: string) => {
     const nota: Nota = {
@@ -102,5 +105,5 @@ export function useInscritos() {
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
   }, []);
 
-  return { inscritos, loading, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
 }

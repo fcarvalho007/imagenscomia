@@ -16,7 +16,7 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito } = useInscritos();
 
   const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_auth");
@@ -44,7 +44,7 @@ export default function CRM() {
       {/* Main content with sidebar offset */}
       <div className="flex-1 md:ml-[240px] overflow-y-auto">
         {activeView === "dashboard" && (
-          <DashboardView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />
+          <DashboardView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} onRefresh={refresh} />
         )}
         {activeView === "pipeline" && (
           <PipelineView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />

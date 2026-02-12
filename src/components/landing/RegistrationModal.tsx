@@ -22,12 +22,12 @@ export const RegistrationModal = () => {
   const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [referralData, setReferralData] = useState<{ referralCode: string; referralLink: string } | null>(null);
 
-  const registerFree = async (): Promise<{ referralCode: string; referralLink: string } | null> => {
+  const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
       body: { firstName, lastName, email, whatsapp: whatsapp || undefined, referredBy: referredBy || undefined },
     });
     if (fnError) throw fnError;
-    return { referralCode: data.referralCode, referralLink: data.referralLink };
+    return { referralCode: data.referralCode, referralLink: data.referralLink, alreadyRegistered: data.alreadyRegistered };
   };
 
   const handleCapture = async () => {
@@ -47,6 +47,11 @@ export const RegistrationModal = () => {
     setError(null);
     try {
       const data = await registerFree();
+      if (data?.alreadyRegistered) {
+        setError("Este email já está inscrito. Usa outro email ou verifica a tua caixa de entrada.");
+        setLoading(false);
+        return;
+      }
       fbq('track', 'Lead');
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
