@@ -1,6 +1,19 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Inscrito, Nota } from "@/pages/crm/mockData";
+import { detectGender } from "@/lib/genderDetection";
+
+function loadGenderOverrides(): Record<string, "M" | "F" | "U"> {
+  try {
+    return JSON.parse(localStorage.getItem("crm_gender_overrides") || "{}");
+  } catch { return {}; }
+}
+
+function saveGenderOverride(id: string, gender: "M" | "F" | "U") {
+  const overrides = loadGenderOverrides();
+  overrides[id] = gender;
+  localStorage.setItem("crm_gender_overrides", JSON.stringify(overrides));
+}
 
 const PLAN_VALUES: Record<string, number> = {
   premium: 15,
@@ -12,6 +25,8 @@ function mapRegistration(r: any): Inscrito {
   const plan = r.paid_at
     ? (r.plan_selected || "free")
     : "free";
+  const overrides = loadGenderOverrides();
+  const gender = overrides[r.id] || detectGender(r.name || "");
   return {
     id: r.id,
     nome: r.name,
@@ -29,6 +44,7 @@ function mapRegistration(r: any): Inscrito {
     notas: [],
     status: "activo",
     follow_up: false,
+    gender,
     plan_selected: r.plan_selected || null,
     sources_text: r.sources || null,
     duvida_text: r.duvida || null,
@@ -114,5 +130,12 @@ export function useInscritos() {
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito };
+  const setGender = useCallback((inscritoId: string, gender: "M" | "F" | "U") => {
+    saveGenderOverride(inscritoId, gender);
+    setInscritos((prev) =>
+      prev.map((i) => (i.id === inscritoId ? { ...i, gender } : i))
+    );
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender };
 }

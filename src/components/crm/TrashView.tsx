@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Search, Trash2, X, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji } from "@/lib/genderDetection";
 
 interface TrashViewProps {
   inscritos: Inscrito[];
@@ -140,7 +141,7 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
                             >
                               {getInitials(i.nome)}
                             </div>
-                            <span className="font-medium text-ink-700">{i.nome}</span>
+                            <span className="font-medium text-ink-700">{genderEmoji(i.gender)} {i.nome}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-ink-500 max-md:hidden">{i.email}</td>

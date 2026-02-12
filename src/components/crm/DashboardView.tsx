@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji } from "@/lib/genderDetection";
 
 interface DashboardViewProps {
   inscritos: Inscrito[];
@@ -67,7 +68,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const nMC = planCounts.masterclass;
     const nBundle = planCounts.bundle;
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, comDuvida, nPremium, nMC, nBundle };
+    // Gender
+    const genderCounts = { M: 0, F: 0, U: 0 };
+    active.forEach((i) => { genderCounts[i.gender]++; });
+
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, comDuvida, nPremium, nMC, nBundle, genderCounts };
   }, [inscritos]);
 
   const now = new Date();
@@ -217,6 +222,36 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       </div>
 
+      {/* Gender Stats */}
+      <div className="bg-white border border-border rounded-xl p-5 mb-5">
+        <h3 className="font-heading font-bold text-sm text-ink-900">Género (estimativa por nome)</h3>
+        <p className="text-xs text-ink-400 mb-4">Baseado no primeiro nome português</p>
+        {([
+          { key: "M" as const, emoji: "🔵", label: "Masculino", color: "hsl(var(--blue-600))" },
+          { key: "F" as const, emoji: "🌸", label: "Feminino", color: "#E11D9F" },
+          { key: "U" as const, emoji: "⚪", label: "Indefinido", color: "hsl(var(--ink-400))" },
+        ] as const).map((g) => {
+          const count = stats.genderCounts[g.key];
+          const pct = stats.total ? ((count / stats.total) * 100).toFixed(0) : "0";
+          return (
+            <div key={g.key} className="mb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[14px]">{g.emoji}</span>
+                <span className="text-[13px] font-medium text-ink-700">{g.label}</span>
+                <span className="ml-auto font-heading font-bold text-[13px] text-ink-500">{count}</span>
+                <span className="text-xs text-ink-400">{pct}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Number(pct)}%`, background: g.color }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Duvidas */}
       <div className="bg-white border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -238,7 +273,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 onClick={() => onSelectInscrito(i)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-ink-900">{i.nome}</span>
+                  <span className="text-[13px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                   <span
                     className="text-[11px] font-medium px-2 py-0.5 rounded-full"
                     style={{ background: badge.bg, color: badge.color }}
@@ -324,7 +359,7 @@ function ParaFazerHoje({ inscritos, onSelectInscrito }: { inscritos: Inscrito[];
                   {getInitialsTodo(i.nome)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[14px] text-ink-800">{i.nome}</p>
+                  <p className="font-semibold text-[14px] text-ink-800">{genderEmoji(i.gender)} {i.nome}</p>
                   <p className="text-[12px] text-ink-400 truncate">{i.email}</p>
                 </div>
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: badge.bg, color: badge.color }}>

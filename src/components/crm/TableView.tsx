@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji } from "@/lib/genderDetection";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -254,7 +255,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         >
                           {getInitials(i.nome)}
                         </div>
-                        <span className="font-medium text-ink-900">{i.nome}</span>
+                        <span className="font-medium text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>

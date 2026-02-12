@@ -21,6 +21,7 @@ export type Inscrito = {
   notas: Nota[];
   status: "activo" | "arquivado" | "perdido";
   follow_up: boolean;
+  gender: "M" | "F" | "U";
   plan_selected: string | null;
   sources_text: string | null;
   duvida_text: string | null;
