@@ -1,34 +1,44 @@
 
 
-## Duas alteracoes: imagem do livro + leaderboard de convites no CRM
+## Corrigir: chamar sync-egoi para registos existentes
 
-### 1. Substituir imagem do livro no Passo 5
+### Problema
+Quando um email ja existe na base de dados, a funcao `register-free` retorna imediatamente sem chamar `sync-egoi`. A tag nunca e adicionada no E-goi e a automacao nao arranca.
 
-**Problema:** A imagem atual e um placeholder gerado. O utilizador enviou a capa real do livro "Guia Essencial SEO".
+### Confirmacao do E-goi
+- A configuracao do trigger "Tag adicionada" esta correta (tag 31, aceita re-entradas)
+- O `sync-egoi` ja lida corretamente com contactos existentes no E-goi (409 -> attach-tag)
+- O unico problema e que `register-free` nunca chama `sync-egoi` para emails ja registados na DB
 
-**Solucao:**
-- Copiar a imagem enviada para `src/assets/livro-guia-seo.png`
-- No ficheiro `src/components/upgrade/StepConfirmation.tsx`, importar a imagem como modulo ES6 e substituir o `src="/guia-essencial-seo.png"` pela importacao
+### Solucao
+Alterar `supabase/functions/register-free/index.ts` para adicionar uma chamada nao-bloqueante ao `sync-egoi` dentro do bloco `if (existing)`, antes do return.
 
-### 2. Adicionar Leaderboard de Convites ao CRM Dashboard
-
-**Objetivo:** Mostrar no Dashboard quem esta a convidar amigos, quantos convites cada pessoa fez, e quem ja atingiu o minimo de 2 convites (habilitado a ganhar o livro). Assim o utilizador sabe quantos livros precisa de oferecer.
-
-**Implementacao:**
-- No `DashboardView.tsx`, adicionar um novo bloco "Leaderboard de Convites" que:
-  - Busca dados da edge function `get-leaderboard` (ja existente)
-  - Mostra uma tabela/lista com: posicao, nome (anonimizado), numero de convites
-  - Destaca com check verde quem tem 2 ou mais convites (habilitado ao livro)
-  - Mostra um resumo no topo: "X participantes habilitados ao livro"
-  - Usa medalhas dourada/prateada/bronze para o Top 3
-
-**Dados:** Reutiliza a edge function `get-leaderboard` que ja existe e retorna `{ name, count, referralCode }[]` ordenado por count descendente.
-
-### Resumo tecnico
+### Alteracao tecnica
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/assets/livro-guia-seo.png` | Novo - imagem real do livro copiada do upload |
-| `src/components/upgrade/StepConfirmation.tsx` | Import da imagem e substituicao do src |
-| `src/components/crm/DashboardView.tsx` | Novo bloco "Leaderboard de Convites" com fetch a get-leaderboard, lista com medalhas, indicador de habilitados ao livro |
+| `supabase/functions/register-free/index.ts` | Adicionar select de `first_name`, `last_name`, `whatsapp` no query do existing. Adicionar chamada ao sync-egoi antes do return do bloco existing. |
+
+### Detalhes
+
+1. Alterar a query do existing para tambem buscar `first_name`, `last_name` e `whatsapp`:
+   - De: `.select("referral_code, premium_unlocked")`
+   - Para: `.select("referral_code, premium_unlocked, first_name, last_name, whatsapp")`
+
+2. Antes do return dentro do `if (existing)`, adicionar chamada nao-bloqueante ao sync-egoi (mesmo padrao ja usado para novos registos):
+   - Envia first_name, last_name, email, cellphone (whatsapp) e referral_code
+   - Wrapped em try/catch para nao falhar o registo se o E-goi falhar
+
+### Fluxo corrigido
+
+```text
+Email ja existe na DB?
+  SIM -> chama sync-egoi (nao-bloqueante) -> return dados existentes
+  NAO -> insere na DB -> chama sync-egoi (nao-bloqueante) -> return novos dados
+```
+
+### Resultado
+- Contacto novo no E-goi: criado com tag -> automacao arranca
+- Contacto existente no E-goi: tag adicionada via attach-tag -> automacao arranca
+- Em ambos os casos, a automacao "Tag adicionada" dispara corretamente
 
