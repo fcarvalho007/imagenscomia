@@ -45,6 +45,17 @@ const Upsell = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
+    try {
+      await supabase
+        .from("registrations")
+        .update({ step_reached: stepNum, ...extraData } as any)
+        .eq("email", userData.email);
+    } catch (err) {
+      console.error("Error saving step data:", err);
+    }
+  }, [userData.email]);
+
   const advanceStep = useCallback((next: number) => {
     setStep(next);
     if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
@@ -119,8 +130,15 @@ const Upsell = () => {
                     setSources={setSources}
                     otherSource={otherSource}
                     setOtherSource={setOtherSource}
-                    onNext={() => advanceStep(2)}
-                    onSkip={() => advanceStep(2)}
+                    onNext={() => {
+                      const srcText = sources.length > 0 ? sources.join(", ") : "SKIPPED";
+                      saveStepData(2, { sources: srcText });
+                      advanceStep(2);
+                    }}
+                    onSkip={() => {
+                      saveStepData(2, { sources: "SKIPPED" });
+                      advanceStep(2);
+                    }}
                     userName={userData.nome}
                   />
                 </motion.div>
@@ -133,8 +151,15 @@ const Upsell = () => {
                     outraDuvida={outraDuvida}
                     setOutraDuvida={setOutraDuvida}
                     setDuvida={setDuvida}
-                    onNext={() => advanceStep(3)}
-                    onSkip={() => advanceStep(3)}
+                    onNext={() => {
+                      const duvidaText = duvida || (duvidas.length > 0 ? duvidas.join(", ") : "SKIPPED");
+                      saveStepData(3, { duvida: duvidaText });
+                      advanceStep(3);
+                    }}
+                    onSkip={() => {
+                      saveStepData(3, { duvida: "SKIPPED" });
+                      advanceStep(3);
+                    }}
                   />
                 </motion.div>
               )}
@@ -144,9 +169,13 @@ const Upsell = () => {
                     userName={userData.nome}
                     onAddPremium={() => {
                       setOrderState((s) => ({ ...s, premium: true }));
+                      saveStepData(4, { plan_selected: "premium" });
                       advanceStep(4);
                     }}
-                    onSkip={() => advanceStep(4)}
+                    onSkip={() => {
+                      saveStepData(4);
+                      advanceStep(4);
+                    }}
                   />
                 </motion.div>
               )}
@@ -155,9 +184,14 @@ const Upsell = () => {
                   <StepMasterclass
                     onAddMasterclass={() => {
                       setOrderState((s) => ({ ...s, masterclass: true }));
+                      const newPlan = orderState.premium ? "bundle" : "masterclass";
+                      saveStepData(5, { plan_selected: newPlan });
                       advanceStep(5);
                     }}
-                    onSkip={() => advanceStep(5)}
+                    onSkip={() => {
+                      saveStepData(5);
+                      advanceStep(5);
+                    }}
                   />
                 </motion.div>
               )}

@@ -23,6 +23,8 @@ serve(async (req) => {
       );
     }
 
+    const TAG = "webinar_imagens_com_ia_18_fev";
+
     const payload: Record<string, unknown> = {
       base: {
         status: "active",
@@ -34,7 +36,7 @@ serve(async (req) => {
       extra: [
         { field_id: 40, value: referral_code || "" },
       ],
-      tags: ["webinar_imagens_com_ia_18_fev"],
+      tags: [TAG],
     };
 
     console.log("Sending to E-goi:", JSON.stringify(payload));
@@ -52,11 +54,45 @@ serve(async (req) => {
     console.log(`E-goi response status: ${response.status}, body: ${responseText}`);
 
     if (!response.ok) {
-      // If contact already exists (409), treat as success
+      // If contact already exists (409), add tag via PATCH
       if (response.status === 409) {
-        console.log("Contact already exists in E-goi, skipping");
+        console.log("Contact already exists in E-goi, attempting to add tag...");
+
+        let contactId: string | null = null;
+        try {
+          const conflictData = JSON.parse(responseText);
+          contactId = conflictData?.conflicts?.contact_id || null;
+        } catch {
+          console.error("Could not parse 409 response for contact_id");
+        }
+
+        if (contactId) {
+          // Attach tag to existing contact
+          const tagResponse = await fetch(
+            `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
+            {
+              method: "POST",
+              headers: {
+                "Apikey": apiKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                tag_id: TAG,
+                contacts: [contactId],
+              }),
+            }
+          );
+
+          const tagText = await tagResponse.text();
+          console.log(`E-goi attach-tag response: ${tagResponse.status}, body: ${tagText}`);
+
+          if (!tagResponse.ok) {
+            console.error(`Failed to attach tag to existing contact ${contactId}`);
+          }
+        }
+
         return new Response(
-          JSON.stringify({ success: true, message: "Contact already exists" }),
+          JSON.stringify({ success: true, message: "Contact already exists, tag added" }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
