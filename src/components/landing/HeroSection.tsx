@@ -51,7 +51,7 @@ export const HeroSection = () => {
         <motion.div {...fade(0.1)}>
           <h1 className="mb-3">
             <span
-              className="block font-heading font-extrabold text-[32px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900"
+              className="block font-heading font-extrabold text-[28px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900"
               style={{ textShadow: "0 1px 8px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,0.7)" }}
             >
               Cria Imagens Profissionais com IA
