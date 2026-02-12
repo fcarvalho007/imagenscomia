@@ -1,35 +1,47 @@
 
 
-## Corrigir Erro de Build + Melhorar Legibilidade do Hero
+## Detectar emails duplicados no modal + garantir captura no CRM
 
-### 1. Corrigir erro de build do Meta Pixel
+### Problema 1: Modal nao avisa quando o email ja esta registado
 
-**Problema:** O Vite nao permite `<img>` dentro de `<noscript>` no `<head>` (erro `disallowed-content-in-noscript-in-head`).
+A edge function `register-free` ja devolve `alreadyRegistered: true` quando o email existe, mas o modal ignora esse campo e navega sempre para `/upgrade` sem avisar o utilizador.
 
-**Solucao:** Mover o bloco `<noscript>` para dentro do `<body>`, logo apos a abertura.
+### Problema 2: CRM pode nao mostrar registos recentes
 
-**Ficheiro:** `index.html`
-- Remover linhas 55-57 (`<noscript>...</noscript>`) do `<head>`
-- Adicionar o mesmo bloco no inicio do `<body>`, antes do `<div id="root">`
+O CRM carrega os dados uma unica vez ao montar o componente (`useEffect` sem dependencias). Se alguem se regista enquanto o CRM esta aberto, o novo registo so aparece ao recarregar a pagina.
 
-### 2. Aumentar radial branco no Hero para melhor legibilidade
+---
 
-Olhando o screenshot, o texto central ainda compete com a imagem de fundo. Vamos aumentar a intensidade do overlay radial.
+### Solucao
 
-**Ficheiro:** `src/components/landing/HeroSection.tsx`
+#### 1. Modal - mostrar aviso de email duplicado
 
-| Alteracao | Antes | Depois |
-|---|---|---|
-| Radial gradient (linha 29) | `0.85 / 0.50 / 0.15` | `0.92 / 0.65 / 0.20` |
-| Opacidade da imagem (linha 22) | `opacity-[0.60]` | `opacity-[0.50]` |
-| Top/bottom fade (linha 33) | `from-white/60` | `from-white/70` |
+**Ficheiro:** `src/components/landing/RegistrationModal.tsx`
 
-Isto vai criar um centro significativamente mais branco, com a imagem a aparecer suavemente nas bordas para manter o visual mas sem comprometer a leitura.
+- Na funcao `registerFree()`, verificar o campo `alreadyRegistered` da resposta
+- Se `alreadyRegistered === true`, mostrar uma mensagem de erro no formulario: "Este email ja esta inscrito. Usa outro email ou verifica a tua caixa de entrada."
+- Nao navegar para `/upgrade` neste caso - manter o utilizador no formulario para corrigir o email
+- Continuar a disparar `fbq('track', 'Lead')` apenas para registos novos
 
-### Resumo
+#### 2. CRM - adicionar botao de refresh e/ou auto-refresh
+
+**Ficheiro:** `src/hooks/useInscritos.ts`
+
+- Expor uma funcao `refresh()` que re-executa a query a base de dados
+- Adicionar auto-refresh com intervalo de 30 segundos para manter os dados atualizados
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
+
+- Adicionar um botao "Atualizar" no topo do dashboard para forcar o refresh manual
+
+---
+
+### Alteracoes tecnicas
 
 | Ficheiro | Alteracao |
 |---|---|
-| `index.html` | Mover `<noscript>` do Pixel para o `<body>` |
-| `src/components/landing/HeroSection.tsx` | Aumentar overlay radial e reduzir opacidade da imagem |
+| `src/components/landing/RegistrationModal.tsx` | Verificar `alreadyRegistered` na resposta e mostrar erro em vez de navegar |
+| `src/hooks/useInscritos.ts` | Expor funcao `refresh()` e adicionar auto-refresh a cada 30s |
+| `src/components/crm/DashboardView.tsx` | Botao "Atualizar" que chama `refresh()` |
+| `src/pages/CRM.tsx` | Passar `refresh` do hook para os componentes |
 
