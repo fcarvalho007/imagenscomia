@@ -19,10 +19,18 @@ export const HeroSection = () => {
         src={heroBg}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.15] pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.35] pointer-events-none"
       />
       {/* Overlay for legibility */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/80 to-white/90 pointer-events-none" />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.92) 30%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0.25) 100%)",
+        }}
+      />
+      {/* Top/bottom fade for smooth edges */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-transparent to-white/80 pointer-events-none" />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
         <motion.div {...fade(0.05)}>
