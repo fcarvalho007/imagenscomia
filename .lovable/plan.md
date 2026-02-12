@@ -1,27 +1,25 @@
 
 
-## Substituir imagem de fundo do Hero
+## Substituir foto do apresentador
 
 ### O que muda
 
-1. **Nova imagem** — Copiar a imagem carregada para `src/assets/hero-bg.jpeg` (substituindo a actual)
+A foto actual do Frederico Carvalho (`src/assets/frederico-carvalho.jpg`) sera substituida pela nova imagem profissional carregada.
 
-2. **Ajustar o overlay radial** — Como esta imagem e mais escura (fundo quase preto com tons azuis), o gradiente radial precisa de ser recalibrado:
-   - Centro: branco a ~85% opacidade (proteger texto)
-   - Zona intermédia: branco a ~40% (transicao suave)
-   - Laterais: branco a ~15% (deixar a imagem bem visivel nos cantos)
-   - Aumentar a opacidade da imagem de `0.35` para `0.45-0.5` para dar mais vida
+### Contexto de utilizacao
 
-3. **Manter tudo o resto** — Gradiente vertical top/bottom, animacoes diretas, responsividade
+A imagem e usada na seccao "Quem Apresenta" (`PresenterSection.tsx`) com as seguintes dimensoes CSS:
+- Mobile: `320px` de altura
+- Desktop: `460px` de altura
+- `object-cover` com `object-top` (foco na parte superior — rosto)
+
+A nova foto tem enquadramento semelhante (retrato, fundo neutro, polo escuro), pelo que o `object-top` continua adequado. Nao sao necessarias alteracoes de CSS.
 
 ### Alteracoes tecnicas
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/assets/hero-bg.jpeg` | Substituir pela nova imagem (PNG convertido) |
-| `src/components/landing/HeroSection.tsx` | Ajustar opacidade da imagem para ~0.45 e recalibrar valores do gradiente radial |
+| `src/assets/frederico-carvalho.jpg` | Substituir pela nova imagem carregada |
 
-### Resultado esperado
-
-A imagem escura com o portal azul e a grelha de imagens fica visivel nas laterais, criando um efeito cinematografico. O centro mantém-se limpo e legivel com todo o conteudo bem contrastado.
+Nenhuma alteracao de codigo e necessaria — o import existente (`import fredericoImg from "@/assets/frederico-carvalho.jpg"`) aponta para o mesmo ficheiro e o Vite optimiza automaticamente a imagem no build.
 
