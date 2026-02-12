@@ -1,22 +1,31 @@
 
 
-## Refinamento: Hardcode do Tag ID no E-goi
+## Correcao: EuPago API Key Invalid
 
-### Problema
+### Diagnostico
 
-No `sync-egoi/index.ts`, quando um contacto ja existe (409), o codigo faz um GET a `https://api.egoiapp.com/tags?name=...` para descobrir o ID numerico da tag antes de a anexar. Isto adiciona latencia desnecessaria e pode falhar se a API de pesquisa devolver um formato inesperado.
+O erro `APIKEY_INVALID` ocorre apesar de:
+- O codigo estar correcto (header `Authorization: ApiKey xxx`)
+- O endpoint estar correcto (`clientes.eupago.pt` para producao)
+- O secret `EUPAGO_API_KEY` existir no sistema
 
-O utilizador confirmou que a tag `webinar_imagens_com_ia_18_fev` tem o ID numerico **31** na lista 5.
+A causa mais provavel e que o valor do secret foi guardado com formatacao incorrecta (espacos extra, quebras de linha, ou caracteres invisíveis). Isto acontece frequentemente quando se copia/cola chaves.
 
 ### Solucao
 
-Hardcode `TAG_ID = 31` e eliminar o pedido GET de lookup. O bloco 409 passa de ~30 linhas para ~15, ficando mais rapido e robusto.
+1. **Re-guardar o secret `EUPAGO_API_KEY`** com o valor exacto `1e04-056e-7941-e503-7239`, garantindo que nao ha espacos antes ou depois.
+
+2. **Re-deploy da edge function `create-payment`** para que apanhe o valor actualizado do secret.
+
+3. **Testar o pagamento** chamando a funcao directamente para confirmar que a EuPago aceita a chave.
 
 ### Alteracoes tecnicas
 
-| Ficheiro | O que muda |
-|---|---|
-| `supabase/functions/sync-egoi/index.ts` | Substituir a logica de lookup da tag por `const TAG_ID = 31`. Remover o bloco de GET + parse. Usar directamente `tag_id: 31` no attach-tag. |
+Nenhuma alteracao de codigo e necessaria. Apenas:
 
-Nenhuma outra alteracao e necessaria — o resto do tracking, filtros SKIPPED, normalizacao de email e limite de registos ja esta correcto.
+| Accao | Detalhe |
+|---|---|
+| Actualizar secret | `EUPAGO_API_KEY` = `1e04-056e-7941-e503-7239` (sem espacos) |
+| Re-deploy | Edge function `create-payment` |
+| Teste | Chamar `create-payment` com um plano valido e confirmar resposta 200 |
 
