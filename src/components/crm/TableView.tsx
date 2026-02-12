@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from "react";
 import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { genderEmoji } from "@/lib/genderDetection";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -233,7 +234,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(i.id)} aria-label={`Seleccionar ${i.nome}`} />
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-semibold text-[15px] text-ink-900">{i.nome}</span>
+                      <span className="font-semibold text-[15px] text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
                     <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>
