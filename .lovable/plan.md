@@ -1,65 +1,44 @@
 
 
-## Tres Correcoes: Rastreio de Pagamento + Modal Pre-Redirect + Precos EuPago
+## Redesign da Pagina /confirmacao (Pos-Pagamento)
 
-### 1. Corrigir precos enviados a EuPago
+### O que muda
 
-Os valores enviados a EuPago devem incluir IVA (23%), pois e o valor final cobrado ao cliente:
+A pagina de confirmacao de pagamento sera simplificada e reorganizada com novo conteudo e estrutura.
 
-| Plano | Base | c/ IVA (valor EuPago) | Actual (errado) |
-|---|---|---|---|
-| Premium | 15 | 18.45 | 15.00 |
-| Masterclass | 47 | 57.81 | 52.00 |
-| Bundle | 62 | 76.26 | 524.00 |
-| Workshop | (manter) | (manter) | 512.00 |
+### Nova Estrutura
 
-**Ficheiro:** `supabase/functions/create-payment/index.ts` - actualizar os `value` no objecto PRODUCTS.
+1. **Cabecalho**
+   - Icone de check animado (manter)
+   - Titulo: "Upgrade Realizado!"
+   - Subtitulo: "Obrigado pela confianca."
+   - Texto: "Vamos aguardar a confirmacao do seu pagamento."
 
----
+2. **Remover**
+   - Caixa "O teu acesso inclui:" (lista de items)
+   - Caixa azul "Proximo passo"
+   - Bloco referral (convida 2 amigos)
 
-### 2. Garantir rastreio 100% do pagamento
+3. **Seccao "PROXIMOS PASSOS"** (titulo grande e visivel)
+   - **Passo 1 — Segue-me no Instagram**: Botao rosa do Instagram (manter estilo actual)
+   - **Passo 2 — Guarda o dia do webinar**: Botao de adicionar ao calendario (manter componente WebinarCalendarButton)
+   - **Passo 3 — Partilha com os teus amigos**: Social card para partilha no LinkedIn e outras redes. Inclui botoes de partilha (LinkedIn, Twitter/X, copiar link) com um card pre-formatado que o utilizador pode partilhar
 
-O sistema actual extrai o email do campo `identifier` (formato `WEBINAR-PLAN-email-timestamp`). Isto funciona na maioria dos casos, mas ha dois pontos frageis:
+4. **Rodape** — Manter link "Voltar ao site" e email de contacto
 
-- Se o email tiver formato inesperado, a extraccao pode falhar
-- O `transactionID` da EuPago (devolvido na criacao) nao e guardado, perdendo-se a ligacao directa
-
-**Solucao em duas partes:**
-
-**a) Guardar `transactionID` + `eupago_ref` na DB no momento da criacao do link** (antes do pagamento):
-- Na funcao `create-payment`, apos receber resposta da EuPago, fazer UPDATE na tabela `registrations` com o `transactionID` e o plano
-- Isto cria um registo previo que liga email -> transactionID
-
-**b) No webhook, usar dupla verificacao:**
-- Primeiro tentar localizar por `transactionID` (match exacto, 100% fiavel)
-- Se falhar, usar o metodo actual de extraccao de email como fallback
-
-**Ficheiros:**
-- `supabase/functions/create-payment/index.ts` - guardar transactionID na DB
-- `supabase/functions/eupago-webhook/index.ts` - procurar por transactionID primeiro
-
----
-
-### 3. Modal de transicao antes do redirect
-
-Quando o utilizador clica "Confirmar e pagar", em vez de redirect imediato:
-
-1. Mostrar um modal/overlay com:
-   - "Vais ser redirecionado para a pagina de pagamento seguro"
-   - "Recebes um email de confirmacao apos o pagamento"
-   - Spinner + texto "A preparar..."
-2. Apos 2-3 segundos, fazer o redirect automatico para o link EuPago
-
-**Ficheiro:** `src/components/upgrade/StepConfirmation.tsx` - adicionar estado de modal e overlay antes do `window.location.href`
-
----
-
-### Resumo tecnico de alteracoes
+### Alteracoes tecnicas
 
 | Ficheiro | Alteracao |
 |---|---|
-| `supabase/functions/create-payment/index.ts` | Corrigir precos c/ IVA; guardar transactionID na DB |
-| `supabase/functions/eupago-webhook/index.ts` | Procurar por transactionID antes de extrair email |
-| `src/pages/Upsell.tsx` | Adicionar estado para modal pre-redirect |
-| `src/components/upgrade/StepConfirmation.tsx` | Mostrar modal de transicao antes do redirect |
+| `src/pages/Confirmacao.tsx` | Reescrever layout: remover caixa de items e caixa azul; novo titulo/subtitulo; seccao "Proximos Passos" com 3 blocos numerados |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Reescrever: remover bloco referral; adicionar passos numerados (Instagram, Calendario, Social Share Card com botoes de partilha LinkedIn/X/copiar link) |
+
+### Social Card de Partilha (Passo 3)
+
+O passo 3 tera um mini-card visual com:
+- Preview do evento (titulo do webinar, data, nome do apresentador)
+- Botoes para partilhar no LinkedIn, Twitter/X
+- Botao para copiar o link do site
+
+Os links de partilha usarao os URLs nativos de cada rede social (ex: `https://www.linkedin.com/sharing/share-offsite/?url=...`).
 
