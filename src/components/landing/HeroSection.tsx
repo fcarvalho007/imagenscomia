@@ -26,7 +26,7 @@ export const HeroSection = () => {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.70) 25%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.10) 100%)",
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.85) 25%, rgba(255,255,255,0.50) 55%, rgba(255,255,255,0.15) 100%)",
         }}
       />
       {/* Top/bottom fade for smooth edges */}
