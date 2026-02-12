@@ -47,15 +47,10 @@ export const PricingCardsSection = () => {
               >
                 Inscrever-me grátis →
               </motion.button>
+              <p className="text-center text-[13px] text-ink-400 mt-2">(não inclui gravação da sessão)</p>
             </div>
           </ScrollReveal>
         </div>
-
-        <ScrollReveal>
-          <p className="text-center text-[14px] text-ink-400 mt-6">
-            ✓ Sem compromisso
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   );

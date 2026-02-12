@@ -199,8 +199,9 @@ const CaptureView = ({
 }) => (
   <>
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
-      Concluir reserva do lugar
+      Quero confirmar o meu lugar para o Webinar Gratuito — Ao Vivo
     </h3>
+    <p className="text-[15px] text-ink-500 mb-3">Quarta-feira, 18 de Fevereiro, 10h</p>
 
     <div className="space-y-3 mb-4">
       <div className="flex gap-3">
@@ -256,12 +257,11 @@ const CaptureView = ({
         className="mt-1 w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/20 shrink-0"
       />
       <span className="text-[14px] text-ink-400 leading-relaxed">
-        Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing. Os dados pessoais serão tratados pela Fomentar Sonhos, Lda.{" "}
+        Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing do Frederico Carvalho. Os dados pessoais serão tratados pela sua empresa Fomentar Sonhos.{" "}
         <a href="#" className="underline hover:text-ink-600">Política de Privacidade</a> e{" "}
         <a href="#" className="underline hover:text-ink-600">Termos e Condições</a>.
       </span>
     </label>
-    <p className="text-[14px] text-ink-400 mb-5 ml-6">Sem spam. Cancelamento a qualquer momento.</p>
 
     {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
 
