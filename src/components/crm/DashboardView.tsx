@@ -1,10 +1,11 @@
-import { useMemo } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 
 interface DashboardViewProps {
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -28,7 +29,8 @@ function abbreviateSource(s: string) {
   return s;
 }
 
-export default function DashboardView({ inscritos, onSelectInscrito }: DashboardViewProps) {
+export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
+  const [refreshing, setRefreshing] = useState(false);
   const stats = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
     const total = active.length;
@@ -90,7 +92,18 @@ export default function DashboardView({ inscritos, onSelectInscrito }: Dashboard
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Dashboard</h1>
           <p className="text-sm text-ink-500">Visão geral do webinar em tempo real</p>
         </div>
-        <p className="text-[13px] text-ink-400 mt-1">{dateStr}</p>
+        <div className="flex items-center gap-3">
+          {onRefresh && (
+            <button
+              onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium bg-surface text-ink-600 hover:bg-ink-100 transition-colors"
+            >
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
+              Atualizar
+            </button>
+          )}
+          <p className="text-[13px] text-ink-400 mt-1">{dateStr}</p>
+        </div>
       </div>
 
       {/* Funnel */}
