@@ -1,6 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft } from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
 
@@ -11,6 +12,7 @@ const fadeUp = (delay: number) => ({
 });
 
 const Confirmacao = () => {
+  usePageMeta({ title: "Inscrição Confirmada — Webinar Imagens com IA", description: "A tua inscrição foi confirmada. Adiciona ao calendário e partilha." });
   const [searchParams] = useSearchParams();
   const userName = searchParams.get("name") || "";
 

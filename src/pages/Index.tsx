@@ -1,4 +1,5 @@
 import { RegistrationModalProvider } from "@/hooks/useRegistrationModal";
+import { usePageMeta } from "@/hooks/usePageMeta";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { StickyTopBar } from "@/components/landing/StickyTopBar";
 import { MirrorCopySection } from "@/components/landing/MirrorCopySection";
@@ -16,6 +17,7 @@ import { CTAFinalSection } from "@/components/landing/CTAFinalSection";
 import { FooterSection } from "@/components/landing/FooterSection";
 
 const Index = () => {
+  usePageMeta({ title: "Criar Imagens com IA para Empresas — Webinar Gratuito 18 Fev 10h", description: "Aprende a criar imagens profissionais com IA para a tua empresa. Sem designer. Webinar gratuito, 18 Fevereiro, 10h. Método testado. Demo ao vivo." });
   return (
     <RegistrationModalProvider>
       <main className="overflow-x-hidden pt-[52px]">
