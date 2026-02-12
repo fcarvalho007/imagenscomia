@@ -1,40 +1,33 @@
 
 
-## Corrigir eliminacao de registos no CRM
+## Remover informacao de email no Passo 5
 
-### Problema raiz
+### Alteracao
 
-A funcao `deleteInscrito` no hook `useInscritos.ts` apenas remove o registo do estado local (memoria do browser). Nunca apaga da base de dados. Como o CRM faz refresh automatico a cada 30 segundos, o registo "volta" porque continua na base de dados.
+**Ficheiro:** `src/components/upgrade/StepConfirmation.tsx`
 
-Como consequencia, ao tentar registar o mesmo email, a edge function `register-free` encontra o registo na base de dados e devolve "ja esta inscrito".
+No bloco verde do `VariantFree` (linhas 37-48), remover os dois itens:
+- "Link Zoom enviado para o teu email"
+- "Grupo WhatsApp do evento (link enviado por email)"
 
-### Solucao
+Manter apenas o primeiro item: "Webinar ao vivo — 18 Fev · 10h00"
 
-#### 1. Adicionar politica de DELETE na base de dados
+### Sobre o E-goi
 
-A tabela `registrations` atualmente so permite SELECT e UPDATE. Precisa de uma politica que permita DELETE.
+Os logs confirmam que a sincronizacao funcionou corretamente:
+- Contacto ja existia no E-goi (resposta 409, contact_id: 80ca4b03dd)
+- Tag `webinar_imagens_com_ia_18_fev` foi adicionada com sucesso (resposta 202)
 
-**Migracao SQL:**
-```sql
-CREATE POLICY "allow_anon_delete"
-  ON public.registrations
-  FOR DELETE
-  USING (true);
-```
+O contacto esta na Lista 5 do E-goi. Se nao o ve, verifique:
+- Se esta a ver a Lista 5 (e nao outra lista)
+- Se nao tem filtros de segmento ativos que excluam o contacto
+- Pesquise diretamente por `fredericodigital@gmail.com` na lista
 
-#### 2. Apagar da base de dados ao eliminar no CRM
+Nao ha alteracao de codigo necessaria para o E-goi — esta a funcionar corretamente.
 
-**Ficheiro:** `src/hooks/useInscritos.ts`
+### Resumo tecnico
 
-Alterar a funcao `deleteInscrito` para:
-- Primeiro apagar o registo da base de dados com `supabase.from("registrations").delete().eq("id", inscritoId)`
-- Depois remover do estado local
-- Mostrar erro na consola se a eliminacao falhar
-
-### Resumo
-
-| Alteracao | Detalhe |
+| Ficheiro | Alteracao |
 |---|---|
-| Migracao SQL | Adicionar politica DELETE na tabela `registrations` |
-| `src/hooks/useInscritos.ts` | `deleteInscrito` passa a apagar da base de dados antes de remover do estado local |
+| `src/components/upgrade/StepConfirmation.tsx` | Remover 2 linhas sobre email/WhatsApp do bloco verde |
 
