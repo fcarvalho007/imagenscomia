@@ -1,33 +1,29 @@
 
-## Trocar imagem de fundo da primeira dobra (Hero) com maior visibilidade
 
-### Situação actual
+## Ajustar opacidade do fundo do Hero — visivel nas laterais, opaco no centro
 
-A imagem de fundo do Hero está configurada com `opacity-[0.35]` e um gradiente radial overlay que deixa o centro muito opaco (branco 92%), tornando a imagem quase invisível. A nova imagem "fundo_frederico_carvalho_webinar.jpeg" é muito mais impactante e profissional, com personagem (Frederico) e elementos visuais claros que merecem maior protagonismo.
+### Problema actual
 
-### Solução proposta
+A imagem de fundo tem opacidade uniforme (15%) em toda a area, o que a torna quase invisivel e nao acrescenta impacto visual.
 
-**1. Substituir a imagem de fundo**
-- Guardar a imagem carregada como `src/assets/hero-bg.jpeg` (substituindo a actual)
-- Manter a importação ES6 existente: `import heroBg from "@/assets/hero-bg.jpeg"`
+### Solucao proposta
 
-**2. Aumentar visibilidade da imagem**
-- Aumentar `opacity-[0.35]` para `opacity-[0.55]` ou `opacity-[0.65]` — a imagem fica muito mais visível
-- Ajustar o gradiente radial overlay:
-  - Centro: reduzir opacidade do branco de `rgba(255,255,255,0.92)` para `rgba(255,255,255,0.75)` ou `0.70`
-  - Laterais: manter mais transparentes para que a imagem fique bem visível
-  - Novo gradiente: `radial-gradient(ellipse at center, rgba(255,255,255,0.70) 30%, rgba(255,255,255,0.35) 60%, rgba(255,255,255,0.10) 100%)`
-- Manter o gradiente vertical (top/bottom fade) para suavidade nas bordas
+Substituir o overlay linear uniforme por um **gradiente radial** que deixa o centro mais opaco (branco) para proteger o texto, e as laterais mais transparentes para que a imagem de fundo seja visivel e crie profundidade.
 
-**3. Resultado final**
-- A imagem do "Frederico Carvalho Webinar" com portal e tabela de imagens fica visível e impactante
-- O conteúdo textual (título, cards, vídeo, botão) mantém legibilidade total sobre a imagem
-- O layout e responsividade não mudam — apenas a visibilidade da imagem
+### Alteracoes tecnicas
 
-### Ficheiros a alterar
+**Ficheiro:** `src/components/landing/HeroSection.tsx`
 
-| Ficheiro | Alteração |
-|---|---|
-| `src/assets/hero-bg.jpeg` | Guardar nova imagem (substituir anterior) |
-| `src/components/landing/HeroSection.tsx` | Aumentar `opacity` da imagem e ajustar cores do overlay radial |
+1. **Aumentar a opacidade da imagem** de `opacity-[0.15]` para `opacity-[0.35]` — a imagem fica mais visivel globalmente
+
+2. **Substituir o overlay por um gradiente radial** usando inline style:
+   - Centro: branco a ~90% opacidade (protege o texto e conteudo)
+   - Laterais: branco a ~20-30% opacidade (deixa a imagem visivel nos cantos e bordas)
+   - Formato: `radial-gradient(ellipse at center, rgba(255,255,255,0.92) 30%, rgba(255,255,255,0.5) 60%, rgba(255,255,255,0.25) 100%)`
+
+3. Manter o gradiente vertical adicional (top/bottom) para suavizar as transicoes superior e inferior
+
+### Resultado esperado
+
+A imagem futurista com tons azuis fica visivel nas laterais e cantos, criando um efeito de "vinheta inversa" elegante. O centro permanece limpo e legivel, com todo o texto, cards, video e botao verde a manter contraste total.
 
