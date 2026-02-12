@@ -50,6 +50,16 @@ export const PurchaseModal = ({
 
     setLoading(true);
     try {
+      // 1. Register user in DB (so they appear in CRM)
+      await supabase.functions.invoke("register-free", {
+        body: {
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: trimmedEmail,
+        },
+      });
+
+      // 2. Create payment link
       const { data, error: fnError } = await supabase.functions.invoke(
         "create-payment",
         {
