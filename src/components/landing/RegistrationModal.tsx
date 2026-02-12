@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { LegalModal } from "@/components/legal/LegalModal";
+import { TermosContent } from "@/components/legal/TermosContent";
+import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2, Phone } from "lucide-react";
@@ -202,7 +205,10 @@ const CaptureView = ({
   loading: boolean;
   error: string | null;
   onSubmit: () => void;
-}) => (
+}) => {
+  const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
+
+  return (
   <>
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
       Quero confirmar o meu lugar para o Webinar Gratuito — Ao Vivo
@@ -264,8 +270,8 @@ const CaptureView = ({
       />
       <span className="text-[14px] text-ink-400 leading-relaxed">
         Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing do Frederico Carvalho. Os dados pessoais serão tratados pela sua empresa Fomentar Sonhos.{" "}
-        <a href="#" className="underline hover:text-ink-600">Política de Privacidade</a> e{" "}
-        <a href="/termos" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink-600">Termos e Condições</a>.
+        <button type="button" onClick={() => setLegalModal("privacidade")} className="underline hover:text-ink-600">Política de Privacidade</button> e{" "}
+        <button type="button" onClick={() => setLegalModal("termos")} className="underline hover:text-ink-600">Termos e Condições</button>.
       </span>
     </label>
 
@@ -286,12 +292,19 @@ const CaptureView = ({
       {loading ? "A registar..." : "Reservar o meu lugar"}
     </motion.button>
 
-
     <p className="text-center mt-2 text-[13px] text-ink-400">
       (não inclui gravação da sessão)
     </p>
+
+    <LegalModal open={legalModal === "privacidade"} onOpenChange={(v) => !v && setLegalModal(null)} title="Política de Privacidade">
+      <PrivacidadeContent />
+    </LegalModal>
+    <LegalModal open={legalModal === "termos"} onOpenChange={(v) => !v && setLegalModal(null)} title="Termos e Condições">
+      <TermosContent />
+    </LegalModal>
   </>
-);
+  );
+};
 
 /* ── Step 2: Upsell ── */
 
