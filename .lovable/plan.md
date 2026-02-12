@@ -1,105 +1,72 @@
 
-## Revisão e Melhorias para Página /convites
 
-### Problemas Identificados
+## Refinamento Mobile da Pagina /upgrade
 
-1. **Dependência `checked` em useEffect**
-   - O estado `checked` previne re-execução, mas se o `email` mudar, a página não re-verifica automaticamente
-   - Quando o utilizador muda de email, a lógica não responde
+### Problemas identificados
 
-2. **Falta de validação de email no input**
-   - O campo email aceita qualquer valor antes de enviar
-   - Sem feedback visual de erro antes do submit
+1. **Botao "Proximo passo" fica fora do viewport** em telefones pequenos porque o conteudo empurra-o para baixo e nao ha padding bottom suficiente
+2. **Links secundarios ("Saltar esta pergunta")** nao tem separacao visual clara - precisam de linha separadora e cor mais escura
+3. **Passo 3 (Premium) e Passo 4 (Masterclass)**: o card com price row e early bird badge lado a lado fica apertado em mobile - o badge corta texto (visivel no screenshot)
+4. **Fontes e textos longos em mobile** precisam de ajuste
 
-3. **Carregamento inicial lento**
-   - Leaderboard carrega sempre em paralelo (pode demorar)
-   - Não há skeleton/placeholder durante o carregamento do leaderboard
+### Alteracoes por ficheiro
 
-4. **Refetch manual não funciona**
-   - O `onSubmit` do formulário chama `handleCheck()`, mas sem validação de email vazio
-   - Nenhum feedback de sucesso/erro visual após re-verificação
+#### A) `src/pages/Upsell.tsx`
+- Aumentar `pb-10` para `pb-24` em mobile (garantir espaco para o botao ficar visivel)
+- Reduzir `mb-8` da progress bar para `mb-5` em mobile para ganhar espaco vertical
 
-5. **Copy feedback insuficiente**
-   - Toast aparece mas desaparece em 2.5s rapidamente
-   - Sem visual feedback no botão enquanto o texto está "Copiado!"
+#### B) `src/components/upgrade/StepQualification.tsx`
+- Adicionar separador (linha `h-px bg-border`) antes do bloco "Saltar esta pergunta"
+- Mudar cor do "Saltar" de `text-ink-300` para `text-ink-500` (cinzento escuro)
+- Reduzir titulo de `text-[24px]` para `text-[20px]` em mobile (`max-sm:text-[20px]`)
+- Reduzir subtitulo de `text-[17px]` para `text-[15px]` em mobile
 
-6. **Mobile: layout do "Como funciona" pode quebrar**
-   - Com 3 ícones lado a lado em mobile pequeno (< 360px) pode ficar apertado
-   - Sem wrapping ou ajuste responsivo
+#### C) `src/components/upgrade/StepPersonalization.tsx`
+- Mesmo padrao: separador + cor mais escura no "Saltar"
+- Reduzir titulo para `text-[20px]` em mobile
+- Reduzir subtitulo para `text-[15px]` em mobile
 
-7. **Mensagem de data/hora incompleta**
-   - `toLocaleDateString` com opções `hour` e `minute` não funciona corretamente
-   - Deveria mostrar data + hora de forma clara
+#### D) `src/components/upgrade/StepPremium.tsx`
+- **Price row em mobile**: mudar de `flex` horizontal para stack vertical (`flex-col` em `max-sm`) - o badge early bird vai para baixo do preco em vez de ficar ao lado
+- Reduzir titulo de `text-[24px]` para `text-[20px]` em mobile
+- Reduzir preco de `text-[36px]` para `text-[28px]` em mobile
+- Separador + cor escura no "Continuar sem..."
+- Reduzir padding do card de `p-6` para `p-4` em mobile
 
-8. **Leaderboard sempre vazio ou com poucas entradas**
-   - Se houver < 5 entradas, o layout fica vazio visualmente
-   - Sem estado "Sem dados" claro
+#### E) `src/components/upgrade/StepMasterclass.tsx`
+- Mesmas correcoes: price row em stack vertical em mobile
+- Separador + cor escura no skip link
+- Reduzir titulo, preco e padding em mobile
+- Texto do subtitulo mais curto em mobile (truncar ou reduzir font)
 
-9. **WhatsApp link sem validação**
-   - Se `whatsappMsg` estiver vazio ou muito longo, pode quebrar
-   - Sem fallback se a função de encode falhar
+#### F) `src/components/upgrade/StepConfirmation.tsx`
+- Reduzir titulo de `text-[24px]` para `text-[20px]` em mobile
+- Garantir padding bottom suficiente
 
-10. **Estado `checked` nunca reseta**
-    - Se o utilizador fechar e reabrir a página com outro email, fica preso no estado anterior
-    - Dependency array em useEffect precisa ser ajustado
+### Detalhes tecnicos
 
-### Melhorias Propostas
+Todas as alteracoes usam classes Tailwind responsivas (`max-sm:` para < 640px):
 
-#### A) Lógica e Estados
-- **Remover `checked` e adicionar `hasSubmitted`**: Rastreia se já houve um submit, mas permite re-tentativas
-- **Adicionar validação real de email**: Validação antes de enviar (pattern + .test())
-- **Refetch automática**: Se o email no URL mudar, revalidar automaticamente
-- **Resetar estados ao desmontar**: Limpar dados ao navegar para fora
+```
+// Exemplo de titulo responsivo
+className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900"
 
-#### B) UX e Feedback
-- **Melhorar toast**: Aumentar duração para 3.5s e adicionar cor diferente por tipo (sucesso vs erro)
-- **Loading states**: Adicionar skeleton/placeholders enquanto carrega leaderboard
-- **Estados vazios**: Cards mostrarem estado "Carregando..." quando aplicável
-- **Feedback visual**: Button "Copiar" com cor verde/check e transição suave
+// Exemplo de price row stack em mobile
+className="flex max-sm:flex-col justify-between items-start mb-4 gap-3"
 
-#### C) Responsividade Mobile
-- **"Como funciona" em 2 linhas em mobile**: Em screens < 640px, mudar de 3 colunas para grid 2x2 ou stack
-- **Reduzir padding em mobile**: De p-5 para p-4 em mobile para economizar espaço
-- **Buttons stacked em mobile**: "Copiar link" + WhatsApp em vertical em mobile
+// Exemplo de separador + skip link
+<div className="w-full h-px bg-border mt-6 mb-3" />
+<p className="text-[13px] text-ink-500 cursor-pointer text-center ...">
+  Saltar esta pergunta
+</p>
+```
 
-#### D) Data/Hora
-- **Usar função helper**: Criar função `formatDateTimeLocale()` que funcione corretamente em PT-PT
-- **Mostrar apenas data + hora**: "12 Fev · 10:30" mais legível
-
-#### E) Leaderboard
-- **Adicionar skeleton loading**: Durante fetch, mostrar 5 linhas falsas animadas
-- **Limite visual**: Mostrar "Top 10" e mensagem "Ver mais 5 participantes" se houver
-- **Highlight do utilizador**: Sempre visível se estiver no ranking, com ícone 👤
-
-#### F) Otimizações
-- **Memoizar funções**: `handleCopy`, `handleCopyMsg`, `handleCheck` com `useCallback`
-- **Lazy load do leaderboard**: Só carregar após 500ms da montagem para não bloquear render inicial
-- **URL update automática**: Salvar no `window.history` se houver dados (para reload manter contexto)
-
-### Ficheiros a Modificar
-
-| Ficheiro | Alterações |
+| Ficheiro | Alteracoes |
 |---|---|
-| `src/pages/Convites.tsx` | Refatorar lógica de estados, adicionar validação, melhorar UX, responsividade mobile, data/hora formatting, skeleton loading |
-
-### Implementação
-
-1. **Remover `checked`, usar `hasSubmitted`**: Permite re-verificação automática
-2. **Adicionar `useCallback`**: Para evitar re-renders desnecessários
-3. **Melhorar validação**: Email obrigatório + pattern before submit
-4. **Mobile-first layout**: Ajustar "Como funciona" e buttons em mobile
-5. **Loading states**: Skeleton para leaderboard, estado "Carregando..." para cards
-6. **Data/Hora melhorada**: Função helper para formatação PT-PT
-7. **Toast melhorado**: Duração 3.5s, tipos diferentes
-8. **Cleanup no unmount**: useEffect com cleanup
-
-### Detalhe Técnico
-
-- Usar `useCallback` para `handleCheck`, `handleCopy`, `handleCopyMsg`
-- Adicionar `useEffect` cleanup para resetar estados
-- Adicionar skeleton component ou usar `opacity-50` com animação de pulse para loading
-- Criar função helper de data/hora reutilizável: `formatInviteDate(isoDate: string): string`
-- Validação de email com regex simples: `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
-- Dependency array: `[searchParams]` apenas para re-check automático
-- Mobile breakpoints: `max-sm:` para < 640px
+| `src/pages/Upsell.tsx` | Padding bottom mobile, progress bar spacing |
+| `src/components/upgrade/StepQualification.tsx` | Fontes mobile, separador + cor skip link |
+| `src/components/upgrade/StepPersonalization.tsx` | Fontes mobile, separador + cor skip link |
+| `src/components/upgrade/StepPremium.tsx` | Price row stack mobile, fontes, separador, padding |
+| `src/components/upgrade/StepMasterclass.tsx` | Price row stack mobile, fontes, separador, padding |
+| `src/components/upgrade/StepConfirmation.tsx` | Fontes mobile |
 
