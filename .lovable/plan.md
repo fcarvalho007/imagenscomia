@@ -1,27 +1,27 @@
 
 
-## Substituir imagem de fundo do Hero
+## Substituir imagem de fundo do Hero e dar mais cor
 
 ### O que muda
 
-1. **Nova imagem** — Copiar a imagem carregada para `src/assets/hero-bg.jpeg` (substituindo a actual)
+1. **Nova imagem** — Substituir `src/assets/hero-bg.jpeg` pela imagem carregada (presenter com portal azul e grelha de imagens)
 
-2. **Ajustar o overlay radial** — Como esta imagem e mais escura (fundo quase preto com tons azuis), o gradiente radial precisa de ser recalibrado:
-   - Centro: branco a ~85% opacidade (proteger texto)
-   - Zona intermédia: branco a ~40% (transicao suave)
-   - Laterais: branco a ~15% (deixar a imagem bem visivel nos cantos)
-   - Aumentar a opacidade da imagem de `0.35` para `0.45-0.5` para dar mais vida
+2. **Mais cor/vida** — Aumentar a opacidade da imagem de `0.48` para `0.55` e reduzir ligeiramente a opacidade do overlay radial nas laterais (de 0.15 para 0.10) para deixar passar mais cor dos tons azuis e laranjas
 
-3. **Manter tudo o resto** — Gradiente vertical top/bottom, animacoes diretas, responsividade
+3. **Manter radial no centro** — O gradiente radial continua a proteger o centro para legibilidade do texto
 
 ### Alteracoes tecnicas
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/assets/hero-bg.jpeg` | Substituir pela nova imagem (PNG convertido) |
-| `src/components/landing/HeroSection.tsx` | Ajustar opacidade da imagem para ~0.45 e recalibrar valores do gradiente radial |
+| `src/assets/hero-bg.jpeg` | Substituir pela nova imagem |
+| `src/components/landing/HeroSection.tsx` | Opacidade da imagem: `0.48` para `0.55`. Radial gradient: centro mantém 85%, laterais passam de 15% para 10% |
+
+### Valores do gradiente radial actualizados
+
+`radial-gradient(ellipse at center, rgba(255,255,255,0.85) 25%, rgba(255,255,255,0.35) 55%, rgba(255,255,255,0.10) 100%)`
 
 ### Resultado esperado
 
-A imagem escura com o portal azul e a grelha de imagens fica visivel nas laterais, criando um efeito cinematografico. O centro mantém-se limpo e legivel com todo o conteudo bem contrastado.
+A imagem do presenter com o portal azul e tons quentes fica mais visivel nas laterais, com mais cor e vida. O centro continua limpo e legivel.
 
