@@ -48,13 +48,21 @@ const VariantFree = ({ userName, referralCode }: { userName: string; referralCod
       <WebinarCalendarButton className="mb-5" />
 
       <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 mb-5 shadow-sm">
-        <p className="font-heading font-bold text-[17px] text-amber-800 mb-2">
-          🎁 Convida 2 amigos — ganhas acesso ao Q&A Bónus de 25 Fev
-        </p>
-        <p className="text-[15px] text-amber-700 mb-3.5">
-          Partilha o teu link. Quando 2 amigos se inscreverem,
-          entras gratuitamente na sessão extra de Q&A.
-        </p>
+        <div className="flex gap-4 mb-3.5">
+          <img
+            src="/guia-essencial-seo.png"
+            alt="Guia Essencial SEO"
+            className="w-auto h-[120px] rounded-lg shadow-sm shrink-0 object-contain"
+          />
+          <div>
+            <p className="font-heading font-bold text-[17px] text-amber-800 mb-2">
+              🎁 Convida 2 amigos — ganhas o livro Guia Essencial SEO
+            </p>
+            <p className="text-[15px] text-amber-700">
+              O guia indispensável para qualquer pessoa que deseje dominar as estratégias de otimização para motores de pesquisa e maximizar a visibilidade online.
+            </p>
+          </div>
+        </div>
         <button
           onClick={handleCopy}
           className="w-full flex items-center justify-center gap-2 font-heading font-semibold text-[14px] py-3 rounded-xl transition-colors bg-amber-100 text-amber-700 border border-amber-400 hover:bg-amber-200"
