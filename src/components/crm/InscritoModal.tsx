@@ -208,7 +208,7 @@ export default function InscritoModal({
                     {getInitials(inscrito.nome)}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="font-heading font-bold text-[16px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                    <h2 className="font-heading font-bold text-[18px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
                     <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="font-heading font-bold text-[11px] px-2.5 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
@@ -259,7 +259,7 @@ export default function InscritoModal({
                     {getInitials(inscrito.nome)}
                   </div>
                 </div>
-                <h2 className="font-heading font-bold text-[17px] text-white mt-2">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                <h2 className="font-heading font-bold text-[18px] text-white mt-2">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
                 {onSetGender && (
                   <div className="flex justify-center gap-1.5 mt-1.5">
                     {(["M","F","U"] as Gender[]).map((g) => (

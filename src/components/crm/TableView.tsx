@@ -255,7 +255,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         >
                           {getInitials(i.nome)}
                         </div>
-                        <span className="font-medium text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
+                        <span className="font-semibold text-[15px] text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>

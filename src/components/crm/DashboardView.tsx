@@ -273,7 +273,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 onClick={() => onSelectInscrito(i)}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
+                  <span className="text-[14px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                   <span
                     className="text-[11px] font-medium px-2 py-0.5 rounded-full"
                     style={{ background: badge.bg, color: badge.color }}
