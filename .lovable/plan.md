@@ -1,55 +1,11 @@
 
 
-## Auditoria Mobile e Correcoes de Otimizacao
+## Correcoes: Espacamento Hero Desktop + Scroll Mobile no /upgrade
 
-Apos revisao completa em viewport 390x844 (iPhone 14), identifiquei os seguintes problemas e melhorias:
+### Problemas identificados
 
----
-
-### Problemas encontrados
-
-| # | Seccao | Problema | Severidade |
-|---|--------|----------|------------|
-| 1 | TransformationSection | As linhas before/after usam `flex` horizontal com 5 elementos (XCircle + texto + seta + CheckCircle + texto) numa unica linha. Em mobile, o texto fica ilegivel e comprimido | Alta |
-| 2 | FooterSection | Copyright diz "2025" em vez de "2026" | Baixa |
-| 3 | TestimonialsSection | Quote font-size a 16px — abaixo do padrao 17px definido no projeto | Baixa |
-| 4 | ProgramSection | Botao CTA "Sim, assistir gratis!" nao e full-width em mobile (usa `inline-block`) | Media |
-| 5 | CTAFinalSection | Botao CTA "Sim, assistir gratis!" nao e full-width em mobile | Media |
-
----
-
-### Correcoes propostas
-
-**1. TransformationSection — layout mobile empilhado**
-
-Mudar de layout horizontal para vertical em mobile. Em vez de uma linha com 5 elementos, cada transformacao sera um card com "antes" em cima e "depois" em baixo, separados por uma seta para baixo. Em desktop (`md:`), manter o layout horizontal actual.
-
-```text
-Mobile:
-+----------------------------+
-| X  Texto antigo (riscado)  |
-|         arrow-down         |
-| check  Texto novo (bold)   |
-+----------------------------+
-
-Desktop: manter layout horizontal actual
-```
-
-**2. FooterSection — ano actualizado**
-
-Mudar "2025" para "2026".
-
-**3. TestimonialsSection — fonte consistente**
-
-Mudar quote font-size de `16px` para `17px` para manter consistencia com o resto da pagina.
-
-**4. ProgramSection — CTA full-width mobile**
-
-Adicionar `w-full sm:w-auto` ao botao para ocupar toda a largura em mobile.
-
-**5. CTAFinalSection — ja tem `w-full sm:w-auto`**
-
-O botao ja tem as classes correctas. Sem alteracao necessaria.
+1. **Hero desktop**: Pouco espaco entre as 4 caixas de especificacoes e o botao CTA. Actualmente o gap e apenas `mb-6` (~24px).
+2. **Mobile /upgrade (passos 2 e 3)**: A pagina nao comeca no topo ao mudar de passo. O titulo e subtitulo ficam cortados. Causa: o `advanceStep` faz `contentRef.current.scrollTo()`, mas em mobile o `contentRef` nao tem scroll proprio (so tem `lg:overflow-y-auto`). Em mobile, o scroll e do `window`, nao do div.
 
 ---
 
@@ -57,17 +13,28 @@ O botao ja tem as classes correctas. Sem alteracao necessaria.
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/landing/TransformationSection.tsx` | Layout empilhado em mobile |
-| `src/components/landing/FooterSection.tsx` | Ano 2025 para 2026 |
-| `src/components/landing/TestimonialsSection.tsx` | Quote font 16px para 17px |
-| `src/components/landing/ProgramSection.tsx` | Botao CTA full-width mobile |
+| `src/components/landing/HeroSection.tsx` | Aumentar gap entre badges e CTA |
+| `src/pages/Upsell.tsx` | Corrigir scroll-to-top em mobile |
 
-### O que esta bem
+---
 
-- Hero: botao CTA full-width, font ok, badges em grid 2x2
-- Galeria: masonry 2 colunas em mobile, funciona bem
-- PresenterSection: foto + texto empilhados correctamente
-- AudienceSection: listas empilhadas em mobile
-- FAQSection: accordion funcional, font 17px consistente
-- PricingCardsSection: card centrado, botao full-width
+### 1. Hero — mais espacamento em desktop
+
+Na linha 132, o wrapper dos badges tem `mb-6`. Mudar para `mb-6 lg:mb-10` para dar mais respiro em desktop (~40px) sem afectar mobile.
+
+### 2. /upgrade — scroll-to-top em mobile
+
+Na funcao `advanceStep` (linha 61-64), o scroll so funciona no container `contentRef` que em mobile nao tem overflow. A correcao:
+
+```text
+const advanceStep = useCallback((next: number) => {
+  setStep(next);
+  // Desktop: scroll do container interno
+  if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+  // Mobile: scroll da window
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}, []);
+```
+
+Isto garante que tanto em desktop (scroll do painel direito) como em mobile (scroll da janela) a pagina volta ao topo ao mudar de passo.
 
