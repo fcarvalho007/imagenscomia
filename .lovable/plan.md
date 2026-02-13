@@ -1,107 +1,61 @@
 
 
-## Substituir FloatingLines por Beams no Hero
+## Correcoes ao Hero Section
 
-### Resumo
+### Ficheiro unico afectado
 
-Remover o componente FloatingLines do fundo do hero e substituir pelo componente Beams (feixes de luz 3D com @react-three/fiber). O Beams usa shaders com noise para criar planos verticais animados com iluminacao direccional — mais sofisticado visualmente.
+`src/components/landing/HeroSection.tsx`
 
-### Dependencias a instalar
+---
 
-| Pacote | Versao | Razao |
-|---|---|---|
-| `@react-three/fiber` | `^8.18` | Wrapper React para Three.js (obrigatorio v8 para React 18) |
-| `@react-three/drei` | `^9.122.0` | Helpers (PerspectiveCamera) — obrigatorio v9 para React 18 |
+### 1. Barra branca no topo
 
-`three` ja esta instalado (^0.182.0).
+A barra branca visivel entre a StickyTopBar e o hero e causada pelo `pt-[52px]` no `<main>` em Index.tsx — o fundo branco da pagina fica exposto nesse espaco.
 
-### Ficheiros afectados
+**Solucao:** Adicionar `margin-top: -52px` e `padding-top: 52px` na section do hero para que o fundo escuro do hero cubra esse espaco. Isto elimina a barra branca sem alterar o layout.
 
-| Ficheiro | Tipo | Alteracao |
-|---|---|---|
-| `src/components/landing/Beams.tsx` | Criar | Componente Beams convertido para TypeScript |
-| `src/components/landing/Beams.css` | Criar | CSS do container (.beams-container) |
-| `src/components/landing/HeroSection.tsx` | Editar | Substituir FloatingLines por Beams |
+Alternativa (mais simples): mudar no Index.tsx o `pt-[52px]` para zero e adicionar o padding ao hero. Mas como a instrucao e so tocar no hero, a abordagem do margin negativo e preferivel.
 
-FloatingLines.tsx NAO e apagado (pode ser usado noutro sitio), apenas deixa de ser importado no hero.
+### 2. Titulo em 2 linhas (nao 3)
 
-### Detalhes tecnicos
-
-#### A) `src/components/landing/Beams.tsx`
-
-Conversao do codigo fornecido para TypeScript:
-- Tipagem de props (BeamsProps interface)
-- Tipagem de refs (MergedPlanes, PlaneNoise)
-- `extendMaterial` tipado com Record de uniforms
-- CanvasWrapper reconstruido (o JSX estava incompleto no codigo fornecido):
-
-```text
-const CanvasWrapper = ({ children }) => (
-  <div className="beams-container">
-    <Canvas>
-      {children}
-    </Canvas>
-  </div>
-);
+Alterar o H1 de:
+```
+Aprende a Criar Imagens<br />Profissionais com<br />Inteligência Artificial
+```
+para:
+```
+Aprende a Criar Imagens<br />Profissionais com Inteligência Artificial
 ```
 
-Props do componente Beams com defaults adaptados ao hero escuro:
-- `lightColor`: "#1E40AF" (azul escuro, coerente com a paleta do hero)
-- `beamNumber`: 8
-- `beamWidth`: 1.5
-- `beamHeight`: 15
-- `speed`: 1.5
-- `noiseIntensity`: 1.5
-- `scale`: 0.2
-- `rotation`: 0
+Apenas um `<br />` apos "Imagens". A segunda linha fica "Profissionais com Inteligencia Artificial". Ajustar `max-width` para `820px` para garantir que cabe numa unica linha no desktop.
 
-#### B) `src/components/landing/Beams.css`
+### 3. Reduzir opacidade do fundo Beams
+
+O efeito Beams esta demasiado intenso. Reduzir a opacidade do wrapper div de 100% para ~40-50%:
 
 ```text
-.beams-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-}
-.beams-container canvas {
-  pointer-events: auto;
-}
+<div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen", opacity: 0.5 }}>
 ```
 
-#### C) `src/components/landing/HeroSection.tsx`
+Isto mantem o efeito visual mas mais subtil e elegante.
 
-Alteracoes minimas:
-1. Remover `import FloatingLines from "./FloatingLines"`
-2. Adicionar `import Beams from "./Beams"`
-3. Substituir o bloco FloatingLines (linhas 58-73) por:
+### 4. Remover microcopy RGPD
 
+Apagar as linhas 186-188:
 ```text
-{/* Beams background */}
-<div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen" }}>
-  <Beams
-    lightColor="#1E40AF"
-    beamNumber={8}
-    beamWidth={1.5}
-    beamHeight={15}
-    speed={1.5}
-    noiseIntensity={1.5}
-    scale={0.2}
-    rotation={0}
-  />
-</div>
+<p style={{ fontSize: 14, color: "rgba(255,255,255,0.30)", marginTop: 10 }}>
+  Sem spam. Acesso imediato por email. Dados protegidos (RGPD).
+</p>
 ```
 
-O wrapper div com `mixBlendMode: "screen"` mantem o efeito de feixes luminosos sobre o fundo escuro, igual ao que o FloatingLines fazia.
+### Resumo de alteracoes
 
-Todo o resto do hero (titulo, badges, CTA, Google Reviews) permanece inalterado.
+| O que | Detalhe |
+|---|---|
+| Barra branca | `mt-[-52px] pt-[52px]` na section do hero |
+| H1 2 linhas | Remover segundo `<br />`, max-width 820px |
+| Opacidade Beams | `opacity: 0.5` no wrapper |
+| Microcopy RGPD | Removido |
 
-### O que NAO muda
-
-- Nenhuma outra seccao da landing page
-- Nenhuma outra pagina
-- FloatingLines.tsx permanece no projecto (nao e apagado)
-- Tipografia, espacamentos e conteudo do hero mantidos
+Nenhum outro ficheiro e alterado.
 
