@@ -56,7 +56,7 @@ export const PresenterSection = () => (
             <div className="border-t border-border mb-7" />
 
             {/* Credentials grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
               {credentials.map((c, i) => (
                 <div
                   key={i}
