@@ -58,14 +58,14 @@ export const HeroSection = () => {
       }}
     >
       {/* ColorBends background */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.65 }}>
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.85 }}>
         <ColorBends
-          colors={["#1E40AF", "#7C3AED", "#0EA5E9"]}
+          colors={["#1E40AF", "#7C3AED", "#0EA5E9", "#10B981"]}
           rotation={0}
-          speed={0.15}
+          speed={0.25}
           scale={1.2}
           frequency={0.8}
-          warpStrength={0.8}
+          warpStrength={1.2}
           mouseInfluence={0.3}
           parallax={0.3}
           noise={0.05}
@@ -106,7 +106,7 @@ export const HeroSection = () => {
               style={{
                 color: "#F8FAFC",
                 fontWeight: 800,
-                fontSize: "clamp(32px, 5vw, 46px)",
+                fontSize: "clamp(28px, 4.5vw, 40px)",
                 lineHeight: 1.12,
                 letterSpacing: "-0.025em",
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
