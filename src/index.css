@@ -134,96 +134,17 @@
   }
 }
 
-/* Hero Prism Background */
-.hero-prism-bg {
+/* FloatingLines background */
+.floating-lines-container {
+  width: 100%;
+  height: 100%;
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
 }
 
-.prism {
-  position: absolute;
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(1px);
-  transform-style: preserve-3d;
-}
-
-.prism::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  background: linear-gradient(45deg,
-    rgba(37,99,235,0.15),
-    rgba(99,179,237,0.12),
-    rgba(167,139,250,0.10),
-    rgba(37,99,235,0.08)
-  );
-  border-radius: inherit;
-  filter: blur(10px);
-  animation: prism-glow 6s ease-in-out infinite alternate;
-}
-
-.prism-1 {
-  width: 280px; height: 280px;
-  top: -60px; right: -40px;
-  background: linear-gradient(135deg, rgba(37,99,235,0.04) 0%, rgba(99,179,237,0.06) 50%, rgba(167,139,250,0.03) 100%);
-  animation: prism-rotate 40s linear infinite;
-  transform: rotate(15deg);
-}
-
-.prism-2 {
-  width: 160px; height: 160px;
-  top: 40%; left: -30px;
-  background: linear-gradient(225deg, rgba(99,179,237,0.05) 0%, rgba(37,99,235,0.03) 100%);
-  animation: prism-rotate 55s linear infinite reverse;
-  animation-delay: -15s;
-  transform: rotate(60deg);
-}
-
-.prism-3 {
-  width: 100px; height: 100px;
-  top: 25%; right: 18%;
-  background: linear-gradient(45deg, rgba(167,139,250,0.06) 0%, rgba(37,99,235,0.04) 100%);
-  animation: prism-rotate 35s linear infinite;
-  animation-delay: -8s;
-  transform: rotate(30deg);
-}
-
-.prism-4 {
-  width: 70px; height: 70px;
-  bottom: 15%; left: 20%;
-  background: linear-gradient(315deg, rgba(37,99,235,0.05) 0%, rgba(99,179,237,0.03) 100%);
-  animation: prism-rotate 45s linear infinite reverse;
-  animation-delay: -25s;
-  transform: rotate(75deg);
-}
-
-.prism-5 {
-  width: 140px; height: 140px;
-  bottom: -20px; right: 15%;
-  background: linear-gradient(180deg, rgba(167,139,250,0.04) 0%, rgba(37,99,235,0.06) 100%);
-  animation: prism-rotate 50s linear infinite;
-  animation-delay: -35s;
-  transform: rotate(120deg);
-}
-
-@keyframes prism-rotate {
-  0%   { transform: rotate(0deg) scale(1); }
-  33%  { transform: rotate(120deg) scale(1.04); }
-  66%  { transform: rotate(240deg) scale(0.97); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-
-@keyframes prism-glow {
-  0%   { opacity: 0.4; filter: blur(10px) hue-rotate(0deg); }
-  100% { opacity: 0.8; filter: blur(14px) hue-rotate(30deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .prism, .prism::before {
-    animation: none !important;
-  }
+.floating-lines-container canvas {
+  pointer-events: auto;
 }
