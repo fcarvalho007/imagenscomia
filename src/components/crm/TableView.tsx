@@ -53,7 +53,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const PER_PAGE = 10;
+  const PER_PAGE = 100;
 
   const active = useMemo(() => inscritos.filter((i) => i.status === "activo"), [inscritos]);
 

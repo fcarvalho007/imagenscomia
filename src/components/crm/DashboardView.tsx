@@ -60,10 +60,14 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const stats = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
     const total = active.length;
-    const receita = active.reduce((s, i) => s + i.valor, 0);
-    const pagantes = active.filter((i) => i.plan !== "free");
+    // Only count confirmed revenue (paid_at exists)
+    const pagantes = active.filter((i) => i.paid_at !== null);
+    const receita = pagantes.reduce((s, i) => s + i.valor, 0);
     const conversao = total ? (pagantes.length / total) * 100 : 0;
     const ticket = pagantes.length ? receita / pagantes.length : 0;
+    // Pipeline: pending payments
+    const pendentes = active.filter((i) => i.payment_status === "pending");
+    const pipelineValor = pendentes.reduce((s, i) => s + i.valor, 0);
 
     // Funnel (using real step_reached from DB)
     const step1 = active.length;
@@ -91,9 +95,9 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     // Duvidas
     const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
 
-    const nPremium = planCounts.premium;
-    const nMC = planCounts.masterclass;
-    const nBundle = planCounts.bundle;
+    const nPremiumPaid = pagantes.filter((i) => i.plan === "premium").length;
+    const nMCPaid = pagantes.filter((i) => i.plan === "masterclass").length;
+    const nBundlePaid = pagantes.filter((i) => i.plan === "bundle").length;
 
     // Gender
     const genderCounts = { M: 0, F: 0, U: 0 };
@@ -152,7 +156,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
     });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h };
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor };
   }, [inscritos]);
 
   const now = new Date();
@@ -167,7 +171,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Flow completo (Passo 5)", value: stats.step5, color: "hsl(var(--green-600))" },
   ];
 
-  const taxaGlobal = stats.total ? ((stats.total - stats.planCounts.free) / stats.total) * 100 : 0;
+  
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
@@ -236,18 +240,14 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             </p>
           </div>
         )}
-        <p className="text-right mt-4">
-          <span className="text-[13px] text-ink-400">Taxa modal → pagamento: </span>
-          <span className="font-heading font-bold text-2xl text-blue-600">{taxaGlobal.toFixed(1)}%</span>
-        </p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3.5 mb-5">
         {[
           { icon: Users, iconColor: "hsl(var(--blue-600))", value: String(stats.total), label: "Inscritos", sub: "Desde 8 Fev" },
-          { icon: Euro, iconColor: "hsl(var(--green-600))", value: `€${stats.receita.toFixed(2)}`, label: "Receita", sub: `${stats.nPremium} Premium · ${stats.planCounts.masterclass} MC · ${stats.planCounts.bundle} Bundle` },
-          { icon: TrendingUp, iconColor: "hsl(var(--amber-500))", value: `${stats.conversao.toFixed(1)}%`, label: "Conversão para pago", sub: "inscritos que pagaram algo" },
+          { icon: Euro, iconColor: "hsl(var(--green-600))", value: `€${stats.receita.toFixed(2)}`, label: "Receita Confirmada", sub: `${stats.nPremiumPaid} Premium · ${stats.nMCPaid} MC · ${stats.nBundlePaid} Bundle pagos` },
+          { icon: TrendingUp, iconColor: "hsl(var(--amber-500))", value: `${stats.conversao.toFixed(1)}%`, label: "Conversão para pago", sub: "inscritos que realmente pagaram" },
           { icon: BarChart2, iconColor: "#7C3AED", value: `€${stats.ticket.toFixed(2)}`, label: "Ticket médio", sub: "entre quem pagou" },
         ].map((kpi, idx) => (
           <div key={idx} className="bg-white border border-border rounded-xl p-5">
@@ -361,10 +361,17 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </div>
             );
           })}
-          <div className="border-t border-border mt-4 pt-3 text-right">
-            <span className="font-heading font-bold text-[15px] text-ink-900">
-              Total Receita: €{stats.receita.toFixed(2)}
-            </span>
+          <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
+            <div>
+              <span className="text-[12px] text-ink-400">Receita confirmada</span>
+              <p className="font-heading font-bold text-[15px] text-ink-900">€{stats.receita.toFixed(2)}</p>
+            </div>
+            {stats.pendentes.length > 0 && (
+              <div className="text-right">
+                <span className="text-[12px] text-amber-600">Pipeline pendente</span>
+                <p className="font-heading font-bold text-[15px] text-amber-700">{stats.pendentes.length} · €{stats.pipelineValor.toFixed(2)}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
