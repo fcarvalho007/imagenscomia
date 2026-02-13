@@ -1,62 +1,62 @@
 
+## Melhorias no CRM: localStorage, duvidas e funil
 
-## Correcoes e melhorias na ficha do CRM
+### 1. Migrar genero de localStorage para a base de dados
 
-### 1. Genero nao gravou (explicacao)
+**Problema**: O genero alterado manualmente no CRM e gravado em `localStorage`, que e isolado por dominio. Se alterar no site publicado, nao aparece no preview do Lovable (e vice-versa).
 
-O sistema funciona correctamente — o genero e gravado em `localStorage`, que e separado por dominio. Se alterou no site publicado (`imagenscomia.lovable.app`), essa alteracao nao aparece no preview do Lovable porque sao dominios diferentes com localStorage independente. Nao ha bug a corrigir.
-
-### 2. Editar nome do inscrito
-
-Adicionar um botao de edicao ao lado do nome na ficha (icone de lapis). Ao clicar, o nome transforma-se num input editavel. Ao confirmar:
-- Actualiza o registo na base de dados (tabela `registrations`, colunas `name`, `first_name`, `last_name`)
-- Actualiza o state local imediatamente
-
-**Ficheiros afectados:**
-- `src/components/crm/InscritoModal.tsx` — adicionar modo de edicao de nome inline
-- `src/hooks/useInscritos.ts` — adicionar funcao `updateName(id, fullName)` que faz UPDATE na BD e actualiza o state
-- `src/pages/CRM.tsx` — passar `onUpdateName` ao modal
-
-### 3. Redesign da ficha individual (UX/UI)
-
-Problemas actuais:
-- "Gratuito" aparece 3x (badge sidebar + card Plano + card Pago em)
-- Avatar com iniciais ("VF") ainda aparece apesar de decisao anterior de remover
-- Cards "Ref. EuPago" e "Pago em" vazios ocupam espaco sem utilidade para planos gratuitos
-- Informacao de Plano/Valor repetida entre sidebar e conteudo
-
-**Solucao — reorganizar a hierarquia:**
-
-**Sidebar (painel esquerdo escuro):**
-- Remover avatar de iniciais — manter apenas emoji de genero + nome (18px bold)
-- Manter: genero selector, email, WhatsApp, data de inscricao, passo X/5
-- Remover badge de plano da sidebar (ja aparece no conteudo)
-- Manter accoes (Email, Follow-up, Arquivar, Eliminar)
-
-**Conteudo (painel direito branco) — nova ordem:**
-
-1. **Resumo** (topo) — Uma unica linha/card com: Plano + Valor + Passo + Data inscricao
-   - Se plano gratuito: mostrar apenas "Gratuito · Passo 3/5"
-   - Se pago: "Premium · EUR15 · Pago em 13 Fev 2026"
-   - Ref. EuPago so aparece se existir (nao mostrar card vazio)
-
-2. **Funil do Inscrito** — igual ao actual, logo a seguir
-
-3. **Origem** — badges das fontes
-
-4. **Duvida** — bloco com citacao (so se existir)
-
-5. **Notas** — formulario e lista
-
-Isto elimina a repeticao de "Gratuito", remove cards vazios, e cria uma hierarquia clara.
-
----
-
-### Resumo de ficheiros
+**Solucao**: Adicionar uma coluna `gender_override` (texto, nullable) a tabela `registrations`. Quando o utilizador altera o genero no CRM, grava na BD em vez do localStorage. Assim sincroniza entre todos os dominios.
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/useInscritos.ts` | Nova funcao `updateName(id, fullName)` com UPDATE na BD |
-| `src/pages/CRM.tsx` | Passar `onUpdateName` ao InscritoModal |
-| `src/components/crm/InscritoModal.tsx` | (1) Edicao inline do nome, (2) Remover avatar iniciais, (3) Redesign do painel direito: resumo compacto no topo, esconder cards vazios, eliminar repeticoes de "Gratuito" |
+| Migration SQL | `ALTER TABLE registrations ADD COLUMN gender_override text;` |
+| `src/hooks/useInscritos.ts` | Remover funcoes `loadGenderOverrides`/`saveGenderOverride` do localStorage. O `setGender` passa a fazer `supabase.update({ gender_override })`. O `mapRegistration` usa `r.gender_override \|\| detectGender(r.name)` |
 
+### 2. Distinguir duvidas personalizadas ("Outro") na lista
+
+**Problema**: Actualmente nao ha forma de saber se a duvida foi texto livre personalizado ou apenas uma seleccao das opcoes pre-definidas.
+
+**Solucao**: Na lista "Duvidas dos Inscritos" do Dashboard, as entradas que contem "Outro:" recebem um badge especial (ex: etiqueta "Personalizada" em destaque). Alem disso, as duvidas que contem texto livre aparecem primeiro na lista (ordenadas por prioridade), para facilitar a leitura das respostas mais relevantes.
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/DashboardView.tsx` | Na seccao "Duvidas dos Inscritos": (1) ordenar colocando as que contem "Outro:" no topo, (2) adicionar badge "Personalizada" em cor diferente (ex: amber) quando a duvida inclui "Outro:", (3) para as restantes manter o badge actual |
+
+### 3. Grafico de dificuldades mais comuns (barras horizontais)
+
+**Problema**: Nao ha visibilidade sobre quais as dificuldades mais escolhidas no passo de multi-seleccao.
+
+**Solucao**: Adicionar um novo bloco no Dashboard com um grafico de barras horizontais que conta quantas vezes cada opcao das 5 pre-definidas foi seleccionada. Inclui tambem a contagem de respostas "Outro" como categoria separada.
+
+As 5 opcoes pre-definidas sao:
+- "Nao sei descrever o estilo visual que quero"
+- "Os resultados ficam sempre genericos, sem identidade"
+- "Nao percebo que ferramenta usar (ChatGPT, Google, outros...)"
+- "Quero criar imagens para a minha marca mas nao sei por onde comecar"
+- "Tenho dificuldade em editar ou refinar as imagens geradas"
+
+O grafico fica entre a seccao "Fontes de Origem / Distribuicao por Plano" e a seccao "Duvidas dos Inscritos".
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/DashboardView.tsx` | Novo bloco "Dificuldades Mais Comuns" com barras horizontais. Parse de cada `duvida` (split por ", ") e contagem por opcao. Labels abreviados para caber (ex: "Descrever estilo visual", "Resultados genericos", "Ferramenta certa", "Comecar do zero", "Editar/refinar"). Barra + contagem + percentagem. |
+
+### 4. Funil com indicadores de drop-off entre passos
+
+**Problema**: O funil actual mostra os numeros absolutos mas nao evidencia onde esta a maior perda de pessoas.
+
+**Solucao**: Adicionar entre cada passo do funil uma linha de "drop-off" que mostra quantas pessoas sairam nesse ponto e a percentagem de perda. O maior drop-off recebe destaque visual (cor vermelha/texto bold) para identificacao rapida.
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/DashboardView.tsx` | No bloco "Funil de Inscricao": entre cada barra, inserir uma linha compacta com seta para baixo + texto "−X pessoas (Y% drop)" em cinza. O passo com maior drop-off fica destacado em vermelho. Adicionar um callout no final tipo "Maior saida: entre Passo X e Passo Y" |
+
+---
+
+### Resumo de ficheiros afectados
+
+| Ficheiro | Alteracoes |
+|---|---|
+| Migration SQL | Nova coluna `gender_override` |
+| `src/hooks/useInscritos.ts` | Migrar genero de localStorage para BD |
+| `src/components/crm/DashboardView.tsx` | (1) Grafico de dificuldades, (2) Drop-off no funil, (3) Badge "Personalizada" nas duvidas |
