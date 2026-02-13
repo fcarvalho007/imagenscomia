@@ -53,10 +53,12 @@ export const HeroSection = () => {
       className="relative overflow-hidden"
       style={{
         background: "linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)",
+        marginTop: -52,
+        paddingTop: 52,
       }}
     >
       {/* Beams background */}
-      <div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen" }}>
+      <div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen", opacity: 0.5 }}>
         <Beams
           lightColor="#1E40AF"
           beamNumber={8}
@@ -95,7 +97,7 @@ export const HeroSection = () => {
 
         {/* H1 */}
         <motion.div {...fade(0.1)}>
-          <h1 style={{ maxWidth: 760, margin: "0 auto" }}>
+          <h1 style={{ maxWidth: 820, margin: "0 auto" }}>
             <span
               className="block font-heading"
               style={{
@@ -107,7 +109,7 @@ export const HeroSection = () => {
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Aprende a Criar Imagens<br />Profissionais com<br />Inteligência Artificial
+              Aprende a Criar Imagens<br />Profissionais com Inteligência Artificial
             </span>
           </h1>
         </motion.div>
@@ -183,9 +185,6 @@ export const HeroSection = () => {
               </button>
             </ElectricBorder>
           </div>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.30)", marginTop: 10 }}>
-            Sem spam. Acesso imediato por email. Dados protegidos (RGPD).
-          </p>
         </motion.div>
 
         {/* Google Reviews badge */}
