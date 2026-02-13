@@ -93,7 +93,7 @@ export const ProgramSection = () => {
             onClick={() => open("free")}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="inline-block bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
+            className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
           >
             Sim, assistir grátis!
           </motion.button>

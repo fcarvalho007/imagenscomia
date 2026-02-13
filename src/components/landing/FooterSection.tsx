@@ -18,7 +18,7 @@ export const FooterSection = () => {
             <a href="/crm" className="hover:text-white/60 transition-colors">crm</a>
           </div>
           <p className="text-[14px] text-white/30">
-            © 2025 Frederico Carvalho · DIGITALFC
+            © 2026 Frederico Carvalho · DIGITALFC
           </p>
         </div>
       </footer>
