@@ -12,8 +12,8 @@ const bullets = [
     sub: "Rever e aplicar quando for mais conveniente.",
   },
   {
-    title: "Q&A exclusivo (60 min)",
-    sub: "Dúvidas respondidas com foco no caso real.",
+    title: "Sessão extra com Q&A exclusivo em grupo (30 min)",
+    sub: "Dúvidas respondidas ao vivo",
   },
   {
     title: "Guia completo de prompts (30+ páginas)",
