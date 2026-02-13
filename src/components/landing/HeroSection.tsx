@@ -219,7 +219,7 @@ export const HeroSection = () => {
                       width: "100%",
                     }}
                   >
-                    Sim, quero garantir a minha vaga grátis →
+                    Sim, quero garantir a minha vaga grátis
                   </button>
                 </ElectricBorder>
               </div>

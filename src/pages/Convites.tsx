@@ -283,7 +283,7 @@ const ConvitesContent = () => {
                       onClick={() => open("free")}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors hover:underline underline-offset-2"
                     >
-                      Ainda sem inscrição? Registar gratuitamente →
+                      Ainda sem inscrição? Registar gratuitamente
                     </button>
                   </div>
                 </div>
