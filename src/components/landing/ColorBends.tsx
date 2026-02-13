@@ -1,3 +1,4 @@
+/* ColorBends — GPU shader background */
 import { useEffect, useRef, CSSProperties } from 'react';
 import * as THREE from 'three';
 import './ColorBends.css';
@@ -127,7 +128,7 @@ export default function ColorBends({
   parallax = 0.5,
   noise = 0.1,
 }: ColorBendsProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const rafRef = useRef<number | null>(null);
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
@@ -139,7 +140,7 @@ export default function ColorBends({
   const pointerSmoothRef = useRef(8);
 
   useEffect(() => {
-    const container = containerRef.current as HTMLDivElement | null;
+    const container = containerRef.current;
     if (!container) return;
 
     const scene = new THREE.Scene();
@@ -198,12 +199,12 @@ export default function ColorBends({
     };
     handleResize();
 
-    if ('ResizeObserver' in window) {
+    if (typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(handleResize);
       ro.observe(container);
       resizeObserverRef.current = ro;
     } else {
-      window.addEventListener('resize', handleResize);
+      (window as Window).addEventListener('resize', handleResize);
     }
 
     const loop = () => {
@@ -228,7 +229,7 @@ export default function ColorBends({
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (resizeObserverRef.current) resizeObserverRef.current.disconnect();
-      else window.removeEventListener('resize', handleResize);
+      else (window as Window).removeEventListener('resize', handleResize);
       geometry.dispose();
       material.dispose();
       renderer.dispose();
@@ -274,7 +275,7 @@ export default function ColorBends({
   }, [rotation, autoRotate, speed, scale, frequency, warpStrength, mouseInfluence, parallax, noise, colors, transparent]);
 
   useEffect(() => {
-    const container = containerRef.current as HTMLDivElement | null;
+    const container = containerRef.current;
     if (!container) return;
 
     const handlePointerMove = (e: PointerEvent) => {
