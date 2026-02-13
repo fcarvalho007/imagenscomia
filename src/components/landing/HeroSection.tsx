@@ -76,12 +76,12 @@ export const HeroSection = () => {
 
       {/* Content — single centered column */}
       <div
-        className="relative z-10 mx-auto pt-12 pb-14 md:pt-[72px] md:pb-[80px] px-6 md:px-10"
+        className="relative z-10 mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10"
         style={{ maxWidth: 760, textAlign: "center" }}
       >
         {/* Badge */}
         <motion.div {...fade(0.05)}>
-          <div className="mb-4">
+          <div className="mb-3">
             <span
               className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
               style={{
@@ -112,14 +112,14 @@ export const HeroSection = () => {
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Aprende a Criar Imagens<br />Profissionais com Inteligência Artificial
+              Aprende a Criar Imagens Profissionais<br />com Inteligência Artificial
             </span>
           </h1>
         </motion.div>
 
         {/* Subheadline */}
         <motion.div {...fade(0.15)}>
-          <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, marginBottom: 28, color: "#CBD5E1" }}>
+          <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, marginBottom: 24, color: "#CBD5E1" }}>
             Em 60 minutos ao vivo:{" "}
             <GradientText className="font-heading font-semibold">
               do briefing à imagem pronta a publicar.
@@ -129,7 +129,7 @@ export const HeroSection = () => {
 
         {/* 4 Spec badges — horizontal flex */}
         <motion.div {...fade(0.25)}>
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
             {[
               { icon: Calendar, label: "ONLINE & AO VIVO", value: "18 de Fevereiro" },
               { icon: Clock, label: "HORÁRIO", value: "10h00 (Portugal)" },
