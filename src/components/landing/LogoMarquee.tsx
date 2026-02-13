@@ -28,7 +28,7 @@ export const LogoMarquee = () => {
       }}
     >
       <p className="text-center text-sm uppercase tracking-widest mb-6" style={{ color: "rgba(255,255,255,0.4)" }}>
-        Plataformas abordadas no webinar
+        Plataformas a considerar
       </p>
 
       <div
