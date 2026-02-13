@@ -1,58 +1,54 @@
 
 
-## Adaptar Webhook para Aceitar GET (classico) e POST (2.0)
+## Melhorar visibilidade do estado de pagamento no CRM
 
-### Problema
+### 1. Actualizar dados da Silvana Curado
 
-A EuPago esta a enviar notificacoes via GET com query parameters (`valor`, `canal`, `referencia`, `transacao`, `identificador`), mas o webhook so aceita POST com JSON body. O `req.json()` falha em requests GET, causando erro 500 silencioso.
+A Silvana pagou o bundle (confirmado na EuPago, ref WEBINAR-BUNDLE-silvanacurado@gmail.com-1770999580195, valor 76,26). O webhook nao processou porque o formato GET nao era suportado na altura. Agora que o webhook ja suporta GET, futuros pagamentos serao processados automaticamente.
 
-### Solucao
+Actualizar manualmente o registo:
+```sql
+UPDATE registrations SET paid_at = NOW() WHERE email = 'silvanacurado@gmail.com' AND plan_selected = 'bundle';
+```
 
-Adaptar o webhook para detectar o metodo HTTP e extrair dados do formato correcto:
+### 2. Adicionar badge de estado de pagamento no Pipeline
 
-- **GET** (classico): ler de `URL.searchParams` — params: `valor`, `canal`, `referencia`, `transacao`, `identificador`
-- **POST** (Webhooks 2.0): ler de `req.json()` como actualmente
+Ficheiro: `src/components/crm/PipelineView.tsx`
 
-### Mapeamento de campos
+No componente `PipelineCard`, adicionar badge visual:
+- **Pago** (verde) — quando `payment_status === "paid"` e plano nao e free
+- **Pendente** (ambar) — quando `payment_status === "pending"`
+- Sem badge — quando e free
 
-| GET param | Equivalente no codigo actual |
-|---|---|
-| `transacao` | `transactionID` |
-| `referencia` | `reference` |
-| `valor` | `amount` |
-| `canal` | `paymentMethod` |
-| `identificador` | `identifier` |
+Isto permite ver de relance, em cada card do kanban, quem pagou e quem so clicou.
 
-No formato GET classico nao ha campo `transactionStatus`. Um GET callback da EuPago significa **pagamento confirmado** (so dispara em sucesso).
+### 3. Adicionar badge na Ficha Individual (InscritoModal)
 
-### Logica de matching
+Ficheiro: `src/components/crm/InscritoModal.tsx`
 
-1. Extrair `transacao` (transactionID) do GET
-2. Procurar na DB por `eupago_ref = transacao` (guardado pelo create-payment)
-3. Se encontrar, actualizar `paid_at`
-4. Fallback: extrair email do `identificador` (formato `WEBINAR-BUNDLE-email@example.com-timestamp`)
+Na barra de resumo compacto (linha ~353-377), adicionar:
+- Badge **"Pendente — aguarda pagamento"** (ambar) quando `payment_status === "pending"`
+- Badge **"Pago"** (verde) quando `payment_status === "paid"` e plano nao e free
+- Mostrar a data de `upgrade_clicked_at` se existir, para saber quando o utilizador clicou em pagar
 
-### Ficheiro afectado
+### 4. Adicionar filtro de estado de pagamento na Tabela
+
+Ficheiro: `src/components/crm/TableView.tsx`
+
+Adicionar um novo filtro dropdown junto aos existentes:
+- "Todos os estados"
+- "Pendente" (mostra so quem clicou mas nao pagou)
+- "Pago" (mostra so pagamentos confirmados)
+- "Gratuito"
+
+Isto facilita identificar rapidamente quem precisa de follow-up.
+
+### Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `supabase/functions/eupago-webhook/index.ts` | Detectar GET vs POST, extrair params de query string para GET, manter JSON para POST. Tratar GET como pagamento confirmado. |
-
-### Detalhes tecnicos
-
-```text
-Request chega
-    |
-    +-- GET? --> extrair searchParams (valor, canal, referencia, transacao, identificador)
-    |            tratar como pagamento confirmado
-    |
-    +-- POST? --> req.json() (formato actual, Webhooks 2.0)
-    |             verificar transactionStatus === "Success"
-    |
-    +-- OPTIONS? --> CORS (sem alteracao)
-```
-
-- Nao e necessario mudar nada no painel EuPago
-- O sistema classico ja configurado comeca a funcionar imediatamente apos deploy
-- Se no futuro configurares Webhooks 2.0, tambem funciona sem alteracoes adicionais
+| `src/components/crm/PipelineView.tsx` | Badge Pendente/Pago nos cards do kanban |
+| `src/components/crm/InscritoModal.tsx` | Badge de estado + data de clique na barra de resumo |
+| `src/components/crm/TableView.tsx` | Filtro dropdown por estado de pagamento |
+| Base de dados | UPDATE paid_at para silvanacurado@gmail.com |
 
