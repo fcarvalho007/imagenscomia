@@ -1,89 +1,58 @@
 
 
-## Substituir Beams por ColorBends no Hero
-
-### Resumo
-
-Remover o componente Beams do fundo do hero e substituir pelo componente ColorBends — um efeito de shader 2D (sem @react-three/fiber) com curvas de cor animadas, interacao com o rato e parallax. Mais leve e visualmente mais rico.
+## 5 Correcoes ao Hero e LogoMarquee
 
 ### Ficheiros afectados
 
-| Ficheiro | Tipo | Alteracao |
-|---|---|---|
-| `src/components/landing/ColorBends.tsx` | Criar | Componente ColorBends convertido para TypeScript |
-| `src/components/landing/ColorBends.css` | Criar | CSS do container |
-| `src/components/landing/HeroSection.tsx` | Editar | Substituir Beams por ColorBends |
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/landing/HeroSection.tsx` | H1 em 2 linhas, espacamentos |
+| `src/components/landing/LogoMarquee.tsx` | Titulo, logo Gemini |
+| `src/assets/logos/gemini.png` | Substituir pelo novo logo |
 
-O Beams.tsx e Beams.css permanecem no projecto (nao sao apagados).
+---
 
-### Detalhes tecnicos
+### 1. H1 em 2 linhas
 
-#### A) `src/components/landing/ColorBends.css`
+O problema e que o `<br />` esta a partir "Aprende a Criar Imagens" / "Profissionais com Inteligencia Artificial", mas no desktop o texto "Profissionais com Inteligencia Artificial" e demasiado longo e parte para uma terceira linha.
 
-```text
-.color-bends-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-```
-
-#### B) `src/components/landing/ColorBends.tsx`
-
-Conversao do codigo fornecido para TypeScript com tipagem de props. O componente usa Three.js directamente (WebGLRenderer + ShaderMaterial) sem React Three Fiber — mais leve. Inclui:
-- Fragment shader com noise, warp, cores customizaveis
-- Vertex shader simples (fullscreen quad)
-- Interacao com ponteiro do rato (parallax + influence)
-- ResizeObserver para responsividade
-- Cleanup completo no unmount
-
-#### C) `src/components/landing/HeroSection.tsx`
-
-Alteracoes minimas:
-1. Remover `import Beams from "./Beams"` e `import "./Beams.css"`
-2. Adicionar `import ColorBends from "./ColorBends"`
-3. Substituir o bloco Beams por:
+Solucao: mudar a quebra para depois de "Profissionais":
 
 ```text
-<div className="absolute inset-0 z-0" style={{ opacity: 0.4 }}>
-  <ColorBends
-    colors={["#1E40AF", "#7C3AED", "#0EA5E9"]}
-    rotation={0}
-    speed={0.15}
-    scale={1.2}
-    frequency={0.8}
-    warpStrength={0.8}
-    mouseInfluence={0.3}
-    parallax={0.3}
-    noise={0.05}
-    transparent
-    autoRotate={2}
-  />
-</div>
+Aprende a Criar Imagens Profissionais
+com Inteligencia Artificial
 ```
 
-Cores escolhidas para a paleta escura do hero:
-- `#1E40AF` — azul escuro (coerente com o blue-700 do design system)
-- `#7C3AED` — roxo (neon-purple da paleta)
-- `#0EA5E9` — ciano/azul claro (contraste luminoso)
+Linha 1 fica mais longa mas cabe no max-width de 820px com o font-size actual (clamp 32-46px). O `<br />` move-se para depois de "Profissionais".
 
-Parametros ajustados para subtileza:
-- `speed: 0.15` — movimento lento e elegante
-- `opacity: 0.4` — fundo subtil, nao compete com o texto
-- `mouseInfluence: 0.3` e `parallax: 0.3` — interactividade suave
-- `autoRotate: 2` — rotacao lenta para dinamismo constante
-- `noise: 0.05` — granulado minimo para textura
+### 2. Logo Gemini
 
-O `mixBlendMode: "screen"` e removido porque o ColorBends ja usa transparencia nativa (premultiplied alpha). A opacidade no wrapper controla a intensidade.
+Substituir `src/assets/logos/gemini.png` pelo novo logo fornecido (`Google_Gemini_logo_2025.svg.png`). Este logo tem o texto "Gemini" incluido e e mais reconhecivel.
 
-### Vantagem tecnica
+### 3. Espacamentos da primeira dobra
 
-ColorBends usa Three.js puro (WebGLRenderer + ShaderMaterial) sem o overhead do React Three Fiber / Drei. Menos dependencias no render path, melhor performance em dispositivos moveis.
+Pela imagem, ha demasiado espaco entre o badge "WEBINAR GRATUITO" e o H1, e entre o subheadline e os spec badges. Ajustes:
 
-### O que NAO muda
+- Badge: `mb-4` passa a `mb-3` (reduzir gap para o H1)
+- Subheadline: `marginTop: 16` fica, `marginBottom: 28` passa a `24` (reduzir gap para os badges)
+- Spec badges: `mb-8` passa a `mb-6` (reduzir gap para o CTA)
+- Padding geral: `pt-12 pb-14` passa a `pt-10 pb-12` em mobile; `md:pt-[60px] md:pb-[72px]` em desktop (ligeiramente mais compacto)
 
-- Nenhuma outra seccao da landing page
-- Titulo, badges, CTA, Google Reviews — tudo intacto
-- LogoMarquee permanece abaixo do hero
+### 4. Titulo do LogoMarquee
+
+Alterar "Plataformas abordadas no webinar" para "Plataformas a considerar".
+
+### 5. ColorBends — ja esta activo
+
+O componente ColorBends.tsx e ColorBends.css ja existem no projecto e estao importados no HeroSection. O efeito esta visivel na screenshot (o gradiente azul/roxo no fundo do hero). A opacidade esta a 0.4, o que e intencional para nao competir com o texto. Nao e necessaria nenhuma alteracao aqui — o efeito esta a funcionar correctamente.
+
+### Resumo tecnico
+
+| Correcao | Detalhe |
+|---|---|
+| H1 | `Aprende a Criar Imagens Profissionais<br />com Inteligencia Artificial` |
+| Gemini | Copiar novo logo para `src/assets/logos/gemini.png` |
+| Espacamentos | Reduzir paddings e margins no hero (~10-15% mais compacto) |
+| Titulo marquee | "Plataformas a considerar" |
+| ColorBends | Sem alteracao — ja activo e visivel |
 
