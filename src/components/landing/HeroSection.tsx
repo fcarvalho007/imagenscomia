@@ -3,7 +3,7 @@ import { Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion, useMotionValue, useAnimationFrame, useTransform } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import ElectricBorder from "./ElectricBorder";
-import Beams from "./Beams";
+import ColorBends from "./ColorBends";
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
@@ -57,17 +57,20 @@ export const HeroSection = () => {
         paddingTop: 52,
       }}
     >
-      {/* Beams background */}
-      <div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen", opacity: 0.5 }}>
-        <Beams
-          lightColor="#1E40AF"
-          beamNumber={8}
-          beamWidth={1.5}
-          beamHeight={15}
-          speed={1.5}
-          noiseIntensity={1.5}
-          scale={0.2}
+      {/* ColorBends background */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.4 }}>
+        <ColorBends
+          colors={["#1E40AF", "#7C3AED", "#0EA5E9"]}
           rotation={0}
+          speed={0.15}
+          scale={1.2}
+          frequency={0.8}
+          warpStrength={0.8}
+          mouseInfluence={0.3}
+          parallax={0.3}
+          noise={0.05}
+          transparent
+          autoRotate={2}
         />
       </div>
 
