@@ -1,60 +1,72 @@
 
 
-## Melhorias na Ficha de Cliente: Gmail, Layout e Logica do Funil
+## Correcoes ao Dashboard, Email e Tabela
 
-### 1. Botao "Enviar via Gmail" com assunto e corpo pre-preenchidos
+### 1. Corrigir template do email de lembrete
 
-No bloco do email gerado (`InscritoModal.tsx`, linhas 453-469), adicionar um botao com icone do Gmail que abre directamente o compose do Gmail com:
-- Remetente: `info@fredericocarvalho.pt` (via parametro URL `from=` - nota: o Gmail ignora este parametro por seguranca, mas abre com a conta activa)
-- Destinatario: email do inscrito
-- Assunto pre-preenchido
-- Corpo pre-preenchido
+Ficheiro: `supabase/functions/generate-reminder/index.ts`
 
-O link sera um `mailto:` convertido para URL do Gmail:
-```
-https://mail.google.com/mail/?view=cm&fs=1&to={email}&su={subject}&body={body}
-```
+**Problemas actuais:**
+- Menciona "Cartao de Credito" como metodo de pagamento (nao existe)
+- Nao descreve os produtos correctamente
+- "Valor:" em vez de "Valor total (c/ IVA):"
 
-Isto abre o Gmail web com tudo preenchido, so falta clicar "Enviar".
+**Correccoes:**
+- Produtos: Premium Pass (15+IVA) e Masterclass IA Video (47+IVA). Nao existe Workshop.
+- Actualizar o map PRODUCTS para reflectir labels correctos:
+  - premium: "Premium Pass (15+IVA)"
+  - masterclass: "Masterclass IA Video (47+IVA)" 
+  - bundle: "Premium Pass (15+IVA) + Masterclass IA Video (47+IVA)"
+- Substituir "Valor:" por "Valor total (c/ IVA):"
+- Substituir metodos por "MB WAY, Multibanco" (remover Cartao de Credito)
+- Actualizar o assunto do email para usar o label correcto
 
-### 2. Melhorias de UX/Layout no bloco de email
+### 2. Corrigir KPIs do Dashboard — separar dados reais de intencoes
 
-Ficheiro: `src/components/crm/InscritoModal.tsx`
+Ficheiro: `src/components/crm/DashboardView.tsx`
 
-Alteracoes:
-- Mover o botao "Enviar via Gmail" para destaque principal (botao verde/azul com icone)
-- Manter "Copiar tudo" como accao secundaria
-- Melhorar a hierarquia visual: assunto com fundo separado, corpo com melhor padding
-- Links de accao (abrir link, gerar novo) mais claros
+**Problemas actuais:**
+- "Receita" soma `i.valor` de TODOS os inscritos com plano (incluindo quem nao pagou)
+- "Conversao para pago" conta quem tem plan != "free" como pagante (inclui pendentes)
+- "Ticket medio" dividido pelo numero errado
+- "Taxa modal → pagamento" repete informacao da caixa de conversao
 
-### 3. Corrigir logica do Funil para planos bundle
+**Correccoes na logica (linhas 60-66):**
+- `receita` = soma de `i.valor` APENAS quando `i.paid_at !== null`
+- `pagantes` = filtrar por `i.paid_at !== null` (quem realmente pagou)
+- `conversao` = pagantes reais / total
+- `ticket` = receita real / pagantes reais
+- Adicionar metricas de "pipeline" (intencoes): total pendentes e valor potencial
 
-Ficheiro: `src/components/crm/FunnelView.tsx`
+**Novo layout dos 4 KPIs:**
 
-**Bug actual**: Quando o inscrito seleccionou "bundle" mas nao pagou e nao tem `upgrade_clicked_at`, os passos Premium e Masterclass mostram "Saltou / Nao converteu", mesmo que o inscrito tenha seleccionado bundle e concluido o flow (passo 5).
+| KPI | Logica |
+|---|---|
+| Inscritos | Total activos (manter como esta) |
+| Receita Confirmada | Soma de `valor` so de quem tem `paid_at` |
+| Conversao para pago | % de inscritos que realmente pagaram |
+| Ticket medio | Receita confirmada / pagantes reais |
 
-**Correccao**: Na logica dos passos Premium (linha 69-96) e Masterclass (linha 99-126):
-- Adicionar verificacao de `plan_selected` (alem de `upgrade_clicked_at`)
-- Se `plan_selected` inclui o tier (ou e "bundle"), mostrar como "interested" com detalhe "Seleccionou plano"
-- Se pagou, mostrar como "completed"
-- So mostrar "Nao converteu" se realmente nao seleccionou nenhum plano que inclua esse tier
+**Adicionar 5a caixa ou sub-info:**
+- "Pipeline" — valor pendente (soma de `valor` de quem tem `payment_status === "pending"`) com contagem
+- Sub-texto: "X pendentes · €Y potencial"
 
-Logica corrigida:
-```
-paid = paid_at existe E plano inclui tier
-clicked = upgrade_clicked_at existe E plan_selected inclui tier  
-selected = plan_selected inclui tier (mesmo sem click)
+**Remover a linha "Taxa modal → pagamento"** no final do funil (linha 239-242) — e redundante com a caixa "Conversao para pago".
 
-Se paid -> "completed"
-Se clicked -> "interested" + "Clicou para pagar"
-Se selected -> "interested" + "Seleccionou plano"
-Senao -> "skipped" + "Nao converteu"
-```
+**Actualizar sub-texto da caixa Receita:**
+- De "X Premium · Y MC · Z Bundle" para mostrar so os PAGOS, ex: "1 Premium · 0 MC · 2 Bundle pagos"
+
+### 3. Tabela — mostrar 100 por pagina
+
+Ficheiro: `src/components/crm/TableView.tsx`
+
+Alterar `PER_PAGE` de 10 para 100 (linha 56).
 
 ### Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/InscritoModal.tsx` | Botao Gmail com pre-fill, layout melhorado do email |
-| `src/components/crm/FunnelView.tsx` | Corrigir logica para reconhecer `plan_selected` como interesse |
+| `supabase/functions/generate-reminder/index.ts` | Corrigir labels, metodos pagamento, formato valor |
+| `src/components/crm/DashboardView.tsx` | KPIs baseados em paid_at real; remover taxa duplicada; adicionar pipeline |
+| `src/components/crm/TableView.tsx` | PER_PAGE = 100 |
 
