@@ -1,36 +1,61 @@
 
 
-## Correcoes na secção Dificuldades e Duvidas
+## Correcao: Pagamentos bundle nao aparecem no CRM
 
-### Bug 1: "Outro (texto livre)" inflacionado a 21
+### Diagnostico
 
-**Causa raiz**: O campo `duvida` e dividido com `.split(", ")`, mas a opcao predefinida `"Nao percebo que ferramenta usar (ChatGPT, Google, outros...)"` contem virgulas internas. Ao dividir, gera fragmentos como `"ChatGPT"`, `"Google"`, `"outros...)"` que nao correspondem a nenhuma opcao predefinida e sao todos contados como "Outro".
+**Base de dados actual:**
+- **Silvana Curado**: `plan_selected=bundle`, `eupago_ref=769ef42a...`, `paid_at=NULL`
+- **Renato Gaspar**: `plan_selected=bundle`, `eupago_ref=NULL`, `paid_at=NULL`
 
-**Solucao**: Em vez de split por virgula, usar uma logica de matching que procura as 5 opcoes predefinidas no texto e remove-as progressivamente. O que sobrar (se comecar com "Outro:") e o texto personalizado real.
+**Problema 1 — Webhook nao chegou**: Nao ha logs no webhook `eupago-webhook`, o que significa que a EuPago ainda nao enviou a confirmacao ou o URL de callback nao esta correcto. Sem webhook, `paid_at` nunca e preenchido.
 
-Algoritmo:
-1. Para cada `duvida`, comecar com o texto completo
-2. Para cada opcao predefinida, verificar se esta presente no texto (com `includes`)
-3. Se sim, incrementar o contador e remover do texto
-4. O que sobrar apos remover todas as predefinidas, se conter "Outro:", conta como personalizado
+**Problema 2 — CRM esconde a intencao de compra**: O `mapRegistration` so mostra o plano como "bundle" se `paid_at` existir. Sem ele, aparece como "free" — invisivel no CRM como comprador.
 
-### Bug 2: 0 personalizadas vs 21 "Outro"
+### Solucao
 
-Consequencia directa do Bug 1. Nenhum registo real contem "Outro:" no texto — a contagem "Outro" vinha dos fragmentos partido por virgula. A correcao do Bug 1 resolve automaticamente ambos os problemas.
+#### 1. Corrigir dados imediatamente (query manual)
 
-### Melhoria 1: Remover icone checkbox
+Se o pagamento foi realmente confirmado na EuPago, actualizar o registo directamente:
 
-Remover o `span` com `☑️` que aparece antes de cada entrada na lista de "Duvidas dos Inscritos". So manter o `✍️` para personalizadas (via o fundo amber e badge ja existentes).
+```sql
+UPDATE registrations 
+SET paid_at = NOW() 
+WHERE email = '[email do comprador]' AND plan_selected = 'bundle';
+```
 
-### Melhoria 2: Duvidas em paragrafos separados
+Isto deve ser executado manualmente no backend (Run SQL) para o email correcto.
 
-Quando um utilizador seleccionou mais do que uma duvida, em vez de mostrar tudo numa linha so separada por virgulas, mostrar cada opcao como um paragrafo/bullet separado para melhor legibilidade.
+#### 2. Melhorar visibilidade no CRM (`useInscritos.ts`)
 
----
+Alterar a logica de `mapRegistration` para mostrar o plano seleccionado mesmo sem pagamento confirmado, com indicacao visual de estado:
 
-### Ficheiro afectado
+- Se `paid_at` existe: plano confirmado (como agora)
+- Se `plan_selected` existe mas `paid_at` e null: mostrar o plano com estado "pendente"
+- Se nenhum: "free"
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/DashboardView.tsx` | (1) Corrigir parsing de dificuldades — usar `includes` por opcao em vez de split por virgula. (2) Remover icone checkbox da lista de duvidas. (3) Renderizar cada duvida seleccionada como paragrafo separado. |
+| `src/hooks/useInscritos.ts` | `mapRegistration`: usar `plan_selected` como plano mesmo sem `paid_at`, e adicionar campo `payment_status` ("paid", "pending", "free") |
+| `src/pages/crm/mockData.ts` | Adicionar campo `payment_status` ao tipo `Inscrito` |
+| `src/components/crm/DashboardView.tsx` | Mostrar badge "Pendente" (amarelo) vs "Pago" (verde) junto ao plano |
+| `src/components/crm/TableView.tsx` | Coluna de plano com indicador de estado pendente/pago |
 
+#### 3. Verificar callback URL do webhook
+
+Confirmar que o URL de callback configurado na funcao `create-payment` esta correcto e acessivel pela EuPago. O URL actual e:
+```
+${SUPABASE_URL}/functions/v1/eupago-webhook
+```
+
+Verificar no `supabase/config.toml` se `verify_jwt = false` esta configurado para `eupago-webhook`, caso contrario a EuPago recebe 401 e o webhook falha silenciosamente.
+
+### Ficheiros afectados
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/hooks/useInscritos.ts` | Logica de plano: mostrar `plan_selected` com estado pendente |
+| `src/pages/crm/mockData.ts` | Tipo `Inscrito`: novo campo `payment_status` |
+| `src/components/crm/DashboardView.tsx` | Badge pendente/pago no dashboard |
+| `src/components/crm/TableView.tsx` | Indicador de estado na tabela |
+| `supabase/config.toml` | Verificar `verify_jwt = false` para eupago-webhook |
