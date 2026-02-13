@@ -7,7 +7,7 @@ import { detectGender } from "@/lib/genderDetection";
 const PLAN_VALUES: Record<string, number> = {
   premium: 15,
   masterclass: 57.81,
-  bundle: 72.81,
+  bundle: 76.26,
 };
 
 function mapRegistration(r: any): Inscrito {

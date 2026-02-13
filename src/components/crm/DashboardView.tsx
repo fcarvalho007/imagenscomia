@@ -38,7 +38,7 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
   premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium €15" },
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC €57,81" },
-  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle €72,81" },
+  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle €76,26" },
 };
 
 function formatDate(iso: string) {
@@ -233,13 +233,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             );
           })}
         </div>
-        {stats.dropOffs.length > 0 && stats.dropOffs[stats.maxDropIdx].lost > 0 && (
-          <div className="mt-4 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-[12px] text-red-700 font-medium">
-              ⚠️ Maior saída: entre Passo {stats.maxDropIdx + 1} e Passo {stats.maxDropIdx + 2} — {stats.dropOffs[stats.maxDropIdx].lost} pessoas ({stats.dropOffs[stats.maxDropIdx].pct.toFixed(0)}% de perda)
-            </p>
-          </div>
-        )}
       </div>
 
       {/* KPIs */}
@@ -258,6 +251,26 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           </div>
         ))}
       </div>
+
+      {/* Pipeline Card */}
+      {stats.pendentes.length > 0 && (
+        <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 mb-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Euro size={18} className="text-amber-600" />
+            <h3 className="font-heading font-bold text-[14px] text-amber-900">Pipeline Pendente</h3>
+          </div>
+          <p className="font-heading font-extrabold text-[28px] text-amber-800 leading-none">€{stats.pipelineValor.toFixed(2)}</p>
+          <p className="text-[12px] text-amber-700 mt-1">
+            {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} com pagamento por confirmar
+          </p>
+          <div className="flex gap-3 mt-2 text-[12px] text-amber-700">
+            {stats.pendingCounts.premium > 0 && <span>{stats.pendingCounts.premium} Premium (€{(stats.pendingCounts.premium * 18.45).toFixed(2)})</span>}
+            {stats.pendingCounts.masterclass > 0 && <span>{stats.pendingCounts.masterclass} MC (€{(stats.pendingCounts.masterclass * 57.81).toFixed(2)})</span>}
+            {stats.pendingCounts.bundle > 0 && <span>{stats.pendingCounts.bundle} Bundle (€{(stats.pendingCounts.bundle * 76.26).toFixed(2)})</span>}
+          </div>
+          <p className="text-[11px] text-amber-600 mt-2">Receita que pode converter se pagarem</p>
+        </div>
+      )}
 
       {/* Pending Alert */}
       {stats.pendingOver6h.length > 0 && (
