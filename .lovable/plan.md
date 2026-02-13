@@ -1,54 +1,62 @@
 
 
-## Juntar campos de nome no modal e separar no CSV
+## Correcoes e melhorias na ficha do CRM
 
-### 1. Modal de Registo (`RegistrationModal.tsx`)
+### 1. Genero nao gravou (explicacao)
 
-Substituir os dois campos "Primeiro Nome" e "Ultimo Nome" por um unico campo "Primeiro e Ultimo nome". Ao submeter, o sistema separa automaticamente:
-- Primeira palavra = `firstName`
-- Resto = `lastName`
+O sistema funciona correctamente — o genero e gravado em `localStorage`, que e separado por dominio. Se alterou no site publicado (`imagenscomia.lovable.app`), essa alteracao nao aparece no preview do Lovable porque sao dominios diferentes com localStorage independente. Nao ha bug a corrigir.
 
-Isto simplifica o formulario para o utilizador sem perder a separacao na base de dados.
+### 2. Editar nome do inscrito
 
-**Validacao**: Se a pessoa escrever apenas uma palavra, o `lastName` fica vazio (string vazia). A validacao actual muda de "Primeiro nome e ultimo nome sao obrigatorios" para apenas verificar se o campo nao esta vazio.
+Adicionar um botao de edicao ao lado do nome na ficha (icone de lapis). Ao clicar, o nome transforma-se num input editavel. Ao confirmar:
+- Actualiza o registo na base de dados (tabela `registrations`, colunas `name`, `first_name`, `last_name`)
+- Actualiza o state local imediatamente
 
-**Alteracoes**:
-- Remover o state `lastName` separado
-- Criar um unico state `fullName`
-- No submit, fazer split: `firstName = fullName.split(" ")[0]`, `lastName = fullName.split(" ").slice(1).join(" ")`
-- Substituir os dois inputs por um unico com placeholder "Primeiro e Ultimo nome"
-- Actualizar todas as referencias a `firstName`/`lastName` no componente (close handler, navigate calls, etc.)
+**Ficheiros afectados:**
+- `src/components/crm/InscritoModal.tsx` — adicionar modo de edicao de nome inline
+- `src/hooks/useInscritos.ts` — adicionar funcao `updateName(id, fullName)` que faz UPDATE na BD e actualiza o state
+- `src/pages/CRM.tsx` — passar `onUpdateName` ao modal
 
-### 2. Tipo Inscrito (`mockData.ts`) e mapeamento (`useInscritos.ts`)
+### 3. Redesign da ficha individual (UX/UI)
 
-Adicionar `primeiro_nome` e `resto_nome` ao tipo `Inscrito` para que o CSV possa aceder a estes campos separadamente.
+Problemas actuais:
+- "Gratuito" aparece 3x (badge sidebar + card Plano + card Pago em)
+- Avatar com iniciais ("VF") ainda aparece apesar de decisao anterior de remover
+- Cards "Ref. EuPago" e "Pago em" vazios ocupam espaco sem utilidade para planos gratuitos
+- Informacao de Plano/Valor repetida entre sidebar e conteudo
 
-**mockData.ts**: Adicionar ao tipo:
-```
-primeiro_nome: string;
-resto_nome: string;
-```
+**Solucao — reorganizar a hierarquia:**
 
-**useInscritos.ts**: No `mapRegistration`, mapear:
-```
-primeiro_nome: r.first_name || (r.name || "").split(" ")[0] || "",
-resto_nome: r.last_name || (r.name || "").split(" ").slice(1).join(" ") || "",
-```
+**Sidebar (painel esquerdo escuro):**
+- Remover avatar de iniciais — manter apenas emoji de genero + nome (18px bold)
+- Manter: genero selector, email, WhatsApp, data de inscricao, passo X/5
+- Remover badge de plano da sidebar (ja aparece no conteudo)
+- Manter accoes (Email, Follow-up, Arquivar, Eliminar)
 
-### 3. Exportacao CSV (`TableView.tsx`)
+**Conteudo (painel direito branco) — nova ordem:**
 
-Alterar o header e as rows do CSV para incluir "Primeiro Nome" e "Resto do Nome" como colunas separadas em vez de "Nome".
+1. **Resumo** (topo) — Uma unica linha/card com: Plano + Valor + Passo + Data inscricao
+   - Se plano gratuito: mostrar apenas "Gratuito · Passo 3/5"
+   - Se pago: "Premium · EUR15 · Pago em 13 Fev 2026"
+   - Ref. EuPago so aparece se existir (nao mostrar card vazio)
 
-**Header**: `"Primeiro Nome;Resto do Nome;Email;WhatsApp;Plano;Valor;Passo;Duvida;Inscricao;Notas"`
+2. **Funil do Inscrito** — igual ao actual, logo a seguir
 
-**Row**: Usar `i.primeiro_nome` e `i.resto_nome` em vez de `i.nome`.
+3. **Origem** — badges das fontes
+
+4. **Duvida** — bloco com citacao (so se existir)
+
+5. **Notas** — formulario e lista
+
+Isto elimina a repeticao de "Gratuito", remove cards vazios, e cria uma hierarquia clara.
+
+---
 
 ### Resumo de ficheiros
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/landing/RegistrationModal.tsx` | Juntar 2 campos de nome num so; split ao submeter |
-| `src/pages/crm/mockData.ts` | Adicionar `primeiro_nome` e `resto_nome` ao tipo |
-| `src/hooks/useInscritos.ts` | Mapear `first_name`/`last_name` da DB |
-| `src/components/crm/TableView.tsx` | CSV com colunas separadas |
+| `src/hooks/useInscritos.ts` | Nova funcao `updateName(id, fullName)` com UPDATE na BD |
+| `src/pages/CRM.tsx` | Passar `onUpdateName` ao InscritoModal |
+| `src/components/crm/InscritoModal.tsx` | (1) Edicao inline do nome, (2) Remover avatar iniciais, (3) Redesign do painel direito: resumo compacto no topo, esconder cards vazios, eliminar repeticoes de "Gratuito" |
 
