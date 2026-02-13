@@ -85,6 +85,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     // Plans
     const planCounts: Record<string, number> = { free: 0, premium: 0, masterclass: 0, bundle: 0 };
     active.forEach((i) => { planCounts[i.plan]++; });
+    const pendingCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0 };
+    active.forEach((i) => { if (i.payment_status === "pending") pendingCounts[i.plan]++; });
 
     // Duvidas
     const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
@@ -143,7 +145,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     }));
     const maxDropIdx = dropOffs.reduce((mi, d, i) => (d.lost > dropOffs[mi].lost ? i : mi), 0);
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx };
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx };
   }, [inscritos]);
 
   const now = new Date();
@@ -278,9 +280,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         <div className="bg-white border border-border rounded-xl p-5">
           <h3 className="font-heading font-bold text-sm text-ink-900">Distribuição por Plano</h3>
           <p className="text-xs text-ink-400 mb-4">Breakdown dos inscritos</p>
-          {(["free", "premium", "masterclass", "bundle"] as const).map((plan) => {
+  {(["free", "premium", "masterclass", "bundle"] as const).map((plan) => {
             const info = PLAN_BADGE[plan];
             const count = stats.planCounts[plan];
+            const pendingCount = plan !== "free" ? stats.pendingCounts[plan] || 0 : 0;
             const pct = stats.total ? ((count / stats.total) * 100).toFixed(0) : "0";
             const barColors: Record<string, string> = {
               free: "hsl(var(--ink-300))",
@@ -293,6 +296,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: barColors[plan] }} />
                   <span className="text-[13px] font-medium" style={{ color: info.color }}>{info.label}</span>
+                  {pendingCount > 0 && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                      {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}
+                    </span>
+                  )}
                   <span className="ml-auto font-heading font-bold text-[13px] text-ink-500">{count}</span>
                   <span className="text-xs text-ink-400">{pct}%</span>
                 </div>
