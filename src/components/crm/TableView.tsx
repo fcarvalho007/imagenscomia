@@ -32,6 +32,16 @@ const VALOR_COLORS: Record<number, string> = {
   72.81: "hsl(var(--green-600))",
 };
 
+function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): { text: string; color: string } | null {
+  const ref = upgradeClickedAt || timestamp;
+  const hours = (Date.now() - new Date(ref).getTime()) / 3600000;
+  if (hours < 1) return { text: `${Math.round(hours * 60)}min`, color: "hsl(var(--ink-400))" };
+  if (hours < 6) return { text: `${Math.round(hours)}h`, color: "hsl(var(--ink-400))" };
+  if (hours < 24) return { text: `${Math.round(hours)}h`, color: "#D97706" };
+  const days = Math.floor(hours / 24);
+  return { text: `${days}d+`, color: "#DC2626" };
+}
+
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 
 export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete }: TableViewProps) {
@@ -259,6 +269,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                           Pendente
                         </span>
                       )}
+                      {i.payment_status === "pending" && (() => {
+                        const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
+                        return pt ? (
+                          <span className="ml-1 text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
+                        ) : null;
+                      })()}
                       {i.payment_status === "paid" && i.plan !== "free" && (
                         <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
                           Pago

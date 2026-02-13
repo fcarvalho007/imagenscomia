@@ -1,11 +1,12 @@
 import { useState } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2,
 } from "lucide-react";
 import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji, type Gender } from "@/lib/genderDetection";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InscritoModalProps {
   inscrito: Inscrito;
@@ -57,6 +58,9 @@ export default function InscritoModal({
   const [editingName, setEditingName] = useState(false);
   const [editName, setEditName] = useState(inscrito.nome);
   const isMobile = useIsMobile();
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderData, setReminderData] = useState<{ emailSubject: string; emailBody: string; paymentLink: string } | null>(null);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
   const planInfo = PLAN_INFO[inscrito.plan];
 
@@ -88,6 +92,30 @@ export default function InscritoModal({
   const startEditName = () => {
     setEditName(inscrito.nome);
     setEditingName(true);
+  };
+
+  const handleGenerateReminder = async () => {
+    setReminderLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-reminder", {
+        body: { email: inscrito.email, plan: inscrito.plan, nome: inscrito.nome },
+      });
+      if (error) throw error;
+      setReminderData(data);
+    } catch (e) {
+      console.error("Reminder error:", e);
+      alert("Erro ao gerar lembrete. Verifica a consola.");
+    } finally {
+      setReminderLoading(false);
+    }
+  };
+
+  const copyEmailBody = () => {
+    if (reminderData) {
+      navigator.clipboard.writeText(reminderData.emailBody);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    }
   };
 
   // Build compact summary line
@@ -388,6 +416,61 @@ export default function InscritoModal({
                 </>
               )}
             </div>
+
+            {/* Reminder Button for Pending */}
+            {inscrito.payment_status === "pending" && (
+              <div className="mb-5">
+                {!reminderData ? (
+                  <button
+                    onClick={handleGenerateReminder}
+                    disabled={reminderLoading}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-heading font-semibold text-[14px] transition-colors bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    {reminderLoading ? (
+                      <><Loader2 size={16} className="animate-spin" /> A gerar link de pagamento...</>
+                    ) : (
+                      <><Bell size={16} /> Gerar Lembrete de Pagamento</>
+                    )}
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-heading font-bold text-[14px] text-amber-900">Email pronto a enviar</h4>
+                      <button
+                        onClick={copyEmailBody}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-amber-200 text-amber-800 hover:bg-amber-300 transition-colors"
+                      >
+                        <Copy size={12} /> {copiedEmail ? "Copiado!" : "Copiar tudo"}
+                      </button>
+                    </div>
+                    <div className="mb-2">
+                      <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Assunto:</span>
+                      <p className="text-[13px] text-amber-900 font-medium mt-0.5">{reminderData.emailSubject}</p>
+                    </div>
+                    <pre className="text-[13px] text-amber-900 whitespace-pre-wrap leading-relaxed bg-white/60 rounded-lg p-3 border border-amber-200">
+                      {reminderData.emailBody}
+                    </pre>
+                    <div className="flex items-center gap-2 mt-3">
+                      <a
+                        href={reminderData.paymentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[12px] text-blue-600 hover:underline"
+                      >
+                        Abrir link de pagamento ↗
+                      </a>
+                      <span className="text-ink-300">·</span>
+                      <button
+                        onClick={() => setReminderData(null)}
+                        className="text-[12px] text-ink-400 hover:text-ink-600"
+                      >
+                        Gerar novo
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Funnel */}
             <FunnelView inscrito={inscrito} />

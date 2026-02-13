@@ -22,6 +22,16 @@ function formatDate(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
+function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): { text: string; color: string } | null {
+  const ref = upgradeClickedAt || timestamp;
+  const hours = (Date.now() - new Date(ref).getTime()) / 3600000;
+  if (hours < 1) return { text: `Há ${Math.round(hours * 60)}min`, color: "hsl(var(--ink-400))" };
+  if (hours < 6) return { text: `Há ${Math.round(hours)}h`, color: "hsl(var(--ink-400))" };
+  if (hours < 24) return { text: `Há ${Math.round(hours)}h`, color: "#D97706" };
+  const days = Math.floor(hours / 24);
+  return { text: `Há ${days}d+`, color: "#DC2626" };
+}
+
 type Column = {
   title: string;
   color: string;
@@ -65,6 +75,12 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
             Pago
           </span>
         )}
+        {inscrito.payment_status === "pending" && (() => {
+          const pt = pendingTimeLabel(inscrito.upgrade_clicked_at, inscrito.timestamp);
+          return pt ? (
+            <span className="text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
+          ) : null;
+        })()}
       </div>
       <p className="text-[11px] text-ink-400 mt-1">{formatDate(inscrito.timestamp)}</p>
     </div>
