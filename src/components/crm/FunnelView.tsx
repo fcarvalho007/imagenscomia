@@ -67,29 +67,18 @@ function buildFunnelSteps(i: Inscrito): FunnelStep[] {
 
   // 4. Premium (Passo 3)
   if (i.step_reached >= 3) {
-    const paid = !!i.paid_at && (i.plan === "premium" || i.plan === "bundle");
-    const clicked = !!i.upgrade_clicked_at && (i.plan_selected === "premium" || i.plan_selected === "bundle");
+    const includesPremium = (p: string | null) => p === "premium" || p === "bundle";
+    const paid = !!i.paid_at && includesPremium(i.plan);
+    const clicked = !!i.upgrade_clicked_at && includesPremium(i.plan_selected);
+    const selected = includesPremium(i.plan_selected);
     if (paid) {
-      steps.push({
-        label: "Premium",
-        sublabel: "Passo 3",
-        state: "completed",
-        detail: `Pago · €${i.plan === "bundle" ? "15" : "15"}`,
-      });
+      steps.push({ label: "Premium", sublabel: "Passo 3", state: "completed", detail: "Pago · €15" });
     } else if (clicked) {
-      steps.push({
-        label: "Premium",
-        sublabel: "Passo 3",
-        state: "interested",
-        detail: "Clicou para pagar",
-      });
+      steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Clicou para pagar" });
+    } else if (selected) {
+      steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Seleccionou plano" });
     } else {
-      steps.push({
-        label: "Premium",
-        sublabel: "Passo 3",
-        state: "skipped",
-        detail: "Não converteu",
-      });
+      steps.push({ label: "Premium", sublabel: "Passo 3", state: "skipped", detail: "Não converteu" });
     }
   } else {
     steps.push({ label: "Premium", sublabel: "Passo 3", state: "not_reached" });
@@ -97,29 +86,18 @@ function buildFunnelSteps(i: Inscrito): FunnelStep[] {
 
   // 5. Masterclass (Passo 4)
   if (i.step_reached >= 4) {
-    const paid = !!i.paid_at && (i.plan === "masterclass" || i.plan === "bundle");
-    const clicked = !!i.upgrade_clicked_at && (i.plan_selected === "masterclass" || i.plan_selected === "bundle");
+    const includesMasterclass = (p: string | null) => p === "masterclass" || p === "bundle";
+    const paid = !!i.paid_at && includesMasterclass(i.plan);
+    const clicked = !!i.upgrade_clicked_at && includesMasterclass(i.plan_selected);
+    const selected = includesMasterclass(i.plan_selected);
     if (paid) {
-      steps.push({
-        label: "Masterclass",
-        sublabel: "Passo 4",
-        state: "completed",
-        detail: `Pago · €${i.plan === "bundle" ? "57.81" : "57.81"}`,
-      });
+      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "completed", detail: "Pago · €57.81" });
     } else if (clicked) {
-      steps.push({
-        label: "Masterclass",
-        sublabel: "Passo 4",
-        state: "interested",
-        detail: "Clicou para pagar",
-      });
+      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Clicou para pagar" });
+    } else if (selected) {
+      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Seleccionou plano" });
     } else {
-      steps.push({
-        label: "Masterclass",
-        sublabel: "Passo 4",
-        state: "skipped",
-        detail: "Não converteu",
-      });
+      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "skipped", detail: "Não converteu" });
     }
   } else {
     steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "not_reached" });
