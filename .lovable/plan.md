@@ -1,58 +1,25 @@
 
 
-## 5 Correcoes ao Hero e LogoMarquee
+## Correcoes ao Hero: H1 em 2 linhas + Background visivel
 
-### Ficheiros afectados
+### Ficheiro afectado
 
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/landing/HeroSection.tsx` | H1 em 2 linhas, espacamentos |
-| `src/components/landing/LogoMarquee.tsx` | Titulo, logo Gemini |
-| `src/assets/logos/gemini.png` | Substituir pelo novo logo |
-
----
+`src/components/landing/HeroSection.tsx`
 
 ### 1. H1 em 2 linhas
 
-O problema e que o `<br />` esta a partir "Aprende a Criar Imagens" / "Profissionais com Inteligencia Artificial", mas no desktop o texto "Profissionais com Inteligencia Artificial" e demasiado longo e parte para uma terceira linha.
+O problema: o container tem `maxWidth: 760px` mas "Aprende a Criar Imagens Profissionais" a 46px precisa de ~820px para caber numa linha. A solucao e aumentar o `maxWidth` do container de conteudo para 860px e aumentar o `maxWidth` do H1 para 860px tambem. Assim a primeira linha cabe e o `<br />` forca a segunda linha com "com Inteligencia Artificial".
 
-Solucao: mudar a quebra para depois de "Profissionais":
+Alteracoes:
+- Linha 80: `maxWidth: 760` passa a `maxWidth: 860`
+- Linha 103: `maxWidth: 820` passa a `maxWidth: 860`
 
-```text
-Aprende a Criar Imagens Profissionais
-com Inteligencia Artificial
-```
+### 2. Background ColorBends visivel
 
-Linha 1 fica mais longa mas cabe no max-width de 820px com o font-size actual (clamp 32-46px). O `<br />` move-se para depois de "Profissionais".
+Aumentar a opacidade do wrapper de `0.4` para `0.65` para tornar o efeito claramente visivel sobre o fundo escuro.
 
-### 2. Logo Gemini
+- Linha 61: `opacity: 0.4` passa a `opacity: 0.65`
 
-Substituir `src/assets/logos/gemini.png` pelo novo logo fornecido (`Google_Gemini_logo_2025.svg.png`). Este logo tem o texto "Gemini" incluido e e mais reconhecivel.
+### O que NAO muda
 
-### 3. Espacamentos da primeira dobra
-
-Pela imagem, ha demasiado espaco entre o badge "WEBINAR GRATUITO" e o H1, e entre o subheadline e os spec badges. Ajustes:
-
-- Badge: `mb-4` passa a `mb-3` (reduzir gap para o H1)
-- Subheadline: `marginTop: 16` fica, `marginBottom: 28` passa a `24` (reduzir gap para os badges)
-- Spec badges: `mb-8` passa a `mb-6` (reduzir gap para o CTA)
-- Padding geral: `pt-12 pb-14` passa a `pt-10 pb-12` em mobile; `md:pt-[60px] md:pb-[72px]` em desktop (ligeiramente mais compacto)
-
-### 4. Titulo do LogoMarquee
-
-Alterar "Plataformas abordadas no webinar" para "Plataformas a considerar".
-
-### 5. ColorBends — ja esta activo
-
-O componente ColorBends.tsx e ColorBends.css ja existem no projecto e estao importados no HeroSection. O efeito esta visivel na screenshot (o gradiente azul/roxo no fundo do hero). A opacidade esta a 0.4, o que e intencional para nao competir com o texto. Nao e necessaria nenhuma alteracao aqui — o efeito esta a funcionar correctamente.
-
-### Resumo tecnico
-
-| Correcao | Detalhe |
-|---|---|
-| H1 | `Aprende a Criar Imagens Profissionais<br />com Inteligencia Artificial` |
-| Gemini | Copiar novo logo para `src/assets/logos/gemini.png` |
-| Espacamentos | Reduzir paddings e margins no hero (~10-15% mais compacto) |
-| Titulo marquee | "Plataformas a considerar" |
-| ColorBends | Sem alteracao — ja activo e visivel |
-
+Tudo o resto: badges, CTA, subheadline, Google Reviews, LogoMarquee.
