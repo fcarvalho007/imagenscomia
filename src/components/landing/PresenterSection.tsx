@@ -46,7 +46,7 @@ export const PresenterSection = () => (
             <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] text-blue-600 mb-2">
               QUEM APRESENTA
             </p>
-            <h2 className="font-heading font-extrabold text-[26px] md:text-[32px] text-ink-900 mb-1">
+            <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-ink-900 mb-1">
               Frederico Carvalho
             </h2>
             <p className="font-medium text-[17px] text-ink-500 leading-[1.5] mb-7">

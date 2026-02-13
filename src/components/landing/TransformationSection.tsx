@@ -25,10 +25,10 @@ export const TransformationSection = () => {
     <section className="py-10 md:py-16 bg-off-white">
       <div className="container mx-auto px-4 sm:px-6 max-w-[720px]">
         <ScrollReveal>
-          <p className="font-body font-semibold text-[12px] uppercase tracking-[0.1em] text-blue-600 text-center">
+          <p className="font-body font-semibold text-[14px] uppercase tracking-[0.1em] text-blue-600 text-center">
             DEPOIS DO WEBINAR
           </p>
-          <h2 className="font-heading font-extrabold text-[26px] md:text-[32px] text-ink-900 text-center mt-2 mb-8">
+          <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-ink-900 text-center mt-2 mb-8">
             O que muda em 60 minutos
           </h2>
         </ScrollReveal>
@@ -38,10 +38,10 @@ export const TransformationSection = () => {
             <ScrollReveal key={i} delay={i * 0.08}>
               <div className="flex items-center gap-4 bg-background border border-border rounded-xl px-5 py-4">
                 <XCircle className="w-5 h-5 text-red-400 shrink-0" />
-                <span className="text-[14px] text-ink-500 line-through flex-1">{t.before}</span>
+                <span className="text-[15px] text-ink-500 line-through flex-1">{t.before}</span>
                 <ArrowRight className="w-4 h-4 text-ink-300 shrink-0" />
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                <span className="text-[14px] font-semibold text-ink-800 flex-1">{t.after}</span>
+                <span className="text-[15px] font-semibold text-ink-800 flex-1">{t.after}</span>
               </div>
             </ScrollReveal>
           ))}
