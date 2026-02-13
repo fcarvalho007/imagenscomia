@@ -102,7 +102,7 @@ export const TestimonialsSection = () => (
               </div>
 
               {/* Quote */}
-              <p className="text-[16px] leading-[1.65] mb-4 flex-grow" style={{ color: "rgba(255,255,255,0.80)" }}>
+              <p className="text-[17px] leading-[1.65] mb-4 flex-grow" style={{ color: "rgba(255,255,255,0.80)" }}>
                 {t.quote}
               </p>
 

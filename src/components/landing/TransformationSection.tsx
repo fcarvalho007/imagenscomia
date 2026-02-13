@@ -1,4 +1,4 @@
-import { XCircle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { XCircle, ArrowRight, ArrowDown, CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ScrollReveal } from "./ScrollReveal";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
@@ -36,12 +36,27 @@ export const TransformationSection = () => {
         <div className="space-y-2.5">
           {transformations.map((t, i) => (
             <ScrollReveal key={i} delay={i * 0.08}>
-              <div className="flex items-center gap-4 bg-background border border-border rounded-xl px-5 py-4">
-                <XCircle className="w-5 h-5 text-red-400 shrink-0" />
-                <span className="text-[15px] text-ink-500 line-through flex-1">{t.before}</span>
-                <ArrowRight className="w-4 h-4 text-ink-300 shrink-0" />
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-                <span className="text-[15px] font-semibold text-ink-800 flex-1">{t.after}</span>
+              <div className="bg-background border border-border rounded-xl px-5 py-4">
+                {/* Mobile: stacked layout */}
+                <div className="flex flex-col gap-3 md:hidden">
+                  <div className="flex items-start gap-3">
+                    <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    <span className="text-[15px] text-ink-500 line-through">{t.before}</span>
+                  </div>
+                  <ArrowDown className="w-4 h-4 text-ink-300 mx-auto" />
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                    <span className="text-[15px] font-semibold text-ink-800">{t.after}</span>
+                  </div>
+                </div>
+                {/* Desktop: horizontal layout */}
+                <div className="hidden md:flex items-center gap-4">
+                  <XCircle className="w-5 h-5 text-red-400 shrink-0" />
+                  <span className="text-[15px] text-ink-500 line-through flex-1">{t.before}</span>
+                  <ArrowRight className="w-4 h-4 text-ink-300 shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                  <span className="text-[15px] font-semibold text-ink-800 flex-1">{t.after}</span>
+                </div>
               </div>
             </ScrollReveal>
           ))}
