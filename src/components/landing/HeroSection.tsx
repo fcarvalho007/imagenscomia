@@ -58,7 +58,7 @@ export const HeroSection = () => {
       }}
     >
       {/* ColorBends background */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.4 }}>
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.65 }}>
         <ColorBends
           colors={["#1E40AF", "#7C3AED", "#0EA5E9"]}
           rotation={0}
@@ -77,7 +77,7 @@ export const HeroSection = () => {
       {/* Content — single centered column */}
       <div
         className="relative z-10 mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10"
-        style={{ maxWidth: 760, textAlign: "center" }}
+        style={{ maxWidth: 860, textAlign: "center" }}
       >
         {/* Badge */}
         <motion.div {...fade(0.05)}>
@@ -100,7 +100,7 @@ export const HeroSection = () => {
 
         {/* H1 */}
         <motion.div {...fade(0.1)}>
-          <h1 style={{ maxWidth: 820, margin: "0 auto" }}>
+          <h1 style={{ maxWidth: 860, margin: "0 auto" }}>
             <span
               className="block font-heading"
               style={{
