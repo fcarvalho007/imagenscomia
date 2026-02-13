@@ -1,84 +1,53 @@
 
 
-## Ajustes ao Hero Section — FloatingLines, Headline, Badges e Espacamento
+## Hero: "Inteligencia Artificial" + Auditoria Tipografica da Pagina
 
-### Ficheiro unico afectado
+### 1. Hero — Titulo e largura
 
-`src/components/landing/HeroSection.tsx`
+**Ficheiro:** `src/components/landing/HeroSection.tsx`
 
-Nenhum outro ficheiro e alterado.
+Substituir o texto do H1:
+```text
+Aprende a Criar Imagens<br />Profissionais com IA
+```
+por:
+```text
+Aprende a Criar Imagens<br />Profissionais com<br />Inteligência Artificial
+```
+
+Ajustar `max-width` do H1 para `760px` (em vez de 700) e do container para `760px` para acomodar o texto mais longo em 3 linhas equilibradas.
+
+Reduzir ligeiramente o `fontSize` para `clamp(32px, 5vw, 46px)` para que as 3 linhas caibam de forma elegante sem ocupar demasiado espaco vertical.
 
 ---
 
-### Mudanca 1 — FloatingLines: reduzir intensidade (linhas 60-75)
+### 2. Auditoria de fontes — correcoes de coesao
 
-Substituir os props do FloatingLines por:
+Regra base do projecto: nenhum texto inferior a 14px. H2 padrao: `24px / 30px / 34px`. Corpo: 17px. Kickers: 14px uppercase.
 
-```text
-<FloatingLines
-  linesGradient={["#0F2A4A", "#1A3A6B", "#2563EB", "#1A3A6B"]}
-  enabledWaves={["bottom"]}
-  lineCount={[6]}
-  lineDistance={[5]}
-  animationSpeed={0.25}
-  interactive={true}
-  bendRadius={3.0}
-  bendStrength={-0.2}
-  mouseDamping={0.03}
-  parallax={true}
-  parallaxStrength={0.05}
-  mixBlendMode="screen"
-  bottomWavePosition={{ x: 1.0, y: -1.2, rotate: -0.5 }}
-/>
-```
+| Ficheiro | Elemento | Actual | Corrigido |
+|---|---|---|---|
+| `HeroSection.tsx` | Badge "WEBINAR GRATUITO" fontSize | 11px | 14px |
+| `HeroSection.tsx` | Spec badge labels (ONLINE, HORARIO...) | 11px | 14px |
+| `HeroSection.tsx` | Spec badge values (18 Fev, 10h00...) | 13px | 14px |
+| `HeroSection.tsx` | Microcopy RGPD | 12px | 14px |
+| `TransformationSection.tsx` | Kicker "DEPOIS DO WEBINAR" | 12px | 14px |
+| `TransformationSection.tsx` | H2 "O que muda em 60 minutos" | 26/32px | 24/30/34px |
+| `TransformationSection.tsx` | Before/after text | 14px | 15px |
+| `PresenterSection.tsx` | H2 "Frederico Carvalho" | 26/32px | 24/30/34px |
+| `PricingCardsSection.tsx` | "(nao inclui gravacao)" | 13px | 14px |
+| `CTAFinalSection.tsx` | H2 principal | 28/34/38px | 24/30/34px |
+| `CTAFinalSection.tsx` | H2 secundario (azul) | 28/34/38px | 24/30/34px |
 
-Remove `middleWavePosition` prop (ja nao e necessario com apenas "bottom").
+### 3. Resumo de ficheiros alterados
 
-### Mudanca 2 — Headline: forcar 2 linhas (linhas 103-117)
-
-- Texto passa a: `Aprende a Criar Imagens<br />Profissionais com IA`
-- `font-size`: `clamp(36px, 5.5vw, 52px)` (36px mobile, 42px tablet, 52px desktop)
-- `max-width`: 700px
-- Manter `text-align: center`, `margin: 0 auto`
-
-### Mudanca 3 — Badges de especificacoes (linhas 141-148)
-
-Substituir o estilo de cada badge card por:
-
-```text
-background: "rgba(6, 9, 26, 0.75)"
-backdropFilter: "blur(8px)"
-border: "1px solid rgba(37,99,235,0.20)"
-```
-
-### Mudanca 5 — Espacamento interno do hero
-
-**Section** (linha 54-57):
-- `paddingTop`: responsive via className — nao e possivel com style inline para responsive, entao usar style com valores fixos desktop e aceitar mobile via padding do container interno
-
-Abordagem: o container interno (linha 78-81) controla o padding. Substituir por:
-- `padding: "48px 24px 56px"` base (mobile)
-- Adicionar classe `md:py-0` e usar style com `padding: "72px 40px 80px"` para desktop via media query inline nao e possivel — usar abordagem simplificada com `padding: "60px 24px 64px"` como compromisso, ou usar classes Tailwind `pt-12 pb-14 md:pt-[72px] md:pb-[80px] px-6 md:px-10`
-
-Espacamento entre elementos:
-- Badge "WEBINAR GRATUITO" container: `mb-4` (16px) em vez de `mb-5`
-- H1 wrapper: `marginTop: 0` (ja encostado ao badge acima)
-- Subheadline: `marginTop: 16px`, `marginBottom: 28px` (ja esta 12/28, ajustar marginTop para 16)
-- Badges specs container: manter `mb-7` (28px antes do CTA)
-- CTA microcopy: `marginTop: 10px` (ja esta)
-- Google Reviews: `mt-4` (16px, ja esta)
-
-### Resumo de alteracoes no ficheiro
-
-| Linha(s) | O que muda |
+| Ficheiro | Alteracao |
 |---|---|
-| 54-57 | paddingBottom 80 desktop, paddingTop adicionado |
-| 60-75 | FloatingLines props substituidos (menos intensidade) |
-| 78-81 | Padding do container interno ajustado com Tailwind classes |
-| 84 | mb-5 passa a mb-4 |
-| 103 | maxWidth 700, fontSize clamp(36px, 5.5vw, 52px) |
-| 115 | Texto H1 com `<br />` |
-| 122 | marginTop 16 |
-| 132 | gap e margin do flex de badges |
-| 144-148 | Estilos dos badge cards (glass escuro) |
+| `src/components/landing/HeroSection.tsx` | Titulo "Inteligencia Artificial", max-width 760, fontSize ajustado, badge 14px, spec labels/values 14px, microcopy 14px |
+| `src/components/landing/TransformationSection.tsx` | Kicker 14px, H2 escala padrao 24/30/34, texto before/after 15px |
+| `src/components/landing/PresenterSection.tsx` | H2 escala padrao 24/30/34 |
+| `src/components/landing/PricingCardsSection.tsx` | Microcopy 14px |
+| `src/components/landing/CTAFinalSection.tsx` | H2s escala padrao 24/30/34 |
+
+Nenhuma pagina fora da landing page e alterada (/upgrade, /confirmacao, /crm).
 
