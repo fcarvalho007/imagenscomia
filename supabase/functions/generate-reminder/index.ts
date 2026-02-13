@@ -8,9 +8,9 @@ const corsHeaders = {
 };
 
 const PRODUCTS: Record<string, { value: number; identifier: string; label: string }> = {
-  premium: { value: 18.45, identifier: "WEBINAR-PREMIUM", label: "Premium Pass" },
-  masterclass: { value: 57.81, identifier: "WEBINAR-MASTERCLASS", label: "Premium Pass + Masterclass IA" },
-  bundle: { value: 76.26, identifier: "WEBINAR-BUNDLE", label: "Premium Pass + Masterclass + Workshop" },
+  premium: { value: 18.45, identifier: "WEBINAR-PREMIUM", label: "Premium Pass (15+IVA)" },
+  masterclass: { value: 57.81, identifier: "WEBINAR-MASTERCLASS", label: "Masterclass IA Vídeo (47+IVA)" },
+  bundle: { value: 76.26, identifier: "WEBINAR-BUNDLE", label: "Premium Pass (15+IVA) + Masterclass IA Vídeo (47+IVA)" },
 };
 
 serve(async (req) => {
@@ -105,8 +105,8 @@ Vi que iniciaste o processo de inscrição no ${product.label} mas o pagamento a
 Deixo-te aqui o link para concluíres:
 ${paymentLink}
 
-Valor: ${displayValue}€
-Métodos disponíveis: Cartão de Crédito, MB WAY, Multibanco
+Valor total (c/ IVA): ${displayValue}€
+Métodos disponíveis: MB WAY, Multibanco
 
 Se tiveres alguma dúvida, responde a este email.
 
