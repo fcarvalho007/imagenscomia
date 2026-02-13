@@ -3,7 +3,7 @@ import { Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion, useMotionValue, useAnimationFrame, useTransform } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import ElectricBorder from "./ElectricBorder";
-import FloatingLines from "./FloatingLines";
+import Beams from "./Beams";
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
@@ -55,22 +55,19 @@ export const HeroSection = () => {
         background: "linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)",
       }}
     >
-      {/* FloatingLines background */}
-      <FloatingLines
-        linesGradient={["#0F2A4A", "#1A3A6B", "#2563EB", "#1A3A6B"]}
-        enabledWaves={["bottom"]}
-        lineCount={[6]}
-        lineDistance={[5]}
-        animationSpeed={0.25}
-        interactive={true}
-        bendRadius={3.0}
-        bendStrength={-0.2}
-        mouseDamping={0.03}
-        parallax={true}
-        parallaxStrength={0.05}
-        mixBlendMode="screen"
-        bottomWavePosition={{ x: 1.0, y: -1.2, rotate: -0.5 }}
-      />
+      {/* Beams background */}
+      <div className="absolute inset-0 z-0" style={{ mixBlendMode: "screen" }}>
+        <Beams
+          lightColor="#1E40AF"
+          beamNumber={8}
+          beamWidth={1.5}
+          beamHeight={15}
+          speed={1.5}
+          noiseIntensity={1.5}
+          scale={0.2}
+          rotation={0}
+        />
+      </div>
 
       {/* Content — single centered column */}
       <div
