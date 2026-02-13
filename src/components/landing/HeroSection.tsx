@@ -75,7 +75,7 @@ export const HeroSection = () => {
       {/* Content — single centered column */}
       <div
         className="relative z-10 mx-auto pt-12 pb-14 md:pt-[72px] md:pb-[80px] px-6 md:px-10"
-        style={{ maxWidth: 700, textAlign: "center" }}
+        style={{ maxWidth: 760, textAlign: "center" }}
       >
         {/* Badge */}
         <motion.div {...fade(0.05)}>
@@ -86,8 +86,8 @@ export const HeroSection = () => {
                 background: "rgba(37,99,235,0.15)",
                 border: "1px solid rgba(37,99,235,0.30)",
                 color: "#93C5FD",
-                fontSize: 11,
-                fontWeight: 600,
+              fontSize: 14,
+              fontWeight: 600,
                 boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
@@ -98,19 +98,19 @@ export const HeroSection = () => {
 
         {/* H1 */}
         <motion.div {...fade(0.1)}>
-          <h1 style={{ maxWidth: 700, margin: "0 auto" }}>
+          <h1 style={{ maxWidth: 760, margin: "0 auto" }}>
             <span
               className="block font-heading"
               style={{
                 color: "#F8FAFC",
                 fontWeight: 800,
-                fontSize: "clamp(36px, 5.5vw, 52px)",
+                fontSize: "clamp(32px, 5vw, 46px)",
                 lineHeight: 1.12,
                 letterSpacing: "-0.025em",
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Aprende a Criar Imagens<br />Profissionais com IA
+              Aprende a Criar Imagens<br />Profissionais com<br />Inteligência Artificial
             </span>
           </h1>
         </motion.div>
@@ -148,8 +148,8 @@ export const HeroSection = () => {
                 >
                   <Icon className="w-5 h-5 shrink-0" style={{ color: "#60A5FA" }} />
                   <div className="text-center">
-                    <span className="block uppercase tracking-wide" style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.45)" }}>{item.label}</span>
-                    <span className="block mt-0.5" style={{ fontSize: 13, fontWeight: 600, color: "#F8FAFC" }}>{item.value}</span>
+                   <span className="block uppercase tracking-wide" style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.45)" }}>{item.label}</span>
+                    <span className="block mt-0.5" style={{ fontSize: 14, fontWeight: 600, color: "#F8FAFC" }}>{item.value}</span>
                   </div>
                 </div>
               );
@@ -186,7 +186,7 @@ export const HeroSection = () => {
               </button>
             </ElectricBorder>
           </div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.30)", marginTop: 10 }}>
+          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.30)", marginTop: 10 }}>
             Sem spam. Acesso imediato por email. Dados protegidos (RGPD).
           </p>
         </motion.div>

@@ -14,10 +14,10 @@ export const CTAFinalSection = () => {
       <div className="absolute inset-0 bg-ink-900/85" />
       <div className="container mx-auto px-4 sm:px-6 max-w-[800px] text-center relative z-10">
         <ScrollReveal>
-          <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] md:text-[38px] leading-[1.2] text-white mb-1 max-w-[700px] mx-auto">
+          <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] leading-[1.2] text-white mb-1 max-w-[700px] mx-auto">
             Imagens profissionais com IA.
           </h2>
-          <p className="font-heading font-extrabold text-[28px] sm:text-[34px] md:text-[38px] leading-[1.2] text-blue-600 mb-4">
+          <p className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] leading-[1.2] text-blue-600 mb-4">
             Sem equipa criativa. Sem agência. Sem esperas.
           </p>
         </ScrollReveal>

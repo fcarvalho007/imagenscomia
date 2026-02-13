@@ -47,7 +47,7 @@ export const PricingCardsSection = () => {
               >
                 Sim, assistir grátis!
               </motion.button>
-              <p className="text-center text-[13px] text-ink-400 mt-2">(não inclui gravação da sessão)</p>
+              <p className="text-center text-[14px] text-ink-400 mt-2">(não inclui gravação da sessão)</p>
             </div>
           </ScrollReveal>
         </div>
