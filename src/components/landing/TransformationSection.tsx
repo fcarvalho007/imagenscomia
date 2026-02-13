@@ -55,7 +55,7 @@ export const TransformationSection = () => {
               whileTap={{ scale: 0.98 }}
               className="w-full sm:w-auto text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-lg px-8 py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
             >
-              Sim, quero garantir a minha vaga grátis →
+              Sim, quero garantir a minha vaga grátis
             </motion.button>
           </div>
         </ScrollReveal>

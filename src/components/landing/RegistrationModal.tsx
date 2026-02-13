@@ -124,6 +124,11 @@ export const RegistrationModal = () => {
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
             className="relative w-full max-w-[460px] bg-background rounded-2xl p-8 overflow-y-auto max-h-[90vh] shadow-card-lg"
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 25px 60px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
+              backdropFilter: "blur(20px)",
+            }}
           >
             <button
               onClick={handleClose}
@@ -211,7 +216,7 @@ const CaptureView = ({
   return (
   <>
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
-      Quero confirmar o meu lugar para o Webinar Gratuito — Ao Vivo
+      Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo
     </h3>
     <p className="text-[15px] text-ink-500 mb-3">Quarta-feira, 18 de Fevereiro, 10h</p>
 
@@ -292,9 +297,6 @@ const CaptureView = ({
       {loading ? "A registar..." : "Reservar o meu lugar"}
     </motion.button>
 
-    <p className="text-center mt-2 text-[13px] text-ink-400">
-      (não inclui gravação da sessão)
-    </p>
 
     <LegalModal open={legalModal === "privacidade"} onOpenChange={(v) => !v && setLegalModal(null)} title="Política de Privacidade">
       <PrivacidadeContent />
