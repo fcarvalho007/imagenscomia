@@ -242,6 +242,16 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
                         {badge.label}
                       </span>
+                      {i.payment_status === "pending" && (
+                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          Pendente
+                        </span>
+                      )}
+                      {i.payment_status === "paid" && i.plan !== "free" && (
+                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+                          Pago
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-heading font-bold text-[13px]" style={{ color: VALOR_COLORS[i.valor] || "hsl(var(--ink-400))" }}>

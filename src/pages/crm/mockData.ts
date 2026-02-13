@@ -28,6 +28,7 @@ export type Inscrito = {
   upgrade_clicked_at: string | null;
   primeiro_nome: string;
   resto_nome: string;
+  payment_status: "paid" | "pending" | "free";
 };
 
 export const MOCK_DATA: Inscrito[] = [];

@@ -11,9 +11,18 @@ const PLAN_VALUES: Record<string, number> = {
 };
 
 function mapRegistration(r: any): Inscrito {
+  // Show plan_selected even without payment confirmation
   const plan = r.paid_at
     ? (r.plan_selected || "free")
-    : "free";
+    : (r.plan_selected || "free");
+  
+  // Determine payment status
+  const payment_status: Inscrito["payment_status"] = r.paid_at
+    ? "paid"
+    : r.plan_selected && r.plan_selected !== "free"
+      ? "pending"
+      : "free";
+
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
     id: r.id,
@@ -39,6 +48,7 @@ function mapRegistration(r: any): Inscrito {
     upgrade_clicked_at: r.upgrade_clicked_at || null,
     primeiro_nome: r.first_name || (r.name || "").split(" ")[0] || "",
     resto_nome: r.last_name || (r.name || "").split(" ").slice(1).join(" ") || "",
+    payment_status,
   };
 }
 
