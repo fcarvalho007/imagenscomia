@@ -1,59 +1,107 @@
 
 
-## Alteracoes ao Modal de Registo e CTAs da Landing Page
+## Redesenho do Hero — FloatingLines + Layout Centrado
 
-### 1. Remover "(nao inclui gravacao da sessao)"
+### Resumo
 
-**`src/components/landing/RegistrationModal.tsx`** — linha 295-297
+Substituir o layout de duas colunas com CardSwap e prismas por um layout de coluna unica centrada com o componente FloatingLines (shader WebGL via three.js) como fundo animado. Simplificar o background e corrigir a barra branca causada pelo separador de fade.
 
-Remover o paragrafo:
-```
-<p className="text-center mt-2 text-[13px] text-ink-400">
-  (não inclui gravação da sessão)
-</p>
-```
+### Dependencias
 
-### 2. Efeito CSS no container do modal
-
-**`src/components/landing/RegistrationModal.tsx`** — linha 126
-
-Substituir o className do `motion.div` do modal por estilos que incluem:
-- `border: 1px solid rgba(255,255,255,0.08)`
-- `box-shadow: 0 25px 60px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)`
-- `backdrop-filter: blur(20px)`
-
-Adicionar via style inline no `motion.div` do modal, mantendo as classes existentes.
-
-### 3. Destaque da palavra "Gratuito" no titulo
-
-**`src/components/landing/RegistrationModal.tsx`** — linha 213-214
-
-Substituir:
-```
-Quero confirmar o meu lugar para o Webinar Gratuito — Ao Vivo
-```
-por:
-```
-Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo
-```
-
-### 4. Remover setas " → " de todos os CTAs da landing page
-
-Ficheiros afectados (apenas landing page — /upgrade, /confirmacao e /crm nao sao tocados):
-
-| Ficheiro | Texto actual | Texto novo |
+| Pacote | Versao | Razao |
 |---|---|---|
-| `src/components/landing/HeroSection.tsx` (linha 222) | `Sim, quero garantir a minha vaga grátis →` | `Sim, quero garantir a minha vaga grátis` |
-| `src/components/landing/TransformationSection.tsx` (linha 58) | `Sim, quero garantir a minha vaga grátis →` | `Sim, quero garantir a minha vaga grátis` |
-| `src/pages/Convites.tsx` (linha 286) | `Ainda sem inscrição? Registar gratuitamente →` | `Ainda sem inscrição? Registar gratuitamente` |
+| `three` | `>=0.133` | Necessario para FloatingLines (WebGLRenderer, ShaderMaterial) |
 
-Nota: a `→` nos bullets do ProgramSection (linha 75) e um marcador de lista, nao um CTA — nao sera removida.
+Nota: `@react-three/fiber` NAO e necessario — o FloatingLines usa three.js directamente sem o wrapper React.
 
-### Resumo de ficheiros
+### Ficheiros afectados
 
-| Ficheiro | Alteracoes |
-|---|---|
-| `src/components/landing/RegistrationModal.tsx` | Remover microcopy, adicionar border/shadow/blur ao modal, destacar "Gratuito" |
-| `src/components/landing/HeroSection.tsx` | Remover " →" do CTA |
-| `src/components/landing/TransformationSection.tsx` | Remover " →" do CTA |
-| `src/pages/Convites.tsx` | Remover " →" do CTA |
+| Ficheiro | Tipo | Alteracao |
+|---|---|---|
+| `src/components/landing/FloatingLines.tsx` | Criar | Componente FloatingLines (shader WebGL) portado do reactbits, convertido para TypeScript |
+| `src/components/landing/HeroSection.tsx` | Editar | Remover CardSwap/prismas/spotlight/separador, layout coluna unica, adicionar FloatingLines, ajustar tipografia |
+| `src/index.css` | Editar | Remover CSS dos prismas (.hero-prism-bg, .prism-*, keyframes), adicionar .floating-lines-container |
+
+### Alteracoes detalhadas
+
+#### A) `src/components/landing/FloatingLines.tsx` — Criar
+
+Portar o componente FloatingLines do reactbits para TypeScript:
+- Usa three.js directamente (Scene, OrthographicCamera, WebGLRenderer, ShaderMaterial)
+- Fragment shader com ondas animadas e interaccao com o rato
+- Props: linesGradient, enabledWaves, lineCount, lineDistance, animationSpeed, interactive, bendRadius, bendStrength, mouseDamping, parallax, parallaxStrength, mixBlendMode, middleWavePosition, bottomWavePosition
+- CSS inline: position absolute, inset 0, overflow hidden, pointer-events none (no container), pointer-events auto no canvas para interaccao
+
+#### B) `src/index.css` — Limpar prismas, adicionar floating-lines
+
+Remover (linhas 137-229):
+- `.hero-prism-bg`, `.prism`, `.prism::before`
+- `.prism-1` a `.prism-5`
+- `@keyframes prism-rotate`, `@keyframes prism-glow`
+- `@media (prefers-reduced-motion: reduce)` para prismas
+
+Adicionar:
+```text
+.floating-lines-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floating-lines-container canvas {
+  pointer-events: auto;
+}
+```
+
+#### C) `src/components/landing/HeroSection.tsx` — Reestruturar
+
+1. **Remover imports**: CardSwap, Card, imagens da galeria (imgPorto, imgBolsa, imgSapatos, imgCappucino)
+2. **Adicionar import**: FloatingLines
+3. **Remover do JSX**:
+   - Div `.hero-prism-bg` com 5 prismas
+   - Div radial gradient spotlight
+   - Div separador (linear-gradient to bottom #F8FAFC)
+   - Toda a coluna direita (CardSwap + label "Criadas com IA")
+   - Tag `<style>` inline com media queries do hero-grid e hero-cardswap-col
+4. **Background**: mudar para `linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)`
+5. **Adicionar FloatingLines** como primeiro filho do section:
+   ```text
+   <FloatingLines
+     linesGradient={["#1E3A5F", "#2563EB", "#3B82F6", "#60A5FA", "#2563EB"]}
+     enabledWaves={["middle", "bottom"]}
+     lineCount={[8, 5]}
+     lineDistance={[4, 6]}
+     animationSpeed={0.4}
+     interactive={true}
+     bendRadius={4.0}
+     bendStrength={-0.3}
+     mouseDamping={0.04}
+     parallax={true}
+     parallaxStrength={0.08}
+     mixBlendMode="screen"
+     middleWavePosition={{ x: 4.0, y: 0.0, rotate: 0.15 }}
+     bottomWavePosition={{ x: 1.5, y: -0.8, rotate: -0.8 }}
+   />
+   ```
+6. **Layout**: coluna unica centrada
+   - Container: `max-width: 680px`, `margin: 0 auto`, `text-align: center`
+   - Padding: `60px 24px` mobile, `80px 40px` desktop
+   - `padding-bottom: 60px` no section
+   - Todo o conteudo com `position: relative; z-index: 10`
+7. **H1**: `max-width: 620px`, `margin: 0 auto`, `font-size: clamp(34px, 5vw, 48px)`, `line-height: 1.12`, `letter-spacing: -0.025em`
+8. **Badges de especificacoes**: mudar de `grid grid-cols-2` para `flex flex-wrap justify-center gap-3`, cada badge com `min-width: 130px`
+9. **CTA e Google Reviews**: centrados (ja estavam via text-align center)
+
+### O que NAO e alterado
+
+- Nenhuma outra seccao da landing page
+- Nenhuma outra pagina (/upgrade, /confirmacao, /crm)
+- ChallengesSection mantem `py-16 md:py-24 bg-off-white` sem alteracoes
+- Texto do hero mantido exactamente como esta (headline, subheadline, CTA, microcopy, GradientText)
+- ElectricBorder no CTA mantido
+- Google Reviews badge mantido
+
