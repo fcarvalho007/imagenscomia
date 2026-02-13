@@ -14,8 +14,7 @@ type ConfirmationMode = "referral" | "simple";
 export const RegistrationModal = () => {
   const navigate = useNavigate();
   const { isOpen, close, referredBy } = useRegistrationModal();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -24,6 +23,9 @@ export const RegistrationModal = () => {
   const [step, setStep] = useState<Step>("capture");
   const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [referralData, setReferralData] = useState<{ referralCode: string; referralLink: string } | null>(null);
+
+  const firstName = fullName.trim().split(" ")[0] || "";
+  const lastName = fullName.trim().split(" ").slice(1).join(" ");
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
@@ -34,8 +36,8 @@ export const RegistrationModal = () => {
   };
 
   const handleCapture = async () => {
-    if (!firstName.trim() || !lastName.trim()) {
-      setError("Primeiro nome e último nome são obrigatórios.");
+    if (!fullName.trim()) {
+      setError("O nome é obrigatório.");
       return;
     }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
@@ -93,8 +95,7 @@ export const RegistrationModal = () => {
     setTimeout(() => {
       setStep("capture");
       setConfirmationMode("simple");
-      setFirstName("");
-      setLastName("");
+      setFullName("");
       setWhatsapp("");
       setAcceptedTerms(false);
       setError(null);
@@ -143,10 +144,8 @@ export const RegistrationModal = () => {
 
             {step === "capture" && (
               <CaptureView
-                firstName={firstName}
-                setFirstName={setFirstName}
-                lastName={lastName}
-                setLastName={setLastName}
+                fullName={fullName}
+                setFullName={setFullName}
                 email={email}
                 setEmail={setEmail}
                 whatsapp={whatsapp}
@@ -187,10 +186,8 @@ export const RegistrationModal = () => {
 /* ── Step 1: Capture ── */
 
 const CaptureView = ({
-  firstName,
-  setFirstName,
-  lastName,
-  setLastName,
+  fullName,
+  setFullName,
   email,
   setEmail,
   whatsapp,
@@ -201,10 +198,8 @@ const CaptureView = ({
   error,
   onSubmit,
 }: {
-  firstName: string;
-  setFirstName: (v: string) => void;
-  lastName: string;
-  setLastName: (v: string) => void;
+  fullName: string;
+  setFullName: (v: string) => void;
   email: string;
   setEmail: (v: string) => void;
   whatsapp: string;
@@ -225,27 +220,15 @@ const CaptureView = ({
     <p className="text-[15px] text-ink-500 mb-3">Quarta-feira, 18 de Fevereiro, 10h</p>
 
     <div className="space-y-3 mb-4">
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-          <input
-            type="text"
-            placeholder="Primeiro Nome"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
-          />
-        </div>
-        <div className="relative flex-1">
-          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
-          <input
-            type="text"
-            placeholder="Último Nome"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
-          />
-        </div>
+      <div className="relative">
+        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+        <input
+          type="text"
+          placeholder="Primeiro e Último nome"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+        />
       </div>
       <div className="relative">
         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />

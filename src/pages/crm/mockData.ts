@@ -26,6 +26,8 @@ export type Inscrito = {
   sources_text: string | null;
   duvida_text: string | null;
   upgrade_clicked_at: string | null;
+  primeiro_nome: string;
+  resto_nome: string;
 };
 
 export const MOCK_DATA: Inscrito[] = [];

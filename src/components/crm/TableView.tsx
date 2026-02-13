@@ -114,10 +114,10 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
   const exportCSV = (ids?: Set<string>) => {
     const BOM = "\uFEFF";
-    const header = "Nome;Email;WhatsApp;Plano;Valor;Passo;Dúvida;Inscrição;Notas";
+    const header = "Primeiro Nome;Resto do Nome;Email;WhatsApp;Plano;Valor;Passo;Dúvida;Inscrição;Notas";
     const source = ids ? filtered.filter((i) => ids.has(i.id)) : filtered;
     const rows = source.map((i) =>
-      [i.nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
+      [i.primeiro_nome, i.resto_nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
     );
     const csv = BOM + header + "\n" + rows.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
