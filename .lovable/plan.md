@@ -1,54 +1,114 @@
 
 
-## Melhorar visibilidade do estado de pagamento no CRM
+## Sistema de Re-engagement para Pagamentos Pendentes
 
-### 1. Actualizar dados da Silvana Curado
+### Como funciona a deteccao actual
 
-A Silvana pagou o bundle (confirmado na EuPago, ref WEBINAR-BUNDLE-silvanacurado@gmail.com-1770999580195, valor 76,26). O webhook nao processou porque o formato GET nao era suportado na altura. Agora que o webhook ja suporta GET, futuros pagamentos serao processados automaticamente.
+O sistema ja distingue 3 estados com base nos dados reais:
 
-Actualizar manualmente o registo:
-```sql
-UPDATE registrations SET paid_at = NOW() WHERE email = 'silvanacurado@gmail.com' AND plan_selected = 'bundle';
+```text
+Estado         | Condicao na DB
+---------------|------------------------------------------
+Gratuito       | plan_selected = null ou "free"
+Pendente       | plan_selected != "free" E paid_at = null
+Pago           | paid_at != null
 ```
 
-### 2. Adicionar badge de estado de pagamento no Pipeline
+Dentro de "Pendente", ha dois sub-estados importantes:
+- **Clicou em pagar** (tem `upgrade_clicked_at` e `eupago_ref`) — ex: Sonia
+- **Seleccionou plano mas nao clicou** (sem `upgrade_clicked_at`) — ex: Renato
 
-Ficheiro: `src/components/crm/PipelineView.tsx`
+### O que vamos implementar
 
-No componente `PipelineCard`, adicionar badge visual:
-- **Pago** (verde) — quando `payment_status === "paid"` e plano nao e free
-- **Pendente** (ambar) — quando `payment_status === "pending"`
-- Sem badge — quando e free
+#### 1. Botao "Gerar Lembrete" na ficha do inscrito (InscritoModal)
 
-Isto permite ver de relance, em cada card do kanban, quem pagou e quem so clicou.
+Quando o inscrito tem `payment_status === "pending"`, aparece um botao proeminente na barra de resumo que:
+- Chama a edge function `create-payment` para gerar um **novo link de pagamento** na EuPago
+- Abre uma caixa com o email personalizado pre-formatado, pronto a copiar e enviar
+- O email inclui: nome do inscrito, plano seleccionado, valor, e o link de pagamento
 
-### 3. Adicionar badge na Ficha Individual (InscritoModal)
+#### 2. Edge function `generate-reminder` (nova)
 
-Ficheiro: `src/components/crm/InscritoModal.tsx`
+Nova funcao backend que:
+- Recebe email, plano e nome
+- Chama a API EuPago para gerar um novo pay-by-link
+- Retorna o link de pagamento + texto do email formatado
+- Actualiza o `eupago_ref` na DB com o novo transactionID
 
-Na barra de resumo compacto (linha ~353-377), adicionar:
-- Badge **"Pendente — aguarda pagamento"** (ambar) quando `payment_status === "pending"`
-- Badge **"Pago"** (verde) quando `payment_status === "paid"` e plano nao e free
-- Mostrar a data de `upgrade_clicked_at` se existir, para saber quando o utilizador clicou em pagar
+#### 3. Alerta visual no Dashboard para pendentes com +6h
 
-### 4. Adicionar filtro de estado de pagamento na Tabela
+No DashboardView, adicionar um card/alerta que mostra:
+- Quantos inscritos estao pendentes ha mais de 6 horas
+- Lista rapida com nome e plano
+- Click leva a ficha do inscrito
 
-Ficheiro: `src/components/crm/TableView.tsx`
+#### 4. Indicador de tempo na Pipeline e Tabela
 
-Adicionar um novo filtro dropdown junto aos existentes:
-- "Todos os estados"
-- "Pendente" (mostra so quem clicou mas nao pagou)
-- "Pago" (mostra so pagamentos confirmados)
-- "Gratuito"
-
-Isto facilita identificar rapidamente quem precisa de follow-up.
+Nos cards pendentes, mostrar ha quanto tempo esta pendente:
+- "Ha 2h" (cinza)
+- "Ha 8h" (ambar, significa que ja pode ser contactado)
+- "Ha 24h+" (vermelho)
 
 ### Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/PipelineView.tsx` | Badge Pendente/Pago nos cards do kanban |
-| `src/components/crm/InscritoModal.tsx` | Badge de estado + data de clique na barra de resumo |
-| `src/components/crm/TableView.tsx` | Filtro dropdown por estado de pagamento |
-| Base de dados | UPDATE paid_at para silvanacurado@gmail.com |
+| `supabase/functions/generate-reminder/index.ts` | Nova funcao: gera link EuPago + template email |
+| `src/components/crm/InscritoModal.tsx` | Botao "Gerar Lembrete" + caixa com email pre-formatado |
+| `src/components/crm/DashboardView.tsx` | Card de alerta para pendentes com mais de 6h |
+| `src/components/crm/PipelineView.tsx` | Indicador de tempo desde o clique nos cards pendentes |
+| `src/components/crm/TableView.tsx` | Coluna/indicador de tempo pendente |
+| `supabase/config.toml` | Registo da nova funcao com verify_jwt = false |
+
+### Template do email gerado
+
+```text
+Assunto: Lembrete — o teu [Premium Pass / Bundle] esta a espera
+
+Ola [Primeiro Nome],
+
+Vi que iniciaste o processo de inscricao no [nome do plano] mas o pagamento ainda nao foi concluido.
+
+Deixo-te aqui o link para concluires:
+[LINK DE PAGAMENTO]
+
+Valor: [XX,XX] euros
+Metodos disponiveis: Cartao de Credito, MB WAY, Multibanco
+
+Se tiveres alguma duvida, responde a este email.
+
+Frederico Carvalho
+```
+
+### Fluxo tecnico
+
+```text
+Admin clica "Gerar Lembrete" no modal
+    |
+    v
+Frontend chama generate-reminder (email, plano, nome)
+    |
+    v
+Edge function chama EuPago API (paybylink/create)
+    |
+    v
+Recebe novo link de pagamento
+    |
+    v
+Actualiza eupago_ref na DB (novo transactionID)
+    |
+    v
+Retorna link + email formatado ao frontend
+    |
+    v
+Frontend mostra caixa com email pronto a copiar
+Admin copia e envia manualmente pelo seu email
+```
+
+### Notas
+
+- Nao enviamos o email automaticamente (o admin copia e envia) — dá mais controlo
+- Cada vez que se gera um lembrete, cria-se um novo link na EuPago (o anterior pode ter expirado)
+- O `eupago_ref` e actualizado para o novo transactionID, garantindo que o webhook processa correctamente
+- A EuPago nao cobra pela criacao de links, so cobra comissao quando ha pagamento
 
