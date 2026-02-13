@@ -1,62 +1,67 @@
 
-## Melhorias no CRM: localStorage, duvidas e funil
+## Refino da Secção "Dúvidas dos Inscritos" — Diferenciação Clara
 
-### 1. Migrar genero de localStorage para a base de dados
+### Problema Atual
+A secção "Dúvidas dos Inscritos" mostra todas as respostas de forma uniforme, com apenas um badge "✍️ Personalizada" para diferenciar respostas que contêm "Outro:". Isto dificulta a identificação visual rápida do tipo de resposta e o seu valor estratégico.
 
-**Problema**: O genero alterado manualmente no CRM e gravado em `localStorage`, que e isolado por dominio. Se alterar no site publicado, nao aparece no preview do Lovable (e vice-versa).
+### Análise do Fluxo de Dados
+O campo `duvida` armazena um string com:
+- **Respostas predefinidas**: concatenadas por ", " (ex: "Não sei descrever o estilo visual que quero, Os resultados ficam sempre genéricos...")
+- **Respostas personalizadas**: incluem "Outro: [texto livre]" (ex: "Não sei descrever..., Outro: preciso de feedback visual")
 
-**Solucao**: Adicionar uma coluna `gender_override` (texto, nullable) a tabela `registrations`. Quando o utilizador altera o genero no CRM, grava na BD em vez do localStorage. Assim sincroniza entre todos os dominios.
+A função `StepPersonalization.tsx` cria estas strings ao juntar as opções selecionadas, e adiciona `Outro: [texto]` se o utilizador escrever texto livre.
 
-| Ficheiro | Alteracao |
+### Solução Proposta
+
+**1. Cartão com Fundo Diferenciado**
+- **Respostas Predefinidas** (apenas opções selecionadas): 
+  - Fundo branco limpo
+  - Badge azul com ícone de checkbox (☑️) — indica "seleção predefinida"
+  
+- **Respostas Personalizadas** (incluem "Outro:"):
+  - Fundo amber/laranja sutil (`bg-amber-50`) — destaque visual imediato
+  - Badge amber com ícone de lápis (✍️) — "personalizada"
+  - Texto "Outro:" em **negrito + cor escura** para destacar a parte personalizada
+
+**2. Reorganização Visual**
+- Manter a ordenação: respostas personalizadas no topo
+- Adicionar um mini-ícone no início da linha com o nome:
+  - 🔵 para seleções predefinidas
+  - ✍️ para personalizadas
+  
+**3. Destacar a Parte Personalizada**
+- Na descrição da dúvida, quando houver "Outro:", formatar assim:
+  ```
+  Não sei descrever..., Os resultados ficam... ✍️ Outro: "preciso de feedback visual personalizado"
+  ```
+  - Texto antes de "Outro:" em cinza claro
+  - "Outro:" + texto em **negrito + cor âmbar/escura**
+  - Citação/box ao redor da resposta personalizada para maior destaque
+
+**4. Indicador de Valor Estratégico**
+- Adicionar um pequeno label "Insight Estratégico" (opcional) com ícone 💡 para respostas personalizadas, reforçando que estas são mais valiosas
+
+### Ficheiros Afectados
+
+| Ficheiro | Alteração |
 |---|---|
-| Migration SQL | `ALTER TABLE registrations ADD COLUMN gender_override text;` |
-| `src/hooks/useInscritos.ts` | Remover funcoes `loadGenderOverrides`/`saveGenderOverride` do localStorage. O `setGender` passa a fazer `supabase.update({ gender_override })`. O `mapRegistration` usa `r.gender_override \|\| detectGender(r.name)` |
+| `src/components/crm/DashboardView.tsx` | Refinar a secção "Dúvidas dos Inscritos" (linhas 348-397): (1) Estilizar cartões com cores diferentes, (2) Formatar texto para destacar "Outro:", (3) Adicionar ícones diferenciadores, (4) Melhorar a legibilidade da parte personalizada |
 
-### 2. Distinguir duvidas personalizadas ("Outro") na lista
+### Detalhes Técnicos
 
-**Problema**: Actualmente nao ha forma de saber se a duvida foi texto livre personalizado ou apenas uma seleccao das opcoes pre-definidas.
+- Usar regex para extrair e formatar a parte "Outro: [texto]" separadamente
+- Aplicar `className` condicional baseado em `isCustom`
+- Implementar um componente helper para renderizar a dúvida com formatação especial:
+  ```
+  const renderDuvida = (duvida: string) => {
+    // Se contém "Outro:", split e formata
+    // Parte predefinida: texto normal
+    // "Outro: [texto]": negrito + bgcolor + citação
+  }
+  ```
+- Cores: 
+  - Fundo predefinido: branco
+  - Fundo personalizado: `bg-amber-50` ou `bg-orange-50`
+  - Texto "Outro:": `font-bold text-amber-700` ou similar
+  - Box ao redor do texto personalizado: `border-l-2 border-amber-300 pl-2`
 
-**Solucao**: Na lista "Duvidas dos Inscritos" do Dashboard, as entradas que contem "Outro:" recebem um badge especial (ex: etiqueta "Personalizada" em destaque). Alem disso, as duvidas que contem texto livre aparecem primeiro na lista (ordenadas por prioridade), para facilitar a leitura das respostas mais relevantes.
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/DashboardView.tsx` | Na seccao "Duvidas dos Inscritos": (1) ordenar colocando as que contem "Outro:" no topo, (2) adicionar badge "Personalizada" em cor diferente (ex: amber) quando a duvida inclui "Outro:", (3) para as restantes manter o badge actual |
-
-### 3. Grafico de dificuldades mais comuns (barras horizontais)
-
-**Problema**: Nao ha visibilidade sobre quais as dificuldades mais escolhidas no passo de multi-seleccao.
-
-**Solucao**: Adicionar um novo bloco no Dashboard com um grafico de barras horizontais que conta quantas vezes cada opcao das 5 pre-definidas foi seleccionada. Inclui tambem a contagem de respostas "Outro" como categoria separada.
-
-As 5 opcoes pre-definidas sao:
-- "Nao sei descrever o estilo visual que quero"
-- "Os resultados ficam sempre genericos, sem identidade"
-- "Nao percebo que ferramenta usar (ChatGPT, Google, outros...)"
-- "Quero criar imagens para a minha marca mas nao sei por onde comecar"
-- "Tenho dificuldade em editar ou refinar as imagens geradas"
-
-O grafico fica entre a seccao "Fontes de Origem / Distribuicao por Plano" e a seccao "Duvidas dos Inscritos".
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/DashboardView.tsx` | Novo bloco "Dificuldades Mais Comuns" com barras horizontais. Parse de cada `duvida` (split por ", ") e contagem por opcao. Labels abreviados para caber (ex: "Descrever estilo visual", "Resultados genericos", "Ferramenta certa", "Comecar do zero", "Editar/refinar"). Barra + contagem + percentagem. |
-
-### 4. Funil com indicadores de drop-off entre passos
-
-**Problema**: O funil actual mostra os numeros absolutos mas nao evidencia onde esta a maior perda de pessoas.
-
-**Solucao**: Adicionar entre cada passo do funil uma linha de "drop-off" que mostra quantas pessoas sairam nesse ponto e a percentagem de perda. O maior drop-off recebe destaque visual (cor vermelha/texto bold) para identificacao rapida.
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/DashboardView.tsx` | No bloco "Funil de Inscricao": entre cada barra, inserir uma linha compacta com seta para baixo + texto "−X pessoas (Y% drop)" em cinza. O passo com maior drop-off fica destacado em vermelho. Adicionar um callout no final tipo "Maior saida: entre Passo X e Passo Y" |
-
----
-
-### Resumo de ficheiros afectados
-
-| Ficheiro | Alteracoes |
-|---|---|
-| Migration SQL | Nova coluna `gender_override` |
-| `src/hooks/useInscritos.ts` | Migrar genero de localStorage para BD |
-| `src/components/crm/DashboardView.tsx` | (1) Grafico de dificuldades, (2) Drop-off no funil, (3) Badge "Personalizada" nas duvidas |
