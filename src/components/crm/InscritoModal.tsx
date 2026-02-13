@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
-  X, ChevronLeft, ChevronRight, Check, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info,
 } from "lucide-react";
+import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji, type Gender } from "@/lib/genderDetection";
@@ -35,21 +36,6 @@ const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = 
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
 };
 
-const PLAN_COLORS: Record<string, string> = {
-  free: "hsl(var(--ink-400))",
-  premium: "hsl(var(--blue-600))",
-  masterclass: "#7C3AED",
-  bundle: "hsl(var(--green-600))",
-};
-
-const STEPS = [
-  { name: "Origem", getStatus: (i: Inscrito) => i.step_reached >= 1 ? (i.source.length > 0 ? `${i.source.length} canais indicados` : "Completado") : "Saltou" },
-  { name: "Dúvida", getStatus: (i: Inscrito) => i.step_reached >= 2 ? (i.duvida ? "Respondeu" : "Saltou") : "Não atingiu" },
-  { name: "Premium", getStatus: (i: Inscrito) => i.step_reached >= 3 ? (i.plan === "premium" || i.plan === "bundle" ? "Converteu" : "Não converteu") : "Não atingiu" },
-  { name: "Masterclass", getStatus: (i: Inscrito) => i.step_reached >= 4 ? (i.plan === "masterclass" || i.plan === "bundle" ? "Converteu" : "Não converteu") : "Não atingiu" },
-  { name: "Conclusão", getStatus: (i: Inscrito) => i.step_reached >= 5 ? "Concluído" : "Não concluiu" },
-];
-
 function getInitials(name: string) {
   return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
@@ -68,14 +54,6 @@ function abbreviateSource(s: string) {
   return s;
 }
 
-function stepConverted(i: Inscrito, step: number): boolean {
-  if (step === 1) return i.step_reached >= 1 && i.source.length > 0;
-  if (step === 2) return i.step_reached >= 2 && i.duvida !== "";
-  if (step === 3) return i.step_reached >= 3 && (i.plan === "premium" || i.plan === "bundle");
-  if (step === 4) return i.step_reached >= 4 && (i.plan === "masterclass" || i.plan === "bundle");
-  if (step === 5) return i.step_reached >= 5;
-  return false;
-}
 
 export default function InscritoModal({
   inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender,
@@ -86,31 +64,11 @@ export default function InscritoModal({
 
   const gradIdx = parseInt(inscrito.id, 10) % GRADIENTS.length;
   const planInfo = PLAN_INFO[inscrito.plan];
-  const planColor = PLAN_COLORS[inscrito.plan];
 
   const currentIdx = todos.findIndex((i) => i.id === inscrito.id);
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < todos.length - 1;
 
-  const timeline = useMemo(() => {
-    const events: { type: "inscricao" | "passo" | "pagamento" | "nota"; text: string; date: string }[] = [];
-    events.push({ type: "inscricao", text: "Inscrito no webinar", date: inscrito.timestamp });
-    for (let s = 1; s <= inscrito.step_reached; s++) {
-      events.push({ type: "passo", text: `Completou o passo ${s} (${STEPS[s - 1].name})`, date: inscrito.timestamp });
-    }
-    if (inscrito.upgrade_clicked_at && inscrito.plan_selected) {
-      const planLabel = inscrito.plan_selected.charAt(0).toUpperCase() + inscrito.plan_selected.slice(1);
-      events.push({ type: "passo", text: `Clicou para pagar (${planLabel})`, date: inscrito.upgrade_clicked_at });
-    }
-    if (inscrito.paid_at) {
-      events.push({ type: "pagamento", text: `Pagamento confirmado · €${inscrito.valor} (${planInfo.label})`, date: inscrito.paid_at });
-    }
-    inscrito.notas.forEach((n) => {
-      events.push({ type: "nota", text: `Nota adicionada: ${n.texto}`, date: n.timestamp });
-    });
-    events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return events;
-  }, [inscrito]);
 
   const handleAddNota = () => {
     if (!notaText.trim()) return;
@@ -126,12 +84,6 @@ export default function InscritoModal({
     }
   };
 
-  const eventDotColor = (type: string) => {
-    if (type === "inscricao") return "hsl(var(--blue-600))";
-    if (type === "pagamento") return "hsl(var(--green-600))";
-    if (type === "nota") return "hsl(var(--amber-500))";
-    return "hsl(var(--ink-300))";
-  };
 
   return (
     <>
@@ -295,46 +247,13 @@ export default function InscritoModal({
                     {planInfo.label}
                   </span>
                 </div>
-                <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  Inscrito em {fmtDate(inscrito.timestamp)}
-                </p>
-
-                <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
-
-                {/* Progress */}
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Progresso</p>
-                <div className="space-y-0 text-left">
-                  {STEPS.map((step, idx) => {
-                    const stepNum = idx + 1;
-                    const reached = inscrito.step_reached >= stepNum;
-                    const converted = stepConverted(inscrito, stepNum);
-                    const status = step.getStatus(inscrito);
-                    return (
-                      <div key={idx}>
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold"
-                            style={
-                              reached && converted
-                                ? { background: planColor, color: "white" }
-                                : reached
-                                ? { background: "transparent", border: `2px solid ${planColor}`, color: planColor }
-                                : { background: "rgba(255,255,255,0.06)", color: "hsl(var(--ink-400))" }
-                            }
-                          >
-                            {reached ? <Check size={12} style={{ opacity: converted ? 1 : 0.5 }} /> : stepNum}
-                          </div>
-                          <div>
-                            <p className="text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.70)" }}>{step.name}</p>
-                            <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>{status}</p>
-                          </div>
-                        </div>
-                        {idx < STEPS.length - 1 && (
-                          <div className="ml-3 h-2" style={{ borderLeft: "2px solid rgba(255,255,255,0.08)" }} />
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Inscrito em {fmtDate(inscrito.timestamp)}
+                  </p>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.50)" }}>
+                    Passo {inscrito.step_reached}/5
+                  </span>
                 </div>
 
                 <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
@@ -437,27 +356,11 @@ export default function InscritoModal({
                   <span className="text-ink-300">—</span>
                 )}
               </div>
-              <div className="bg-off-white border border-border rounded-xl p-4">
-                <p className="text-[11px] text-ink-400 mb-1">Progresso no flow</p>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-surface overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${(inscrito.step_reached / 5) * 100}%`, background: "hsl(var(--blue-600))" }} />
-                  </div>
-                  <span className="font-heading font-bold text-[14px] text-ink-900">{inscrito.step_reached} de 5</span>
-                </div>
-              </div>
-              {inscrito.plan_selected && (
-                <div className="bg-off-white border border-border rounded-xl p-4">
-                  <p className="text-[11px] text-ink-400 mb-1">Plano seleccionado (upgrade)</p>
-                  <span className="text-[13px] font-semibold text-ink-800 capitalize">{inscrito.plan_selected}</span>
-                </div>
-              )}
-              {inscrito.upgrade_clicked_at && (
-                <div className="bg-off-white border border-border rounded-xl p-4">
-                  <p className="text-[11px] text-ink-400 mb-1">Clicou em pagar</p>
-                  <p className="font-semibold text-[14px] text-ink-800">{fmtDate(inscrito.upgrade_clicked_at)}</p>
-                </div>
-              )}
+            </div>
+
+            {/* Funnel */}
+            <div className="mt-4">
+              <FunnelView inscrito={inscrito} />
             </div>
 
             {/* Origem */}
@@ -492,24 +395,6 @@ export default function InscritoModal({
               </>
             )}
 
-            {/* Timeline */}
-            <hr className="border-border my-6" />
-            <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-4">Actividade</h3>
-            <div className="relative pl-6">
-              <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-border" />
-              {timeline.map((ev, idx) => (
-                <div key={idx} className="flex gap-3.5 mb-3.5 relative">
-                  <div
-                    className="w-4 h-4 rounded-full shrink-0 absolute -left-6 mt-0.5 border-2 border-white"
-                    style={{ background: eventDotColor(ev.type), boxShadow: "0 1px 3px rgba(0,0,0,0.1)", zIndex: 1 }}
-                  />
-                  <div>
-                    <p className="text-[13px] font-medium text-ink-800">{ev.text}</p>
-                    <p className="text-[12px] text-ink-400">{fmtDate(ev.date)}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
 
             {/* Notas */}
             <hr className="border-border my-6" />
