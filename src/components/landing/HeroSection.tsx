@@ -1,7 +1,6 @@
 import { Calendar, Clock, Timer, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-import heroBg from "@/assets/hero-bg.jpeg";
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 30 },
@@ -13,34 +12,50 @@ export const HeroSection = () => {
   const { open } = useRegistrationModal();
 
   return (
-    <section className="relative overflow-hidden py-16 md:py-24 bg-background">
-      {/* Background image */}
-      <img
-        src={heroBg}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover object-center opacity-[0.50] pointer-events-none"
-      />
-      {/* Overlay for legibility */}
+    <section
+      className="relative overflow-hidden py-16 md:py-24"
+      style={{ background: "linear-gradient(135deg, #080c14 0%, #0d1525 60%, #0a1020 100%)" }}
+    >
+      {/* Prism background */}
+      <div className="hero-prism-bg">
+        <div className="prism prism-1" />
+        <div className="prism prism-2" />
+        <div className="prism prism-3" />
+        <div className="prism prism-4" />
+        <div className="prism prism-5" />
+      </div>
+
+      {/* Central light */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute pointer-events-none z-0"
         style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(255,255,255,0.92) 25%, rgba(255,255,255,0.65) 55%, rgba(255,255,255,0.20) 100%)",
+          top: "40%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 600, height: 300,
+          background: "radial-gradient(ellipse, rgba(37,99,235,0.08) 0%, rgba(37,99,235,0.03) 40%, transparent 70%)",
         }}
       />
-      {/* Top/bottom fade for smooth edges */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-transparent to-white/70 pointer-events-none" />
+
+      {/* Bottom separator */}
+      <div
+        className="absolute bottom-0 left-0 w-full pointer-events-none z-[1]"
+        style={{
+          height: 80,
+          background: "linear-gradient(to bottom, transparent 0%, #F8FAFC 100%)",
+        }}
+      />
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 max-w-[960px] text-center">
-        {/* Neon badge */}
+        {/* Badge */}
         <motion.div {...fade(0.05)}>
           <div className="flex justify-center mb-5">
             <span
-              className="inline-block bg-white/90 backdrop-blur-sm font-heading font-bold text-[13px] uppercase tracking-[0.12em] text-blue-600 px-5 py-2 rounded-full border border-blue-100"
+              className="inline-block backdrop-blur-sm font-heading font-bold text-[13px] uppercase tracking-[0.12em] px-5 py-2 rounded-full"
               style={{
-                boxShadow:
-                  "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
+                background: "rgba(37,99,235,0.15)",
+                border: "1px solid rgba(37,99,235,0.30)",
+                color: "#93C5FD",
+                boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
               WEBINAR GRATUITO
@@ -51,8 +66,8 @@ export const HeroSection = () => {
         <motion.div {...fade(0.1)}>
           <h1 className="mb-3">
             <span
-              className="block font-heading font-extrabold text-[28px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900"
-              style={{ textShadow: "0 1px 8px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,0.7)" }}
+              className="block font-heading font-extrabold text-[28px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em]"
+              style={{ color: "#F8FAFC", textShadow: "0 2px 40px rgba(0,0,0,0.5)" }}
             >
               Aprende a Criar Imagens Profissionais com IA
             </span>
@@ -61,8 +76,8 @@ export const HeroSection = () => {
 
         <motion.div {...fade(0.15)}>
           <p
-            className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-6"
-            style={{ textShadow: "0 1px 6px rgba(255,255,255,0.8)" }}
+            className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] mb-6"
+            style={{ color: "#60A5FA" }}
           >
             Em 60 minutos ao vivo: do briefing à imagem pronta a publicar.
           </p>
@@ -78,11 +93,18 @@ export const HeroSection = () => {
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
-                <div key={idx} className="bg-gradient-to-b from-white to-surface border border-border rounded-xl px-4 py-5 flex flex-col items-center gap-1.5 shadow-card">
-                  <Icon className="w-6 h-6 text-blue-600 shrink-0" />
+                <div
+                  key={idx}
+                  className="rounded-xl px-4 py-5 flex flex-col items-center gap-1.5"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                  }}
+                >
+                  <Icon className="w-6 h-6 shrink-0" style={{ color: "#60A5FA" }} />
                   <div className="text-center">
-                    <span className="block text-[13px] font-bold text-ink-700 uppercase tracking-wide">{item.label}</span>
-                    <span className="block text-[15px] font-semibold text-ink-500 mt-0.5">{item.value}</span>
+                    <span className="block text-[13px] font-bold uppercase tracking-wide" style={{ color: "#94A3B8" }}>{item.label}</span>
+                    <span className="block text-[15px] font-semibold mt-0.5" style={{ color: "#CBD5E1" }}>{item.value}</span>
                   </div>
                 </div>
               );
@@ -101,27 +123,33 @@ export const HeroSection = () => {
               Sim, quero garantir a minha vaga grátis →
             </motion.button>
           </div>
-          <p className="text-[14px] text-ink-400 mt-3">
+          <p className="text-[14px] mt-3" style={{ color: "rgba(255,255,255,0.40)" }}>
             Sem spam. Acesso imediato por email. Dados protegidos (RGPD).
           </p>
         </motion.div>
 
         <motion.div {...fade(0.35)}>
           <div className="flex justify-center mt-4">
-            <div className="inline-flex items-center gap-[10px] bg-white border border-border rounded-xl px-[18px] py-[10px] shadow-[0_1px_4px_rgba(0,0,0,0.08)]">
+            <div
+              className="inline-flex items-center gap-[10px] rounded-[10px] px-[14px] py-[8px]"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.10)",
+              }}
+            >
               <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              <div className="w-px h-[18px] bg-border mx-[2px]" />
+              <div className="w-px h-[18px] mx-[2px]" style={{ background: "rgba(255,255,255,0.10)" }} />
               <div className="flex flex-col gap-px">
                 <div className="flex items-center gap-1">
-                  <span className="font-heading font-bold text-[14px] text-ink-900">5,0</span>
+                  <span className="font-heading font-bold text-[14px]" style={{ color: "#F8FAFC" }}>5,0</span>
                   <span className="text-[13px] leading-none" style={{ color: '#FBBC05' }}>★★★★★</span>
                 </div>
-                <span className="text-[14px] text-ink-400">1 194 avaliações no Google</span>
+                <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.50)" }}>1 194 avaliações no Google</span>
               </div>
             </div>
           </div>
