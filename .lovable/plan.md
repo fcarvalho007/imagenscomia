@@ -1,67 +1,36 @@
 
-## Refino da Secção "Dúvidas dos Inscritos" — Diferenciação Clara
 
-### Problema Atual
-A secção "Dúvidas dos Inscritos" mostra todas as respostas de forma uniforme, com apenas um badge "✍️ Personalizada" para diferenciar respostas que contêm "Outro:". Isto dificulta a identificação visual rápida do tipo de resposta e o seu valor estratégico.
+## Correcoes na secção Dificuldades e Duvidas
 
-### Análise do Fluxo de Dados
-O campo `duvida` armazena um string com:
-- **Respostas predefinidas**: concatenadas por ", " (ex: "Não sei descrever o estilo visual que quero, Os resultados ficam sempre genéricos...")
-- **Respostas personalizadas**: incluem "Outro: [texto livre]" (ex: "Não sei descrever..., Outro: preciso de feedback visual")
+### Bug 1: "Outro (texto livre)" inflacionado a 21
 
-A função `StepPersonalization.tsx` cria estas strings ao juntar as opções selecionadas, e adiciona `Outro: [texto]` se o utilizador escrever texto livre.
+**Causa raiz**: O campo `duvida` e dividido com `.split(", ")`, mas a opcao predefinida `"Nao percebo que ferramenta usar (ChatGPT, Google, outros...)"` contem virgulas internas. Ao dividir, gera fragmentos como `"ChatGPT"`, `"Google"`, `"outros...)"` que nao correspondem a nenhuma opcao predefinida e sao todos contados como "Outro".
 
-### Solução Proposta
+**Solucao**: Em vez de split por virgula, usar uma logica de matching que procura as 5 opcoes predefinidas no texto e remove-as progressivamente. O que sobrar (se comecar com "Outro:") e o texto personalizado real.
 
-**1. Cartão com Fundo Diferenciado**
-- **Respostas Predefinidas** (apenas opções selecionadas): 
-  - Fundo branco limpo
-  - Badge azul com ícone de checkbox (☑️) — indica "seleção predefinida"
-  
-- **Respostas Personalizadas** (incluem "Outro:"):
-  - Fundo amber/laranja sutil (`bg-amber-50`) — destaque visual imediato
-  - Badge amber com ícone de lápis (✍️) — "personalizada"
-  - Texto "Outro:" em **negrito + cor escura** para destacar a parte personalizada
+Algoritmo:
+1. Para cada `duvida`, comecar com o texto completo
+2. Para cada opcao predefinida, verificar se esta presente no texto (com `includes`)
+3. Se sim, incrementar o contador e remover do texto
+4. O que sobrar apos remover todas as predefinidas, se conter "Outro:", conta como personalizado
 
-**2. Reorganização Visual**
-- Manter a ordenação: respostas personalizadas no topo
-- Adicionar um mini-ícone no início da linha com o nome:
-  - 🔵 para seleções predefinidas
-  - ✍️ para personalizadas
-  
-**3. Destacar a Parte Personalizada**
-- Na descrição da dúvida, quando houver "Outro:", formatar assim:
-  ```
-  Não sei descrever..., Os resultados ficam... ✍️ Outro: "preciso de feedback visual personalizado"
-  ```
-  - Texto antes de "Outro:" em cinza claro
-  - "Outro:" + texto em **negrito + cor âmbar/escura**
-  - Citação/box ao redor da resposta personalizada para maior destaque
+### Bug 2: 0 personalizadas vs 21 "Outro"
 
-**4. Indicador de Valor Estratégico**
-- Adicionar um pequeno label "Insight Estratégico" (opcional) com ícone 💡 para respostas personalizadas, reforçando que estas são mais valiosas
+Consequencia directa do Bug 1. Nenhum registo real contem "Outro:" no texto — a contagem "Outro" vinha dos fragmentos partido por virgula. A correcao do Bug 1 resolve automaticamente ambos os problemas.
 
-### Ficheiros Afectados
+### Melhoria 1: Remover icone checkbox
 
-| Ficheiro | Alteração |
+Remover o `span` com `☑️` que aparece antes de cada entrada na lista de "Duvidas dos Inscritos". So manter o `✍️` para personalizadas (via o fundo amber e badge ja existentes).
+
+### Melhoria 2: Duvidas em paragrafos separados
+
+Quando um utilizador seleccionou mais do que uma duvida, em vez de mostrar tudo numa linha so separada por virgulas, mostrar cada opcao como um paragrafo/bullet separado para melhor legibilidade.
+
+---
+
+### Ficheiro afectado
+
+| Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/DashboardView.tsx` | Refinar a secção "Dúvidas dos Inscritos" (linhas 348-397): (1) Estilizar cartões com cores diferentes, (2) Formatar texto para destacar "Outro:", (3) Adicionar ícones diferenciadores, (4) Melhorar a legibilidade da parte personalizada |
-
-### Detalhes Técnicos
-
-- Usar regex para extrair e formatar a parte "Outro: [texto]" separadamente
-- Aplicar `className` condicional baseado em `isCustom`
-- Implementar um componente helper para renderizar a dúvida com formatação especial:
-  ```
-  const renderDuvida = (duvida: string) => {
-    // Se contém "Outro:", split e formata
-    // Parte predefinida: texto normal
-    // "Outro: [texto]": negrito + bgcolor + citação
-  }
-  ```
-- Cores: 
-  - Fundo predefinido: branco
-  - Fundo personalizado: `bg-amber-50` ou `bg-orange-50`
-  - Texto "Outro:": `font-bold text-amber-700` ou similar
-  - Box ao redor do texto personalizado: `border-l-2 border-amber-300 pl-2`
+| `src/components/crm/DashboardView.tsx` | (1) Corrigir parsing de dificuldades — usar `includes` por opcao em vez de split por virgula. (2) Remover icone checkbox da lista de duvidas. (3) Renderizar cada duvida seleccionada como paragrafo separado. |
 
