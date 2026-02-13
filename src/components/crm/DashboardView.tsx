@@ -4,6 +4,30 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
 
+const PREDEFINED_DUVIDAS = [
+  "Não sei descrever o estilo visual que quero",
+  "Os resultados ficam sempre genéricos, sem identidade",
+  "Não percebo que ferramenta usar (ChatGPT, Google, outros...)",
+  "Quero criar imagens para a minha marca mas não sei por onde começar",
+  "Tenho dificuldade em editar ou refinar as imagens geradas",
+];
+
+function parseDuvidaParts(duvida: string): string[] {
+  const parts: string[] = [];
+  let remaining = duvida;
+  PREDEFINED_DUVIDAS.forEach((pd) => {
+    if (remaining.includes(pd)) {
+      parts.push(pd);
+      remaining = remaining.replace(pd, "");
+    }
+  });
+  remaining = remaining.replace(/^[,\s]+|[,\s]+$/g, "").replace(/,\s*,/g, ",").trim();
+  if (remaining && remaining !== "SKIPPED") {
+    parts.push(remaining);
+  }
+  return parts.length > 0 ? parts : [duvida];
+}
+
 interface DashboardViewProps {
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
@@ -85,15 +109,18 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     PREDEFINED_DIFFICULTIES.forEach((d) => { diffCounts[d] = 0; });
     let outroCount = 0;
     comDuvida.forEach((i) => {
-      const parts = i.duvida.split(", ");
-      parts.forEach((p) => {
-        const trimmed = p.trim();
-        if (PREDEFINED_DIFFICULTIES.includes(trimmed)) {
-          diffCounts[trimmed]++;
-        } else if (trimmed.startsWith("Outro:") || !PREDEFINED_DIFFICULTIES.some((pd) => trimmed === pd)) {
-          if (trimmed && trimmed !== "SKIPPED") outroCount++;
+      let remaining = i.duvida;
+      PREDEFINED_DIFFICULTIES.forEach((pd) => {
+        if (remaining.includes(pd)) {
+          diffCounts[pd]++;
+          remaining = remaining.replace(pd, "");
         }
       });
+      // Clean up leftover separators
+      remaining = remaining.replace(/^[,\s]+|[,\s]+$/g, "").replace(/,\s*,/g, ",").trim();
+      if (remaining.includes("Outro:")) {
+        outroCount++;
+      }
     });
     const diffLabels: Record<string, string> = {
       "Não sei descrever o estilo visual que quero": "Descrever estilo visual",
@@ -384,10 +411,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                   onClick={() => onSelectInscrito(i)}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
-                    {isCustom ? (
+                    {isCustom && (
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">✍️</span>
-                    ) : (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">☑️</span>
                     )}
                     <span className="text-[14px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                     <span
@@ -423,7 +448,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                       })()}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-ink-600 mt-1.5 leading-relaxed">{i.duvida}</p>
+                    <div className="mt-1.5 space-y-1">
+                      {parseDuvidaParts(i.duvida).map((part, idx) => (
+                        <p key={idx} className="text-[13px] text-ink-600 leading-relaxed">• {part}</p>
+                      ))}
+                    </div>
                   )}
                   <p className="text-[11px] text-ink-400 mt-1.5">{formatDate(i.timestamp)}</p>
                 </div>
