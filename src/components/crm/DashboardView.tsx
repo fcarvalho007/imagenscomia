@@ -352,11 +352,16 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <h3 className="font-heading font-bold text-sm text-ink-900">Dúvidas dos Inscritos</h3>
             <p className="text-xs text-ink-400">Respostas ao Passo 2 do flow de inscrição</p>
           </div>
-          <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-medium">
-            {stats.comDuvida.length} inscritos responderam
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+              ✍️ {stats.comDuvida.filter(i => i.duvida.includes("Outro:")).length} personalizadas
+            </span>
+            <span className="text-xs bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full font-medium">
+              {stats.comDuvida.length} respostas
+            </span>
+          </div>
         </div>
-        <div className="max-h-[280px] overflow-y-auto space-y-0">
+        <div className="max-h-[340px] overflow-y-auto space-y-2">
           {[...stats.comDuvida]
             .sort((a, b) => {
               const aCustom = a.duvida.includes("Outro:");
@@ -371,10 +376,19 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               return (
                 <div
                   key={i.id}
-                  className={`py-3 border-b border-border last:border-0 cursor-pointer hover:bg-off-white px-2 -mx-2 rounded ${isCustom ? "bg-amber-50/40" : ""}`}
+                  className={`py-3 px-3 rounded-lg cursor-pointer transition-colors ${
+                    isCustom
+                      ? "bg-amber-50 border border-amber-200 hover:bg-amber-100/60"
+                      : "bg-muted/30 border border-border hover:bg-muted/50"
+                  }`}
                   onClick={() => onSelectInscrito(i)}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
+                    {isCustom ? (
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">✍️</span>
+                    ) : (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">☑️</span>
+                    )}
                     <span className="text-[14px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                     <span
                       className="text-[11px] font-medium px-2 py-0.5 rounded-full"
@@ -383,13 +397,35 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                       {badge.label}
                     </span>
                     {isCustom && (
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                        ✍️ Personalizada
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex items-center gap-1">
+                        💡 Insight Estratégico
                       </span>
                     )}
                   </div>
-                  <p className="text-[13px] text-ink-700 mt-1 leading-relaxed">{i.duvida}</p>
-                  <p className="text-[11px] text-ink-400 mt-1">{formatDate(i.timestamp)}</p>
+                  {isCustom ? (
+                    <div className="mt-2">
+                      {(() => {
+                        const outroIdx = i.duvida.indexOf("Outro:");
+                        const predefinidas = i.duvida.substring(0, outroIdx).replace(/,\s*$/, "").trim();
+                        const customText = i.duvida.substring(outroIdx + 6).trim();
+                        return (
+                          <>
+                            {predefinidas && (
+                              <p className="text-[12px] text-ink-400 leading-relaxed">{predefinidas}</p>
+                            )}
+                            <div className="mt-1.5 border-l-[3px] border-amber-400 pl-2.5 py-1 bg-amber-100/50 rounded-r">
+                              <p className="text-[13px] font-semibold text-amber-900 leading-relaxed">
+                                „{customText}"
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <p className="text-[13px] text-ink-600 mt-1.5 leading-relaxed">{i.duvida}</p>
+                  )}
+                  <p className="text-[11px] text-ink-400 mt-1.5">{formatDate(i.timestamp)}</p>
                 </div>
               );
             })}
