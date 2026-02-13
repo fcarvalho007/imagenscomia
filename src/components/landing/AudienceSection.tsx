@@ -10,7 +10,7 @@ const forWhom = [
 ];
 
 const notFor = [
-  { main: "Designer profissional à procura de IA técnica avançada", sub: "este webinar é para quem não tem formação em design" },
+  { main: "Designer profissional à procura de IA técnica avançada", sub: "este webinar é prático — não cobre fundamentos avançados de IA" },
   { main: "Quem procura ferramenta mágica sem método", sub: "há método. Ensino-te o método." },
 ];
 
