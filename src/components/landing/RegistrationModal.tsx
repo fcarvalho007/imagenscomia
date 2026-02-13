@@ -42,6 +42,10 @@ export const RegistrationModal = () => {
       setError("Indique um email válido.");
       return;
     }
+    if (!whatsapp.trim()) {
+      setError("Indique o seu WhatsApp ou telemóvel para melhorar a experiência.");
+      return;
+    }
     if (!acceptedTerms) {
       setError("É necessário aceitar os termos para continuar.");
       return;
