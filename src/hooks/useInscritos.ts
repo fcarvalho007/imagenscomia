@@ -3,17 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Inscrito, Nota } from "@/pages/crm/mockData";
 import { detectGender } from "@/lib/genderDetection";
 
-function loadGenderOverrides(): Record<string, "M" | "F" | "U"> {
-  try {
-    return JSON.parse(localStorage.getItem("crm_gender_overrides") || "{}");
-  } catch { return {}; }
-}
-
-function saveGenderOverride(id: string, gender: "M" | "F" | "U") {
-  const overrides = loadGenderOverrides();
-  overrides[id] = gender;
-  localStorage.setItem("crm_gender_overrides", JSON.stringify(overrides));
-}
 
 const PLAN_VALUES: Record<string, number> = {
   premium: 15,
@@ -25,8 +14,7 @@ function mapRegistration(r: any): Inscrito {
   const plan = r.paid_at
     ? (r.plan_selected || "free")
     : "free";
-  const overrides = loadGenderOverrides();
-  const gender = overrides[r.id] || detectGender(r.name || "");
+  const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
     id: r.id,
     nome: r.name,
@@ -132,8 +120,15 @@ export function useInscritos() {
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));
   }, []);
 
-  const setGender = useCallback((inscritoId: string, gender: "M" | "F" | "U") => {
-    saveGenderOverride(inscritoId, gender);
+  const setGender = useCallback(async (inscritoId: string, gender: "M" | "F" | "U") => {
+    const { error } = await supabase
+      .from("registrations")
+      .update({ gender_override: gender } as any)
+      .eq("id", inscritoId);
+    if (error) {
+      console.error("Error updating gender:", error);
+      return;
+    }
     setInscritos((prev) =>
       prev.map((i) => (i.id === inscritoId ? { ...i, gender } : i))
     );
