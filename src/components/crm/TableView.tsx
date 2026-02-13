@@ -37,6 +37,7 @@ type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached"
 export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
   const [stepFilter, setStepFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("timestamp");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -53,6 +54,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       list = list.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
     }
     if (planFilter !== "all") list = list.filter((i) => i.plan === planFilter);
+    if (paymentFilter !== "all") list = list.filter((i) => i.payment_status === paymentFilter);
     if (stepFilter !== "all") list = list.filter((i) => i.step_reached === Number(stepFilter));
 
     list = [...list].sort((a, b) => {
@@ -67,7 +69,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [active, search, planFilter, stepFilter, sortKey, sortDir]);
+  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -168,6 +170,16 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <option value="premium">Premium</option>
           <option value="masterclass">Masterclass</option>
           <option value="bundle">Bundle</option>
+        </select>
+        <select
+          value={paymentFilter}
+          onChange={(e) => { setPaymentFilter(e.target.value); setPage(0); }}
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+        >
+          <option value="all">Todos os estados</option>
+          <option value="pending">Pendente</option>
+          <option value="paid">Pago</option>
+          <option value="free">Gratuito</option>
         </select>
         <select
           value={stepFilter}
