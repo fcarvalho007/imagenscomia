@@ -79,7 +79,7 @@ export const WebinarSidebar = () => {
         accent
         benefits={[
           { icon: <Video className="w-4 h-4" />, text: "Gravação HD (acesso contínuo)" },
-          { icon: <Headphones className="w-4 h-4" />, text: "Q&A exclusivo (60 min)" },
+          { icon: <Headphones className="w-4 h-4" />, text: "Sessão extra com Q&A exclusivo em grupo (30 min)" },
           { icon: <FileText className="w-4 h-4" />, text: "Guia completo de prompts (30+ páginas)" },
         ]}
         ctaLabel="Garantir Premium Pass"
