@@ -1,61 +1,58 @@
 
 
-## Correcao: Pagamentos bundle nao aparecem no CRM
+## Adaptar Webhook para Aceitar GET (classico) e POST (2.0)
 
-### Diagnostico
+### Problema
 
-**Base de dados actual:**
-- **Silvana Curado**: `plan_selected=bundle`, `eupago_ref=769ef42a...`, `paid_at=NULL`
-- **Renato Gaspar**: `plan_selected=bundle`, `eupago_ref=NULL`, `paid_at=NULL`
-
-**Problema 1 — Webhook nao chegou**: Nao ha logs no webhook `eupago-webhook`, o que significa que a EuPago ainda nao enviou a confirmacao ou o URL de callback nao esta correcto. Sem webhook, `paid_at` nunca e preenchido.
-
-**Problema 2 — CRM esconde a intencao de compra**: O `mapRegistration` so mostra o plano como "bundle" se `paid_at` existir. Sem ele, aparece como "free" — invisivel no CRM como comprador.
+A EuPago esta a enviar notificacoes via GET com query parameters (`valor`, `canal`, `referencia`, `transacao`, `identificador`), mas o webhook so aceita POST com JSON body. O `req.json()` falha em requests GET, causando erro 500 silencioso.
 
 ### Solucao
 
-#### 1. Corrigir dados imediatamente (query manual)
+Adaptar o webhook para detectar o metodo HTTP e extrair dados do formato correcto:
 
-Se o pagamento foi realmente confirmado na EuPago, actualizar o registo directamente:
+- **GET** (classico): ler de `URL.searchParams` — params: `valor`, `canal`, `referencia`, `transacao`, `identificador`
+- **POST** (Webhooks 2.0): ler de `req.json()` como actualmente
 
-```sql
-UPDATE registrations 
-SET paid_at = NOW() 
-WHERE email = '[email do comprador]' AND plan_selected = 'bundle';
-```
+### Mapeamento de campos
 
-Isto deve ser executado manualmente no backend (Run SQL) para o email correcto.
+| GET param | Equivalente no codigo actual |
+|---|---|
+| `transacao` | `transactionID` |
+| `referencia` | `reference` |
+| `valor` | `amount` |
+| `canal` | `paymentMethod` |
+| `identificador` | `identifier` |
 
-#### 2. Melhorar visibilidade no CRM (`useInscritos.ts`)
+No formato GET classico nao ha campo `transactionStatus`. Um GET callback da EuPago significa **pagamento confirmado** (so dispara em sucesso).
 
-Alterar a logica de `mapRegistration` para mostrar o plano seleccionado mesmo sem pagamento confirmado, com indicacao visual de estado:
+### Logica de matching
 
-- Se `paid_at` existe: plano confirmado (como agora)
-- Se `plan_selected` existe mas `paid_at` e null: mostrar o plano com estado "pendente"
-- Se nenhum: "free"
+1. Extrair `transacao` (transactionID) do GET
+2. Procurar na DB por `eupago_ref = transacao` (guardado pelo create-payment)
+3. Se encontrar, actualizar `paid_at`
+4. Fallback: extrair email do `identificador` (formato `WEBINAR-BUNDLE-email@example.com-timestamp`)
+
+### Ficheiro afectado
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/useInscritos.ts` | `mapRegistration`: usar `plan_selected` como plano mesmo sem `paid_at`, e adicionar campo `payment_status` ("paid", "pending", "free") |
-| `src/pages/crm/mockData.ts` | Adicionar campo `payment_status` ao tipo `Inscrito` |
-| `src/components/crm/DashboardView.tsx` | Mostrar badge "Pendente" (amarelo) vs "Pago" (verde) junto ao plano |
-| `src/components/crm/TableView.tsx` | Coluna de plano com indicador de estado pendente/pago |
+| `supabase/functions/eupago-webhook/index.ts` | Detectar GET vs POST, extrair params de query string para GET, manter JSON para POST. Tratar GET como pagamento confirmado. |
 
-#### 3. Verificar callback URL do webhook
+### Detalhes tecnicos
 
-Confirmar que o URL de callback configurado na funcao `create-payment` esta correcto e acessivel pela EuPago. O URL actual e:
+```text
+Request chega
+    |
+    +-- GET? --> extrair searchParams (valor, canal, referencia, transacao, identificador)
+    |            tratar como pagamento confirmado
+    |
+    +-- POST? --> req.json() (formato actual, Webhooks 2.0)
+    |             verificar transactionStatus === "Success"
+    |
+    +-- OPTIONS? --> CORS (sem alteracao)
 ```
-${SUPABASE_URL}/functions/v1/eupago-webhook
-```
 
-Verificar no `supabase/config.toml` se `verify_jwt = false` esta configurado para `eupago-webhook`, caso contrario a EuPago recebe 401 e o webhook falha silenciosamente.
+- Nao e necessario mudar nada no painel EuPago
+- O sistema classico ja configurado comeca a funcionar imediatamente apos deploy
+- Se no futuro configurares Webhooks 2.0, tambem funciona sem alteracoes adicionais
 
-### Ficheiros afectados
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/hooks/useInscritos.ts` | Logica de plano: mostrar `plan_selected` com estado pendente |
-| `src/pages/crm/mockData.ts` | Tipo `Inscrito`: novo campo `payment_status` |
-| `src/components/crm/DashboardView.tsx` | Badge pendente/pago no dashboard |
-| `src/components/crm/TableView.tsx` | Indicador de estado na tabela |
-| `supabase/config.toml` | Verificar `verify_jwt = false` para eupago-webhook |
