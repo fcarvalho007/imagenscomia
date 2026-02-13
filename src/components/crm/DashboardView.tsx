@@ -145,7 +145,14 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     }));
     const maxDropIdx = dropOffs.reduce((mi, d, i) => (d.lost > dropOffs[mi].lost ? i : mi), 0);
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx };
+    // Pending > 6h
+    const pendingOver6h = active.filter((i) => {
+      if (i.payment_status !== "pending") return false;
+      const ref = i.upgrade_clicked_at || i.timestamp;
+      return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
+    });
+
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h };
   }, [inscritos]);
 
   const now = new Date();
@@ -251,6 +258,47 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           </div>
         ))}
       </div>
+
+      {/* Pending Alert */}
+      {stats.pendingOver6h.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle size={18} className="text-amber-600" />
+            <h3 className="font-heading font-bold text-[14px] text-amber-900">
+              {stats.pendingOver6h.length} pagamento{stats.pendingOver6h.length !== 1 ? "s" : ""} pendente{stats.pendingOver6h.length !== 1 ? "s" : ""} há +6h
+            </h3>
+          </div>
+          <p className="text-[12px] text-amber-700 mb-3">Estes inscritos selecionaram um plano pago mas ainda não concluíram o pagamento. Considere enviar um lembrete.</p>
+          <div className="space-y-1.5">
+            {stats.pendingOver6h.slice(0, 5).map((i) => {
+              const badge = PLAN_BADGE[i.plan];
+              const ref = i.upgrade_clicked_at || i.timestamp;
+              const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
+              const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
+              return (
+                <div
+                  key={i.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-50/50 transition-colors"
+                  onClick={() => onSelectInscrito(i)}
+                >
+                  <span className="text-[13px] font-semibold text-ink-800 flex-1">{genderEmoji(i.gender)} {i.nome}</span>
+                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
+                    {badge.label}
+                  </span>
+                  <span className="text-[11px] font-semibold" style={{ color: hours >= 24 ? "#DC2626" : "#D97706" }}>
+                    Há {timeText}
+                  </span>
+                </div>
+              );
+            })}
+            {stats.pendingOver6h.length > 5 && (
+              <p className="text-[12px] text-amber-600 font-medium text-center pt-1">
+                +{stats.pendingOver6h.length - 5} mais
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Two columns */}
       <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4 mb-5">
