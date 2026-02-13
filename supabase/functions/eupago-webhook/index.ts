@@ -7,78 +7,125 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+interface PaymentData {
+  transactionStatus: string;
+  reference: string;
+  amount: string;
+  identifier: string;
+  paymentMethod: string;
+  transactionID: string;
+}
+
+function extractFromGET(req: Request): PaymentData {
+  const url = new URL(req.url);
+  const p = url.searchParams;
+  return {
+    transactionStatus: "Success", // GET callback = payment confirmed
+    reference: p.get("referencia") || "",
+    amount: p.get("valor") || "",
+    identifier: p.get("identificador") || "",
+    paymentMethod: p.get("canal") || "",
+    transactionID: p.get("transacao") || "",
+  };
+}
+
+async function extractFromPOST(req: Request): Promise<PaymentData> {
+  const body = await req.json();
+  return {
+    transactionStatus: body.transactionStatus || "",
+    reference: body.reference || "",
+    amount: body.amount || "",
+    identifier: body.identifier || "",
+    paymentMethod: body.paymentMethod || "",
+    transactionID: body.transactionID || body.transaction_id || "",
+  };
+}
+
+async function processPayment(data: PaymentData) {
+  const { transactionStatus, reference, amount, identifier, paymentMethod, transactionID } = data;
+
+  console.log(`EuPago webhook: status=${transactionStatus}, ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${transactionID}`);
+
+  if (transactionStatus !== "Success") {
+    console.log(`⚠️ Payment status: ${transactionStatus}, ref=${reference}`);
+    return;
+  }
+
+  console.log(`✅ Payment confirmed: ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${transactionID}`);
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  let matched = false;
+
+  // Strategy 1: Match by transactionID
+  if (transactionID) {
+    const { data: rows, error } = await supabase
+      .from("registrations")
+      .update({
+        paid_at: new Date().toISOString(),
+        eupago_ref: reference || transactionID,
+      })
+      .eq("eupago_ref", transactionID)
+      .select("email");
+
+    if (!error && rows && rows.length > 0) {
+      console.log(`✅ Matched by transactionID: ${rows[0].email}`);
+      matched = true;
+    } else {
+      console.log(`⚠️ No match by transactionID=${transactionID}, trying email extraction...`);
+    }
+  }
+
+  // Strategy 2: Extract email from identifier (fallback)
+  if (!matched && identifier) {
+    const parts = identifier.split("-");
+    let email = "";
+    if (parts.length >= 4) {
+      email = parts.slice(2, -1).join("-");
+    }
+
+    if (email) {
+      const { error } = await supabase
+        .from("registrations")
+        .update({
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || identifier,
+        })
+        .eq("email", email);
+
+      if (error) {
+        console.error("DB update error (email fallback):", error);
+      } else {
+        console.log(`✅ Updated registration for ${email} via email fallback`);
+        matched = true;
+      }
+    }
+  }
+
+  if (!matched) {
+    console.warn("⚠️ Could not match payment to any registration. identifier:", identifier, "txID:", transactionID);
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body = await req.json();
-    console.log("EuPago webhook received:", JSON.stringify(body));
+    let data: PaymentData;
 
-    const { transactionStatus, reference, amount, identifier, paymentMethod, transactionID, transaction_id } = body;
-    const txID = transactionID || transaction_id;
-
-    if (transactionStatus === "Success") {
-      console.log(`✅ Payment confirmed: ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${txID}`);
-
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      let matched = false;
-
-      // Strategy 1: Match by transactionID (saved at payment creation)
-      if (txID) {
-        const { data, error } = await supabase
-          .from("registrations")
-          .update({
-            paid_at: new Date().toISOString(),
-            eupago_ref: reference || txID,
-          })
-          .eq("eupago_ref", txID)
-          .select("email");
-
-        if (!error && data && data.length > 0) {
-          console.log(`✅ Matched by transactionID: ${data[0].email}`);
-          matched = true;
-        } else {
-          console.log(`⚠️ No match by transactionID=${txID}, trying email extraction...`);
-        }
-      }
-
-      // Strategy 2: Extract email from identifier (fallback)
-      if (!matched && identifier) {
-        const parts = identifier.split("-");
-        let email = "";
-        if (parts.length >= 4) {
-          email = parts.slice(2, -1).join("-");
-        }
-
-        if (email) {
-          const { error } = await supabase
-            .from("registrations")
-            .update({
-              paid_at: new Date().toISOString(),
-              eupago_ref: reference || identifier,
-            })
-            .eq("email", email);
-
-          if (error) {
-            console.error("DB update error (email fallback):", error);
-          } else {
-            console.log(`✅ Updated registration for ${email} via email fallback`);
-            matched = true;
-          }
-        }
-      }
-
-      if (!matched) {
-        console.warn("⚠️ Could not match payment to any registration. identifier:", identifier, "txID:", txID);
-      }
+    if (req.method === "GET") {
+      console.log("📥 EuPago classic GET callback");
+      data = extractFromGET(req);
     } else {
-      console.log(`⚠️ Payment status: ${transactionStatus}, ref=${reference}`);
+      console.log("📥 EuPago POST webhook (2.0)");
+      data = await extractFromPOST(req);
     }
+
+    await processPayment(data);
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
