@@ -1,54 +1,59 @@
 
 
-## Redesenho do Hero Section — Fundo Dark com Prism Animado
+## Alteracoes ao Modal de Registo e CTAs da Landing Page
 
-### Resumo
+### 1. Remover "(nao inclui gravacao da sessao)"
 
-Transformar o hero de fundo claro com imagem para um fundo escuro elegante com prismas geometricos animados em CSS puro, adaptando toda a tipografia para contraste sobre fundo escuro.
+**`src/components/landing/RegistrationModal.tsx`** — linha 295-297
 
-### Ficheiros afectados
+Remover o paragrafo:
+```
+<p className="text-center mt-2 text-[13px] text-ink-400">
+  (não inclui gravação da sessão)
+</p>
+```
 
-| Ficheiro | Tipo | Alteracao |
+### 2. Efeito CSS no container do modal
+
+**`src/components/landing/RegistrationModal.tsx`** — linha 126
+
+Substituir o className do `motion.div` do modal por estilos que incluem:
+- `border: 1px solid rgba(255,255,255,0.08)`
+- `box-shadow: 0 25px 60px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)`
+- `backdrop-filter: blur(20px)`
+
+Adicionar via style inline no `motion.div` do modal, mantendo as classes existentes.
+
+### 3. Destaque da palavra "Gratuito" no titulo
+
+**`src/components/landing/RegistrationModal.tsx`** — linha 213-214
+
+Substituir:
+```
+Quero confirmar o meu lugar para o Webinar Gratuito — Ao Vivo
+```
+por:
+```
+Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo
+```
+
+### 4. Remover setas " → " de todos os CTAs da landing page
+
+Ficheiros afectados (apenas landing page — /upgrade, /confirmacao e /crm nao sao tocados):
+
+| Ficheiro | Texto actual | Texto novo |
 |---|---|---|
-| `src/components/landing/HeroSection.tsx` | Editar | Remover imagem de fundo, adicionar prismas, luz central, separador, adaptar cores de texto |
-| `src/index.css` | Editar | Adicionar CSS dos prismas (.hero-prism-bg, .prism, .prism-1 a .prism-5, keyframes, prefers-reduced-motion) |
+| `src/components/landing/HeroSection.tsx` (linha 222) | `Sim, quero garantir a minha vaga grátis →` | `Sim, quero garantir a minha vaga grátis` |
+| `src/components/landing/TransformationSection.tsx` (linha 58) | `Sim, quero garantir a minha vaga grátis →` | `Sim, quero garantir a minha vaga grátis` |
+| `src/pages/Convites.tsx` (linha 286) | `Ainda sem inscrição? Registar gratuitamente →` | `Ainda sem inscrição? Registar gratuitamente` |
 
-### Alteracoes detalhadas
+Nota: a `→` nos bullets do ProgramSection (linha 75) e um marcador de lista, nao um CTA — nao sera removida.
 
-#### A) `src/index.css` — Adicionar estilos dos prismas
+### Resumo de ficheiros
 
-Adicionar no final do ficheiro (fora das layers) todo o CSS dos prismas:
-- `.hero-prism-bg` — container absoluto
-- `.prism` — base com border subtil e backdrop-filter
-- `.prism::before` — glow com gradiente azul/roxo
-- `.prism-1` a `.prism-5` — posicoes, tamanhos e delays diferentes
-- `@keyframes prism-rotate` — rotacao lenta com ligeira escala
-- `@keyframes prism-glow` — variacao de opacidade e hue
-- `@media (prefers-reduced-motion: reduce)` — desactivar animacoes
-
-#### B) `src/components/landing/HeroSection.tsx` — Reestruturar hero
-
-1. **Remover** import de `heroBg` e a tag `<img>` do fundo
-2. **Remover** os dois overlays brancos (radial-gradient e from-white/70)
-3. **Mudar** background do `<section>` para o gradiente escuro: `linear-gradient(135deg, #080c14 0%, #0d1525 60%, #0a1020 100%)`
-4. **Adicionar** como primeiro filho do section:
-   - Div `.hero-prism-bg` com 5 divs `.prism .prism-1` a `.prism-5`
-   - Div de luz central (radial-gradient azul subtil)
-   - Div separador no fundo (gradiente de transparente para #F8FAFC)
-5. **Adaptar cores do texto** (tudo inline ou com classes):
-   - Badge: `bg-[rgba(37,99,235,0.15)]`, `border-[rgba(37,99,235,0.30)]`, `text-[#93C5FD]`
-   - H1: `text-[#F8FAFC]`, text-shadow escuro
-   - Subheadline: `text-[#60A5FA]`
-   - Cards de specs: `bg-[rgba(255,255,255,0.05)]`, `border-[rgba(255,255,255,0.10)]`, texto `text-[#CBD5E1]`, icones `text-[#60A5FA]`, labels `text-[#94A3B8]`
-   - Microcopy: `text-[rgba(255,255,255,0.40)]`
-   - Google badge: `bg-[rgba(255,255,255,0.06)]`, `border-[rgba(255,255,255,0.10)]`, score `text-[#F8FAFC]`, avaliacoes `text-[rgba(255,255,255,0.50)]`
-   - Botao CTA verde: sem alteracoes
-6. **Padding**: manter `py-16 md:py-24`, nao forcar min-height em desktop
-
-### Nao alterar
-
-- Nenhuma outra seccao da landing page
-- Nenhuma outra pagina (/upgrade, /confirmacao, /crm)
-- Texto do hero (headline, subheadline, CTA, microcopy) mantido exactamente como esta
-- StickyTopBar mantida como esta (ja tem fundo escuro proprio)
-
+| Ficheiro | Alteracoes |
+|---|---|
+| `src/components/landing/RegistrationModal.tsx` | Remover microcopy, adicionar border/shadow/blur ao modal, destacar "Gratuito" |
+| `src/components/landing/HeroSection.tsx` | Remover " →" do CTA |
+| `src/components/landing/TransformationSection.tsx` | Remover " →" do CTA |
+| `src/pages/Convites.tsx` | Remover " →" do CTA |
