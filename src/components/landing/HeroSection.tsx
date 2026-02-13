@@ -129,7 +129,7 @@ export const HeroSection = () => {
 
         {/* 4 Spec badges — horizontal flex */}
         <motion.div {...fade(0.25)}>
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <div className="flex flex-wrap justify-center gap-3 mb-6 lg:mb-10">
             {[
               { icon: Calendar, label: "ONLINE & AO VIVO", value: "18 de Fevereiro" },
               { icon: Clock, label: "HORÁRIO", value: "10h00 (Portugal)" },

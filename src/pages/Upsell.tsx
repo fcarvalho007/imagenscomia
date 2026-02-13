@@ -61,6 +61,7 @@ const Upsell = () => {
   const advanceStep = useCallback((next: number) => {
     setStep(next);
     if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
