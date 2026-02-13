@@ -139,5 +139,25 @@ export function useInscritos() {
     );
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender };
+  const updateName = useCallback(async (inscritoId: string, fullName: string) => {
+    const firstName = fullName.trim().split(" ")[0] || "";
+    const lastName = fullName.trim().split(" ").slice(1).join(" ");
+    const { error } = await supabase
+      .from("registrations")
+      .update({ name: fullName.trim(), first_name: firstName, last_name: lastName })
+      .eq("id", inscritoId);
+    if (error) {
+      console.error("Error updating name:", error);
+      return;
+    }
+    setInscritos((prev) =>
+      prev.map((i) =>
+        i.id === inscritoId
+          ? { ...i, nome: fullName.trim(), primeiro_nome: firstName, resto_nome: lastName }
+          : i
+      )
+    );
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName };
 }
