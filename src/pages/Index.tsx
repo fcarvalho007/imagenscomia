@@ -2,16 +2,15 @@ import { RegistrationModalProvider } from "@/hooks/useRegistrationModal";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { StickyTopBar } from "@/components/landing/StickyTopBar";
-import { MirrorCopySection } from "@/components/landing/MirrorCopySection";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { PricingCardsSection } from "@/components/landing/PricingCardsSection";
-import { PresenterSection } from "@/components/landing/PresenterSection";
 import { ChallengesSection } from "@/components/landing/ChallengesSection";
 import { ProgramSection } from "@/components/landing/ProgramSection";
 import { GallerySection } from "@/components/landing/GallerySection";
-import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { TransformationSection } from "@/components/landing/TransformationSection";
 import { AudienceSection } from "@/components/landing/AudienceSection";
-
+import { PresenterSection } from "@/components/landing/PresenterSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
+import { PricingCardsSection } from "@/components/landing/PricingCardsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { CTAFinalSection } from "@/components/landing/CTAFinalSection";
 import { FooterSection } from "@/components/landing/FooterSection";
@@ -23,13 +22,13 @@ const Index = () => {
       <main className="overflow-x-hidden pt-[52px]">
         <StickyTopBar />
         <HeroSection />
-        <MirrorCopySection />
-        <PresenterSection />
         <ChallengesSection />
         <ProgramSection />
         <GallerySection />
-        <TestimonialsSection />
+        <TransformationSection />
         <AudienceSection />
+        <PresenterSection />
+        <TestimonialsSection />
         <PricingCardsSection />
         <FAQSection />
         <CTAFinalSection />

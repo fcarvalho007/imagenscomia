@@ -45,7 +45,7 @@ export const PricingCardsSection = () => {
                 onClick={() => open("free")}
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
               >
-                Inscrever-me grátis →
+                Sim, assistir grátis!
               </motion.button>
               <p className="text-center text-[13px] text-ink-400 mt-2">(não inclui gravação da sessão)</p>
             </div>

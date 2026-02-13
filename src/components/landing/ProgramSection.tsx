@@ -95,7 +95,7 @@ export const ProgramSection = () => {
             whileTap={{ scale: 0.98 }}
             className="inline-block bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
           >
-            Reservar lugar gratuito
+            Sim, assistir grátis!
           </motion.button>
         </div>
       </ScrollReveal>

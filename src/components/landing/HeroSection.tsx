@@ -54,7 +54,7 @@ export const HeroSection = () => {
               className="block font-heading font-extrabold text-[28px] sm:text-[40px] md:text-[48px] leading-[1.15] tracking-[-0.02em] text-ink-900"
               style={{ textShadow: "0 1px 8px rgba(255,255,255,0.9), 0 0 2px rgba(255,255,255,0.7)" }}
             >
-              Cria Imagens Profissionais com IA
+              Aprende a Criar Imagens Profissionais com IA
             </span>
           </h1>
         </motion.div>
@@ -64,7 +64,7 @@ export const HeroSection = () => {
             className="font-heading font-bold text-[17px] sm:text-[20px] md:text-[24px] text-blue-600 mb-6"
             style={{ textShadow: "0 1px 6px rgba(255,255,255,0.8)" }}
           >
-            Sem equipa criativa. Sem agência. Sem meses de tentativa e erro.
+            Em 60 minutos ao vivo: do briefing à imagem pronta a publicar.
           </p>
         </motion.div>
 
@@ -98,11 +98,11 @@ export const HeroSection = () => {
               whileTap={{ scale: 0.98 }}
               className="w-full max-w-[640px] text-center bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-lg py-5 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
             >
-              Inscrever-me grátis →
+              Sim, quero garantir a minha vaga grátis →
             </motion.button>
           </div>
           <p className="text-[14px] text-ink-400 mt-3">
-            Sem spam. Dados protegidos (RGPD). Cancelamento simples.
+            Sem spam. Acesso imediato por email. Dados protegidos (RGPD).
           </p>
         </motion.div>
 
