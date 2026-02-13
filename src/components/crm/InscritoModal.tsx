@@ -6,6 +6,7 @@ import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji, type Gender } from "@/lib/genderDetection";
+import googleIcon from "@/assets/google_g_icon.svg";
 import { supabase } from "@/integrations/supabase/client";
 
 interface InscritoModalProps {
@@ -112,10 +113,18 @@ export default function InscritoModal({
 
   const copyEmailBody = () => {
     if (reminderData) {
-      navigator.clipboard.writeText(reminderData.emailBody);
+      navigator.clipboard.writeText(`Assunto: ${reminderData.emailSubject}\n\n${reminderData.emailBody}`);
       setCopiedEmail(true);
       setTimeout(() => setCopiedEmail(false), 2000);
     }
+  };
+
+  const buildGmailLink = () => {
+    if (!reminderData) return "";
+    const to = encodeURIComponent(inscrito.email);
+    const su = encodeURIComponent(reminderData.emailSubject);
+    const body = encodeURIComponent(reminderData.emailBody);
+    return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
   };
 
   // Build compact summary line
@@ -433,39 +442,66 @@ export default function InscritoModal({
                     )}
                   </button>
                 ) : (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-heading font-bold text-[14px] text-amber-900">Email pronto a enviar</h4>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-amber-100/60 border-b border-amber-200">
+                      <h4 className="font-heading font-bold text-[14px] text-amber-900">📧 Email pronto a enviar</h4>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setReminderData(null)}
+                          className="text-[11px] text-amber-600 hover:text-amber-800 transition-colors"
+                        >
+                          Gerar novo
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Subject */}
+                    <div className="px-4 py-2.5 bg-white/50 border-b border-amber-200/60">
+                      <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Assunto</span>
+                      <p className="text-[13px] text-amber-900 font-semibold mt-0.5">{reminderData.emailSubject}</p>
+                    </div>
+
+                    {/* Body */}
+                    <div className="px-4 py-3">
+                      <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Corpo</span>
+                      <pre className="text-[13px] text-amber-900 whitespace-pre-wrap leading-relaxed mt-1">
+{reminderData.emailBody}
+                      </pre>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 px-4 py-3 bg-amber-100/40 border-t border-amber-200">
+                      <a
+                        href={buildGmailLink()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-heading font-semibold text-[13px] text-white transition-colors"
+                        style={{ background: "#1a73e8" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "#1557b0")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "#1a73e8")}
+                      >
+                        <img src={googleIcon} alt="" className="w-4 h-4" style={{ filter: "brightness(0) invert(1)" }} />
+                        Enviar via Gmail
+                      </a>
                       <button
                         onClick={copyEmailBody}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-amber-200 text-amber-800 hover:bg-amber-300 transition-colors"
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-[12px] font-medium border border-amber-300 text-amber-800 hover:bg-amber-200 transition-colors"
                       >
                         <Copy size={12} /> {copiedEmail ? "Copiado!" : "Copiar tudo"}
                       </button>
                     </div>
-                    <div className="mb-2">
-                      <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Assunto:</span>
-                      <p className="text-[13px] text-amber-900 font-medium mt-0.5">{reminderData.emailSubject}</p>
-                    </div>
-                    <pre className="text-[13px] text-amber-900 whitespace-pre-wrap leading-relaxed bg-white/60 rounded-lg p-3 border border-amber-200">
-                      {reminderData.emailBody}
-                    </pre>
-                    <div className="flex items-center gap-2 mt-3">
+
+                    {/* Payment link */}
+                    <div className="px-4 py-2 border-t border-amber-200/60">
                       <a
                         href={reminderData.paymentLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-[12px] text-blue-600 hover:underline"
+                        className="text-[11px] text-blue-600 hover:underline"
                       >
-                        Abrir link de pagamento ↗
+                        Link de pagamento: {reminderData.paymentLink} ↗
                       </a>
-                      <span className="text-ink-300">·</span>
-                      <button
-                        onClick={() => setReminderData(null)}
-                        className="text-[12px] text-ink-400 hover:text-ink-600"
-                      >
-                        Gerar novo
-                      </button>
                     </div>
                   </div>
                 )}
