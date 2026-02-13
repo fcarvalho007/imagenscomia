@@ -21,6 +21,7 @@ export type Database = {
           email: string
           eupago_ref: string | null
           first_name: string | null
+          gender_override: string | null
           id: string
           last_name: string | null
           name: string
@@ -40,6 +41,7 @@ export type Database = {
           email: string
           eupago_ref?: string | null
           first_name?: string | null
+          gender_override?: string | null
           id?: string
           last_name?: string | null
           name: string
@@ -59,6 +61,7 @@ export type Database = {
           email?: string
           eupago_ref?: string | null
           first_name?: string | null
+          gender_override?: string | null
           id?: string
           last_name?: string | null
           name?: string

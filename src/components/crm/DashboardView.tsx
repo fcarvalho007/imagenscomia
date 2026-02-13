@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +73,50 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const genderCounts = { M: 0, F: 0, U: 0 };
     active.forEach((i) => { genderCounts[i.gender]++; });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, comDuvida, nPremium, nMC, nBundle, genderCounts };
+    // Difficulties breakdown
+    const PREDEFINED_DIFFICULTIES = [
+      "Não sei descrever o estilo visual que quero",
+      "Os resultados ficam sempre genéricos, sem identidade",
+      "Não percebo que ferramenta usar (ChatGPT, Google, outros...)",
+      "Quero criar imagens para a minha marca mas não sei por onde começar",
+      "Tenho dificuldade em editar ou refinar as imagens geradas",
+    ];
+    const diffCounts: Record<string, number> = {};
+    PREDEFINED_DIFFICULTIES.forEach((d) => { diffCounts[d] = 0; });
+    let outroCount = 0;
+    comDuvida.forEach((i) => {
+      const parts = i.duvida.split(", ");
+      parts.forEach((p) => {
+        const trimmed = p.trim();
+        if (PREDEFINED_DIFFICULTIES.includes(trimmed)) {
+          diffCounts[trimmed]++;
+        } else if (trimmed.startsWith("Outro:") || !PREDEFINED_DIFFICULTIES.some((pd) => trimmed === pd)) {
+          if (trimmed && trimmed !== "SKIPPED") outroCount++;
+        }
+      });
+    });
+    const diffLabels: Record<string, string> = {
+      "Não sei descrever o estilo visual que quero": "Descrever estilo visual",
+      "Os resultados ficam sempre genéricos, sem identidade": "Resultados genéricos",
+      "Não percebo que ferramenta usar (ChatGPT, Google, outros...)": "Ferramenta certa",
+      "Quero criar imagens para a minha marca mas não sei por onde começar": "Começar do zero",
+      "Tenho dificuldade em editar ou refinar as imagens geradas": "Editar / refinar",
+    };
+    const difficulties = [
+      ...PREDEFINED_DIFFICULTIES.map((d) => ({ label: diffLabels[d], count: diffCounts[d] })),
+      { label: "Outro (texto livre)", count: outroCount },
+    ].sort((a, b) => b.count - a.count);
+    const maxDiff = difficulties[0]?.count || 1;
+
+    // Funnel drop-offs
+    const funnelValues = [step1, step2, step3, step4, step5];
+    const dropOffs = funnelValues.slice(0, -1).map((v, i) => ({
+      lost: v - funnelValues[i + 1],
+      pct: v ? ((v - funnelValues[i + 1]) / v) * 100 : 0,
+    }));
+    const maxDropIdx = dropOffs.reduce((mi, d, i) => (d.lost > dropOffs[mi].lost ? i : mi), 0);
+
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, comDuvida, nPremium, nMC, nBundle, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx };
   }, [inscritos]);
 
   const now = new Date();
@@ -116,27 +159,47 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       <div className="bg-white border border-border rounded-xl p-6 mb-5">
         <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de Inscrição</h2>
         <p className="text-[13px] text-ink-400 mb-5">Da landing page ao pagamento</p>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {funnelSteps.map((step, idx) => {
             const pct = stats.step1 ? (step.value / stats.step1) * 100 : 0;
+            const drop = idx < stats.dropOffs.length ? stats.dropOffs[idx] : null;
+            const isMaxDrop = idx === stats.maxDropIdx && drop && drop.lost > 0;
             return (
-              <div key={idx} className="flex items-center gap-3">
-                <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
-                  {idx + 1}. {step.label}
-                </span>
-                <div className="flex-1 h-2.5 rounded-full bg-surface overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${pct}%`, background: step.color }}
-                  />
+              <div key={idx}>
+                <div className="flex items-center gap-3">
+                  <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
+                    {idx + 1}. {step.label}
+                  </span>
+                  <div className="flex-1 h-2.5 rounded-full bg-surface overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, background: step.color }}
+                    />
+                  </div>
+                  <span className="text-[13px] font-heading font-bold text-ink-700 w-16 text-right shrink-0">
+                    {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(0)}%)</span>
+                  </span>
                 </div>
-                <span className="text-[13px] font-heading font-bold text-ink-700 w-16 text-right shrink-0">
-                  {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(0)}%)</span>
-                </span>
+                {drop && drop.lost > 0 && (
+                  <div className={`flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 ${isMaxDrop ? "text-red-500 font-semibold" : "text-ink-400"}`}>
+                    <ArrowDown size={10} />
+                    <span className="text-[11px]">
+                      −{drop.lost} pessoa{drop.lost !== 1 ? "s" : ""} ({drop.pct.toFixed(0)}% drop)
+                    </span>
+                    {isMaxDrop && <AlertTriangle size={10} className="text-red-500" />}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
+        {stats.dropOffs.length > 0 && stats.dropOffs[stats.maxDropIdx].lost > 0 && (
+          <div className="mt-4 px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+            <p className="text-[12px] text-red-700 font-medium">
+              ⚠️ Maior saída: entre Passo {stats.maxDropIdx + 1} e Passo {stats.maxDropIdx + 2} — {stats.dropOffs[stats.maxDropIdx].lost} pessoas ({stats.dropOffs[stats.maxDropIdx].pct.toFixed(0)}% de perda)
+            </p>
+          </div>
+        )}
         <p className="text-right mt-4">
           <span className="text-[13px] text-ink-400">Taxa modal → pagamento: </span>
           <span className="font-heading font-bold text-2xl text-blue-600">{taxaGlobal.toFixed(1)}%</span>
@@ -253,6 +316,35 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         })}
       </div>
 
+      {/* Difficulties Chart */}
+      <div className="bg-white border border-border rounded-xl p-5 mb-5">
+        <h3 className="font-heading font-bold text-sm text-ink-900">Dificuldades Mais Comuns</h3>
+        <p className="text-xs text-ink-400 mb-4">Opções seleccionadas no Passo 2 (escolha múltipla)</p>
+        <div className="space-y-3">
+          {stats.difficulties.map((d) => {
+            const pct = stats.maxDiff ? (d.count / stats.maxDiff) * 100 : 0;
+            const totalResp = stats.comDuvida.length || 1;
+            const pctTotal = ((d.count / totalResp) * 100).toFixed(0);
+            return (
+              <div key={d.label}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[13px] font-medium text-ink-700">{d.label}</span>
+                  <span className="text-[13px] font-heading font-bold text-ink-600">
+                    {d.count} <span className="text-ink-400 font-normal text-[11px]">({pctTotal}%)</span>
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-surface">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{ width: `${pct}%`, background: d.label === "Outro (texto livre)" ? "hsl(var(--amber-500))" : "hsl(var(--blue-600))" }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Duvidas */}
       <div className="bg-white border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
@@ -265,28 +357,42 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           </span>
         </div>
         <div className="max-h-[280px] overflow-y-auto space-y-0">
-          {stats.comDuvida.map((i) => {
-            const badge = PLAN_BADGE[i.plan];
-            return (
-              <div
-                key={i.id}
-                className="py-3 border-b border-border last:border-0 cursor-pointer hover:bg-off-white px-2 -mx-2 rounded"
-                onClick={() => onSelectInscrito(i)}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
-                  <span
-                    className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: badge.bg, color: badge.color }}
-                  >
-                    {badge.label}
-                  </span>
+          {[...stats.comDuvida]
+            .sort((a, b) => {
+              const aCustom = a.duvida.includes("Outro:");
+              const bCustom = b.duvida.includes("Outro:");
+              if (aCustom && !bCustom) return -1;
+              if (!aCustom && bCustom) return 1;
+              return 0;
+            })
+            .map((i) => {
+              const badge = PLAN_BADGE[i.plan];
+              const isCustom = i.duvida.includes("Outro:");
+              return (
+                <div
+                  key={i.id}
+                  className={`py-3 border-b border-border last:border-0 cursor-pointer hover:bg-off-white px-2 -mx-2 rounded ${isCustom ? "bg-amber-50/40" : ""}`}
+                  onClick={() => onSelectInscrito(i)}
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[14px] font-semibold text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
+                    <span
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                      style={{ background: badge.bg, color: badge.color }}
+                    >
+                      {badge.label}
+                    </span>
+                    {isCustom && (
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                        ✍️ Personalizada
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[13px] text-ink-700 mt-1 leading-relaxed">{i.duvida}</p>
+                  <p className="text-[11px] text-ink-400 mt-1">{formatDate(i.timestamp)}</p>
                 </div>
-                <p className="text-[13px] text-ink-700 mt-1 leading-relaxed">{i.duvida}</p>
-                <p className="text-[11px] text-ink-400 mt-1">{formatDate(i.timestamp)}</p>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 
