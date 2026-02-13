@@ -48,12 +48,24 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
         {genderEmoji(inscrito.gender)} {inscrito.nome}
       </span>
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
-      <span
-        className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full mt-1"
-        style={{ background: badge.bg, color: badge.color }}
-      >
-        {badge.label}
-      </span>
+      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+        <span
+          className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+          style={{ background: badge.bg, color: badge.color }}
+        >
+          {badge.label}
+        </span>
+        {inscrito.payment_status === "pending" && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+            Pendente
+          </span>
+        )}
+        {inscrito.payment_status === "paid" && inscrito.plan !== "free" && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+            Pago
+          </span>
+        )}
+      </div>
       <p className="text-[11px] text-ink-400 mt-1">{formatDate(inscrito.timestamp)}</p>
     </div>
   );

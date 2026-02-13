@@ -354,11 +354,24 @@ export default function InscritoModal({
               <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
                 {planInfo.label}
               </span>
+              {inscrito.payment_status === "pending" && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                  Pendente — aguarda pagamento
+                </span>
+              )}
+              {inscrito.payment_status === "paid" && inscrito.plan !== "free" && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
+                  Pago
+                </span>
+              )}
               {inscrito.plan !== "free" && (
                 <span className="font-semibold text-[14px] text-ink-800">€{inscrito.valor}</span>
               )}
               {inscrito.paid_at && (
                 <span className="text-[12px] text-ink-500">Pago em {fmtDateShort(inscrito.paid_at)}</span>
+              )}
+              {inscrito.upgrade_clicked_at && !inscrito.paid_at && (
+                <span className="text-[11px] text-amber-600">Clicou em {fmtDateShort(inscrito.upgrade_clicked_at)}</span>
               )}
               <span className="text-ink-300">·</span>
               <span className="text-[12px] font-medium text-ink-500">Passo {inscrito.step_reached}/5</span>
