@@ -49,6 +49,8 @@ function mapRegistration(r: any): Inscrito {
     sources_text: r.sources || null,
     duvida_text: r.duvida || null,
     upgrade_clicked_at: r.upgrade_clicked_at || null,
+    primeiro_nome: r.first_name || (r.name || "").split(" ")[0] || "",
+    resto_nome: r.last_name || (r.name || "").split(" ").slice(1).join(" ") || "",
   };
 }
 
