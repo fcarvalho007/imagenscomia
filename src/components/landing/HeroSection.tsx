@@ -53,35 +53,33 @@ export const HeroSection = () => {
       className="relative overflow-hidden"
       style={{
         background: "linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)",
-        paddingBottom: 60,
       }}
     >
       {/* FloatingLines background */}
       <FloatingLines
-        linesGradient={["#1E3A5F", "#2563EB", "#3B82F6", "#60A5FA", "#2563EB"]}
-        enabledWaves={["middle", "bottom"]}
-        lineCount={[8, 5]}
-        lineDistance={[4, 6]}
-        animationSpeed={0.4}
+        linesGradient={["#0F2A4A", "#1A3A6B", "#2563EB", "#1A3A6B"]}
+        enabledWaves={["bottom"]}
+        lineCount={[6]}
+        lineDistance={[5]}
+        animationSpeed={0.25}
         interactive={true}
-        bendRadius={4.0}
-        bendStrength={-0.3}
-        mouseDamping={0.04}
+        bendRadius={3.0}
+        bendStrength={-0.2}
+        mouseDamping={0.03}
         parallax={true}
-        parallaxStrength={0.08}
+        parallaxStrength={0.05}
         mixBlendMode="screen"
-        middleWavePosition={{ x: 4.0, y: 0.0, rotate: 0.15 }}
-        bottomWavePosition={{ x: 1.5, y: -0.8, rotate: -0.8 }}
+        bottomWavePosition={{ x: 1.0, y: -1.2, rotate: -0.5 }}
       />
 
       {/* Content — single centered column */}
       <div
-        className="relative z-10 mx-auto px-6 md:px-10"
-        style={{ maxWidth: 680, textAlign: "center", padding: "60px 24px" }}
+        className="relative z-10 mx-auto pt-12 pb-14 md:pt-[72px] md:pb-[80px] px-6 md:px-10"
+        style={{ maxWidth: 700, textAlign: "center" }}
       >
         {/* Badge */}
         <motion.div {...fade(0.05)}>
-          <div className="mb-5">
+          <div className="mb-4">
             <span
               className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
               style={{
@@ -100,26 +98,26 @@ export const HeroSection = () => {
 
         {/* H1 */}
         <motion.div {...fade(0.1)}>
-          <h1 className="mb-3" style={{ maxWidth: 620, margin: "0 auto" }}>
+          <h1 style={{ maxWidth: 700, margin: "0 auto" }}>
             <span
               className="block font-heading"
               style={{
                 color: "#F8FAFC",
                 fontWeight: 800,
-                fontSize: "clamp(34px, 5vw, 48px)",
+                fontSize: "clamp(36px, 5.5vw, 52px)",
                 lineHeight: 1.12,
                 letterSpacing: "-0.025em",
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Aprende a Criar Imagens Profissionais com IA
+              Aprende a Criar Imagens<br />Profissionais com IA
             </span>
           </h1>
         </motion.div>
 
         {/* Subheadline */}
         <motion.div {...fade(0.15)}>
-          <p style={{ fontSize: 18, fontWeight: 400, marginTop: 12, marginBottom: 28, color: "#CBD5E1" }}>
+          <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, marginBottom: 28, color: "#CBD5E1" }}>
             Em 60 minutos ao vivo:{" "}
             <GradientText className="font-heading font-semibold">
               do briefing à imagem pronta a publicar.
@@ -142,8 +140,9 @@ export const HeroSection = () => {
                   key={idx}
                   className="rounded-xl px-3 py-3 flex flex-col items-center gap-1"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
+                    background: "rgba(6, 9, 26, 0.75)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(37,99,235,0.20)",
                     minWidth: 130,
                   }}
                 >
