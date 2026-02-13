@@ -1,32 +1,29 @@
 
 
-## Correcao: Texto desalinhado nos cards de credenciais em mobile
+## 1. Telefone obrigatorio no modal de registo
 
-### Problema
+### Ficheiro: `src/components/landing/RegistrationModal.tsx`
 
-Na `PresenterSection`, a classe `text-center md:text-left` (linha 45) aplica-se ao wrapper inteiro, incluindo os cards de credenciais. Resultado:
-- O emoji fica a esquerda (por causa do `flex items-start`)
-- O texto do card fica centrado (herdado do parent)
-- Cria um desalinhamento visual feio em mobile
+Na funcao `handleCapture` (linha 36), adicionar validacao do campo WhatsApp apos a validacao do email:
 
-### Correcao
-
-Adicionar `text-left` ao div dos cards de credenciais para garantir que o texto fica sempre alinhado a esquerda, independentemente do parent.
-
-### Ficheiro afectado
-
-`src/components/landing/PresenterSection.tsx`
-
-### Alteracao tecnica
-
-Na linha 59, o grid dos credentials:
-```
-<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-```
-Mudar para:
-```
-<div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
+```text
+if (!whatsapp.trim()) {
+  setError("Indique o seu WhatsApp ou telemovel para melhorar a experiencia.");
+  return;
+}
 ```
 
-Isto forca o texto dos cards a ficar alinhado a esquerda em mobile, mantendo o alinhamento correcto com o emoji.
+Tambem atualizar o placeholder do campo para indicar que e obrigatorio — remover a opcionalidade implicita. Pode-se adicionar um asterisco ou simplesmente manter o mesmo texto actual ("Whatsapp/Telemovel") dado que todos os campos visiveis serao obrigatorios.
+
+### 2. Espacamento
+
+Analisei o screenshot e o espacamento actual do Hero em desktop parece equilibrado — o `mb-6 lg:mb-10` entre os badges e o CTA ja foi aplicado na alteracao anterior. Nao identifico problemas adicionais de espacamento a corrigir.
+
+---
+
+### Resumo tecnico
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/landing/RegistrationModal.tsx` | Adicionar validacao obrigatoria do campo `whatsapp` em `handleCapture` (inserir entre validacao de email e validacao de termos) |
 
