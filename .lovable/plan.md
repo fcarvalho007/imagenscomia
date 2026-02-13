@@ -1,114 +1,60 @@
 
 
-## Sistema de Re-engagement para Pagamentos Pendentes
+## Melhorias na Ficha de Cliente: Gmail, Layout e Logica do Funil
 
-### Como funciona a deteccao actual
+### 1. Botao "Enviar via Gmail" com assunto e corpo pre-preenchidos
 
-O sistema ja distingue 3 estados com base nos dados reais:
+No bloco do email gerado (`InscritoModal.tsx`, linhas 453-469), adicionar um botao com icone do Gmail que abre directamente o compose do Gmail com:
+- Remetente: `info@fredericocarvalho.pt` (via parametro URL `from=` - nota: o Gmail ignora este parametro por seguranca, mas abre com a conta activa)
+- Destinatario: email do inscrito
+- Assunto pre-preenchido
+- Corpo pre-preenchido
 
-```text
-Estado         | Condicao na DB
----------------|------------------------------------------
-Gratuito       | plan_selected = null ou "free"
-Pendente       | plan_selected != "free" E paid_at = null
-Pago           | paid_at != null
+O link sera um `mailto:` convertido para URL do Gmail:
+```
+https://mail.google.com/mail/?view=cm&fs=1&to={email}&su={subject}&body={body}
 ```
 
-Dentro de "Pendente", ha dois sub-estados importantes:
-- **Clicou em pagar** (tem `upgrade_clicked_at` e `eupago_ref`) — ex: Sonia
-- **Seleccionou plano mas nao clicou** (sem `upgrade_clicked_at`) — ex: Renato
+Isto abre o Gmail web com tudo preenchido, so falta clicar "Enviar".
 
-### O que vamos implementar
+### 2. Melhorias de UX/Layout no bloco de email
 
-#### 1. Botao "Gerar Lembrete" na ficha do inscrito (InscritoModal)
+Ficheiro: `src/components/crm/InscritoModal.tsx`
 
-Quando o inscrito tem `payment_status === "pending"`, aparece um botao proeminente na barra de resumo que:
-- Chama a edge function `create-payment` para gerar um **novo link de pagamento** na EuPago
-- Abre uma caixa com o email personalizado pre-formatado, pronto a copiar e enviar
-- O email inclui: nome do inscrito, plano seleccionado, valor, e o link de pagamento
+Alteracoes:
+- Mover o botao "Enviar via Gmail" para destaque principal (botao verde/azul com icone)
+- Manter "Copiar tudo" como accao secundaria
+- Melhorar a hierarquia visual: assunto com fundo separado, corpo com melhor padding
+- Links de accao (abrir link, gerar novo) mais claros
 
-#### 2. Edge function `generate-reminder` (nova)
+### 3. Corrigir logica do Funil para planos bundle
 
-Nova funcao backend que:
-- Recebe email, plano e nome
-- Chama a API EuPago para gerar um novo pay-by-link
-- Retorna o link de pagamento + texto do email formatado
-- Actualiza o `eupago_ref` na DB com o novo transactionID
+Ficheiro: `src/components/crm/FunnelView.tsx`
 
-#### 3. Alerta visual no Dashboard para pendentes com +6h
+**Bug actual**: Quando o inscrito seleccionou "bundle" mas nao pagou e nao tem `upgrade_clicked_at`, os passos Premium e Masterclass mostram "Saltou / Nao converteu", mesmo que o inscrito tenha seleccionado bundle e concluido o flow (passo 5).
 
-No DashboardView, adicionar um card/alerta que mostra:
-- Quantos inscritos estao pendentes ha mais de 6 horas
-- Lista rapida com nome e plano
-- Click leva a ficha do inscrito
+**Correccao**: Na logica dos passos Premium (linha 69-96) e Masterclass (linha 99-126):
+- Adicionar verificacao de `plan_selected` (alem de `upgrade_clicked_at`)
+- Se `plan_selected` inclui o tier (ou e "bundle"), mostrar como "interested" com detalhe "Seleccionou plano"
+- Se pagou, mostrar como "completed"
+- So mostrar "Nao converteu" se realmente nao seleccionou nenhum plano que inclua esse tier
 
-#### 4. Indicador de tempo na Pipeline e Tabela
+Logica corrigida:
+```
+paid = paid_at existe E plano inclui tier
+clicked = upgrade_clicked_at existe E plan_selected inclui tier  
+selected = plan_selected inclui tier (mesmo sem click)
 
-Nos cards pendentes, mostrar ha quanto tempo esta pendente:
-- "Ha 2h" (cinza)
-- "Ha 8h" (ambar, significa que ja pode ser contactado)
-- "Ha 24h+" (vermelho)
+Se paid -> "completed"
+Se clicked -> "interested" + "Clicou para pagar"
+Se selected -> "interested" + "Seleccionou plano"
+Senao -> "skipped" + "Nao converteu"
+```
 
 ### Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `supabase/functions/generate-reminder/index.ts` | Nova funcao: gera link EuPago + template email |
-| `src/components/crm/InscritoModal.tsx` | Botao "Gerar Lembrete" + caixa com email pre-formatado |
-| `src/components/crm/DashboardView.tsx` | Card de alerta para pendentes com mais de 6h |
-| `src/components/crm/PipelineView.tsx` | Indicador de tempo desde o clique nos cards pendentes |
-| `src/components/crm/TableView.tsx` | Coluna/indicador de tempo pendente |
-| `supabase/config.toml` | Registo da nova funcao com verify_jwt = false |
-
-### Template do email gerado
-
-```text
-Assunto: Lembrete — o teu [Premium Pass / Bundle] esta a espera
-
-Ola [Primeiro Nome],
-
-Vi que iniciaste o processo de inscricao no [nome do plano] mas o pagamento ainda nao foi concluido.
-
-Deixo-te aqui o link para concluires:
-[LINK DE PAGAMENTO]
-
-Valor: [XX,XX] euros
-Metodos disponiveis: Cartao de Credito, MB WAY, Multibanco
-
-Se tiveres alguma duvida, responde a este email.
-
-Frederico Carvalho
-```
-
-### Fluxo tecnico
-
-```text
-Admin clica "Gerar Lembrete" no modal
-    |
-    v
-Frontend chama generate-reminder (email, plano, nome)
-    |
-    v
-Edge function chama EuPago API (paybylink/create)
-    |
-    v
-Recebe novo link de pagamento
-    |
-    v
-Actualiza eupago_ref na DB (novo transactionID)
-    |
-    v
-Retorna link + email formatado ao frontend
-    |
-    v
-Frontend mostra caixa com email pronto a copiar
-Admin copia e envia manualmente pelo seu email
-```
-
-### Notas
-
-- Nao enviamos o email automaticamente (o admin copia e envia) — dá mais controlo
-- Cada vez que se gera um lembrete, cria-se um novo link na EuPago (o anterior pode ter expirado)
-- O `eupago_ref` e actualizado para o novo transactionID, garantindo que o webhook processa correctamente
-- A EuPago nao cobra pela criacao de links, so cobra comissao quando ha pagamento
+| `src/components/crm/InscritoModal.tsx` | Botao Gmail com pre-fill, layout melhorado do email |
+| `src/components/crm/FunnelView.tsx` | Corrigir logica para reconhecer `plan_selected` como interesse |
 
