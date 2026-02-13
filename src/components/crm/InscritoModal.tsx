@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check,
 } from "lucide-react";
 import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -18,16 +18,8 @@ interface InscritoModalProps {
   onArchive: (id: string) => void;
   onDelete?: (id: string) => void;
   onSetGender?: (id: string, gender: Gender) => void;
+  onUpdateName?: (id: string, fullName: string) => void;
 }
-
-const GRADIENTS = [
-  "linear-gradient(135deg,#1e3a5f,#3b82f6)",
-  "linear-gradient(135deg,#064e3b,#10b981)",
-  "linear-gradient(135deg,#7c2d12,#f97316)",
-  "linear-gradient(135deg,#1e1b4b,#7c3aed)",
-  "linear-gradient(135deg,#0c4a6e,#0284c7)",
-  "linear-gradient(135deg,#134e4a,#0d9488)",
-];
 
 const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = {
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
@@ -36,14 +28,16 @@ const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = 
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
 };
 
-function getInitials(name: string) {
-  return name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-}
-
 function fmtDate(iso: string) {
   const d = new Date(iso);
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function fmtDateShort(iso: string) {
+  const d = new Date(iso);
+  const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 function abbreviateSource(s: string) {
@@ -56,19 +50,19 @@ function abbreviateSource(s: string) {
 
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editName, setEditName] = useState(inscrito.nome);
   const isMobile = useIsMobile();
 
-  const gradIdx = parseInt(inscrito.id, 10) % GRADIENTS.length;
   const planInfo = PLAN_INFO[inscrito.plan];
 
   const currentIdx = todos.findIndex((i) => i.id === inscrito.id);
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < todos.length - 1;
-
 
   const handleAddNota = () => {
     if (!notaText.trim()) return;
@@ -84,6 +78,28 @@ export default function InscritoModal({
     }
   };
 
+  const handleSaveName = () => {
+    if (editName.trim() && editName.trim() !== inscrito.nome && onUpdateName) {
+      onUpdateName(inscrito.id, editName.trim());
+    }
+    setEditingName(false);
+  };
+
+  const startEditName = () => {
+    setEditName(inscrito.nome);
+    setEditingName(true);
+  };
+
+  // Build compact summary line
+  const summaryParts: string[] = [];
+  if (inscrito.plan !== "free") {
+    summaryParts.push(planInfo.label);
+    summaryParts.push(`€${inscrito.valor}`);
+    if (inscrito.paid_at) summaryParts.push(`Pago em ${fmtDateShort(inscrito.paid_at)}`);
+  } else {
+    summaryParts.push("Gratuito");
+  }
+  summaryParts.push(`Passo ${inscrito.step_reached}/5`);
 
   return (
     <>
@@ -153,23 +169,28 @@ export default function InscritoModal({
               /* ── Mobile: compact horizontal header ── */
               <div>
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[18px] shrink-0"
-                    style={{ background: GRADIENTS[gradIdx] }}
-                  >
-                    {getInitials(inscrito.nome)}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="font-heading font-bold text-[18px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                  <div className="min-w-0 flex-1">
+                    {editingName ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                          className="font-heading font-bold text-[18px] text-white bg-transparent border-b border-white/30 outline-none w-full"
+                          autoFocus
+                        />
+                        <button onClick={handleSaveName} className="text-green-400 shrink-0"><Check size={16} /></button>
+                        <button onClick={() => setEditingName(false)} className="text-white/40 shrink-0"><X size={16} /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <h2 className="font-heading font-bold text-[18px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                        {onUpdateName && (
+                          <button onClick={startEditName} className="text-white/30 hover:text-white/60 shrink-0 transition-colors"><Pencil size={13} /></button>
+                        )}
+                      </div>
+                    )}
                     <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-heading font-bold text-[11px] px-2.5 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
-                        {planInfo.label}
-                      </span>
-                      <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                        Passo {inscrito.step_reached}/5
-                      </span>
-                    </div>
                   </div>
                 </div>
                 {/* Compact actions row */}
@@ -203,15 +224,28 @@ export default function InscritoModal({
             ) : (
               /* ── Desktop: full left panel ── */
               <>
-                <div className="flex justify-center md:justify-center">
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-heading font-extrabold text-[20px]"
-                    style={{ background: GRADIENTS[gradIdx] }}
-                  >
-                    {getInitials(inscrito.nome)}
+                {/* Name + gender emoji (no avatar) */}
+                {editingName ? (
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSaveName()}
+                      className="font-heading font-bold text-[18px] text-white bg-transparent border-b border-white/30 outline-none text-center w-full max-w-[220px]"
+                      autoFocus
+                    />
+                    <button onClick={handleSaveName} className="text-green-400 shrink-0"><Check size={16} /></button>
+                    <button onClick={() => setEditingName(false)} className="text-white/40 shrink-0"><X size={16} /></button>
                   </div>
-                </div>
-                <h2 className="font-heading font-bold text-[18px] text-white mt-2">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                ) : (
+                  <div className="flex items-center gap-1.5 justify-center">
+                    <h2 className="font-heading font-bold text-[18px] text-white">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                    {onUpdateName && (
+                      <button onClick={startEditName} className="text-white/30 hover:text-white/60 shrink-0 transition-colors"><Pencil size={13} /></button>
+                    )}
+                  </div>
+                )}
+
                 {onSetGender && (
                   <div className="flex justify-center gap-1.5 mt-1.5">
                     {(["M","F","U"] as Gender[]).map((g) => (
@@ -242,18 +276,11 @@ export default function InscritoModal({
                 </button>
                 <p className="text-[11px] mt-1" style={{ color: "rgba(255,255,255,0.35)" }}>Abrir WhatsApp</p>
 
-                <div className="flex justify-center mt-2">
-                  <span className="font-heading font-bold text-[12px] px-3 py-1 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
-                    {planInfo.label}
-                  </span>
-                </div>
-                <div className="flex items-center justify-center gap-2 mt-1">
+                {/* Inscription date & step */}
+                <div className="flex items-center justify-center gap-2 mt-2">
                   <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
                     Inscrito em {fmtDate(inscrito.timestamp)}
                   </p>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.50)" }}>
-                    Passo {inscrito.step_reached}/5
-                  </span>
                 </div>
 
                 <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
@@ -322,62 +349,55 @@ export default function InscritoModal({
 
           {/* RIGHT PANEL */}
           <div className="overflow-y-auto p-4 md:p-7 bg-white">
-            {/* Detalhes */}
-            <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-4">Detalhes</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="bg-off-white border border-border rounded-xl p-4">
-                <p className="text-[11px] text-ink-400 mb-1">Plano</p>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
-                    {planInfo.label}
-                  </span>
-                  <span className="font-semibold text-[14px] text-ink-800">· €{inscrito.valor}</span>
-                </div>
-              </div>
-              <div className="bg-off-white border border-border rounded-xl p-4">
-                <p className="text-[11px] text-ink-400 mb-1">Pago em</p>
-                {inscrito.paid_at ? (
-                  <p className="font-semibold text-[14px] text-ink-800">{fmtDate(inscrito.paid_at)}</p>
-                ) : (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-surface text-ink-400">Gratuito</span>
-                )}
-              </div>
-              <div className="bg-off-white border border-border rounded-xl p-4">
-                <p className="text-[11px] text-ink-400 mb-1">Ref. EuPago</p>
-                {inscrito.eupago_ref ? (
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-[13px] text-ink-700 break-all">{inscrito.eupago_ref}</span>
-                    <button onClick={copyRef} className="text-ink-300 hover:text-blue-600 transition-colors shrink-0" aria-label="Copiar referência">
-                      <Copy size={12} />
+            {/* Compact Summary */}
+            <div className="flex flex-wrap items-center gap-2 mb-5 px-3 py-2.5 rounded-xl bg-off-white border border-border">
+              <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
+                {planInfo.label}
+              </span>
+              {inscrito.plan !== "free" && (
+                <span className="font-semibold text-[14px] text-ink-800">€{inscrito.valor}</span>
+              )}
+              {inscrito.paid_at && (
+                <span className="text-[12px] text-ink-500">Pago em {fmtDateShort(inscrito.paid_at)}</span>
+              )}
+              <span className="text-ink-300">·</span>
+              <span className="text-[12px] font-medium text-ink-500">Passo {inscrito.step_reached}/5</span>
+              {inscrito.eupago_ref && (
+                <>
+                  <span className="text-ink-300">·</span>
+                  <span className="text-[12px] text-ink-500 flex items-center gap-1">
+                    Ref: <span className="font-medium text-ink-700">{inscrito.eupago_ref}</span>
+                    <button onClick={copyRef} className="text-ink-300 hover:text-blue-600 transition-colors" aria-label="Copiar referência">
+                      <Copy size={11} />
                     </button>
                     {copiedRef && <span className="text-[10px] text-green-600">Copiado!</span>}
-                  </div>
-                ) : (
-                  <span className="text-ink-300">—</span>
-                )}
-              </div>
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Funnel */}
-            <div className="mt-4">
-              <FunnelView inscrito={inscrito} />
-            </div>
+            <FunnelView inscrito={inscrito} />
 
             {/* Origem */}
-            <hr className="border-border my-6" />
-            <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Origem</h3>
-            <div className="flex flex-wrap gap-2">
-              {inscrito.source.map((s) => (
-                <span key={s} className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
-                  {abbreviateSource(s)}
-                </span>
-              ))}
-            </div>
-            {inscrito.source_outro && (
-              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: "hsl(var(--amber-50))", border: "1px solid rgba(217,119,6,0.15)" }}>
-                <Info size={12} className="text-amber-500 shrink-0" />
-                <span className="text-[13px] text-amber-700">Indicação: {inscrito.source_outro}</span>
-              </div>
+            {inscrito.source.length > 0 && (
+              <>
+                <hr className="border-border my-6" />
+                <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Origem</h3>
+                <div className="flex flex-wrap gap-2">
+                  {inscrito.source.map((s) => (
+                    <span key={s} className="text-[12px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
+                      {abbreviateSource(s)}
+                    </span>
+                  ))}
+                </div>
+                {inscrito.source_outro && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg" style={{ background: "hsl(var(--amber-50))", border: "1px solid rgba(217,119,6,0.15)" }}>
+                    <Info size={12} className="text-amber-500 shrink-0" />
+                    <span className="text-[13px] text-amber-700">Indicação: {inscrito.source_outro}</span>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Dúvida */}
@@ -394,7 +414,6 @@ export default function InscritoModal({
                 </div>
               </>
             )}
-
 
             {/* Notas */}
             <hr className="border-border my-6" />

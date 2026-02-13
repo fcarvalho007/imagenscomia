@@ -16,7 +16,7 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName } = useInscritos();
 
   const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_auth");
@@ -86,6 +86,7 @@ export default function CRM() {
             setSelectedInscrito(null);
           }}
           onSetGender={setGender}
+          onUpdateName={updateName}
         />
       )}
     </div>
