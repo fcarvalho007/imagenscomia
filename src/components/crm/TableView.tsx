@@ -29,7 +29,7 @@ const VALOR_COLORS: Record<number, string> = {
   0: "hsl(var(--ink-400))",
   15: "hsl(var(--blue-600))",
   57.81: "#7C3AED",
-  72.81: "hsl(var(--green-600))",
+  76.26: "hsl(var(--green-600))",
 };
 
 function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): { text: string; color: string } | null {
@@ -187,7 +187,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
         >
           <option value="all">Todos os estados</option>
-          <option value="selected">Seleccionou</option>
+          <option value="selected">Seleccionou e saiu</option>
           <option value="awaiting_payment">Aguarda pagamento</option>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
@@ -266,13 +266,13 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         {badge.label}
                       </span>
                       {i.payment_status === "selected" && (
-                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-                          Seleccionou
+                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                          Seleccionou e saiu
                         </span>
                       )}
                       {i.payment_status === "awaiting_payment" && (
                         <>
-                          <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                          <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
                             Aguarda pgto
                           </span>
                           {(() => {

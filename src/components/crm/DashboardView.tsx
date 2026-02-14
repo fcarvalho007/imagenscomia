@@ -438,18 +438,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </div>
             );
           })}
-          <div className="border-t border-border mt-4 pt-3 flex items-center justify-between">
-            <div>
-              <span className="text-[12px] text-ink-400">Receita confirmada</span>
-              <p className="font-heading font-bold text-[15px] text-ink-900">€{stats.receita.toFixed(2)}</p>
-            </div>
-            {stats.pendentes.length > 0 && (
-              <div className="text-right">
-                <span className="text-[12px] text-amber-600">Pipeline pendente</span>
-                <p className="font-heading font-bold text-[15px] text-amber-700">{stats.pendentes.length} · €{stats.pipelineValor.toFixed(2)}</p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
