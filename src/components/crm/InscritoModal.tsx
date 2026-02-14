@@ -391,9 +391,14 @@ export default function InscritoModal({
               <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: planInfo.bg, color: planInfo.color }}>
                 {planInfo.label}
               </span>
-              {inscrito.payment_status === "pending" && (
+              {inscrito.payment_status === "selected" && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                  Seleccionou {planInfo.label}
+                </span>
+              )}
+              {inscrito.payment_status === "awaiting_payment" && (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                  Pendente — aguarda pagamento
+                  Aguarda pagamento{inscrito.eupago_ref ? ` — ref: ${inscrito.eupago_ref}` : ""}
                 </span>
               )}
               {inscrito.payment_status === "paid" && inscrito.plan !== "free" && (
@@ -427,7 +432,7 @@ export default function InscritoModal({
             </div>
 
             {/* Reminder Button for Pending */}
-            {inscrito.payment_status === "pending" && (
+            {(inscrito.payment_status === "awaiting_payment" || inscrito.payment_status === "selected") && (
               <div className="mb-5">
                 {!reminderData ? (
                   <button

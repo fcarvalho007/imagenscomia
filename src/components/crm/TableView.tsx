@@ -187,7 +187,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
         >
           <option value="all">Todos os estados</option>
-          <option value="pending">Pendente</option>
+          <option value="selected">Seleccionou</option>
+          <option value="awaiting_payment">Aguarda pagamento</option>
           <option value="paid">Pago</option>
           <option value="free">Gratuito</option>
         </select>
@@ -264,17 +265,24 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
                         {badge.label}
                       </span>
-                      {i.payment_status === "pending" && (
-                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                          Pendente
+                      {i.payment_status === "selected" && (
+                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                          Seleccionou
                         </span>
                       )}
-                      {i.payment_status === "pending" && (() => {
-                        const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
-                        return pt ? (
-                          <span className="ml-1 text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
-                        ) : null;
-                      })()}
+                      {i.payment_status === "awaiting_payment" && (
+                        <>
+                          <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                            Aguarda pgto
+                          </span>
+                          {(() => {
+                            const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
+                            return pt ? (
+                              <span className="ml-1 text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
+                            ) : null;
+                          })()}
+                        </>
+                      )}
                       {i.payment_status === "paid" && i.plan !== "free" && (
                         <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
                           Pago

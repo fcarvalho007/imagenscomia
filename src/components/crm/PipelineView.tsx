@@ -65,22 +65,29 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
         >
           {badge.label}
         </span>
-        {inscrito.payment_status === "pending" && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-            Pendente
+        {inscrito.payment_status === "selected" && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
+            Seleccionou
           </span>
+        )}
+        {inscrito.payment_status === "awaiting_payment" && (
+          <>
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+              Aguarda pgto
+            </span>
+            {(() => {
+              const pt = pendingTimeLabel(inscrito.upgrade_clicked_at, inscrito.timestamp);
+              return pt ? (
+                <span className="text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
+              ) : null;
+            })()}
+          </>
         )}
         {inscrito.payment_status === "paid" && inscrito.plan !== "free" && (
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
             Pago
           </span>
         )}
-        {inscrito.payment_status === "pending" && (() => {
-          const pt = pendingTimeLabel(inscrito.upgrade_clicked_at, inscrito.timestamp);
-          return pt ? (
-            <span className="text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
-          ) : null;
-        })()}
       </div>
       <p className="text-[11px] text-ink-400 mt-1">{formatDate(inscrito.timestamp)}</p>
     </div>
