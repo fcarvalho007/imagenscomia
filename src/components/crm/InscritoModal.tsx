@@ -392,12 +392,12 @@ export default function InscritoModal({
                 {planInfo.label}
               </span>
               {inscrito.payment_status === "selected" && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
-                  Seleccionou {planInfo.label}
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                  Seleccionou e saiu — {planInfo.label}
                 </span>
               )}
               {inscrito.payment_status === "awaiting_payment" && (
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
                   Aguarda pagamento{inscrito.eupago_ref ? ` — ref: ${inscrito.eupago_ref}` : ""}
                 </span>
               )}

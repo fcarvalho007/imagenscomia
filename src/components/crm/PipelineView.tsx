@@ -43,7 +43,7 @@ const COLUMNS: Column[] = [
   { title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up },
   { title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up },
   { title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up },
-  { title: "Bundle — €72,81", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up },
+  { title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up },
   { title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up },
 ];
 
@@ -66,13 +66,13 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
           {badge.label}
         </span>
         {inscrito.payment_status === "selected" && (
-          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">
-            Seleccionou
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+            Seleccionou e saiu
           </span>
         )}
         {inscrito.payment_status === "awaiting_payment" && (
           <>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
               Aguarda pgto
             </span>
             {(() => {
@@ -89,7 +89,7 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
           </span>
         )}
       </div>
-      <p className="text-[11px] text-ink-400 mt-1">{formatDate(inscrito.timestamp)}</p>
+      <p className="text-[11px] text-ink-400 mt-1">Inscrição a: {formatDate(inscrito.timestamp)}</p>
     </div>
   );
 }
