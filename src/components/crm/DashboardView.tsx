@@ -57,6 +57,7 @@ function abbreviateSource(s: string) {
 
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
+  const [visitantes, setVisitantes] = useState(1034);
   const stats = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
     const total = active.length;
@@ -173,6 +174,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Flow completo (Passo 5)", value: stats.step5, color: "hsl(var(--green-600))" },
   ];
 
+  const visitorDropLost = visitantes > 0 ? visitantes - stats.step1 : 0;
+  const visitorDropPct = visitantes > 0 ? ((visitorDropLost / visitantes) * 100) : 0;
+  const registrationCTR = visitantes > 0 ? ((stats.step1 / visitantes) * 100) : 0;
+
   
 
   return (
@@ -202,8 +207,39 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de Inscrição</h2>
         <p className="text-[13px] text-ink-400 mb-5">Da landing page ao pagamento</p>
         <div className="space-y-1">
+          {/* Step 0: Visitors */}
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
+                0. Visitaram a landing page
+              </span>
+              <div className="flex-1 h-2.5 rounded-full bg-surface overflow-hidden">
+                <div className="h-full rounded-full bg-ink-300" style={{ width: "100%" }} />
+              </div>
+              <div className="flex items-center gap-1.5 w-28 justify-end shrink-0">
+                <input
+                  type="number"
+                  value={visitantes}
+                  onChange={(e) => setVisitantes(Math.max(0, Number(e.target.value)))}
+                  className="w-16 text-right text-[13px] font-heading font-bold text-ink-700 border border-border rounded px-1.5 py-0.5 bg-surface outline-none focus:ring-1 focus:ring-blue-300"
+                />
+                <span className="text-ink-400 font-normal text-[11px]">(100%)</span>
+              </div>
+            </div>
+            {visitantes > 0 && visitorDropLost > 0 && (
+              <div className="flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 text-red-500 font-semibold">
+                <ArrowDown size={10} />
+                <span className="text-[11px]">
+                  −{visitorDropLost} visitantes ({visitorDropPct.toFixed(1)}% não inscreveram) · CTR registo: {registrationCTR.toFixed(1)}%
+                </span>
+                <AlertTriangle size={10} className="text-red-500" />
+              </div>
+            )}
+          </div>
+          {/* Remaining funnel steps */}
           {funnelSteps.map((step, idx) => {
-            const pct = stats.step1 ? (step.value / stats.step1) * 100 : 0;
+            const base = visitantes > 0 ? visitantes : stats.step1;
+            const pct = base ? (step.value / base) * 100 : 0;
             const drop = idx < stats.dropOffs.length ? stats.dropOffs[idx] : null;
             const isMaxDrop = idx === stats.maxDropIdx && drop && drop.lost > 0;
             return (
@@ -218,8 +254,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                       style={{ width: `${pct}%`, background: step.color }}
                     />
                   </div>
-                  <span className="text-[13px] font-heading font-bold text-ink-700 w-16 text-right shrink-0">
-                    {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(0)}%)</span>
+                  <span className="text-[13px] font-heading font-bold text-ink-700 w-28 text-right shrink-0">
+                    {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(1)}%)</span>
                   </span>
                 </div>
                 {drop && drop.lost > 0 && (
@@ -254,74 +290,90 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         ))}
       </div>
 
-      {/* Pipeline Card */}
-      {stats.pendentes.length > 0 && (
-        <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5 mb-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Euro size={18} className="text-amber-600" />
-            <h3 className="font-heading font-bold text-[14px] text-amber-900">Pipeline Pendente</h3>
-          </div>
-          <p className="font-heading font-extrabold text-[28px] text-amber-800 leading-none">€{stats.pipelineValor.toFixed(2)}</p>
-          <p className="text-[12px] text-amber-700 mt-1">
-            {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} com intenção de compra
-          </p>
-          {stats.seleccionaram.length > 0 && (
-            <p className="text-[12px] text-blue-600 mt-2">
-              🔵 {stats.seleccionaram.length} seleccionaram produto mas não clicaram pagar <span className="text-[11px] text-ink-400">(leads frios)</span>
-            </p>
-          )}
-          {stats.aguardamPgto.length > 0 && (
-            <p className="text-[12px] text-amber-700 mt-1">
-              🟡 {stats.aguardamPgto.length} clicaram pagar mas não completaram <span className="text-[11px] text-ink-400">(leads quentes — seguir já)</span>
-            </p>
-          )}
-          <div className="flex gap-3 mt-2 text-[12px] text-amber-700">
-            {stats.pendingCounts.premium > 0 && <span>{stats.pendingCounts.premium} Premium (€{(stats.pendingCounts.premium * 18.45).toFixed(2)})</span>}
-            {stats.pendingCounts.masterclass > 0 && <span>{stats.pendingCounts.masterclass} MC (€{(stats.pendingCounts.masterclass * 57.81).toFixed(2)})</span>}
-            {stats.pendingCounts.bundle > 0 && <span>{stats.pendingCounts.bundle} Bundle (€{(stats.pendingCounts.bundle * 76.26).toFixed(2)})</span>}
-          </div>
-          <p className="text-[11px] text-amber-600 mt-2">Receita que pode converter se pagarem</p>
-        </div>
-      )}
-
-      {/* Pending Alert */}
-      {stats.pendingOver6h.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-5">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle size={18} className="text-amber-600" />
-            <h3 className="font-heading font-bold text-[14px] text-amber-900">
-              {stats.pendingOver6h.length} pagamento{stats.pendingOver6h.length !== 1 ? "s" : ""} pendente{stats.pendingOver6h.length !== 1 ? "s" : ""} há +6h
-            </h3>
-          </div>
-          <p className="text-[12px] text-amber-700 mb-3">Estes inscritos selecionaram um plano pago mas ainda não concluíram o pagamento. Considere enviar um lembrete.</p>
-          <div className="space-y-1.5">
-            {stats.pendingOver6h.slice(0, 5).map((i) => {
-              const badge = PLAN_BADGE[i.plan];
-              const ref = i.upgrade_clicked_at || i.timestamp;
-              const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
-              const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
-              return (
-                <div
-                  key={i.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-50/50 transition-colors"
-                  onClick={() => onSelectInscrito(i)}
-                >
-                  <span className="text-[13px] font-semibold text-ink-800 flex-1">{genderEmoji(i.gender)} {i.nome}</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
-                    {badge.label}
-                  </span>
-                  <span className="text-[11px] font-semibold" style={{ color: hours >= 24 ? "#DC2626" : "#D97706" }}>
-                    Há {timeText}
-                  </span>
-                </div>
-              );
-            })}
-            {stats.pendingOver6h.length > 5 && (
-              <p className="text-[12px] text-amber-600 font-medium text-center pt-1">
-                +{stats.pendingOver6h.length - 5} mais
+      {/* Pipeline + Pending >6h — 2 columns */}
+      {(stats.pendentes.length > 0 || stats.pendingOver6h.length > 0) && (
+        <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4 mb-5">
+          {/* Left: Pipeline Pendente */}
+          {stats.pendentes.length > 0 && (
+            <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Euro size={18} className="text-amber-600" />
+                <h3 className="font-heading font-bold text-[14px] text-amber-900">Pipeline Pendente</h3>
+              </div>
+              <p className="font-heading font-extrabold text-[28px] text-amber-800 leading-none">€{stats.pipelineValor.toFixed(2)}</p>
+              <p className="text-[12px] text-amber-700 mt-1">
+                {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} por converter
               </p>
-            )}
-          </div>
+
+              <div className="mt-3 space-y-2">
+                {stats.seleccionaram.length > 0 && (
+                  <div className="flex items-start gap-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg">
+                    <span className="text-[14px] mt-0.5">🔵</span>
+                    <div>
+                      <p className="text-[12px] font-semibold text-blue-700">{stats.seleccionaram.length} seleccionaram produto</p>
+                      <p className="text-[11px] text-blue-600/70">Não clicaram &quot;Confirmar e pagar&quot;</p>
+                    </div>
+                  </div>
+                )}
+                {stats.aguardamPgto.length > 0 && (
+                  <div className="flex items-start gap-2 p-2.5 bg-amber-100/80 border border-amber-300 rounded-lg">
+                    <span className="text-[14px] mt-0.5">🟡</span>
+                    <div>
+                      <p className="text-[12px] font-semibold text-amber-800">{stats.aguardamPgto.length} aguardam pagamento</p>
+                      <p className="text-[11px] text-amber-700/70">Têm ref. EuPago — seguir já</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 mt-3 text-[12px] text-amber-700 flex-wrap">
+                {stats.pendingCounts.premium > 0 && <span>{stats.pendingCounts.premium} Premium</span>}
+                {stats.pendingCounts.masterclass > 0 && <span>{stats.pendingCounts.masterclass} MC</span>}
+                {stats.pendingCounts.bundle > 0 && <span>{stats.pendingCounts.bundle} Bundle</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Right: Pendentes há +6h */}
+          {stats.pendingOver6h.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={18} className="text-amber-600" />
+                <h3 className="font-heading font-bold text-[14px] text-amber-900">Pendentes há +6h</h3>
+                <span className="ml-auto text-[12px] font-medium px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
+                  {stats.pendingOver6h.length}
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {stats.pendingOver6h.slice(0, 5).map((i) => {
+                  const badge = PLAN_BADGE[i.plan];
+                  const ref = i.upgrade_clicked_at || i.timestamp;
+                  const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
+                  const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
+                  return (
+                    <div
+                      key={i.id}
+                      className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg border border-amber-200 cursor-pointer hover:bg-amber-50/50 transition-colors"
+                      onClick={() => onSelectInscrito(i)}
+                    >
+                      <span className="text-[13px] font-semibold text-ink-800 flex-1 truncate">{genderEmoji(i.gender)} {i.nome}</span>
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: badge.bg, color: badge.color }}>
+                        {badge.label}
+                      </span>
+                      <span className="text-[11px] font-semibold shrink-0" style={{ color: hours >= 24 ? "#DC2626" : "#D97706" }}>
+                        Há {timeText}
+                      </span>
+                    </div>
+                  );
+                })}
+                {stats.pendingOver6h.length > 5 && (
+                  <p className="text-[12px] text-amber-600 font-medium text-center pt-1">
+                    +{stats.pendingOver6h.length - 5} mais
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
