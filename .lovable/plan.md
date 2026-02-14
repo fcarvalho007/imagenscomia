@@ -1,40 +1,68 @@
 
+## 3 Estados Distintos de Conversao no CRM
 
-## Correcoes: Precos, Pipeline e Funil
+### Problema actual
+O CRM trata todos os nao-pagantes com `plan_selected` como "Pendente" (badge ambar), sem distinguir quem apenas seleccionou o produto de quem realmente clicou para pagar e foi redireccionado para a EuPago.
 
-### 1. Corrigir preco do Bundle (bug)
+### Os 3 estados rastreaveis
 
-O bundle esta com valor errado em dois sitios:
+Com base nos campos ja existentes na base de dados, podemos distinguir com precisao:
 
-**`src/hooks/useInscritos.ts` (linha 10)**:
-- De: `bundle: 72.81`
-- Para: `bundle: 76.26`
+| Estado | Condicao na BD | Significado |
+|---|---|---|
+| Seleccionou | `plan_selected` existe, `upgrade_clicked_at` NULL | Escolheu produto mas abandonou antes de clicar "Pagar" |
+| Aguarda pagamento | `upgrade_clicked_at` existe, `eupago_ref` existe, `paid_at` NULL | Clicou "Pagar", foi redireccionado para EuPago, mas nao completou |
+| Pago | `paid_at` existe | Pagamento confirmado pelo webhook |
 
-**`src/components/crm/DashboardView.tsx` (linha 41)**:
-- De: `bundle: { ..., label: "Bundle €72,81" }`
-- Para: `bundle: { ..., label: "Bundle €76,26" }`
+Nao e necessario adicionar nenhum campo novo a base de dados. Toda a informacao ja existe.
 
-### 2. Simplificar o funil de inscricao — remover duplicacao
+### Alteracoes tecnicas
 
-Actualmente o drop-off aparece duas vezes:
-- Inline entre barras (ex: "-5 pessoas (19% drop)")
-- Box vermelho no final ("Maior saida: entre Passo 3 e Passo 4...")
+**Ficheiro: `src/hooks/useInscritos.ts`**
 
-**Remover o box vermelho do final** (linhas 236-242). A informacao inline ja e suficiente e mais clara porque esta no sitio exacto onde acontece a perda.
+Alterar a logica de `payment_status` (linhas 19-24) de 2 estados para 3:
 
-### 3. Adicionar secccao Pipeline abaixo dos KPIs
+```
+Actual (2 estados):
+  paid_at → "paid"
+  plan_selected != free → "pending"
+  senao → "free"
 
-Criar um card dedicado entre os KPIs e o alerta de pendentes que mostra:
-- Numero de pendentes e valor potencial total
-- Breakdown: "X Premium (Y euros) + Z Bundle (W euros)"
-- Subtexto: "Receita que pode converter se pagarem"
+Novo (3 estados):
+  paid_at → "paid"
+  upgrade_clicked_at existe → "awaiting_payment"
+  plan_selected != free → "selected"
+  senao → "free"
+```
 
-Isto separa claramente dados confirmados (KPIs) de intencoes (Pipeline).
+Actualizar o tipo `Inscrito` em `src/pages/crm/mockData.ts` para incluir os novos estados.
+
+**Ficheiro: `src/components/crm/TableView.tsx`**
+
+Actualizar os badges de estado:
+- "Seleccionou" — badge azul claro (interesse, mas sem accao de pagamento)
+- "Aguarda pagamento" — badge ambar (ja tem link EuPago, pode pagar a qualquer momento)
+- "Pago" — badge verde (confirmado)
+
+**Ficheiro: `src/components/crm/DashboardView.tsx`**
+
+No card Pipeline, separar em duas linhas:
+- "X seleccionaram mas nao clicaram pagar" (leads frios — precisam de nudge)
+- "Y clicaram pagar mas nao completaram" (leads quentes — seguir de imediato)
+
+Actualizar os KPIs e contagens para reflectir os 3 estados.
+
+**Ficheiro: `src/components/crm/InscritoModal.tsx`**
+
+No perfil do inscrito, mostrar o estado correcto com contexto:
+- "Seleccionou Premium" vs "Aguarda pagamento — Premium (ref: XXX)"
 
 ### Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/useInscritos.ts` | Corrigir bundle: 72.81 para 76.26 |
-| `src/components/crm/DashboardView.tsx` | Corrigir label bundle; remover box duplicado do funil; adicionar card Pipeline |
-
+| `src/pages/crm/mockData.ts` | Adicionar novos valores ao tipo payment_status |
+| `src/hooks/useInscritos.ts` | Logica de 3 estados baseada nos campos existentes |
+| `src/components/crm/TableView.tsx` | Badges distintos para cada estado |
+| `src/components/crm/DashboardView.tsx` | Pipeline separado em "seleccionou" vs "aguarda pagamento" |
+| `src/components/crm/InscritoModal.tsx` | Estado detalhado no perfil |
