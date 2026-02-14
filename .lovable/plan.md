@@ -1,68 +1,81 @@
 
-## 3 Estados Distintos de Conversao no CRM
 
-### Problema actual
-O CRM trata todos os nao-pagantes com `plan_selected` como "Pendente" (badge ambar), sem distinguir quem apenas seleccionou o produto de quem realmente clicou para pagar e foi redireccionado para a EuPago.
+## Melhorias ao Dashboard: Rastreio de Abandono, Layout Pipeline e Taxa de Conversao
 
-### Os 3 estados rastreaveis
+### 1. Rastrear abandono no Passo 5 (seleccionou produto mas nao clicou "Confirmar e pagar")
 
-Com base nos campos ja existentes na base de dados, podemos distinguir com precisao:
+**Situacao actual:**
+O campo `plan_selected` e preenchido quando o utilizador chega ao Passo 3 ou 4 e selecciona um produto. O campo `upgrade_clicked_at` so e preenchido quando clica "Confirmar e pagar" (Passo 5) e e redireccionado para a EuPago.
 
-| Estado | Condicao na BD | Significado |
-|---|---|---|
-| Seleccionou | `plan_selected` existe, `upgrade_clicked_at` NULL | Escolheu produto mas abandonou antes de clicar "Pagar" |
-| Aguarda pagamento | `upgrade_clicked_at` existe, `eupago_ref` existe, `paid_at` NULL | Clicou "Pagar", foi redireccionado para EuPago, mas nao completou |
-| Pago | `paid_at` existe | Pagamento confirmado pelo webhook |
+Isto ja esta a ser rastreado correctamente com os 3 estados implementados na ultima iteracao:
+- **Seleccionou** (`plan_selected` existe, `upgrade_clicked_at` null) -- abandonou antes de clicar pagar
+- **Aguarda pagamento** (`upgrade_clicked_at` existe, `paid_at` null) -- clicou pagar, foi para EuPago, nao completou
+- **Pago** (`paid_at` existe)
 
-Nao e necessario adicionar nenhum campo novo a base de dados. Toda a informacao ja existe.
+**Melhoria proposta:** Tornar esta informacao mais visivel e accionavel no Dashboard, integrando-a na seccao Pipeline de forma clara.
 
-### Alteracoes tecnicas
+### 2. Juntar "Pipeline Pendente" e "Pagamentos Pendentes +6h" na mesma linha
 
-**Ficheiro: `src/hooks/useInscritos.ts`**
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
 
-Alterar a logica de `payment_status` (linhas 19-24) de 2 estados para 3:
+Actualmente sao dois cards empilhados verticalmente. A alteracao:
+- Colocar ambos numa grid de 2 colunas na mesma linha
+- **Coluna esquerda:** Pipeline Pendente (resumo com valor total, breakdown por estado "seleccionou" vs "aguarda pagamento", e breakdown por produto)
+- **Coluna direita:** Pendentes ha +6h (lista de nomes clicaveis com tempo decorrido e badge de plano)
+- Em mobile (max-md), voltam a empilhar-se verticalmente
 
-```
-Actual (2 estados):
-  paid_at → "paid"
-  plan_selected != free → "pending"
-  senao → "free"
+### 3. Adicionar taxa de conversao visitantes vs inscritos no Funil
 
-Novo (3 estados):
-  paid_at → "paid"
-  upgrade_clicked_at existe → "awaiting_payment"
-  plan_selected != free → "selected"
-  senao → "free"
-```
+**Dados disponiveis via analytics:**
+- Total de visitantes unicos a landing page: **1049** (desde 8 Fev)
+- Total de inscritos: **58**
+- Taxa de conversao (CTR registo): **~5.5%**
 
-Actualizar o tipo `Inscrito` em `src/pages/crm/mockData.ts` para incluir os novos estados.
+**Implementacao:**
+Adicionar uma linha "0." antes de "1. Submeteu inscricao" no funil com:
+- Label: "Visitaram a landing page"
+- Valor: obtido via chamada a analytics (ou guardado como estado)
+- Drop-off entre visitantes e inscritos mostrado inline
 
-**Ficheiro: `src/components/crm/TableView.tsx`**
+**Abordagem tecnica:** Criar uma edge function `get-analytics-summary` que faz um pedido interno a Lovable Analytics API para obter o total de visitantes, ou, mais simples e pragmatico, guardar o numero de visitantes como uma constante configuravel no Dashboard que o utilizador pode actualizar manualmente. A opcao mais fiavel e usar os dados de analytics directamente.
 
-Actualizar os badges de estado:
-- "Seleccionou" — badge azul claro (interesse, mas sem accao de pagamento)
-- "Aguarda pagamento" — badge ambar (ja tem link EuPago, pode pagar a qualquer momento)
-- "Pago" — badge verde (confirmado)
+**Opcao escolhida (mais simples e precisa):** Usar a contagem de pageviews da rota "/" como proxy dos visitantes. Com base nos analytics: 1034 visitas a "/". Vamos chamar a API de analytics directamente a partir do Dashboard, usando as datas de inicio da campanha.
 
-**Ficheiro: `src/components/crm/DashboardView.tsx`**
+**Alternativa pragmatica (recomendada):** Como nao temos acesso directo a API de analytics a partir do frontend, vamos adicionar um campo editavel no topo do funil onde se pode inserir o numero total de visitantes (com valor default de 1034). Isto e actualizado manualmente mas da controlo total e precisao.
 
-No card Pipeline, separar em duas linhas:
-- "X seleccionaram mas nao clicaram pagar" (leads frios — precisam de nudge)
-- "Y clicaram pagar mas nao completaram" (leads quentes — seguir de imediato)
-
-Actualizar os KPIs e contagens para reflectir os 3 estados.
-
-**Ficheiro: `src/components/crm/InscritoModal.tsx`**
-
-No perfil do inscrito, mostrar o estado correcto com contexto:
-- "Seleccionou Premium" vs "Aguarda pagamento — Premium (ref: XXX)"
-
-### Ficheiros afectados
+### Resumo de alteracoes
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/pages/crm/mockData.ts` | Adicionar novos valores ao tipo payment_status |
-| `src/hooks/useInscritos.ts` | Logica de 3 estados baseada nos campos existentes |
-| `src/components/crm/TableView.tsx` | Badges distintos para cada estado |
-| `src/components/crm/DashboardView.tsx` | Pipeline separado em "seleccionou" vs "aguarda pagamento" |
-| `src/components/crm/InscritoModal.tsx` | Estado detalhado no perfil |
+| `src/components/crm/DashboardView.tsx` | (1) Juntar Pipeline + Pendentes +6h em grid 2 colunas; (2) Adicionar linha "Visitantes" no topo do funil com input editavel e calculo de CTR; (3) Melhorar clareza visual dos 3 estados no Pipeline |
+
+### Detalhe tecnico do funil
+
+O funil passara a ter 6 linhas:
+
+```text
+0. Visitaram a landing page    [input editavel]    (100%)
+   drop: -X visitantes (Y% nao inscreveram)
+1. Submeteu inscricao           58                  (Z%)
+   drop: ...
+2. Chegou ao Passo 1            ...
+   ...
+```
+
+A percentagem do passo 1 sera calculada em relacao ao numero de visitantes (se preenchido), dando a taxa de conversao real da landing page.
+
+### Detalhe do layout Pipeline (2 colunas)
+
+```text
++---------------------------+---------------------------+
+| Pipeline Pendente         | Pendentes ha +6h          |
+| EUR X,XX total            | Y pagamentos              |
+|                           |                           |
+| Seleccionaram: N          | [Nome] Premium  ha Xh    |
+|   (nao clicaram pagar)    | [Nome] Bundle   ha Xd    |
+| Aguardam pagamento: M     | ...                       |
+|   (ja tem ref EuPago)     |                           |
+|                           |                           |
+| X Premium · Y Bundle      | +Z mais                  |
++---------------------------+---------------------------+
+```
