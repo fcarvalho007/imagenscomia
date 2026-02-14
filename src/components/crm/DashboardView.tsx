@@ -66,8 +66,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const conversao = total ? (pagantes.length / total) * 100 : 0;
     const ticket = pagantes.length ? receita / pagantes.length : 0;
     // Pipeline: pending payments
-    const pendentes = active.filter((i) => i.payment_status === "pending");
+    const pendentes = active.filter((i) => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
     const pipelineValor = pendentes.reduce((s, i) => s + i.valor, 0);
+    const seleccionaram = active.filter((i) => i.payment_status === "selected");
+    const aguardamPgto = active.filter((i) => i.payment_status === "awaiting_payment");
 
     // Funnel (using real step_reached from DB)
     const step1 = active.length;
@@ -90,7 +92,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const planCounts: Record<string, number> = { free: 0, premium: 0, masterclass: 0, bundle: 0 };
     active.forEach((i) => { planCounts[i.plan]++; });
     const pendingCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0 };
-    active.forEach((i) => { if (i.payment_status === "pending") pendingCounts[i.plan]++; });
+    active.forEach((i) => { if (i.payment_status === "awaiting_payment" || i.payment_status === "selected") pendingCounts[i.plan]++; });
 
     // Duvidas
     const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
@@ -151,12 +153,12 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
     // Pending > 6h
     const pendingOver6h = active.filter((i) => {
-      if (i.payment_status !== "pending") return false;
+      if (i.payment_status !== "awaiting_payment" && i.payment_status !== "selected") return false;
       const ref = i.upgrade_clicked_at || i.timestamp;
       return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
     });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor };
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
   }, [inscritos]);
 
   const now = new Date();
@@ -261,8 +263,18 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           </div>
           <p className="font-heading font-extrabold text-[28px] text-amber-800 leading-none">€{stats.pipelineValor.toFixed(2)}</p>
           <p className="text-[12px] text-amber-700 mt-1">
-            {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} com pagamento por confirmar
+            {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} com intenção de compra
           </p>
+          {stats.seleccionaram.length > 0 && (
+            <p className="text-[12px] text-blue-600 mt-2">
+              🔵 {stats.seleccionaram.length} seleccionaram produto mas não clicaram pagar <span className="text-[11px] text-ink-400">(leads frios)</span>
+            </p>
+          )}
+          {stats.aguardamPgto.length > 0 && (
+            <p className="text-[12px] text-amber-700 mt-1">
+              🟡 {stats.aguardamPgto.length} clicaram pagar mas não completaram <span className="text-[11px] text-ink-400">(leads quentes — seguir já)</span>
+            </p>
+          )}
           <div className="flex gap-3 mt-2 text-[12px] text-amber-700">
             {stats.pendingCounts.premium > 0 && <span>{stats.pendingCounts.premium} Premium (€{(stats.pendingCounts.premium * 18.45).toFixed(2)})</span>}
             {stats.pendingCounts.masterclass > 0 && <span>{stats.pendingCounts.masterclass} MC (€{(stats.pendingCounts.masterclass * 57.81).toFixed(2)})</span>}

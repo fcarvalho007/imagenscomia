@@ -16,12 +16,14 @@ function mapRegistration(r: any): Inscrito {
     ? (r.plan_selected || "free")
     : (r.plan_selected || "free");
   
-  // Determine payment status
+  // Determine payment status (3 states)
   const payment_status: Inscrito["payment_status"] = r.paid_at
     ? "paid"
-    : r.plan_selected && r.plan_selected !== "free"
-      ? "pending"
-      : "free";
+    : r.upgrade_clicked_at
+      ? "awaiting_payment"
+      : r.plan_selected && r.plan_selected !== "free"
+        ? "selected"
+        : "free";
 
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
