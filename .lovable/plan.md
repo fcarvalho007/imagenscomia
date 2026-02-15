@@ -1,29 +1,56 @@
 
 
-## WhatsApp Support Floating Button — Landing Page
+## Upgrade do WhatsApp Button para Widget com Popup
 
-### New file
-**`src/components/landing/WhatsAppSupportButton.tsx`**
+### O que muda
 
-A reusable floating action button component:
-- Fixed position bottom-right with safe area padding (`bottom-6 right-6`, extra bottom on iOS via `pb-safe` or `env(safe-area-inset-bottom)`)
-- `z-50` to stay above footer/cookie bars
-- WhatsApp green (`#25D366`) background, white icon, `rounded-full`
-- Inline SVG for the WhatsApp icon (Lucide does not include a WhatsApp icon)
-- Wrapped in a Tooltip (`"Suporte WhatsApp"`) using the existing Radix tooltip from the project
-- Hover animation: `scale-110` + enhanced shadow via Tailwind `transition-all`
-- On click:
-  - Opens `https://wa.me/351915015508?text=Ol%C3%A1!%20Preciso%20de%20apoio%20sobre%20a%20p%C3%A1gina.%20Podem%20ajudar-me%3F` in a new tab
-  - Calls a placeholder analytics function: `console.log("whatsapp_click")`
-- `aria-label="Suporte WhatsApp"` for accessibility
+O botao actual abre directamente o WhatsApp num clique. A nova versao transforma-o num widget completo com popup estilo "chat teaser", oferecendo opcoes de contacto mais especificas e uma experiencia mais profissional.
 
-### Modified file
-**`src/pages/Index.tsx`**
+### Comportamento do novo widget
 
-Import and render `<WhatsAppSupportButton />` inside the `<main>` block, after `<FooterSection />` and before `<RegistrationModal />`. No other sections are touched.
+```text
+Estado fechado:                    Estado aberto (popup):
+                                   +----------------------------------+
+                                   |  (x)  Suporte no WhatsApp        |
+                                   |                                  |
+                                   |  Normalmente responde em         |
+                                   |  poucos minutos.                 |
+                                   |  Horario: 09:00-18:00            |
+                                   |  (dias uteis)                    |
+                                   |                                  |
+                                   |  [Iniciar conversa]       (azul) |
+                                   |                                  |
+                                   |  Duvida sobre inscricao     (>)  |
+                                   |  Problema tecnico no acesso  (>) |
+                                   +----------------------------------+
+  [WA icon]  (bottom-right)                              [WA icon] (x)
+```
 
-### Technical notes
-- The `wa.me` URL works identically on mobile and desktop (WhatsApp handles the redirect), so no device detection logic is needed
-- The component is self-contained and reusable — can be dropped into any other page later
-- No new dependencies required
+- Clicar no botao verde abre/fecha o popup
+- ESC fecha o popup
+- Clicar fora do popup fecha-o
+- Cada CTA abre o WhatsApp com uma mensagem diferente:
+  - "Iniciar conversa": mensagem generica actual
+  - "Duvida sobre inscricao": "Ola! Tenho uma duvida sobre a inscricao. Podem ajudar-me?"
+  - "Problema tecnico no acesso": "Ola! Estou com um problema tecnico no acesso. Podem ajudar-me?"
+
+### Ficheiros a alterar
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/landing/WhatsAppSupportButton.tsx` | Reescrever completamente: adicionar estado open/closed, popup card com animacao fade+slide, 3 CTAs com mensagens diferentes, click-outside e ESC para fechar |
+
+Nenhum outro ficheiro e tocado. O import em `Index.tsx` permanece igual.
+
+### Detalhe tecnico
+
+- Estado `isOpen` (boolean) controla visibilidade do popup
+- `useRef` + `useEffect` com event listener para fechar ao clicar fora
+- `useEffect` com keydown listener para ESC
+- Popup usa componentes existentes: `Card` (shadcn) para o container
+- Animacao: Tailwind classes condicionais com `animate-fade-in` / opacity+translate transition
+- Mobile: popup com `max-w-[calc(100vw-3rem)]` e `w-80` para nao cobrir toda a largura
+- O botao verde muda o icone para X quando aberto (transicao suave)
+- `aria-expanded`, `aria-label` e `role` adequados para acessibilidade
+- Analytics: `console.log` diferenciado por tipo de clique ("whatsapp_general", "whatsapp_inscricao", "whatsapp_tecnico")
 
