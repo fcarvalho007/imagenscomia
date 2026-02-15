@@ -1,155 +1,140 @@
 
 
-## Follow-up Strategy: Segmentation + Backlog Recovery + Final Push
+## Centro de Follow-up: Funil + Metricas + Auditoria + Templates
 
-### Current Situation (15 Feb 22:43, event 18 Feb 10:00)
+### Overview
 
-- 9 unpaid candidates with plan intent, all at followup_stage 1-2
-- 5 of 9 have NO `upgrade_clicked_at` (weak signal -- plan was set but no explicit upgrade click)
-- 4 have `upgrade_clicked_at` (stronger signal)
-- All created 13-15 Feb (1-2+ days ago) -- all qualify as "backlog" (36h+) except possibly the 15 Feb registrations
-- Only stage 0 was sent (via legacy internal), stage 1 sent only for Luis Pena (test)
-- Normal stage 1 fires at ~02:46 UTC Feb 16, stage 2 at ~08:46 UTC Feb 16
-- No "final before event" mechanism exists
+Replace the current "Templates" sidebar entry with a new "Follow-up" section containing 3 sub-tabs: Visao Geral (funnel + metrics), Envio e Auditoria (message log table with filters), and Templates (existing editor, enriched).
 
-### Strategy
+### Files Changed
+
+1. **`src/components/crm/CRMSidebar.tsx`** -- Rename "Templates" to "Follow-up", change icon from `FileText` to `Zap` (or `Mail`)
+2. **`src/components/crm/FollowUpView.tsx`** (NEW) -- Container component with 3 Radix Tabs
+3. **`src/components/crm/FollowUpOverview.tsx`** (NEW) -- Tab 1: Funnel + Metrics + Alerts
+4. **`src/components/crm/FollowUpAudit.tsx`** (NEW) -- Tab 2: message_logs table with filters
+5. **`src/components/crm/TemplatesView.tsx`** -- Enriched with per-template send counts + "Ver envios" link
+6. **`src/pages/CRM.tsx`** -- Replace `<TemplatesView />` with `<FollowUpView />`
+
+No schema changes. No edge function changes. All read-only queries to existing tables.
+
+---
+
+### Tab 1: Visao Geral (`FollowUpOverview.tsx`)
+
+**Funnel cards** (horizontal on desktop, stacked on mobile):
+- Pipeline data from `registrations` where `plan_selected != 'free' AND paid_at IS NULL`
+- Cards: Etapa 0 / Etapa 1 / Etapa 2 / Concluido (stage >= 3) / Nao contactar / Pagos (reference)
+- Each card shows count + percentage bar
+
+**Email metrics** (4 cards, same pattern as Dashboard but scoped to follow-up):
+- "Enviados via Resend" 24h / 7d: `provider='resend' AND status='sent' AND provider_message_id IS NOT NULL`
+- "Falhas" 24h / 7d: `status='failed'`
+- "Logs internos" 24h / 7d: `provider='internal' AND status='sent'` (muted/60% opacity)
+
+**Per-stage breakdown** (Resend confirmed only):
+- Horizontal bar chart showing counts per template_key (7d), only `provider='resend' AND provider_message_id IS NOT NULL`
+
+**Protocol alerts** (clickable blocks):
+- "Sem email Resend": count of registrations with intent but 0 message_logs with `provider='resend' AND status='sent'`
+  - Query: LEFT JOIN message_logs, filter where no matching resend rows
+  - Since we cannot do complex JOINs via Supabase JS client, we fetch all message_logs (registration_id, provider, status) for the 24h window and compute client-side against registrations
+- "Com falha de email": registrations with at least one `status='failed'` in last 24h
+- "Link expirado": `payment_link_created_at > 48h AND paid_at IS NULL`
+- "Em atraso": `next_followup_at < now() AND paid_at IS NULL AND do_not_contact = false`
+- Each alert shows count + icon + is clickable (switches to Tab 2 with pre-applied filter)
+
+---
+
+### Tab 2: Envio e Auditoria (`FollowUpAudit.tsx`)
+
+**Data source**: `message_logs` JOIN `registrations` (client-side join since both are small datasets)
+
+**Table columns**:
+- Data/hora (created_at, formatted)
+- Nome + email (from registration join)
+- template_key (with friendly label mapping)
+- Provider badge (green for resend, gray for internal)
+- Status badge (green sent, red failed, yellow queued)
+- provider_message_id (truncated, copy button)
+- Error (if exists, truncated with tooltip)
+- Actions: "Abrir ficha" (opens InscritoModal), "Copiar link" (last_payment_link)
+
+**Quick filters** (chips):
+- Time range: 24h / 7d / Tudo
+- Provider: Resend / Internal / Todos
+- Status: sent / failed / queued / Todos
+- Template: dropdown select of template_keys
+- "So confirmados" toggle (provider_message_id IS NOT NULL)
+
+**Summary bar** at top: "Resend confirmados: X / Falhas: Y / Total: Z"
+
+**Mobile**: Condensed card layout instead of table. Each card shows name, template, status badge, time.
+
+**Props**: Accepts optional `initialFilter` prop so Tab 1 alerts can open Tab 2 pre-filtered.
+
+---
+
+### Tab 3: Templates (enriched `TemplatesView.tsx`)
+
+Keep all existing functionality. Add:
+- Per template row: new column "Envios 7d" showing count of Resend-confirmed sends for that template_key
+- Button "Ver envios" per template that triggers a callback to switch to Tab 2 filtered by that template_key
+- Query on mount: fetch `message_logs` grouped by template_key where `provider='resend' AND status='sent' AND provider_message_id IS NOT NULL` in last 7 days
+
+---
+
+### Container: `FollowUpView.tsx`
 
 ```text
-Timeline (UTC):
-Now ─────── Feb 16 02:46 ──── Feb 16 08:46 ──── Feb 17 16:00 ──── Feb 18 10:00
- |              |                  |                  |                 |
- |          Stage 1 fires      Stage 2 fires    Final email          EVENT
- |          (normal flow)      (normal flow)    (new: T-18h)
- |
- +-- Backlog check-in (immediate, new template)
++------------------------------------------+
+| FOLLOW-UP                                |
+| [Visao Geral] [Envio & Auditoria] [Templates] |
++------------------------------------------+
+|  (active tab content)                    |
++------------------------------------------+
 ```
 
-### Phase 1 -- Segmentation Logic (Edge Function)
+- Uses Radix `Tabs` component (already installed)
+- State: `activeTab` + `auditFilter` (passed to Tab 2)
+- When an alert in Tab 1 is clicked, sets `auditFilter` and switches to Tab 2
+- When "Ver envios" in Tab 3 is clicked, sets `auditFilter.templateKey` and switches to Tab 2
 
-Add segment classification inside `followup-abandoned`:
+---
 
-| Segment | Criteria | Action |
-|---------|----------|--------|
-| A: Recent | intent < 12h ago | Normal stage flow (existing) |
-| B: Warm | intent 12-36h ago | Normal stage flow (existing) |
-| C: Backlog | intent 36h+ ago, has upgrade_clicked_at | 1x backlog check-in + final before event |
-| D: Weak backlog | intent 36h+, NO upgrade_clicked_at | 1x gentle check-in only, no aggressive follow-up |
+### Data fetching strategy
 
-Constants added to edge function:
-- `MODAL_LAUNCH_AT = "2026-02-15T18:00:00Z"` (approximate time modal was introduced)
-- `EVENT_DATE = "2026-02-18T10:00:00Z"`
-- `FINAL_EMAIL_AT = "2026-02-17T16:00:00Z"` (T-18h)
+All queries are direct Supabase client calls (no SQL views needed):
 
-### Phase 2 -- New Templates (DB inserts)
+1. **Funnel data**: Derived from `inscritos` prop (already fetched by useInscritos)
+2. **Email metrics**: `supabase.from("message_logs").select(...)` with appropriate filters
+3. **Audit table**: Fetch `message_logs` (limit 500, ordered by created_at desc) + join with inscritos client-side by registration_id
+4. **Template send counts**: `supabase.from("message_logs").select("template_key")` grouped client-side
 
-4 new templates in `email_templates`:
+This avoids creating SQL views while keeping queries efficient (message_logs is small).
 
-1. **`followup_backlog_checkin`** -- "Ainda tens interesse?" Gentle, with opt-out line. For segments C/D.
-2. **`followup_final_before_event`** -- "Ultima oportunidade antes do webinar" with real urgency (18 Fev 10:00). For ALL unpaid with plan intent.
-3. **`followup_backlog_weak`** -- Softer version for segment D (no upgrade_clicked_at). Single send, confirmation-style.
-4. Keep existing `followup_stage_0/1/2` unchanged for the normal flow.
-
-All templates:
-- PT-PT, short, 1 CTA with `{{payment_link}}`
-- Include `{{support_whatsapp}}`
-- Backlog templates include: "Se ja nao fizer sentido, e so ignorar este email."
-- Final template includes event date urgency
-
-### Phase 3 -- Scheduling Logic Changes
-
-The edge function will be restructured to handle two parallel tracks:
-
-**Track A: Normal stage flow (unchanged)**
-- Stages 0/1/2 with delays 30min/6h/24h
-- Idempotency by `(registration_id, template_key)`
-- This continues working for recent/warm leads
-
-**Track B: Backlog override (new)**
-- If candidate is 36h+ since intent AND followup_stage < 3:
-  - Send `followup_backlog_checkin` (once, idempotent)
-  - Does NOT advance followup_stage (parallel track)
-  - Logs with provider='resend' in message_logs
-
-**Track C: Final before event (new)**
-- Runs for ALL unpaid candidates with plan intent
-- Sends `followup_final_before_event` once
-- Only triggers when `now >= FINAL_EMAIL_AT` (17 Feb 16:00 UTC)
-- Idempotent: checks message_logs for template_key='followup_final_before_event'
-- Does NOT advance followup_stage
-
-**Max emails per candidate:**
-- Normal flow: up to 3 (stages 0/1/2)
-- Backlog check-in: 1
-- Final before event: 1
-- Total max: 5 (but backlog candidates typically get 1 stage + 1 checkin + 1 final = 3)
-
-### Phase 4 -- CRM UI Updates
-
-**TableView (new quick filters):**
-- "Backlog 36h+" chip: shows candidates with intent > 36h ago, unpaid
-- "Sem follow-up Resend" chip: plan != free, paid_at null, 0 message_logs with provider='resend'
-
-**TableView (row enhancements):**
-- New column/badge: "Ultimo email" showing most recent template_key + relative time
-- "Proximo" showing next_followup_at or "Final 17 Fev 16h" if applicable
-
-**InscritoModal (new button):**
-- "Enviar check-in backlog" button with confirmation dialog
-- Respects do_not_contact
-- Checks idempotency before sending
-- Writes message_logs with provider='resend'
-- Calls a new edge function endpoint or uses inline Resend call via existing infrastructure
-
-### Phase 5 -- Verification
-
-After implementation:
-1. Manual trigger of followup-abandoned with x-cron-secret
-2. Verify summary shows backlog check-ins sent
-3. Query: `SELECT template_key, provider, status, count(*) FROM message_logs WHERE created_at > now() - interval '1 hour' GROUP BY 1,2,3`
-4. Verify no duplicates per (registration_id, template_key)
+---
 
 ### Technical Details
 
-**Files changed:**
+**FollowUpView.tsx** receives:
+- `inscritos: Inscrito[]` (from CRM.tsx, same prop)
+- `onSelectInscrito: (i: Inscrito) => void` (for "Abrir ficha" action)
 
-1. `supabase/functions/followup-abandoned/index.ts`
-   - Add MODAL_LAUNCH_AT, EVENT_DATE, FINAL_EMAIL_AT constants
-   - Add segment classification function
-   - Add backlog check-in track (parallel to stage flow)
-   - Add final-before-event track
-   - Enhanced summary logging with segment breakdown
+**CRM.tsx changes**:
+- Import `FollowUpView` instead of `TemplatesView`
+- Pass `inscritos` and `onSelectInscrito` to it
 
-2. `src/components/crm/TableView.tsx`
-   - Add "Backlog 36h+" and "Sem follow-up Resend" quick filter chips
-   - Add "Ultimo email" and "Proximo" info per row (fetched from useInscritos)
+**CRMSidebar.tsx changes**:
+- `CRMView` type stays the same (value "templates" maps to follow-up section)
+- Just rename the label from "Templates" to "Follow-up" and change icon
 
-3. `src/components/crm/InscritoModal.tsx`
-   - Add "Enviar check-in backlog" button in the actions area
-   - Confirmation dialog before sending
-   - Calls supabase function or direct Resend via edge function
+**TemplatesView.tsx changes**:
+- Accept optional `onViewSends?: (templateKey: string) => void` prop
+- Accept optional `templateSendCounts?: Record<string, number>` prop
+- Add "Envios 7d" column and "Ver envios" button per row
 
-4. `src/hooks/useInscritos.ts`
-   - Add `sendBacklogCheckin(id)` function that calls the edge function with a specific mode
-   - Add `fetchLastEmail(id)` for TableView enrichment
-
-5. `src/components/crm/DashboardView.tsx`
-   - Add backlog segment counts to email stats section
-
-**Database changes (inserts only, no schema changes):**
-- Insert 3 new templates into `email_templates` table
-
-**No changes to:**
-- Payment logic (EuPago)
-- Idempotency base
-- Existing stage 0/1/2 templates
-- Database schema
-
-### Risk Mitigation
-
-- All new sends go through existing Resend path with message_logs audit trail
-- Idempotency prevents duplicates: each template_key can only be sent once per registration
-- do_not_contact is respected at query level (existing filter)
-- Backlog check-in uses softer copy with explicit opt-out language
-- Final email only triggers after FINAL_EMAIL_AT threshold
-- Test with owner email first before real backlog sends
+**Queries used** (all respect the Resend confirmed rule):
+- Resend confirmed: `provider='resend' AND status='sent' AND provider_message_id IS NOT NULL`
+- Internal: `provider='internal' AND status='sent'`
+- Failed: `status='failed'` (any provider)
 
