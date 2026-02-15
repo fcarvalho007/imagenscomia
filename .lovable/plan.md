@@ -1,114 +1,106 @@
 
 
-## CRM UI Robustness Upgrade — Follow-up Operations
+## Templates DB + CRM UI + Edge Function Update
 
-This upgrade adds activity logs, follow-up visibility, payment link actions, and smart filters across the CRM Table and Inscrito Modal.
-
----
-
-### A) useInscritos Hook — Lazy Log Fetching
-
-**File:** `src/hooks/useInscritos.ts`
-
-Add two new async functions that fetch logs on-demand (not on page load):
-
-- `fetchMessageLogs(registrationId)` — queries `message_logs` table filtered by `registration_id`, ordered by `created_at desc`, limit 10
-- `fetchPaymentEvents(registrationId)` — queries `payment_events` table filtered by `registration_id`, ordered by `received_at desc`, limit 10
-
-Both return typed arrays. No global state — the modal manages its own local state for these.
-
-Also add a helper `fetchFailedEmailIds()` that returns a `Set<string>` of registration IDs with failed message_logs in the last 24h (for the table filter chip). Called once when TableView mounts.
+The `email_templates` table already exists with 3 seeded rows. This plan covers the remaining work: updating the edge function to use DB templates, adding a Templates page to the CRM, and adding email counts.
 
 ---
 
-### B) Inscrito Modal — Activity/Logs Section
+### 1. Edge Function: Load templates from DB
+
+**File:** `supabase/functions/followup-abandoned/index.ts`
+
+- Remove the hardcoded `STAGE_TEMPLATES` array and `WHATSAPP_FOOTER` constant (lines 22-43)
+- After determining `templateKey` for a candidate, query `email_templates`:
+  ```
+  select subject, text_body, html_body from email_templates
+  where template_key = templateKey and is_active = true limit 1
+  ```
+- If no row returned: insert a `message_logs` row with `status='failed'`, `error='template_missing'`, skip send, increment `summary.errors`
+- Replace placeholders in subject and body (use `coalesce(html_body, text_body)`):
+  - `{{name}}` -> `reg.first_name || reg.name.split(" ")[0]`
+  - `{{payment_link}}` -> `paymentLink`
+  - `{{plan_selected}}` -> `reg.plan_selected`
+  - `{{support_whatsapp}}` -> `"915 015 508"`
+  - `{{webinar_date}}` -> `"18 Fev 2026 · 10h00"`
+- Send via Resend using the resolved subject and body (if `html_body` exists, send as `html`; otherwise as `text`)
+- Remove the old `product.label` / `displayValue` logic from email building (lines 225-229)
+
+---
+
+### 2. CRM Sidebar: Add "Templates" view
+
+**File:** `src/components/crm/CRMSidebar.tsx`
+
+- Add `"templates"` to the `CRMView` type union
+- Add a new nav item: `{ icon: FileText, label: "Templates", view: "templates" }` (import `FileText` from lucide-react)
+
+---
+
+### 3. New Component: TemplatesView
+
+**File:** `src/components/crm/TemplatesView.tsx` (new)
+
+A full CRM page listing email templates from the `email_templates` table.
+
+**List view:**
+- Fetch all rows from `email_templates` on mount, ordered by `template_key`
+- Table with columns: Template Key, Subject (truncated), Active (toggle), Updated At
+- Click a row to open the edit modal
+
+**Edit modal (inline dialog):**
+- Fields: `subject` (input), `text_body` (textarea), `html_body` (textarea, optional)
+- Live preview panel below: shows the body with sample variable replacements:
+  - `{{name}}` -> "Maria"
+  - `{{payment_link}}` -> "https://exemplo.pt/pagamento"
+  - `{{plan_selected}}` -> "Premium"
+  - `{{support_whatsapp}}` -> "915 015 508"
+  - `{{webinar_date}}` -> "18 Fev 2026 · 10h00"
+- Save button: updates `subject`, `text_body`, `html_body`, `updated_at = now()`, `updated_by = 'crm'`
+- Toggle `is_active`: when activating, no special logic needed (template_key is unique, so only one row per key)
+
+---
+
+### 4. Wire Templates into CRM page
+
+**File:** `src/pages/CRM.tsx`
+
+- Import `TemplatesView`
+- Add rendering for `activeView === "templates"`
+
+---
+
+### 5. Dashboard: Email count cards
+
+**File:** `src/components/crm/DashboardView.tsx`
+
+- On mount, fetch two counts from `message_logs`:
+  - `sent_7d`: count where `status = 'sent'` and `created_at >= 7 days ago`
+  - `failed_7d`: count where `status = 'failed'` and `created_at >= 7 days ago`
+- Also fetch per-stage breakdown: count `message_logs` where `status = 'sent'` grouped by `template_key` (for `followup_stage_0/1/2`)
+- Add a new section after KPIs titled "Emails (7 dias)" with 3 compact cards:
+  - "Enviados": sent_7d count (green)
+  - "Falhas": failed_7d count (red)
+  - "Por etapa": mini list showing stage 0/1/2 sent counts
+
+---
+
+### 6. Inscrito Modal: Email counts summary
 
 **File:** `src/components/crm/InscritoModal.tsx`
 
-Add a new section after the Notas section titled **"Actividade / Logs"** with two tabs:
-
-**Tab 1: Emails (message_logs)**
-- Fetched lazily via `fetchMessageLogs` when the modal opens (useEffect on inscrito.id)
-- Each row shows: `created_at` (formatted), `template_key`, status badge (queued = grey, sent = green, failed = red), `provider`, `provider_message_id` (with copy button), `error` (shown as tooltip/collapsed red text if present)
-- Empty state: "Sem emails enviados"
-
-**Tab 2: Pagamentos (payment_events)**
-- Fetched lazily via `fetchPaymentEvents` when modal opens
-- Each row shows: `received_at` (formatted), `event_type` badge (colored by type), `eupago_ref`, `processed_at`, `idempotency_key` (copy button), `payload` (collapsed JSON preview via collapsible)
-- Empty state: "Sem eventos de pagamento"
-
-Uses Radix Tabs component already in the project.
+- In the Activity/Logs section header, add inline counts computed from the already-fetched `messageLogs` array:
+  - "Emails enviados: X" (count where status === 'sent')
+  - "Falhas: Y" (count where status === 'failed')
+- These are computed client-side from the logs already loaded lazily
 
 ---
 
-### C) Inscrito Modal — Enhanced Follow-up Header
+### Technical Notes
 
-**File:** `src/components/crm/InscritoModal.tsx`
-
-Enhance the existing follow-up info block (lines 436-465) to show:
-
-- "Follow-up automatico: etapa X/3" (already exists)
-- **NEW**: "Ultima tentativa: {last_followup_at}" (formatted date, or "Nunca" if null)
-- **NEW**: "Proxima tentativa: {next_followup_at}" (formatted date, or "N/A" if null or stage >= 3)
-- Keep the "Nao contactar" toggle (already exists)
-
-**NEW Payment Link Actions** (shown when `last_payment_link` exists):
-- Button: "Copiar link de pagamento" — copies `last_payment_link` to clipboard
-- Button: "Abrir link" — opens `last_payment_link` in new tab
-- Button: "Copiar ref EuPago" — copies `eupago_ref` (if exists)
-
-These appear as a compact button row below the follow-up info, before the "Gerar NOVO link" button.
-
----
-
-### D) Table View — Quick Filter Chips
-
-**File:** `src/components/crm/TableView.tsx`
-
-Add a row of clickable filter chips above the existing controls:
-
-1. **"Aguardam pagamento"** — `paid_at == null AND plan_selected != 'free' AND plan_selected != null`
-2. **"Link expirado"** — `payment_link_created_at` older than 48h AND `paid_at == null`
-3. **"Falhas de email"** — registration ID is in the failed-emails set (fetched once on mount)
-4. **"Nao contactar"** — `do_not_contact == true`
-
-Chips are toggle-able (click to activate/deactivate). Active chip gets highlighted styling. Only one chip active at a time (clicking another deactivates the previous). Chips show count badges.
-
-The "Falhas de email" chip requires calling `fetchFailedEmailIds()` once when TableView mounts, storing the result in state.
-
----
-
-### E) Table View — Follow-up Badges in Rows
-
-**File:** `src/components/crm/TableView.tsx`
-
-For rows where `paid_at == null AND plan != 'free'`, add two compact inline badges after the existing payment status badges:
-
-- **"Follow-up X/3"** — small pill, muted style
-- **"Prox. {relative time}"** — e.g., "Prox. 2h", "Prox. 06:45", computed from `next_followup_at`. Only shown if `next_followup_at` is set and in the future.
-
-These are small, inline, using the same badge styling pattern as existing payment status badges.
-
----
-
-### Technical Details
-
-**New types needed** (inline in useInscritos or a shared types file):
-
-```text
-MessageLog: id, registration_id, template_key, channel, provider, status, provider_message_id, error, created_at, updated_at
-PaymentEvent: id, registration_id, event_type, eupago_ref, idempotency_key, payload, received_at, processed_at
-```
-
-**Data flow:**
-- Table View: all data comes from existing `inscritos` array (client-side filtering) + one extra query for failed email IDs
-- Modal: logs fetched lazily per inscrito via two Supabase queries when modal opens
-
-**No backend changes.** All DB fields and tables already exist from Phase B.
-
-**Files changed:**
-1. `src/hooks/useInscritos.ts` — add `fetchMessageLogs`, `fetchPaymentEvents`, `fetchFailedEmailIds`
-2. `src/components/crm/InscritoModal.tsx` — add Activity/Logs tabs section, enhance follow-up header with timestamps + payment link buttons
-3. `src/components/crm/TableView.tsx` — add filter chips row + follow-up badges in table rows
-4. `src/pages/CRM.tsx` — pass new hook functions to InscritoModal
+- The `email_templates` table already has RLS policies allowing anon SELECT, UPDATE, and INSERT
+- The edge function uses service role key, so RLS is bypassed for its queries
+- No new DB migrations needed
+- Edge function will be redeployed after changes
+- All UI labels in PT-PT, consistent with existing CRM design patterns
 
