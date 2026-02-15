@@ -1,106 +1,136 @@
 
 
-## Templates DB + CRM UI + Edge Function Update
+## CRM Email Templates: Production-Ready Upgrade
 
-The `email_templates` table already exists with 3 seeded rows. This plan covers the remaining work: updating the edge function to use DB templates, adding a Templates page to the CRM, and adding email counts.
+Upgrades the existing `email_templates` system with versioning, validation, and enhanced metrics.
 
 ---
 
-### 1. Edge Function: Load templates from DB
+### Current State
+
+The system already has:
+- `email_templates` table with 3 active templates (stage 0/1/2)
+- Edge function loading templates from DB with `{{placeholder}}` format
+- Basic TemplatesView with inline editing and preview
+- Dashboard with 7-day email count cards
+- InscritoModal with lazy-loaded activity logs
+
+### What Changes
+
+---
+
+### Part A: Database Migration
+
+**Add columns** to `email_templates`:
+- `name text NOT NULL DEFAULT ''` (human-friendly label)
+- `channel text NOT NULL DEFAULT 'email'` with check constraint `channel IN ('email')`
+- `version integer NOT NULL DEFAULT 1`
+- `variables jsonb NOT NULL DEFAULT '[]'::jsonb` (array of required placeholder names)
+
+**Constraints:**
+- Drop existing unique on `template_key` (if any)
+- Add `UNIQUE(template_key, version)`
+- Add partial unique index: `CREATE UNIQUE INDEX idx_one_active_per_key ON email_templates(template_key) WHERE is_active = true`
+
+**Update existing rows** (via SQL insert tool, not migration):
+- Set `name` for each: "Follow-up Etapa 0", "Follow-up Etapa 1", "Follow-up Etapa 2"
+- Set `variables` to `["name","payment_link","plan_selected","support_whatsapp","webinar_date"]`
+- Set `version = 1` (already default)
+
+**Seed new template:**
+- `reminder_manual` (version 1, is_active true) with PT-PT copy, CTA "Retomar pagamento", WhatsApp footer
+
+---
+
+### Part B: Edge Function Update
 
 **File:** `supabase/functions/followup-abandoned/index.ts`
 
-- Remove the hardcoded `STAGE_TEMPLATES` array and `WHATSAPP_FOOTER` constant (lines 22-43)
-- After determining `templateKey` for a candidate, query `email_templates`:
-  ```
-  select subject, text_body, html_body from email_templates
-  where template_key = templateKey and is_active = true limit 1
-  ```
-- If no row returned: insert a `message_logs` row with `status='failed'`, `error='template_missing'`, skip send, increment `summary.errors`
-- Replace placeholders in subject and body (use `coalesce(html_body, text_body)`):
-  - `{{name}}` -> `reg.first_name || reg.name.split(" ")[0]`
-  - `{{payment_link}}` -> `paymentLink`
-  - `{{plan_selected}}` -> `reg.plan_selected`
-  - `{{support_whatsapp}}` -> `"915 015 508"`
-  - `{{webinar_date}}` -> `"18 Fev 2026 · 10h00"`
-- Send via Resend using the resolved subject and body (if `html_body` exists, send as `html`; otherwise as `text`)
-- Remove the old `product.label` / `displayValue` logic from email building (lines 225-229)
+Minor enhancement only (current DB-loading already works):
+
+1. After loading template, read `variables` jsonb from the row
+2. Build the template vars dict as today
+3. Validate: if any variable in the template's `variables` array is missing/empty in the dict, log `message_logs` with `status='failed'`, `error='missing_variable:{var_name}'`, skip send
+4. No other changes -- payment logic, idempotency, Resend sending all stay exactly as-is
 
 ---
 
-### 2. CRM Sidebar: Add "Templates" view
+### Part C: TemplatesView Rewrite
 
-**File:** `src/components/crm/CRMSidebar.tsx`
+**File:** `src/components/crm/TemplatesView.tsx`
 
-- Add `"templates"` to the `CRMView` type union
-- Add a new nav item: `{ icon: FileText, label: "Templates", view: "templates" }` (import `FileText` from lucide-react)
-
----
-
-### 3. New Component: TemplatesView
-
-**File:** `src/components/crm/TemplatesView.tsx` (new)
-
-A full CRM page listing email templates from the `email_templates` table.
+Major UI upgrade:
 
 **List view:**
-- Fetch all rows from `email_templates` on mount, ordered by `template_key`
-- Table with columns: Template Key, Subject (truncated), Active (toggle), Updated At
-- Click a row to open the edit modal
+- Show: `name`, `template_key` (mono), active version number, `updated_at`, is_active toggle, "Preview" button
+- Group by template_key if multiple versions exist
+- Show version history count per key
 
-**Edit modal (inline dialog):**
-- Fields: `subject` (input), `text_body` (textarea), `html_body` (textarea, optional)
-- Live preview panel below: shows the body with sample variable replacements:
-  - `{{name}}` -> "Maria"
-  - `{{payment_link}}` -> "https://exemplo.pt/pagamento"
-  - `{{plan_selected}}` -> "Premium"
-  - `{{support_whatsapp}}` -> "915 015 508"
-  - `{{webinar_date}}` -> "18 Fev 2026 · 10h00"
-- Save button: updates `subject`, `text_body`, `html_body`, `updated_at = now()`, `updated_by = 'crm'`
-- Toggle `is_active`: when activating, no special logic needed (template_key is unique, so only one row per key)
+**Versioned editing:**
+- When editing an ACTIVE template, clicking "Guardar" creates a NEW row with `version + 1`, sets it `is_active = true`, and sets the old version `is_active = false` (two DB calls)
+- This preserves full edit history in DB
+
+**Editor fields:**
+- Subject (text input)
+- Body text (textarea, monospace)
+- Body HTML (textarea, optional)
+- Required variables: checkbox list from allowed set (`name`, `payment_link`, `plan_selected`, `support_whatsapp`, `webinar_date`)
+- Selected checkboxes stored in `variables` jsonb
+
+**Validation before save:**
+- Subject and body must contain `{{payment_link}}` at least once
+- All checked required variables must appear as `{{var}}` in subject or body (warn + block save if missing)
+- Only whitelisted placeholder names allowed (flag unknown `{{...}}` patterns)
+
+**Live preview:**
+- Sample data panel (same as today but always visible in edit mode)
+- Rendered subject + body with replacements
+
+**Restore previous version:**
+- In the version history, show a list of past versions with "Restaurar" button
+- Restoring sets that version active and deactivates the current one
 
 ---
 
-### 4. Wire Templates into CRM page
-
-**File:** `src/pages/CRM.tsx`
-
-- Import `TemplatesView`
-- Add rendering for `activeView === "templates"`
-
----
-
-### 5. Dashboard: Email count cards
+### Part D: Dashboard Metrics Enhancement
 
 **File:** `src/components/crm/DashboardView.tsx`
 
-- On mount, fetch two counts from `message_logs`:
-  - `sent_7d`: count where `status = 'sent'` and `created_at >= 7 days ago`
-  - `failed_7d`: count where `status = 'failed'` and `created_at >= 7 days ago`
-- Also fetch per-stage breakdown: count `message_logs` where `status = 'sent'` grouped by `template_key` (for `followup_stage_0/1/2`)
-- Add a new section after KPIs titled "Emails (7 dias)" with 3 compact cards:
-  - "Enviados": sent_7d count (green)
-  - "Falhas": failed_7d count (red)
-  - "Por etapa": mini list showing stage 0/1/2 sent counts
+Add 24h counts alongside existing 7d counts:
+- Modify the existing email stats section to show both time windows
+- Layout: "Enviados: X (24h) / Y (7d)" format in the existing cards
+- Per-stage breakdown stays as-is
 
 ---
 
-### 6. Inscrito Modal: Email counts summary
+### Part E: InscritoModal Email Summary
 
 **File:** `src/components/crm/InscritoModal.tsx`
 
-- In the Activity/Logs section header, add inline counts computed from the already-fetched `messageLogs` array:
-  - "Emails enviados: X" (count where status === 'sent')
-  - "Falhas: Y" (count where status === 'failed')
-- These are computed client-side from the logs already loaded lazily
+In the Activity/Logs section header, show:
+- "Emails enviados (7d): X" -- count from `messageLogs` where status=sent and created_at within 7d
+- "Falhas: Y" -- count where status=failed
+- "Ultimo status: sent/failed" -- from the most recent log entry
+- These are computed client-side from the already-fetched `messageLogs` array (no new queries)
 
 ---
 
-### Technical Notes
+### Implementation Order
 
-- The `email_templates` table already has RLS policies allowing anon SELECT, UPDATE, and INSERT
-- The edge function uses service role key, so RLS is bypassed for its queries
-- No new DB migrations needed
-- Edge function will be redeployed after changes
-- All UI labels in PT-PT, consistent with existing CRM design patterns
+1. DB migration (add columns + constraints)
+2. SQL insert to update existing rows + seed `reminder_manual`
+3. Update edge function (add variables validation)
+4. Deploy edge function
+5. Rewrite TemplatesView (versioned editing, validation, restore)
+6. Update DashboardView (24h counts)
+7. Update InscritoModal (email summary line)
+
+### Files Changed
+
+1. `supabase/migrations/` -- new migration for schema changes
+2. SQL insert for data updates + seed
+3. `supabase/functions/followup-abandoned/index.ts` -- add variables validation
+4. `src/components/crm/TemplatesView.tsx` -- full rewrite with versioning
+5. `src/components/crm/DashboardView.tsx` -- add 24h counts
+6. `src/components/crm/InscritoModal.tsx` -- add email summary line
 
