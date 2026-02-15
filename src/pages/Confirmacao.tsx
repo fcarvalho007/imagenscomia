@@ -1,9 +1,16 @@
 import { useSearchParams, Link } from "react-router-dom";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
+
+const PLAN_PRICES: Record<string, number> = {
+  premium: 18.45,
+  masterclass: 57.81,
+  bundle: 76.26,
+};
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -15,6 +22,15 @@ const Confirmacao = () => {
   usePageMeta({ title: "Inscrição Confirmada — Webinar Imagens com IA", description: "A tua inscrição foi confirmada. Adiciona ao calendário e partilha." });
   const [searchParams] = useSearchParams();
   const userName = searchParams.get("name") || "";
+  const plan = searchParams.get("plan") || "";
+
+  // Fire Facebook Purchase pixel only on this page (after actual payment)
+  useEffect(() => {
+    const value = PLAN_PRICES[plan];
+    if (value && typeof fbq !== "undefined") {
+      fbq("track", "Purchase", { value, currency: "EUR" });
+    }
+  }, [plan]);
 
   return (
     <div className="min-h-screen bg-off-white flex items-center justify-center p-4 sm:p-6">

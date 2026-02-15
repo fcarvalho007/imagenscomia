@@ -78,6 +78,7 @@ serve(async (req) => {
           referralLink: `${origin}/?ref=${existing.referral_code}`,
           alreadyRegistered: true,
           premiumUnlocked: existing.premium_unlocked,
+          name: `${existing.first_name || ""} ${existing.last_name || ""}`.trim(),
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

@@ -10,6 +10,8 @@ import { StepPersonalization } from "@/components/upgrade/StepPersonalization";
 import { StepPremium } from "@/components/upgrade/StepPremium";
 import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepConfirmation } from "@/components/upgrade/StepConfirmation";
+import { toast } from "sonner";
+import { Mail, Loader2, ArrowRight } from "lucide-react";
 
 export interface OrderState {
   premium: boolean;
@@ -33,12 +35,16 @@ const Upsell = () => {
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [orderState, setOrderState] = useState<OrderState>({ premium: false, masterclass: false });
-  const [userData] = useState({
+  const [userData, setUserData] = useState({
     nome: searchParams.get("name") || "",
     email: (searchParams.get("email") || "").toLowerCase().trim(),
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
+  const [needsRecovery, setNeedsRecovery] = useState(!searchParams.get("email"));
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
   const [duvida, setDuvida] = useState("");
@@ -48,7 +54,59 @@ const Upsell = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const handleRecovery = useCallback(async () => {
+    const trimmed = recoveryEmail.toLowerCase().trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setRecoveryError("Indique um email válido.");
+      return;
+    }
+    setRecoveryLoading(true);
+    setRecoveryError(null);
+    try {
+      const { data, error } = await supabase
+        .from("registrations")
+        .select("name, step_reached, plan_selected, eupago_ref, first_name, last_name")
+        .eq("email", trimmed)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        setRecoveryError("Email não encontrado. Verifica ou inscreve-te primeiro.");
+        setRecoveryLoading(false);
+        return;
+      }
+
+      setUserData({
+        nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+        email: trimmed,
+        whatsapp: "",
+        referralCode: "",
+      });
+
+      // Resume at saved step or step 1
+      const resumeStep = data.step_reached && data.step_reached > 1 ? data.step_reached : 1;
+      setStep(resumeStep);
+
+      // Restore order state from plan_selected
+      if (data.plan_selected === "premium") setOrderState({ premium: true, masterclass: false });
+      else if (data.plan_selected === "masterclass") setOrderState({ premium: false, masterclass: true });
+      else if (data.plan_selected === "bundle") setOrderState({ premium: true, masterclass: true });
+
+      setNeedsRecovery(false);
+    } catch (err) {
+      console.error("Recovery error:", err);
+      setRecoveryError("Erro ao recuperar dados. Tenta novamente.");
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }, [recoveryEmail]);
+
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
+    if (!userData.email) {
+      console.error("saveStepData called with empty email — aborting");
+      toast.error("Erro: email não definido. Recarrega a página.");
+      return;
+    }
     try {
       await supabase
         .from("registrations")
@@ -66,11 +124,15 @@ const Upsell = () => {
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
+    if (!userData.email) {
+      toast.error("Erro: email não definido. Recarrega a página.");
+      console.error("handlePayment called with empty email — aborting");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const planLabel = plan === "premium-masterclass" ? "bundle" : plan;
-      // Save upgrade data to registrations
       await supabase
         .from("registrations")
         .update({
@@ -81,16 +143,12 @@ const Upsell = () => {
         } as any)
         .eq("email", userData.email);
 
-      // Create dynamic payment link via edge function
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
         body: { plan: planLabel, email: userData.email, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
-
-      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26 };
-      fbq('track', 'Purchase', { value: prices[planLabel] || 0, currency: 'EUR' });
 
       window.location.href = data.paymentLink;
     } catch (err) {
@@ -102,6 +160,54 @@ const Upsell = () => {
 
   const progress = (step / 5) * 100;
   const total = getTotal(orderState);
+
+  if (needsRecovery) {
+    return (
+      <div className="min-h-screen bg-off-white flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-[440px] bg-background rounded-2xl p-8 shadow-card-lg text-center"
+        >
+          <Mail className="w-10 h-10 text-blue-600 mx-auto mb-4" />
+          <h2 className="font-heading font-bold text-xl text-ink-900 mb-2">
+            Retomar o teu upgrade
+          </h2>
+          <p className="text-[15px] text-ink-500 mb-6">
+            Introduz o email que usaste para te inscreveres.
+          </p>
+          <div className="space-y-3">
+            <input
+              type="email"
+              placeholder="O teu email"
+              value={recoveryEmail}
+              onChange={(e) => setRecoveryEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleRecovery()}
+              className="w-full bg-surface border border-border h-12 px-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+            />
+            {recoveryError && (
+              <p className="text-sm text-red-500">{recoveryError}</p>
+            )}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              disabled={recoveryLoading}
+              onClick={handleRecovery}
+              className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-3.5 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {recoveryLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <ArrowRight className="w-5 h-5" />
+              )}
+              {recoveryLoading ? "A verificar..." : "Continuar"}
+            </motion.button>
+          </div>
+        </motion.div>
+        <WhatsAppSupportButton />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-off-white">
