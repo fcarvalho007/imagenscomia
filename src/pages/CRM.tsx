@@ -5,6 +5,7 @@ import DashboardView from "@/components/crm/DashboardView";
 import PipelineView from "@/components/crm/PipelineView";
 import TableView from "@/components/crm/TableView";
 import TrashView from "@/components/crm/TrashView";
+import TemplatesView from "@/components/crm/TemplatesView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -59,6 +60,7 @@ export default function CRM() {
             fetchFailedEmailIds={fetchFailedEmailIds}
           />
         )}
+        {activeView === "templates" && <TemplatesView />}
         {activeView === "lixo" && (
           <TrashView
             inscritos={inscritos}

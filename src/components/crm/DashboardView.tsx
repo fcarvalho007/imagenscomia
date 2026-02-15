@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,31 @@ function abbreviateSource(s: string) {
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [visitantes, setVisitantes] = useState(1034);
+
+  // Email counts (7 days)
+  const [emailSent7d, setEmailSent7d] = useState(0);
+  const [emailFailed7d, setEmailFailed7d] = useState(0);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    Promise.all([
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", sevenDaysAgo),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo),
+      supabase.from("message_logs").select("template_key").eq("status", "sent").gte("created_at", sevenDaysAgo),
+    ]).then(([sentRes, failedRes, stageRes]) => {
+      setEmailSent7d(sentRes.count || 0);
+      setEmailFailed7d(failedRes.count || 0);
+      if (stageRes.data) {
+        const counts: Record<string, number> = {};
+        stageRes.data.forEach((r: { template_key: string }) => {
+          counts[r.template_key] = (counts[r.template_key] || 0) + 1;
+        });
+        setStageCounts(counts);
+      }
+    });
+  }, []);
   const stats = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
     const total = active.length;
@@ -288,6 +313,34 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <p className="text-[11px] text-ink-400">{kpi.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Emails (7 dias) */}
+      <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3.5 mb-5">
+        <div className="bg-white border border-border rounded-xl p-5">
+          <Mail size={20} className="text-green-600" />
+          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailSent7d}</p>
+          <p className="text-[13px] text-ink-500 mt-1">Emails enviados</p>
+          <p className="text-[11px] text-ink-400">Últimos 7 dias</p>
+        </div>
+        <div className="bg-white border border-border rounded-xl p-5">
+          <AlertCircle size={20} className="text-red-500" />
+          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailFailed7d}</p>
+          <p className="text-[13px] text-ink-500 mt-1">Falhas</p>
+          <p className="text-[11px] text-ink-400">Últimos 7 dias</p>
+        </div>
+        <div className="bg-white border border-border rounded-xl p-5">
+          <BarChart2 size={20} className="text-blue-600" />
+          <p className="text-[13px] font-semibold text-ink-700 mt-2">Por etapa</p>
+          <div className="mt-2 space-y-1">
+            {[0, 1, 2].map((s) => (
+              <div key={s} className="flex justify-between text-[12px]">
+                <span className="text-ink-500">Etapa {s}</span>
+                <span className="font-semibold text-ink-700">{stageCounts[`followup_stage_${s}`] || 0}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Pipeline + Pending >6h — 2 columns */}

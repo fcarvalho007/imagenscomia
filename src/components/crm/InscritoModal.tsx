@@ -733,7 +733,21 @@ export default function InscritoModal({
             {(fetchMessageLogs || fetchPaymentEvents) && (
               <>
                 <hr className="border-border my-6" />
-                <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Actividade / Logs</h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h3 className="font-heading font-bold text-[14px] text-ink-800">Actividade / Logs</h3>
+                  {messageLogs.length > 0 && (
+                    <div className="flex items-center gap-2 text-[12px]">
+                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                        Enviados: {messageLogs.filter((l: any) => l.status === "sent").length}
+                      </span>
+                      {messageLogs.filter((l: any) => l.status === "failed").length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium">
+                          Falhas: {messageLogs.filter((l: any) => l.status === "failed").length}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {logsLoading ? (
                   <div className="flex items-center gap-2 text-ink-400 text-[13px] py-4">
                     <Loader2 size={14} className="animate-spin" /> A carregar logs...
