@@ -14,18 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
+      message_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          provider: string
+          provider_message_id: string | null
+          registration_id: string
+          status: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          provider: string
+          provider_message_id?: string | null
+          registration_id: string
+          status?: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          provider?: string
+          provider_message_id?: string | null
+          registration_id?: string
+          status?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          eupago_ref: string | null
+          event_type: string
+          id: string
+          idempotency_key: string
+          payload: Json
+          processed_at: string | null
+          received_at: string
+          registration_id: string | null
+        }
+        Insert: {
+          eupago_ref?: string | null
+          event_type: string
+          id?: string
+          idempotency_key: string
+          payload?: Json
+          processed_at?: string | null
+          received_at?: string
+          registration_id?: string | null
+        }
+        Update: {
+          eupago_ref?: string | null
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          payload?: Json
+          processed_at?: string | null
+          received_at?: string
+          registration_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       registrations: {
         Row: {
           created_at: string | null
+          do_not_contact: boolean
           duvida: string | null
           email: string
           eupago_ref: string | null
           first_name: string | null
+          followup_stage: number
           gender_override: string | null
           id: string
+          last_followup_at: string | null
           last_name: string | null
+          last_payment_link: string | null
+          last_payment_link_sent_at: string | null
           name: string
+          next_followup_at: string | null
           paid_at: string | null
+          payment_link_created_at: string | null
           plan_selected: string | null
           premium_unlocked: boolean | null
           referral_code: string
@@ -37,15 +132,22 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          do_not_contact?: boolean
           duvida?: string | null
           email: string
           eupago_ref?: string | null
           first_name?: string | null
+          followup_stage?: number
           gender_override?: string | null
           id?: string
+          last_followup_at?: string | null
           last_name?: string | null
+          last_payment_link?: string | null
+          last_payment_link_sent_at?: string | null
           name: string
+          next_followup_at?: string | null
           paid_at?: string | null
+          payment_link_created_at?: string | null
           plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code: string
@@ -57,15 +159,22 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          do_not_contact?: boolean
           duvida?: string | null
           email?: string
           eupago_ref?: string | null
           first_name?: string | null
+          followup_stage?: number
           gender_override?: string | null
           id?: string
+          last_followup_at?: string | null
           last_name?: string | null
+          last_payment_link?: string | null
+          last_payment_link_sent_at?: string | null
           name?: string
+          next_followup_at?: string | null
           paid_at?: string | null
+          payment_link_created_at?: string | null
           plan_selected?: string | null
           premium_unlocked?: boolean | null
           referral_code?: string

@@ -21,6 +21,7 @@ interface InscritoModalProps {
   onDelete?: (id: string) => void;
   onSetGender?: (id: string, gender: Gender) => void;
   onUpdateName?: (id: string, fullName: string) => void;
+  onToggleDoNotContact?: (id: string) => void;
 }
 
 const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = {
@@ -52,7 +53,7 @@ function abbreviateSource(s: string) {
 
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -431,9 +432,38 @@ export default function InscritoModal({
               )}
             </div>
 
-            {/* Reminder Button for Pending */}
+            {/* Follow-up Info & Reminder Button for Pending */}
             {(inscrito.payment_status === "awaiting_payment" || inscrito.payment_status === "selected") && (
               <div className="mb-5">
+                {/* Follow-up stage & do_not_contact */}
+                <div className="flex flex-wrap items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-off-white border border-border text-[12px]">
+                  <span className="font-medium text-ink-600">
+                    Follow-up automático: etapa {Math.min(inscrito.followup_stage, 3)}/3
+                  </span>
+                  {inscrito.last_payment_link_sent_at && (
+                    <>
+                      <span className="text-ink-300">·</span>
+                      <span className="text-ink-500">Último link enviado em {fmtDate(inscrito.last_payment_link_sent_at)}</span>
+                    </>
+                  )}
+                  {onToggleDoNotContact && (
+                    <>
+                      <span className="text-ink-300">·</span>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={inscrito.do_not_contact}
+                          onChange={() => onToggleDoNotContact(inscrito.id)}
+                          className="w-3.5 h-3.5 rounded accent-red-500"
+                        />
+                        <span className={inscrito.do_not_contact ? "text-red-600 font-semibold" : "text-ink-500"}>
+                          Não contactar
+                        </span>
+                      </label>
+                    </>
+                  )}
+                </div>
+
                 {!reminderData ? (
                   <button
                     onClick={handleGenerateReminder}
@@ -443,7 +473,7 @@ export default function InscritoModal({
                     {reminderLoading ? (
                       <><Loader2 size={16} className="animate-spin" /> A gerar link de pagamento...</>
                     ) : (
-                      <><Bell size={16} /> Gerar Lembrete de Pagamento</>
+                      <><Bell size={16} /> {inscrito.eupago_ref ? "Gerar NOVO link de pagamento" : "Gerar link de pagamento"}</>
                     )}
                   </button>
                 ) : (

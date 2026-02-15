@@ -29,6 +29,13 @@ export type Inscrito = {
   primeiro_nome: string;
   resto_nome: string;
   payment_status: "paid" | "awaiting_payment" | "selected" | "free";
+  last_payment_link: string | null;
+  payment_link_created_at: string | null;
+  followup_stage: number;
+  last_followup_at: string | null;
+  next_followup_at: string | null;
+  do_not_contact: boolean;
+  last_payment_link_sent_at: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];

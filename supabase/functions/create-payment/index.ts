@@ -51,6 +51,36 @@ serve(async (req) => {
       );
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // --- Idempotency check: reuse recent transaction if within 1 hour ---
+    if (email) {
+      const { data: reg } = await supabase
+        .from("registrations")
+        .select("eupago_ref, upgrade_clicked_at, paid_at, last_payment_link")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (reg && reg.eupago_ref && !reg.paid_at && reg.upgrade_clicked_at) {
+        const clickedAt = new Date(reg.upgrade_clicked_at).getTime();
+        const oneHourAgo = Date.now() - 60 * 60 * 1000;
+        if (clickedAt > oneHourAgo) {
+          console.log(`⏳ Idempotent: reusing existing transaction for ${email}, ref=${reg.eupago_ref}`);
+          return new Response(
+            JSON.stringify({
+              paymentLink: reg.last_payment_link || null,
+              reference: reg.eupago_ref,
+              idempotent: true,
+              message: "Pagamento já em processamento. Verifica o teu email ou aguarda.",
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
 
     const eupagoResponse = await fetch(
@@ -73,7 +103,7 @@ serve(async (req) => {
             backUrl: `${origin}/upgrade`,
             lang: "PT",
             methods: ["CC", "MBWAY", "MB"],
-            callbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/eupago-webhook`,
+            callbackUrl: `${supabaseUrl}/functions/v1/eupago-webhook`,
           },
           customer: {
             notify: false,
@@ -98,12 +128,15 @@ serve(async (req) => {
     const reference = data.reference || data.referencia;
     const transactionID = data.transactionID || data.transaction_id || data.id;
 
-    // Save transactionID + reference to DB for reliable tracking
-    if (email && transactionID) {
+    // Save transactionID + reference + payment link to DB
+    if (email) {
       try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        // Look up registration_id for payment_events
+        const { data: regRow } = await supabase
+          .from("registrations")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
 
         await supabase
           .from("registrations")
@@ -111,10 +144,26 @@ serve(async (req) => {
             eupago_ref: transactionID,
             plan_selected: plan === "premium-masterclass" ? "bundle" : plan,
             upgrade_clicked_at: new Date().toISOString(),
+            last_payment_link: paymentLink || null,
+            payment_link_created_at: new Date().toISOString(),
           })
           .eq("email", email);
 
         console.log(`✅ Saved transactionID=${transactionID} for ${email}`);
+
+        // Log to payment_events
+        if (regRow) {
+          const idempotencyKey = `link-${email}-${plan}-${transactionID}`;
+          await supabase.from("payment_events").insert({
+            registration_id: regRow.id,
+            event_type: "link_created",
+            eupago_ref: transactionID,
+            idempotency_key: idempotencyKey,
+            payload: { plan, email, paymentLink, reference, transactionID },
+          }).then(({ error }) => {
+            if (error) console.warn("payment_events insert (non-blocking):", error.message);
+          });
+        }
       } catch (dbErr) {
         console.error("DB save error (non-blocking):", dbErr);
       }
