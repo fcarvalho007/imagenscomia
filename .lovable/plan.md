@@ -1,51 +1,49 @@
 
 
-## Melhorias Visuais e Limpeza do Dashboard
+## Modal de Confirmacao nos Passos 3 e 4 + Botao "Saltar" mais visivel
 
-### 1. Cores mais impactantes nos badges de estado (Pipeline + Tabela)
+### Problema
+Nos passos 3 (Premium) e 4 (Masterclass), o botao principal ("Garantir Premium Pass") e a unica accao visualmente dominante. O link "Continuar sem..." e discreto (13px, cinza claro). Utilizadores que so querem avancar podem clicar no botao de compra por falta de alternativa clara, gerando falsos "Seleccionou e saiu" no CRM.
 
-Actualmente:
-- "Seleccionou" = azul claro suave (bg-blue-50, text-blue-600)
-- "Aguarda pgto" = ambar suave (bg-amber-100, text-amber-700)
+### Solucao: duas alteracoes complementares
 
-Novo:
-- **"Seleccionou e saiu"** = laranja forte (bg-orange-100, text-orange-700, border orange) — remete para alerta, precisa de accao
-- **"Aguarda pgto"** = vermelho/rosa (bg-red-100, text-red-700) — urgencia maxima, ja tem referencia gerada
+**A) Modal de confirmacao ao clicar no botao de compra**
 
-Aplicar em 3 ficheiros:
-- `PipelineView.tsx` (cards kanban)
-- `TableView.tsx` (badges na tabela)
-- `InscritoModal.tsx` (ficha do inscrito, se existir badge)
+Quando o utilizador clica "Garantir Premium Pass" ou "Garantir lugar na Masterclass", aparece um modal de confirmacao antes de adicionar ao carrinho:
 
-Tambem mudar o texto "Seleccionou" para "Seleccionou e saiu" para maior clareza.
+```text
++----------------------------------------+
+|  Boa escolha!                          |
+|                                        |
+|  Vais adicionar o [Premium Pass /      |
+|  Masterclass] ao teu checkout.         |
+|  No proximo passo podes rever tudo     |
+|  antes de pagar.                       |
+|                                        |
+|  [Sim, adicionar ao checkout]  (azul)  |
+|  [Cancelar]                   (outline)|
++----------------------------------------+
+```
 
-### 2. Acrescentar "Inscricao a:" na data dos cards Pipeline
+Isto garante intencionalidade real — so quem confirma e contado como "Seleccionou".
 
-No `PipelineCard` dentro de `PipelineView.tsx`, a ultima linha mostra apenas a data. Alterar de:
+**B) Botao "Saltar" mais visivel**
 
-`13 Fev · 19:25`
+Transformar o link discreto num botao secundario com mais presenca visual:
+- De: texto 13px cinza, so hover underline
+- Para: botao outline com borda, padding, 14px, com texto claro ("Continuar sem extras" ou equivalente)
+- Manter abaixo do separador "ou" mas com mais peso visual
 
-Para:
-
-`Inscrição a: 13 Fev · 19:25`
-
-### 3. Remover bloco "Receita confirmada / Pipeline pendente" da caixa "Distribuicao por Plano"
-
-No `DashboardView.tsx`, linhas 441-452 contem um `border-t` com receita confirmada e pipeline pendente dentro do card de Distribuicao por Plano. Remover esse bloco inteiro — a informacao ja existe nos KPIs e no card Pipeline Pendente.
-
-### 4. Refinamentos adicionais no Dashboard
-
-Apos avaliar o dashboard completo:
-
-- **Corrigir preco do Bundle no Pipeline kanban**: `PipelineView.tsx` linha 46 mostra "Bundle -- EUR72,81" em vez de "EUR76,26"
-- **Corrigir VALOR_COLORS na Tabela**: `TableView.tsx` linha 32 tem `72.81` em vez de `76.26` para o verde do Bundle
-
-### Ficheiros afectados
+### Ficheiros a alterar
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/PipelineView.tsx` | Cores impactantes nos badges; prefixo "Inscricao a:" na data; corrigir preco Bundle na coluna |
-| `src/components/crm/TableView.tsx` | Cores impactantes nos badges; corrigir VALOR_COLORS |
-| `src/components/crm/InscritoModal.tsx` | Cores impactantes nos badges de estado (se existentes) |
-| `src/components/crm/DashboardView.tsx` | Remover bloco receita/pipeline do card Distribuicao por Plano |
+| `src/components/upgrade/StepPremium.tsx` | Adicionar estado para modal de confirmacao; transformar skip link em botao outline |
+| `src/components/upgrade/StepMasterclass.tsx` | Idem — modal de confirmacao + botao skip mais visivel |
+
+### Detalhe tecnico
+
+Ambos os componentes passam a ter um estado `showConfirm` (boolean). O modal usa o componente `AlertDialog` ja existente no projecto (Radix). Ao clicar "Sim, adicionar", chama `onAddPremium` / `onAddMasterclass` como antes. Ao clicar "Cancelar", fecha o modal sem accao.
+
+O botao de skip passa de `<p>` para `<button>` com classes: `w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors`.
 
