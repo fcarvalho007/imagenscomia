@@ -19,28 +19,16 @@ const STAGE_DELAYS_MS = [
   24 * 60 * 60 * 1000,  // stage 2: 24 hours
 ];
 
-const WHATSAPP_FOOTER = "\n\nWhatsApp de suporte: 915 015 508";
-
-const STAGE_TEMPLATES = [
-  {
-    key: "followup_stage_0",
-    subject: (name: string, label: string) => `${name}, faltou um passo para o teu ${label}`,
-    body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nVi que escolheste o ${label} mas o pagamento ficou pendente.\n\nRetomar pagamento:\n${link}\n\nValor total (c/ IVA): ${value}€\nMétodos: MB WAY, Multibanco\n\nQualquer dúvida, responde a este email.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
-  },
-  {
-    key: "followup_stage_1",
-    subject: (name: string, label: string) => `O teu ${label} ainda está à espera, ${name}`,
-    body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nO teu lugar no ${label} continua reservado, mas o pagamento ainda não foi concluído.\n\nRetomar pagamento:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nSe tiveres questões, responde a este email.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
-  },
-  {
-    key: "followup_stage_2",
-    subject: (name: string, label: string) => `Última oportunidade — ${label}`,
-    body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nEste é o último lembrete sobre o teu ${label}. O webinar é já dia 18 de Fevereiro.\n\nRetomar pagamento:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nDepois deste email não envio mais lembretes.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
-  },
-];
+function replacePlaceholders(
+  text: string,
+  vars: Record<string, string>,
+): string {
+  let result = text;
+  for (const [key, value] of Object.entries(vars)) {
+    result = result.split(`{{${key}}}`).join(value);
+  }
+  return result;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -130,6 +118,30 @@ serve(async (req) => {
         summary.skipped++;
         continue;
       }
+
+      // ── Load template from DB ──
+      const { data: tplRows, error: tplError } = await supabase
+        .from("email_templates")
+        .select("subject, text_body, html_body")
+        .eq("template_key", templateKey)
+        .eq("is_active", true)
+        .limit(1);
+
+      if (tplError || !tplRows || tplRows.length === 0) {
+        console.error(`Template missing or inactive: ${templateKey}`);
+        await supabase.from("message_logs").insert({
+          registration_id: reg.id,
+          channel: "email",
+          provider: "resend",
+          template_key: templateKey,
+          status: "failed",
+          error: "template_missing",
+        });
+        summary.errors++;
+        continue;
+      }
+
+      const tpl = tplRows[0];
 
       const plan = reg.plan_selected || "premium";
       const product = PRODUCTS[plan] || PRODUCTS.premium;
@@ -221,12 +233,33 @@ serve(async (req) => {
         continue;
       }
 
-      // Build email content
-      const template = STAGE_TEMPLATES[stage];
+      // ── Build email content from DB template ──
       const firstName = reg.first_name || (reg.name || "").split(" ")[0] || "participante";
-      const displayValue = product.value.toFixed(2).replace(".", ",");
-      const emailSubject = template.subject(firstName, product.label);
-      const emailBody = template.body(firstName, product.label, paymentLink!, displayValue);
+      const templateVars: Record<string, string> = {
+        name: firstName,
+        payment_link: paymentLink!,
+        plan_selected: product.label,
+        support_whatsapp: "915 015 508",
+        webinar_date: "18 Fev 2026 · 10h00",
+      };
+
+      const emailSubject = replacePlaceholders(tpl.subject, templateVars);
+      const emailBody = tpl.html_body
+        ? replacePlaceholders(tpl.html_body, templateVars)
+        : tpl.text_body
+          ? replacePlaceholders(tpl.text_body, templateVars)
+          : null;
+
+      if (!emailBody) {
+        console.error(`Template ${templateKey} has no body content`);
+        await supabase.from("message_logs").update({
+          status: "failed",
+          error: "template_empty_body",
+          updated_at: new Date().toISOString(),
+        }).eq("id", logRow.id);
+        summary.errors++;
+        continue;
+      }
 
       console.log(`📧 [Stage ${stage}] Prepared email for ${reg.email}: "${emailSubject}"`);
 
@@ -237,18 +270,26 @@ serve(async (req) => {
 
       if (RESEND_API_KEY) {
         try {
+          const resendPayload: Record<string, unknown> = {
+            from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+            to: [reg.email],
+            subject: emailSubject,
+          };
+
+          // Send as HTML if html_body exists, otherwise as text
+          if (tpl.html_body) {
+            resendPayload.html = emailBody;
+          } else {
+            resendPayload.text = emailBody;
+          }
+
           const resendRes = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${RESEND_API_KEY}`,
             },
-            body: JSON.stringify({
-              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-              to: [reg.email],
-              subject: emailSubject,
-              text: emailBody,
-            }),
+            body: JSON.stringify(resendPayload),
           });
 
           const resendData = await resendRes.json();
