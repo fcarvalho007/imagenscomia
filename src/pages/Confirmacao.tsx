@@ -1,10 +1,11 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
 
 const PLAN_PRICES: Record<string, number> = {
   premium: 18.45,
@@ -23,14 +24,38 @@ const Confirmacao = () => {
   const [searchParams] = useSearchParams();
   const userName = searchParams.get("name") || "";
   const plan = searchParams.get("plan") || "";
+  const email = searchParams.get("email") || "";
+  const [pixelFired, setPixelFired] = useState(false);
 
-  // Fire Facebook Purchase pixel only on this page (after actual payment)
+  // Only fire Purchase pixel if paid_at is confirmed in DB
   useEffect(() => {
+    if (pixelFired || !email || !plan) return;
+
     const value = PLAN_PRICES[plan];
-    if (value && typeof fbq !== "undefined") {
-      fbq("track", "Purchase", { value, currency: "EUR" });
-    }
-  }, [plan]);
+    if (!value) return;
+
+    const checkPaid = async () => {
+      try {
+        const { data } = await supabase
+          .from("registrations")
+          .select("paid_at")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (data?.paid_at && typeof fbq !== "undefined") {
+          fbq("track", "Purchase", { value, currency: "EUR" });
+          setPixelFired(true);
+          console.log("✅ fbq Purchase fired for", email);
+        } else {
+          console.log("⏳ paid_at not confirmed, pixel NOT fired for", email);
+        }
+      } catch (err) {
+        console.error("Pixel check error:", err);
+      }
+    };
+
+    checkPaid();
+  }, [email, plan, pixelFired]);
 
   return (
     <div className="min-h-screen bg-off-white flex items-center justify-center p-4 sm:p-6">
