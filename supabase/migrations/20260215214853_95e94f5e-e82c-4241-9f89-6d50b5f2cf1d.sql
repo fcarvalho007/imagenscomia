@@ -1,0 +1,1 @@
+ALTER TABLE email_templates DROP CONSTRAINT IF EXISTS email_templates_template_key_key;

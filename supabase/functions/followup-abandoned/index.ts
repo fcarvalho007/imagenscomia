@@ -46,6 +46,9 @@ serve(async (req) => {
   }
 
   try {
+    const runId = `run-${Date.now()}`;
+    console.log(`[followup-abandoned] ${runId} started, source=cron`);
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -70,12 +73,14 @@ serve(async (req) => {
     }
 
     if (!candidates || candidates.length === 0) {
-      console.log("No follow-up candidates found.");
+      console.log(`[followup-abandoned] ${runId} complete: no candidates found`);
       return new Response(JSON.stringify({ ...summary, message: "No candidates" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[followup-abandoned] ${runId} candidates_found=${candidates.length}`);
 
     for (const reg of candidates) {
       summary.processed++;
@@ -361,7 +366,7 @@ serve(async (req) => {
       summary.sent++;
     }
 
-    console.log(`Follow-up summary:`, JSON.stringify(summary));
+    console.log(`[followup-abandoned] ${runId} complete:`, JSON.stringify(summary));
 
     return new Response(JSON.stringify(summary), {
       status: 200,
