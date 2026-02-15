@@ -38,6 +38,10 @@ serve(async (req) => {
       );
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
     const origin = req.headers.get("origin") || "https://imagenscomia.lovable.app";
 
     // Generate new EuPago pay-by-link
@@ -58,7 +62,7 @@ serve(async (req) => {
             backUrl: `${origin}/upgrade`,
             lang: "PT",
             methods: ["CC", "MBWAY", "MB"],
-            callbackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/eupago-webhook`,
+            callbackUrl: `${supabaseUrl}/functions/v1/eupago-webhook`,
           },
           customer: { notify: false, email },
         }),
@@ -78,25 +82,57 @@ serve(async (req) => {
     const paymentLink = data.url || data.redirectUrl || data.paymentLink || data.payment_url;
     const transactionID = data.transactionID || data.transaction_id || data.id;
 
-    // Update eupago_ref in DB
-    if (transactionID) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+    // Look up registration for logging
+    const { data: regRow } = await supabase
+      .from("registrations")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
 
+    // Update eupago_ref + payment link metadata in DB
+    if (transactionID) {
       await supabase
         .from("registrations")
-        .update({ eupago_ref: transactionID })
+        .update({
+          eupago_ref: transactionID,
+          last_payment_link: paymentLink || null,
+          payment_link_created_at: new Date().toISOString(),
+          last_payment_link_sent_at: new Date().toISOString(),
+        })
         .eq("email", email);
 
       console.log(`✅ Updated eupago_ref=${transactionID} for ${email}`);
     }
 
-    // Format display value (with IVA included)
+    // Audit: insert into message_logs
+    if (regRow) {
+      await supabase.from("message_logs").insert({
+        registration_id: regRow.id,
+        channel: "email",
+        provider: "internal",
+        template_key: "reminder_manual",
+        status: "queued",
+      }).then(({ error }) => {
+        if (error) console.warn("message_logs insert (non-blocking):", error.message);
+      });
+
+      // Audit: insert into payment_events
+      const idempotencyKey = `reminder-${email}-${transactionID}-${Date.now()}`;
+      await supabase.from("payment_events").insert({
+        registration_id: regRow.id,
+        event_type: "link_created",
+        eupago_ref: transactionID,
+        idempotency_key: idempotencyKey,
+        payload: { plan, email, paymentLink, source: "generate-reminder" },
+      }).then(({ error }) => {
+        if (error) console.warn("payment_events insert (non-blocking):", error.message);
+      });
+    }
+
+    // Format display value
     const displayValue = (product.value).toFixed(2).replace(".", ",");
     const firstName = nome.split(" ")[0];
 
-    // Build email template
     const emailSubject = `Lembrete — o teu ${product.label} está à espera`;
     const emailBody = `Olá ${firstName},
 

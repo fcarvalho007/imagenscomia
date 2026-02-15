@@ -51,6 +51,13 @@ function mapRegistration(r: any): Inscrito {
     primeiro_nome: r.first_name || (r.name || "").split(" ")[0] || "",
     resto_nome: r.last_name || (r.name || "").split(" ").slice(1).join(" ") || "",
     payment_status,
+    last_payment_link: r.last_payment_link || null,
+    payment_link_created_at: r.payment_link_created_at || null,
+    followup_stage: r.followup_stage ?? 0,
+    last_followup_at: r.last_followup_at || null,
+    next_followup_at: r.next_followup_at || null,
+    do_not_contact: r.do_not_contact ?? false,
+    last_payment_link_sent_at: r.last_payment_link_sent_at || null,
   };
 }
 
@@ -166,5 +173,22 @@ export function useInscritos() {
     );
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName };
+  const toggleDoNotContact = useCallback(async (inscritoId: string) => {
+    const current = inscritos.find((i) => i.id === inscritoId);
+    if (!current) return;
+    const newVal = !current.do_not_contact;
+    const { error } = await supabase
+      .from("registrations")
+      .update({ do_not_contact: newVal } as any)
+      .eq("id", inscritoId);
+    if (error) {
+      console.error("Error toggling do_not_contact:", error);
+      return;
+    }
+    setInscritos((prev) =>
+      prev.map((i) => (i.id === inscritoId ? { ...i, do_not_contact: newVal } : i))
+    );
+  }, [inscritos]);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact };
 }

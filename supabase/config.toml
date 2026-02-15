@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.generate-reminder]
 verify_jwt = false
+
+[functions.followup-abandoned]
+verify_jwt = false

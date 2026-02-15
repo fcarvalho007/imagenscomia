@@ -20,7 +20,7 @@ function extractFromGET(req: Request): PaymentData {
   const url = new URL(req.url);
   const p = url.searchParams;
   return {
-    transactionStatus: "Success", // GET callback = payment confirmed
+    transactionStatus: "Success",
     reference: p.get("referencia") || "",
     amount: p.get("valor") || "",
     identifier: p.get("identificador") || "",
@@ -46,6 +46,27 @@ async function processPayment(data: PaymentData) {
 
   console.log(`EuPago webhook: status=${transactionStatus}, ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${transactionID}`);
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  // --- Idempotent audit log: insert webhook event ---
+  const idempotencyKey = `webhook-${transactionID || "none"}-${reference || "none"}`;
+  const { error: eventError } = await supabase.from("payment_events").insert({
+    event_type: "webhook_received",
+    eupago_ref: transactionID || reference || null,
+    idempotency_key: idempotencyKey,
+    payload: data,
+  });
+
+  if (eventError) {
+    if (eventError.code === "23505") {
+      console.log(`⚡ Duplicate webhook ignored (idempotency_key=${idempotencyKey})`);
+      return;
+    }
+    console.warn("payment_events insert warning:", eventError.message);
+  }
+
   if (transactionStatus !== "Success") {
     console.log(`⚠️ Payment status: ${transactionStatus}, ref=${reference}`);
     return;
@@ -53,11 +74,8 @@ async function processPayment(data: PaymentData) {
 
   console.log(`✅ Payment confirmed: ref=${reference}, amount=${amount}, method=${paymentMethod}, id=${identifier}, txID=${transactionID}`);
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   let matched = false;
+  let matchedRegId: string | null = null;
 
   // Strategy 1: Match by transactionID
   if (transactionID) {
@@ -68,11 +86,12 @@ async function processPayment(data: PaymentData) {
         eupago_ref: reference || transactionID,
       })
       .eq("eupago_ref", transactionID)
-      .select("email");
+      .select("id, email");
 
     if (!error && rows && rows.length > 0) {
       console.log(`✅ Matched by transactionID: ${rows[0].email}`);
       matched = true;
+      matchedRegId = rows[0].id;
     } else {
       console.log(`⚠️ No match by transactionID=${transactionID}, trying email extraction...`);
     }
@@ -87,25 +106,46 @@ async function processPayment(data: PaymentData) {
     }
 
     if (email) {
-      const { error } = await supabase
+      const { data: updatedRows, error } = await supabase
         .from("registrations")
         .update({
           paid_at: new Date().toISOString(),
           eupago_ref: reference || identifier,
         })
-        .eq("email", email);
+        .eq("email", email)
+        .select("id");
 
       if (error) {
         console.error("DB update error (email fallback):", error);
-      } else {
+      } else if (updatedRows && updatedRows.length > 0) {
         console.log(`✅ Updated registration for ${email} via email fallback`);
         matched = true;
+        matchedRegId = updatedRows[0].id;
       }
     }
   }
 
   if (!matched) {
     console.warn("⚠️ Could not match payment to any registration. identifier:", identifier, "txID:", transactionID);
+  }
+
+  // Log payment_confirmed event
+  if (matched && matchedRegId) {
+    await supabase.from("payment_events").insert({
+      registration_id: matchedRegId,
+      event_type: "payment_confirmed",
+      eupago_ref: transactionID || reference,
+      idempotency_key: `confirmed-${transactionID || reference}-${matchedRegId}`,
+      payload: data,
+      processed_at: new Date().toISOString(),
+    }).then(({ error }) => {
+      if (error) console.warn("payment_confirmed event (non-blocking):", error.message);
+    });
+
+    // Update the webhook_received event with registration_id and processed_at
+    await supabase.from("payment_events")
+      .update({ registration_id: matchedRegId, processed_at: new Date().toISOString() })
+      .eq("idempotency_key", idempotencyKey);
   }
 }
 
