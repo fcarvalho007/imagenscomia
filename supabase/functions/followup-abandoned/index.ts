@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const PRODUCTS: Record<string, { value: number; identifier: string; label: string }> = {
@@ -13,31 +13,32 @@ const PRODUCTS: Record<string, { value: number; identifier: string; label: strin
   bundle: { value: 76.26, identifier: "WEBINAR-BUNDLE", label: "Premium Pass (15+IVA) + Masterclass IA Vídeo (47+IVA)" },
 };
 
-// Schedule: delays from the trigger point (upgrade_clicked_at or created_at)
 const STAGE_DELAYS_MS = [
   30 * 60 * 1000,       // stage 0: 30 min
-  6 * 60 * 60 * 1000,   // stage 1: 6 hours after last followup
-  24 * 60 * 60 * 1000,  // stage 2: 24 hours after last followup
+  6 * 60 * 60 * 1000,   // stage 1: 6 hours
+  24 * 60 * 60 * 1000,  // stage 2: 24 hours
 ];
+
+const WHATSAPP_FOOTER = "\n\nWhatsApp de suporte: 915 015 508";
 
 const STAGE_TEMPLATES = [
   {
     key: "followup_stage_0",
     subject: (name: string, label: string) => `${name}, faltou um passo para o teu ${label}`,
     body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nVi que escolheste o ${label} mas o pagamento ficou pendente.\n\nAqui está o link para concluíres:\n${link}\n\nValor total (c/ IVA): ${value}€\nMétodos: MB WAY, Multibanco\n\nQualquer dúvida, responde a este email.\n\nFrederico Carvalho`,
+      `Olá ${firstName},\n\nVi que escolheste o ${label} mas o pagamento ficou pendente.\n\nRetomar pagamento:\n${link}\n\nValor total (c/ IVA): ${value}€\nMétodos: MB WAY, Multibanco\n\nQualquer dúvida, responde a este email.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
   },
   {
     key: "followup_stage_1",
     subject: (name: string, label: string) => `O teu ${label} ainda está à espera, ${name}`,
     body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nO teu lugar no ${label} continua reservado, mas o pagamento ainda não foi concluído.\n\nConclui aqui:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nSe tiveres questões, responde a este email.\n\nFrederico Carvalho`,
+      `Olá ${firstName},\n\nO teu lugar no ${label} continua reservado, mas o pagamento ainda não foi concluído.\n\nRetomar pagamento:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nSe tiveres questões, responde a este email.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
   },
   {
     key: "followup_stage_2",
     subject: (name: string, label: string) => `Última oportunidade — ${label}`,
     body: (firstName: string, label: string, link: string, value: string) =>
-      `Olá ${firstName},\n\nEste é o último lembrete sobre o teu ${label}. O webinar é já dia 18 de Fevereiro.\n\nLink de pagamento:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nDepois deste email não envio mais lembretes.\n\nFrederico Carvalho`,
+      `Olá ${firstName},\n\nEste é o último lembrete sobre o teu ${label}. O webinar é já dia 18 de Fevereiro.\n\nRetomar pagamento:\n${link}\n\nValor: ${value}€ (c/ IVA)\n\nDepois deste email não envio mais lembretes.${WHATSAPP_FOOTER}\n\nFrederico Carvalho`,
   },
 ];
 
@@ -46,16 +47,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ── Cron secret guard ──
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const requestSecret = req.headers.get("x-cron-secret");
+  if (!cronSecret || requestSecret !== cronSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     const EUPAGO_API_KEY = Deno.env.get("EUPAGO_API_KEY");
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
     const now = Date.now();
     const summary = { processed: 0, sent: 0, skipped: 0, errors: 0 };
 
-    // Fetch candidates for follow-up
     const { data: candidates, error: fetchError } = await supabase
       .from("registrations")
       .select("id, email, name, first_name, plan_selected, eupago_ref, upgrade_clicked_at, created_at, followup_stage, last_followup_at, last_payment_link, payment_link_created_at, do_not_contact, paid_at, next_followup_at")
@@ -87,7 +98,6 @@ serve(async (req) => {
         continue;
       }
 
-      // Check timing eligibility
       const triggerTime = reg.upgrade_clicked_at || reg.created_at;
       if (!triggerTime) {
         summary.skipped++;
@@ -144,7 +154,7 @@ serve(async (req) => {
                 payment: {
                   amount: { value: product.value, currency: "EUR" },
                   identifier: `${product.identifier}-${reg.email}-${Date.now()}`,
-                  successUrl: `${origin}/confirmacao?plan=${plan}`,
+                  successUrl: `${origin}/confirmacao?plan=${plan}&email=${encodeURIComponent(reg.email)}`,
                   failUrl: `${origin}/?payment=failed`,
                   backUrl: `${origin}/upgrade`,
                   lang: "PT",
@@ -166,7 +176,6 @@ serve(async (req) => {
                 payment_link_created_at: new Date().toISOString(),
               }).eq("id", reg.id);
 
-              // Log payment event
               await supabase.from("payment_events").insert({
                 registration_id: reg.id,
                 event_type: "link_created",
@@ -199,7 +208,7 @@ serve(async (req) => {
         .insert({
           registration_id: reg.id,
           channel: "email",
-          provider: "internal",
+          provider: "resend",
           template_key: templateKey,
           status: "queued",
         })
@@ -221,10 +230,60 @@ serve(async (req) => {
 
       console.log(`📧 [Stage ${stage}] Prepared email for ${reg.email}: "${emailSubject}"`);
 
-      // For now: mark as sent (internal = prepared for manual or future automated send)
+      // ── Send via Resend ──
+      let sendSuccess = false;
+      let providerMessageId: string | null = null;
+      let sendError: string | null = null;
+
+      if (RESEND_API_KEY) {
+        try {
+          const resendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${RESEND_API_KEY}`,
+            },
+            body: JSON.stringify({
+              from: "Frederico Carvalho <info@fredericocarvalho.pt>",
+              to: [reg.email],
+              subject: emailSubject,
+              text: emailBody,
+            }),
+          });
+
+          const resendData = await resendRes.json();
+
+          if (resendRes.ok && resendData.id) {
+            sendSuccess = true;
+            providerMessageId = resendData.id;
+            console.log(`✅ Resend sent for ${reg.email}, id=${resendData.id}`);
+          } else {
+            sendError = JSON.stringify(resendData);
+            console.error(`❌ Resend error for ${reg.email}:`, sendError);
+          }
+        } catch (err) {
+          sendError = err instanceof Error ? err.message : "Resend fetch error";
+          console.error(`❌ Resend exception for ${reg.email}:`, sendError);
+        }
+      } else {
+        sendError = "RESEND_API_KEY not configured";
+        console.warn(sendError);
+      }
+
+      // Update message_logs with result
       await supabase.from("message_logs")
-        .update({ status: "sent", updated_at: new Date().toISOString() })
+        .update({
+          status: sendSuccess ? "sent" : "failed",
+          provider_message_id: providerMessageId,
+          error: sendError,
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", logRow.id);
+
+      if (!sendSuccess) {
+        summary.errors++;
+        continue;
+      }
 
       // Compute next_followup_at
       let nextFollowupAt: string | null = null;

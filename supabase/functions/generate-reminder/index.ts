@@ -57,7 +57,7 @@ serve(async (req) => {
           payment: {
             amount: { value: product.value, currency: "EUR" },
             identifier: `${product.identifier}-${email}-${Date.now()}`,
-            successUrl: `${origin}/confirmacao?plan=${plan}`,
+            successUrl: `${origin}/confirmacao?plan=${plan}&email=${encodeURIComponent(email)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,
             lang: "PT",
