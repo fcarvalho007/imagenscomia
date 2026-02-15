@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import CRMLogin from "@/components/crm/CRMLogin";
 import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import DashboardView from "@/components/crm/DashboardView";
@@ -9,6 +9,7 @@ import FollowUpView from "@/components/crm/FollowUpView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
+import type { LastEmailInfo } from "@/components/crm/templateLabels";
 
 export default function CRM() {
   const [authenticated, setAuthenticated] = useState(
@@ -17,7 +18,13 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary } = useInscritos();
+
+  // Fetch last email map for table enrichment
+  const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
+  useEffect(() => {
+    fetchMessageLogsSummary().then(setLastEmailMap);
+  }, [fetchMessageLogsSummary]);
 
   const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_auth");
@@ -58,6 +65,7 @@ export default function CRM() {
             onArchive={(id) => updateStatus(id, "arquivado")}
             onDelete={deleteInscrito}
             fetchFailedEmailIds={fetchFailedEmailIds}
+            lastEmailMap={lastEmailMap}
           />
         )}
         {activeView === "templates" && (

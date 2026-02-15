@@ -1,8 +1,9 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter } from "lucide-react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
+import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabels";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -11,6 +12,7 @@ interface TableViewProps {
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
   fetchFailedEmailIds?: () => Promise<Set<string>>;
+  lastEmailMap?: Map<string, LastEmailInfo>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -54,9 +56,9 @@ function fmtRelativeShort(iso: string): string | null {
 }
 
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
-type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend";
+type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend" | "em_atraso";
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -83,6 +85,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
     const now = Date.now();
     const h48 = 48 * 60 * 60 * 1000;
     const h36 = 36 * 60 * 60 * 1000;
+    const nowISO = new Date().toISOString();
     const unpaidIntent = active.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free");
     return {
       awaiting: unpaidIntent.length,
@@ -93,9 +96,13 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         const ref = i.upgrade_clicked_at || i.timestamp;
         return (now - new Date(ref).getTime()) > h36;
       }).length,
-      no_resend: 0, // Will be enriched via message_logs fetch
+      no_resend: lastEmailMap ? unpaidIntent.filter((i) => {
+        const info = lastEmailMap.get(i.id);
+        return !info || info.provider !== "resend" || !info.provider_message_id;
+      }).length : 0,
+      em_atraso: active.filter((i) => i.next_followup_at && i.next_followup_at < nowISO && !i.do_not_contact).length,
     };
-  }, [active, failedIds]);
+  }, [active, failedIds, lastEmailMap]);
 
   const filtered = useMemo(() => {
     let list = active;
@@ -110,6 +117,16 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       list = list.filter((i) => failedIds.has(i.id));
     } else if (quickFilter === "do_not_contact") {
       list = list.filter((i) => i.do_not_contact);
+    } else if (quickFilter === "no_resend") {
+      list = list.filter((i) => {
+        if (i.paid_at || !i.plan_selected || i.plan_selected === "free") return false;
+        if (!lastEmailMap) return false;
+        const info = lastEmailMap.get(i.id);
+        return !info || info.provider !== "resend" || !info.provider_message_id;
+      });
+    } else if (quickFilter === "em_atraso") {
+      const nowISO = new Date().toISOString();
+      list = list.filter((i) => i.next_followup_at && i.next_followup_at < nowISO && !i.do_not_contact);
     } else if (quickFilter === "backlog_36h") {
       const h36 = 36 * 60 * 60 * 1000;
       list = list.filter((i) => {
@@ -139,7 +156,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir, quickFilter, failedIds]);
+  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir, quickFilter, failedIds, lastEmailMap]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -252,6 +269,16 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         <button className={chipClass("backlog_36h")} onClick={() => toggleQuickFilter("backlog_36h")}>
           <Filter size={12} /> Backlog 36h+
           <span className="text-[10px] opacity-70">({counts.backlog_36h})</span>
+        </button>
+        {lastEmailMap && (
+          <button className={chipClass("no_resend")} onClick={() => toggleQuickFilter("no_resend")}>
+            <Filter size={12} /> Sem Resend confirmado
+            <span className="text-[10px] opacity-70">({counts.no_resend})</span>
+          </button>
+        )}
+        <button className={chipClass("em_atraso")} onClick={() => toggleQuickFilter("em_atraso")}>
+          <Filter size={12} /> Em atraso
+          <span className="text-[10px] opacity-70">({counts.em_atraso})</span>
         </button>
       </div>
 
@@ -400,6 +427,23 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                             )}
                           </>
                         )}
+                        {/* Last email badge */}
+                        {lastEmailMap && (() => {
+                          const info = lastEmailMap.get(i.id);
+                          if (!info) return null;
+                          const isConfirmed = info.provider === "resend" && info.provider_message_id;
+                          const isFailed = info.status === "failed";
+                          return (
+                            <span className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border" style={{
+                              background: isConfirmed ? "rgba(16,185,129,0.08)" : isFailed ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)",
+                              borderColor: isConfirmed ? "rgba(16,185,129,0.2)" : isFailed ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)",
+                              color: isConfirmed ? "#059669" : isFailed ? "#DC2626" : "#D97706",
+                            }}>
+                              {isConfirmed ? <CheckCircle2 size={9} /> : isFailed ? <AlertTriangle size={9} /> : <Clock size={9} />}
+                              {getTemplateLabel(info.template_key).split("—")[0].trim()} · {fmtTimeAgo(info.created_at)}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-4 py-3">
