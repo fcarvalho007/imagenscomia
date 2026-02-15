@@ -19,7 +19,7 @@ function mapRegistration(r: any): Inscrito {
   // Determine payment status (3 states)
   const payment_status: Inscrito["payment_status"] = r.paid_at
     ? "paid"
-    : r.upgrade_clicked_at
+    : (r.upgrade_clicked_at || r.eupago_ref)
       ? "awaiting_payment"
       : r.plan_selected && r.plan_selected !== "free"
         ? "selected"
