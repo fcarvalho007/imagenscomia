@@ -59,10 +59,12 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [refreshing, setRefreshing] = useState(false);
   const [visitantes, setVisitantes] = useState(1034);
 
-  // Email counts (24h + 7 days)
-  const [emailSent24h, setEmailSent24h] = useState(0);
+  // Email counts (24h + 7 days) — split by provider
+  const [resendSent24h, setResendSent24h] = useState(0);
+  const [resendSent7d, setResendSent7d] = useState(0);
+  const [internalSent24h, setInternalSent24h] = useState(0);
+  const [internalSent7d, setInternalSent7d] = useState(0);
   const [emailFailed24h, setEmailFailed24h] = useState(0);
-  const [emailSent7d, setEmailSent7d] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
 
@@ -71,16 +73,27 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     Promise.all([
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", oneDayAgo),
+      // Resend confirmed (24h)
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo),
+      // Resend confirmed (7d)
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo),
+      // Internal (24h)
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "internal").eq("status", "sent").gte("created_at", oneDayAgo),
+      // Internal (7d)
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "internal").eq("status", "sent").gte("created_at", sevenDaysAgo),
+      // Failed (24h)
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo),
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", sevenDaysAgo),
+      // Failed (7d)
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo),
-      supabase.from("message_logs").select("template_key").eq("status", "sent").gte("created_at", sevenDaysAgo),
-    ]).then(([sent24, failed24, sentRes, failedRes, stageRes]) => {
-      setEmailSent24h(sent24.count || 0);
+      // Stage breakdown (7d, Resend only)
+      supabase.from("message_logs").select("template_key").eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo),
+    ]).then(([resend24, resend7d, internal24, internal7d, failed24, failed7d, stageRes]) => {
+      setResendSent24h(resend24.count || 0);
+      setResendSent7d(resend7d.count || 0);
+      setInternalSent24h(internal24.count || 0);
+      setInternalSent7d(internal7d.count || 0);
       setEmailFailed24h(failed24.count || 0);
-      setEmailSent7d(sentRes.count || 0);
-      setEmailFailed7d(failedRes.count || 0);
+      setEmailFailed7d(failed7d.count || 0);
       if (stageRes.data) {
         const counts: Record<string, number> = {};
         stageRes.data.forEach((r: { template_key: string }) => {
@@ -322,23 +335,38 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         ))}
       </div>
 
-      {/* Emails (24h + 7 dias) */}
-      <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3.5 mb-5">
-        <div className="bg-white border border-border rounded-xl p-5">
+      {/* Emails (24h + 7 dias) — split by provider */}
+      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3.5 mb-5">
+        {/* Resend confirmed */}
+        <div className="bg-white border border-border rounded-xl p-5 relative group">
           <Mail size={20} className="text-green-600" />
-          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailSent7d}</p>
-          <p className="text-[13px] text-ink-500 mt-1">Emails enviados</p>
-          <p className="text-[11px] text-ink-400">{emailSent24h} (24h) / {emailSent7d} (7d)</p>
+          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{resendSent7d}</p>
+          <p className="text-[13px] text-ink-500 mt-1 flex items-center gap-1">
+            Enviados via Resend
+            <span className="inline-block cursor-help" title="Apenas emails confirmados pelo Resend com ID de entrega">
+              <CheckCircle size={12} className="text-green-500" />
+            </span>
+          </p>
+          <p className="text-[11px] text-ink-400">{resendSent24h} (24h) / {resendSent7d} (7d)</p>
         </div>
+        {/* Internal (legacy) */}
+        <div className="bg-white border border-border rounded-xl p-5 opacity-60">
+          <Mail size={20} className="text-ink-400" />
+          <p className="font-heading font-extrabold text-[32px] text-ink-400 mt-2 leading-none">{internalSent7d}</p>
+          <p className="text-[13px] text-ink-400 mt-1">Logs internos</p>
+          <p className="text-[11px] text-ink-300">{internalSent24h} (24h) / {internalSent7d} (7d)</p>
+        </div>
+        {/* Failed */}
         <div className="bg-white border border-border rounded-xl p-5">
           <AlertCircle size={20} className="text-red-500" />
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailFailed7d}</p>
           <p className="text-[13px] text-ink-500 mt-1">Falhas</p>
           <p className="text-[11px] text-ink-400">{emailFailed24h} (24h) / {emailFailed7d} (7d)</p>
         </div>
+        {/* Stage breakdown (Resend only) */}
         <div className="bg-white border border-border rounded-xl p-5">
           <BarChart2 size={20} className="text-blue-600" />
-          <p className="text-[13px] font-semibold text-ink-700 mt-2">Por etapa</p>
+          <p className="text-[13px] font-semibold text-ink-700 mt-2">Por etapa (Resend)</p>
           <div className="mt-2 space-y-1">
             {[0, 1, 2].map((s) => (
               <div key={s} className="flex justify-between text-[12px]">
