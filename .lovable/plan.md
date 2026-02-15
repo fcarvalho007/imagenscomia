@@ -1,49 +1,51 @@
 
 
-## Modal de Confirmacao nos Passos 3 e 4 + Botao "Saltar" mais visivel
+## Refinamentos no CRM para Precisao e Clareza
 
-### Problema
-Nos passos 3 (Premium) e 4 (Masterclass), o botao principal ("Garantir Premium Pass") e a unica accao visualmente dominante. O link "Continuar sem..." e discreto (13px, cinza claro). Utilizadores que so querem avancar podem clicar no botao de compra por falta de alternativa clara, gerando falsos "Seleccionou e saiu" no CRM.
+### Problemas identificados
 
-### Solucao: duas alteracoes complementares
+**1. Cores inconsistentes no Dashboard vs Pipeline/Tabela**
 
-**A) Modal de confirmacao ao clicar no botao de compra**
+No card "Pipeline Pendente" do Dashboard, os estados usam cores diferentes das usadas no Pipeline kanban e Tabela:
+- Dashboard: "Seleccionaram" = azul (emoji azul, bg-blue-50), "Aguardam pagamento" = amarelo (emoji amarelo, bg-amber-100)
+- Pipeline/Tabela: "Seleccionou e saiu" = laranja (bg-orange-100), "Aguarda pgto" = vermelho (bg-red-100)
 
-Quando o utilizador clica "Garantir Premium Pass" ou "Garantir lugar na Masterclass", aparece um modal de confirmacao antes de adicionar ao carrinho:
+Isto cria confusao visual. Devem ser alinhados.
 
-```text
-+----------------------------------------+
-|  Boa escolha!                          |
-|                                        |
-|  Vais adicionar o [Premium Pass /      |
-|  Masterclass] ao teu checkout.         |
-|  No proximo passo podes rever tudo     |
-|  antes de pagar.                       |
-|                                        |
-|  [Sim, adicionar ao checkout]  (azul)  |
-|  [Cancelar]                   (outline)|
-+----------------------------------------+
-```
+**2. Dado inconsistente na base de dados**
 
-Isto garante intencionalidade real — so quem confirma e contado como "Seleccionou".
+Existe 1 registo com `eupago_ref` preenchido mas `upgrade_clicked_at` a NULL. Isto significa que a referencia EuPago foi gerada mas o timestamp nao foi guardado (possivelmente dados anteriores a implementacao do campo). No CRM, este registo aparece como "Seleccionou e saiu" em vez de "Aguarda pagamento", o que e incorrecto.
 
-**B) Botao "Saltar" mais visivel**
+**3. Descritor "Seleccionou e saiu" no Dashboard pouco claro**
 
-Transformar o link discreto num botao secundario com mais presenca visual:
-- De: texto 13px cinza, so hover underline
-- Para: botao outline com borda, padding, 14px, com texto claro ("Continuar sem extras" ou equivalente)
-- Manter abaixo do separador "ou" mas com mais peso visual
+A descricao "Nao clicaram 'Confirmar e pagar'" e precisa, mas com o novo modal de confirmacao, vale a pena reforcar que estas pessoas confirmaram intencao real no modal.
 
-### Ficheiros a alterar
+### Alteracoes propostas
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/upgrade/StepPremium.tsx` | Adicionar estado para modal de confirmacao; transformar skip link em botao outline |
-| `src/components/upgrade/StepMasterclass.tsx` | Idem — modal de confirmacao + botao skip mais visivel |
+| `src/components/crm/DashboardView.tsx` | Alinhar cores do Pipeline Pendente: laranja para "Seleccionaram", vermelho para "Aguardam pgto". Melhorar descricoes. |
+| `src/hooks/useInscritos.ts` | Corrigir logica de `payment_status`: se `eupago_ref` existe e `paid_at` nao, tratar como "awaiting_payment" mesmo sem `upgrade_clicked_at`. |
 
-### Detalhe tecnico
+### Detalhe das alteracoes
 
-Ambos os componentes passam a ter um estado `showConfirm` (boolean). O modal usa o componente `AlertDialog` ja existente no projecto (Radix). Ao clicar "Sim, adicionar", chama `onAddPremium` / `onAddMasterclass` como antes. Ao clicar "Cancelar", fecha o modal sem accao.
+**Dashboard — cores alinhadas:**
+```text
+Antes:                          Depois:
+Azul "Seleccionaram"     ->     Laranja (bg-orange-50, border-orange-200)
+Amarelo "Aguardam pgto"  ->     Vermelho (bg-red-50, border-red-200)
+```
 
-O botao de skip passa de `<p>` para `<button>` com classes: `w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors`.
+Descricoes actualizadas:
+- "Seleccionaram": "Confirmaram no modal mas nao avancaram para pagamento"
+- "Aguardam pagamento": "Referencia EuPago gerada — contactar"
+
+**useInscritos — logica corrigida:**
+A determinacao de `payment_status` passa a considerar tambem `eupago_ref`:
+- Se `paid_at` existe: "paid"
+- Se `upgrade_clicked_at` existe OU `eupago_ref` existe (sem `paid_at`): "awaiting_payment"
+- Se `plan_selected` existe e != "free": "selected"
+- Caso contrario: "free"
+
+Isto garante que nenhum registo com referencia EuPago activa seja classificado incorrectamente como "Seleccionou e saiu".
 
