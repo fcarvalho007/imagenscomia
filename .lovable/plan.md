@@ -1,48 +1,52 @@
 
 
-## Dashboard: Distinguish Real Sends from Internal Logs
+## Controlled Resend Test (Proof of Real Delivery)
 
-### Problem
-The Dashboard currently counts all `message_logs` with `status='sent'` as "emails sent", but 9 of those are `provider='internal'` (old code logs, never actually delivered via Resend). This creates a false impression of delivery.
+### Why zero Resend sends exist
 
-### Solution
-Split the email metrics in DashboardView into two distinct categories and update the queries to filter by provider.
+All 9 candidates completed stage 0 via the old code (provider='internal') at ~20:46 UTC. They advanced to followup_stage=1, but stage 1 requires a 6-hour delay from last_followup_at. They won't be eligible until ~02:46 UTC. The current code is correct -- it just hasn't had eligible candidates yet.
 
-### Changes
+### Test Plan (3 steps)
 
-**File: `src/components/crm/DashboardView.tsx`**
+**Step 1 -- Make one candidate eligible NOW**
 
-1. Where email counts are currently fetched/computed, add provider filtering:
-   - "Enviados (Resend)" = `provider='resend' AND status='sent' AND provider_message_id IS NOT NULL`
-   - "Processados (internal)" = `provider='internal' AND status='sent'`
-   - "Falhas" = `status='failed'` (any provider)
-
-2. Display layout in the email stats cards:
-   - Primary card: "Enviados via Resend" with count (24h / 7d)
-   - Secondary/muted: "Logs internos" with count (grayed out, clearly secondary)
-   - "Falhas" card stays as-is
-
-3. Add a small info tooltip on the "Enviados via Resend" card: "Apenas emails confirmados pelo Resend com ID de entrega"
-
-### Technical Detail
-
-The existing query in DashboardView fetches from `message_logs`. The change adds a `provider` filter to the aggregation:
+Pick Luis Pena (id: `9454b720-...`, email: `lfpena@remax.pt`) and set his `last_followup_at` back by 7 hours:
 
 ```sql
--- Resend confirmed
-WHERE provider='resend' AND status='sent' AND provider_message_id IS NOT NULL
-
--- Internal (legacy)
-WHERE provider='internal' AND status='sent'
+UPDATE registrations 
+SET last_followup_at = now() - interval '7 hours'
+WHERE id = '9454b720-d704-4e14-9b40-138e1bc94a7c';
 ```
 
-Both 24h and 7d windows apply as before.
+This makes him eligible for stage 1 immediately while keeping all other data intact.
+
+**Step 2 -- Trigger followup-abandoned manually**
+
+Call the edge function with `x-cron-secret` header. Expect HTTP 200 with summary showing `sent: 1`.
+
+**Step 3 -- Verify proof in database and logs**
+
+Run verification queries:
+
+```sql
+-- New Resend row
+SELECT id, registration_id, provider, status, provider_message_id, template_key, created_at
+FROM message_logs
+WHERE provider = 'resend' AND created_at > now() - interval '10 minutes'
+ORDER BY created_at DESC;
+```
+
+Check edge function logs for the run summary with `sent: 1`.
+
+### Expected outcome
+
+- 1 new row in message_logs: provider='resend', status='sent', provider_message_id filled
+- Edge function log: `[followup-abandoned] run-xxx complete: {"processed":9,"sent":1,"skipped":8,"errors":0}`
+- Luis Pena advances to followup_stage=2
+
+### Risk
+
+This sends a REAL email to lfpena@remax.pt with the followup_stage_1 template. If you prefer a safer target, we can use a different registration or create a test one.
 
 ### Files Changed
-1. `src/components/crm/DashboardView.tsx` — split email metrics by provider
-
-### No Changes To
-- Edge function logic
-- Database schema
-- Other CRM views
-
+None -- this is a database update + manual trigger only.
