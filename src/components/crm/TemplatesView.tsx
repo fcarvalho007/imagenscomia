@@ -51,7 +51,12 @@ function findMissingRequiredVars(text: string, required: string[]): string[] {
   return required.filter(v => !text.includes(`{{${v}}}`));
 }
 
-export default function TemplatesView() {
+interface TemplatesViewProps {
+  onViewSends?: (templateKey: string) => void;
+  templateSendCounts?: Record<string, number>;
+}
+
+export default function TemplatesView({ onViewSends, templateSendCounts }: TemplatesViewProps = {}) {
   const [allTemplates, setAllTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EmailTemplate | null>(null);
@@ -202,6 +207,7 @@ export default function TemplatesView() {
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3">Nome</th>
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3 max-sm:hidden">Template Key</th>
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3">Assunto</th>
+                <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3 text-center">Envios 7d</th>
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3 text-center">v.</th>
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3 text-center">Activo</th>
                 <th className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider px-4 py-3 max-sm:hidden">Actualizado</th>
@@ -218,6 +224,17 @@ export default function TemplatesView() {
                   <td className="px-4 py-3 text-[13px] font-medium text-ink-800">{tpl.name || tpl.template_key}</td>
                   <td className="px-4 py-3 text-[12px] text-ink-500 font-mono max-sm:hidden">{tpl.template_key}</td>
                   <td className="px-4 py-3 text-[13px] text-ink-600 max-w-[200px] truncate">{tpl.subject}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className="text-[13px] font-semibold text-blue-600">{templateSendCounts?.[tpl.template_key] || 0}</span>
+                    {onViewSends && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onViewSends(tpl.template_key); }}
+                        className="ml-1.5 text-[11px] text-blue-500 hover:text-blue-700 underline"
+                      >
+                        ver
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-[12px] text-ink-500 text-center font-mono">v{tpl.version}</td>
                   <td className="px-4 py-3 text-center">
                     <button
