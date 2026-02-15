@@ -13,7 +13,7 @@ export const FooterSection = () => {
           <div className="flex flex-wrap justify-center gap-6 text-[14px] text-white/30 mb-3">
             <button onClick={() => setOpenModal("privacidade")} className="hover:text-white/60 transition-colors">Privacidade</button>
             <button onClick={() => setOpenModal("termos")} className="hover:text-white/60 transition-colors">Termos</button>
-            <a href="#" className="hover:text-white/60 transition-colors">Contacto</a>
+            <a href="mailto:frederico.carvalho@digitalfc.pt" className="hover:text-white/60 transition-colors">frederico.carvalho@digitalfc.pt</a>
             <a href="/convites" className="hover:text-white/60 transition-colors">Ver os teus convites</a>
             <a href="/crm" className="hover:text-white/60 transition-colors">crm</a>
           </div>

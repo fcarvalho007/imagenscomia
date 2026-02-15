@@ -5,6 +5,7 @@ import { WebinarSidebar } from "@/components/webinar/WebinarSidebar";
 import { WebinarContent } from "@/components/webinar/WebinarContent";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import { WebinarFooter } from "@/components/webinar/WebinarFooter";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 import { useCountdown } from "@/hooks/useCountdown";
 
@@ -82,6 +83,7 @@ const WebinarLive = () => {
       </main>
 
       <WebinarFooter />
+      <WhatsAppSupportButton />
     </div>
   );
 };

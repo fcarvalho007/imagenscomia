@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { SummaryPanel, MobileSummaryBar } from "@/components/upgrade/SummaryPanel";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { StepQualification } from "@/components/upgrade/StepQualification";
 import { StepPersonalization } from "@/components/upgrade/StepPersonalization";
 import { StepPremium } from "@/components/upgrade/StepPremium";
@@ -218,6 +219,7 @@ const Upsell = () => {
           </div>
         </div>
       </div>
+      <WhatsAppSupportButton />
     </div>
   );
 };
