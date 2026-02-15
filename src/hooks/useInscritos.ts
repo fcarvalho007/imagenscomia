@@ -190,5 +190,47 @@ export function useInscritos() {
     );
   }, [inscritos]);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact };
+  const fetchMessageLogs = useCallback(async (registrationId: string) => {
+    const { data, error } = await supabase
+      .from("message_logs")
+      .select("*")
+      .eq("registration_id", registrationId)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (error) {
+      console.error("Error fetching message_logs:", error);
+      return [];
+    }
+    return data || [];
+  }, []);
+
+  const fetchPaymentEvents = useCallback(async (registrationId: string) => {
+    const { data, error } = await supabase
+      .from("payment_events")
+      .select("*")
+      .eq("registration_id", registrationId)
+      .order("received_at", { ascending: false })
+      .limit(10);
+    if (error) {
+      console.error("Error fetching payment_events:", error);
+      return [];
+    }
+    return data || [];
+  }, []);
+
+  const fetchFailedEmailIds = useCallback(async () => {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from("message_logs")
+      .select("registration_id")
+      .eq("status", "failed")
+      .gte("created_at", since);
+    if (error) {
+      console.error("Error fetching failed emails:", error);
+      return new Set<string>();
+    }
+    return new Set((data || []).map((r) => r.registration_id));
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds };
 }

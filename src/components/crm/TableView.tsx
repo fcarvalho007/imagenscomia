@@ -1,5 +1,5 @@
-import { useMemo, useState, useCallback } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X } from "lucide-react";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
@@ -10,6 +10,7 @@ interface TableViewProps {
   onToggleFollowUp?: (id: string) => void;
   onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
+  fetchFailedEmailIds?: () => Promise<Set<string>>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -42,9 +43,20 @@ function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): {
   return { text: `${days}d+`, color: "#DC2626" };
 }
 
-type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
+function fmtRelativeShort(iso: string): string | null {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff < 0) return null;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete }: TableViewProps) {
+type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
+type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact";
+
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -53,15 +65,49 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const PER_PAGE = 100;
+
+  // Fetch failed email IDs once on mount
+  useEffect(() => {
+    if (fetchFailedEmailIds) {
+      fetchFailedEmailIds().then(setFailedIds);
+    }
+  }, [fetchFailedEmailIds]);
 
   const active = useMemo(() => inscritos.filter((i) => i.status === "activo"), [inscritos]);
 
+  // Quick filter counts
+  const counts = useMemo(() => {
+    const now = Date.now();
+    const h48 = 48 * 60 * 60 * 1000;
+    return {
+      awaiting: active.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free").length,
+      expired_link: active.filter((i) => !i.paid_at && i.payment_link_created_at && (now - new Date(i.payment_link_created_at).getTime()) > h48).length,
+      failed_email: active.filter((i) => failedIds.has(i.id)).length,
+      do_not_contact: active.filter((i) => i.do_not_contact).length,
+    };
+  }, [active, failedIds]);
+
   const filtered = useMemo(() => {
     let list = active;
+
+    // Quick filters
+    if (quickFilter === "awaiting") {
+      list = list.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free");
+    } else if (quickFilter === "expired_link") {
+      const h48 = 48 * 60 * 60 * 1000;
+      list = list.filter((i) => !i.paid_at && i.payment_link_created_at && (Date.now() - new Date(i.payment_link_created_at).getTime()) > h48);
+    } else if (quickFilter === "failed_email") {
+      list = list.filter((i) => failedIds.has(i.id));
+    } else if (quickFilter === "do_not_contact") {
+      list = list.filter((i) => i.do_not_contact);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
+      list = list.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || (i.whatsapp && i.whatsapp.includes(q)));
     }
     if (planFilter !== "all") list = list.filter((i) => i.plan === planFilter);
     if (paymentFilter !== "all") list = list.filter((i) => i.payment_status === paymentFilter);
@@ -79,7 +125,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir]);
+  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir, quickFilter, failedIds]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -152,11 +198,43 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
     setSelected(new Set());
   };
 
+  const toggleQuickFilter = (f: QuickFilter) => {
+    setQuickFilter((prev) => prev === f ? null : f);
+    setPage(0);
+  };
+
+  const chipClass = (f: QuickFilter) =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-colors cursor-pointer select-none ${
+      quickFilter === f
+        ? "bg-blue-600 text-white border-blue-600"
+        : "bg-white text-ink-600 border-border hover:bg-off-white"
+    }`;
+
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
       <div className="mb-5">
         <h1 className="font-heading font-bold text-[22px] text-ink-900">Tabela</h1>
         <p className="text-sm text-ink-500">{active.length} inscritos no total</p>
+      </div>
+
+      {/* Quick Filter Chips */}
+      <div className="flex flex-wrap gap-2 mb-3">
+        <button className={chipClass("awaiting")} onClick={() => toggleQuickFilter("awaiting")}>
+          <Filter size={12} /> Aguardam pagamento
+          <span className="text-[10px] opacity-70">({counts.awaiting})</span>
+        </button>
+        <button className={chipClass("expired_link")} onClick={() => toggleQuickFilter("expired_link")}>
+          <Filter size={12} /> Link expirado
+          <span className="text-[10px] opacity-70">({counts.expired_link})</span>
+        </button>
+        <button className={chipClass("failed_email")} onClick={() => toggleQuickFilter("failed_email")}>
+          <Filter size={12} /> Falhas de email
+          <span className="text-[10px] opacity-70">({counts.failed_email})</span>
+        </button>
+        <button className={chipClass("do_not_contact")} onClick={() => toggleQuickFilter("do_not_contact")}>
+          <Filter size={12} /> Não contactar
+          <span className="text-[10px] opacity-70">({counts.do_not_contact})</span>
+        </button>
       </div>
 
       {/* Controls */}
@@ -166,8 +244,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder="Pesquisar nome ou email..."
-            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
+            placeholder="Pesquisar nome, email ou telefone..."
+            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[260px] outline-none focus:ring-1 focus:ring-blue-300"
           />
         </div>
         <select
@@ -247,6 +325,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
               {paged.map((i) => {
                 const badge = PLAN_BADGE[i.plan];
                 const isSelected = selected.has(i.id);
+                const showFollowupBadges = !i.paid_at && i.plan !== "free" && i.plan_selected && i.plan_selected !== "free";
+                const nextRel = i.next_followup_at ? fmtRelativeShort(i.next_followup_at) : null;
                 return (
                   <tr
                     key={i.id}
@@ -262,32 +342,47 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
                     <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>
                     <td className="px-4 py-3">
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
-                        {badge.label}
-                      </span>
-                      {i.payment_status === "selected" && (
-                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
-                          Seleccionou e saiu
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
+                          {badge.label}
                         </span>
-                      )}
-                      {i.payment_status === "awaiting_payment" && (
-                        <>
-                          <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
-                            Aguarda pgto
+                        {i.payment_status === "selected" && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
+                            Seleccionou e saiu
                           </span>
-                          {(() => {
-                            const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
-                            return pt ? (
-                              <span className="ml-1 text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
-                            ) : null;
-                          })()}
-                        </>
-                      )}
-                      {i.payment_status === "paid" && i.plan !== "free" && (
-                        <span className="ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
-                          Pago
-                        </span>
-                      )}
+                        )}
+                        {i.payment_status === "awaiting_payment" && (
+                          <>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                              Aguarda pgto
+                            </span>
+                            {(() => {
+                              const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
+                              return pt ? (
+                                <span className="text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
+                              ) : null;
+                            })()}
+                          </>
+                        )}
+                        {i.payment_status === "paid" && i.plan !== "free" && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+                            Pago
+                          </span>
+                        )}
+                        {/* Follow-up badges */}
+                        {showFollowupBadges && (
+                          <>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface text-ink-500 border border-border">
+                              Follow-up {Math.min(i.followup_stage, 3)}/3
+                            </span>
+                            {nextRel && (
+                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface text-ink-400 border border-border">
+                                Próx. {nextRel}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-heading font-bold text-[13px]" style={{ color: VALOR_COLORS[i.valor] || "hsl(var(--ink-400))" }}>
