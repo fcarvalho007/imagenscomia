@@ -16,34 +16,46 @@ export type Database = {
     Tables: {
       email_templates: {
         Row: {
+          channel: string
           html_body: string | null
           id: string
           is_active: boolean
+          name: string
           subject: string
           template_key: string
           text_body: string | null
           updated_at: string
           updated_by: string | null
+          variables: Json
+          version: number
         }
         Insert: {
+          channel?: string
           html_body?: string | null
           id?: string
           is_active?: boolean
+          name?: string
           subject: string
           template_key: string
           text_body?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables?: Json
+          version?: number
         }
         Update: {
+          channel?: string
           html_body?: string | null
           id?: string
           is_active?: boolean
+          name?: string
           subject?: string
           template_key?: string
           text_body?: string | null
           updated_at?: string
           updated_by?: string | null
+          variables?: Json
+          version?: number
         }
         Relationships: []
       }

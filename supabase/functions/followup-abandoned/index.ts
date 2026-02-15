@@ -122,7 +122,7 @@ serve(async (req) => {
       // ── Load template from DB ──
       const { data: tplRows, error: tplError } = await supabase
         .from("email_templates")
-        .select("subject, text_body, html_body")
+        .select("subject, text_body, html_body, variables")
         .eq("template_key", templateKey)
         .eq("is_active", true)
         .limit(1);
@@ -242,6 +242,23 @@ serve(async (req) => {
         support_whatsapp: "915 015 508",
         webinar_date: "18 Fev 2026 · 10h00",
       };
+
+      // Validate required variables from template
+      const requiredVars: string[] = Array.isArray(tpl.variables) ? tpl.variables : [];
+      const missingVar = requiredVars.find((v: string) => !templateVars[v]);
+      if (missingVar) {
+        console.error(`Missing variable '${missingVar}' for ${reg.email}`);
+        await supabase.from("message_logs").insert({
+          registration_id: reg.id,
+          channel: "email",
+          provider: "resend",
+          template_key: templateKey,
+          status: "failed",
+          error: `missing_variable:${missingVar}`,
+        });
+        summary.errors++;
+        continue;
+      }
 
       const emailSubject = replacePlaceholders(tpl.subject, templateVars);
       const emailBody = tpl.html_body
