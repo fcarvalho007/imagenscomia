@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      email_templates: {
+        Row: {
+          html_body: string | null
+          id: string
+          is_active: boolean
+          subject: string
+          template_key: string
+          text_body: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          html_body?: string | null
+          id?: string
+          is_active?: boolean
+          subject: string
+          template_key: string
+          text_body?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          html_body?: string | null
+          id?: string
+          is_active?: boolean
+          subject?: string
+          template_key?: string
+          text_body?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       message_logs: {
         Row: {
           channel: string
