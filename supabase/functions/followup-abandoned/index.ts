@@ -244,7 +244,7 @@ serve(async (req) => {
               Authorization: `Bearer ${RESEND_API_KEY}`,
             },
             body: JSON.stringify({
-              from: "Frederico Carvalho <info@fredericocarvalho.pt>",
+              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
               to: [reg.email],
               subject: emailSubject,
               text: emailBody,
