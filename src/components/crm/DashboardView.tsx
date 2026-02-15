@@ -307,20 +307,20 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
               <div className="mt-3 space-y-2">
                 {stats.seleccionaram.length > 0 && (
-                  <div className="flex items-start gap-2 p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg">
-                    <span className="text-[14px] mt-0.5">🔵</span>
+                  <div className="flex items-start gap-2 p-2.5 bg-orange-50/80 border border-orange-200 rounded-lg">
+                    <span className="text-[14px] mt-0.5">🟠</span>
                     <div>
-                      <p className="text-[12px] font-semibold text-blue-700">{stats.seleccionaram.length} seleccionaram produto</p>
-                      <p className="text-[11px] text-blue-600/70">Não clicaram &quot;Confirmar e pagar&quot;</p>
+                      <p className="text-[12px] font-semibold text-orange-700">{stats.seleccionaram.length} seleccionaram produto</p>
+                      <p className="text-[11px] text-orange-600/70">Confirmaram no modal mas não avançaram para pagamento</p>
                     </div>
                   </div>
                 )}
                 {stats.aguardamPgto.length > 0 && (
-                  <div className="flex items-start gap-2 p-2.5 bg-amber-100/80 border border-amber-300 rounded-lg">
-                    <span className="text-[14px] mt-0.5">🟡</span>
+                  <div className="flex items-start gap-2 p-2.5 bg-red-50/80 border border-red-200 rounded-lg">
+                    <span className="text-[14px] mt-0.5">🔴</span>
                     <div>
-                      <p className="text-[12px] font-semibold text-amber-800">{stats.aguardamPgto.length} aguardam pagamento</p>
-                      <p className="text-[11px] text-amber-700/70">Têm ref. EuPago — seguir já</p>
+                      <p className="text-[12px] font-semibold text-red-700">{stats.aguardamPgto.length} aguardam pagamento</p>
+                      <p className="text-[11px] text-red-600/70">Referência EuPago gerada — contactar</p>
                     </div>
                   </div>
                 )}
