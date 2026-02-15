@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { Check } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   onAddPremium: () => void;
@@ -23,7 +28,9 @@ const bullets = [
 
 export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   const firstName = userName?.trim().split(" ")[0] || "";
+  const [showConfirm, setShowConfirm] = useState(false);
   return (
+  <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
       {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
@@ -73,7 +80,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
 
       {/* CTA */}
       <button
-        onClick={onAddPremium}
+        onClick={() => setShowConfirm(true)}
         className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors shadow-blue"
       >
         Garantir Premium Pass →
@@ -90,13 +97,31 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
       <div className="flex-grow h-px bg-border" />
     </div>
 
-    {/* Skip link */}
-    <p
+    {/* Skip button */}
+    <button
       onClick={onSkip}
-      className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors"
     >
       Continuar sem gravação, Q&A nem guia →
-    </p>
+    </button>
   </div>
+
+  <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+    <AlertDialogContent className="max-w-md">
+      <AlertDialogHeader>
+        <AlertDialogTitle className="font-heading text-[20px]">Boa escolha!</AlertDialogTitle>
+        <AlertDialogDescription className="text-[15px] text-ink-500">
+          Vais adicionar o Premium Pass ao teu checkout. No próximo passo podes rever tudo antes de pagar.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <AlertDialogAction onClick={onAddPremium} className="bg-blue-600 hover:bg-blue-700">
+          Sim, adicionar ao checkout
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  </>
   );
 };

@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { Check } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 interface Props {
   onAddMasterclass: () => void;
@@ -24,7 +29,10 @@ const bullets = [
   },
 ];
 
-export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
+export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
+  const [showConfirm, setShowConfirm] = useState(false);
+  return (
+  <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[18px] text-ink-900">
       Transformar imagens em vídeo com IA — ao vivo
@@ -83,7 +91,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
 
       {/* CTA */}
       <button
-        onClick={onAddMasterclass}
+        onClick={() => setShowConfirm(true)}
         className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors"
         style={{ backgroundColor: "hsl(var(--ink-900))" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
@@ -103,12 +111,31 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => (
       <div className="flex-grow h-px bg-border" />
     </div>
 
-    {/* Skip link */}
-    <p
+    {/* Skip button */}
+    <button
       onClick={onSkip}
-      className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
+      className="w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors"
     >
       Continuar sem implementação guiada →
-    </p>
+    </button>
   </div>
-);
+
+  <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+    <AlertDialogContent className="max-w-md">
+      <AlertDialogHeader>
+        <AlertDialogTitle className="font-heading text-[20px]">Boa escolha!</AlertDialogTitle>
+        <AlertDialogDescription className="text-[15px] text-ink-500">
+          Vais adicionar a Masterclass ao teu checkout. No próximo passo podes rever tudo antes de pagar.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+        <AlertDialogAction onClick={onAddMasterclass} style={{ backgroundColor: "hsl(var(--ink-900))" }}>
+          Sim, adicionar ao checkout
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+  </>
+  );
+};
