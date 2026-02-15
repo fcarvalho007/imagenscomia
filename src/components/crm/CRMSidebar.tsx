@@ -1,4 +1,4 @@
-import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, FileText } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 
@@ -13,7 +13,7 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: LayoutDashboard, label: "Dashboard", view: "dashboard" },
   { icon: Columns, label: "Pipeline", view: "pipeline" },
   { icon: Table, label: "Tabela", view: "tabela" },
-  { icon: FileText, label: "Templates", view: "templates" },
+  { icon: Zap, label: "Follow-up", view: "templates" },
   { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 
