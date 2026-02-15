@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2, ExternalLink, Clock,
 } from "lucide-react";
 import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -8,6 +8,8 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji, type Gender } from "@/lib/genderDetection";
 import googleIcon from "@/assets/google_g_icon.svg";
 import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface InscritoModalProps {
   inscrito: Inscrito;
@@ -22,6 +24,8 @@ interface InscritoModalProps {
   onSetGender?: (id: string, gender: Gender) => void;
   onUpdateName?: (id: string, fullName: string) => void;
   onToggleDoNotContact?: (id: string) => void;
+  fetchMessageLogs?: (id: string) => Promise<any[]>;
+  fetchPaymentEvents?: (id: string) => Promise<any[]>;
 }
 
 const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = {
@@ -43,6 +47,16 @@ function fmtDateShort(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function fmtRelative(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff < 0) return "Expirado";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `em ${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `em ${hours}h`;
+  return `em ${Math.floor(hours / 24)}d`;
+}
+
 function abbreviateSource(s: string) {
   if (s.startsWith("Instagram")) return "Instagram";
   if (s.startsWith("Podcast")) return "Podcast RFM";
@@ -51,9 +65,15 @@ function abbreviateSource(s: string) {
   return s;
 }
 
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+  queued: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))" },
+  sent: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))" },
+  delivered: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))" },
+  failed: { bg: "rgba(239,68,68,0.1)", color: "#DC2626" },
+};
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -63,6 +83,28 @@ export default function InscritoModal({
   const [reminderLoading, setReminderLoading] = useState(false);
   const [reminderData, setReminderData] = useState<{ emailSubject: string; emailBody: string; paymentLink: string } | null>(null);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedPayLink, setCopiedPayLink] = useState(false);
+  const [copiedEupagoRef, setCopiedEupagoRef] = useState(false);
+
+  // Activity logs state
+  const [messageLogs, setMessageLogs] = useState<any[]>([]);
+  const [paymentEvents, setPaymentEvents] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+  const [copiedIdempKey, setCopiedIdempKey] = useState<string | null>(null);
+
+  // Fetch logs lazily when modal opens or inscrito changes
+  useEffect(() => {
+    if (!fetchMessageLogs || !fetchPaymentEvents) return;
+    setLogsLoading(true);
+    Promise.all([
+      fetchMessageLogs(inscrito.id),
+      fetchPaymentEvents(inscrito.id),
+    ]).then(([msgs, evts]) => {
+      setMessageLogs(msgs);
+      setPaymentEvents(evts);
+    }).finally(() => setLogsLoading(false));
+  }, [inscrito.id, fetchMessageLogs, fetchPaymentEvents]);
 
   const planInfo = PLAN_INFO[inscrito.plan];
 
@@ -126,6 +168,28 @@ export default function InscritoModal({
     const su = encodeURIComponent(reminderData.emailSubject);
     const body = encodeURIComponent(reminderData.emailBody);
     return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+  };
+
+  const copyPaymentLink = () => {
+    if (inscrito.last_payment_link) {
+      navigator.clipboard.writeText(inscrito.last_payment_link);
+      setCopiedPayLink(true);
+      setTimeout(() => setCopiedPayLink(false), 1500);
+    }
+  };
+
+  const copyEupagoRef = () => {
+    if (inscrito.eupago_ref) {
+      navigator.clipboard.writeText(inscrito.eupago_ref);
+      setCopiedEupagoRef(true);
+      setTimeout(() => setCopiedEupagoRef(false), 1500);
+    }
+  };
+
+  const copyToClipboard = (text: string, setter: (v: string | null) => void, key: string) => {
+    navigator.clipboard.writeText(text);
+    setter(key);
+    setTimeout(() => setter(null), 1500);
   };
 
   // Build compact summary line
@@ -435,32 +499,71 @@ export default function InscritoModal({
             {/* Follow-up Info & Reminder Button for Pending */}
             {(inscrito.payment_status === "awaiting_payment" || inscrito.payment_status === "selected") && (
               <div className="mb-5">
-                {/* Follow-up stage & do_not_contact */}
-                <div className="flex flex-wrap items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-off-white border border-border text-[12px]">
-                  <span className="font-medium text-ink-600">
-                    Follow-up automático: etapa {Math.min(inscrito.followup_stage, 3)}/3
-                  </span>
-                  {inscrito.last_payment_link_sent_at && (
-                    <>
-                      <span className="text-ink-300">·</span>
-                      <span className="text-ink-500">Último link enviado em {fmtDate(inscrito.last_payment_link_sent_at)}</span>
-                    </>
-                  )}
-                  {onToggleDoNotContact && (
-                    <>
-                      <span className="text-ink-300">·</span>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={inscrito.do_not_contact}
-                          onChange={() => onToggleDoNotContact(inscrito.id)}
-                          className="w-3.5 h-3.5 rounded accent-red-500"
-                        />
-                        <span className={inscrito.do_not_contact ? "text-red-600 font-semibold" : "text-ink-500"}>
-                          Não contactar
-                        </span>
-                      </label>
-                    </>
+                {/* Follow-up stage, timing & do_not_contact */}
+                <div className="flex flex-col gap-2 mb-3 px-3 py-2.5 rounded-lg bg-off-white border border-border text-[12px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ink-600">
+                      Follow-up automático: etapa {Math.min(inscrito.followup_stage, 3)}/3
+                    </span>
+                    {inscrito.last_payment_link_sent_at && (
+                      <>
+                        <span className="text-ink-300">·</span>
+                        <span className="text-ink-500">Último link enviado em {fmtDate(inscrito.last_payment_link_sent_at)}</span>
+                      </>
+                    )}
+                    {onToggleDoNotContact && (
+                      <>
+                        <span className="text-ink-300">·</span>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={inscrito.do_not_contact}
+                            onChange={() => onToggleDoNotContact(inscrito.id)}
+                            className="w-3.5 h-3.5 rounded accent-red-500"
+                          />
+                          <span className={inscrito.do_not_contact ? "text-red-600 font-semibold" : "text-ink-500"}>
+                            Não contactar
+                          </span>
+                        </label>
+                      </>
+                    )}
+                  </div>
+                  {/* Timing info */}
+                  <div className="flex flex-wrap items-center gap-3 text-[11px]">
+                    <span className="flex items-center gap-1 text-ink-500">
+                      <Clock size={11} />
+                      Última tentativa: {inscrito.last_followup_at ? fmtDate(inscrito.last_followup_at) : "Nunca"}
+                    </span>
+                    <span className="flex items-center gap-1 text-ink-500">
+                      <Clock size={11} />
+                      Próxima tentativa: {inscrito.followup_stage >= 3 ? "Concluído" : inscrito.next_followup_at ? fmtDate(inscrito.next_followup_at) : "N/A"}
+                    </span>
+                  </div>
+
+                  {/* Payment link quick actions */}
+                  {inscrito.last_payment_link && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      <button
+                        onClick={copyPaymentLink}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <Copy size={10} /> {copiedPayLink ? "Copiado!" : "Copiar link de pagamento"}
+                      </button>
+                      <button
+                        onClick={() => window.open(inscrito.last_payment_link!, "_blank")}
+                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <ExternalLink size={10} /> Abrir link
+                      </button>
+                      {inscrito.eupago_ref && (
+                        <button
+                          onClick={copyEupagoRef}
+                          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-off-white text-ink-600 hover:bg-surface transition-colors border border-border"
+                        >
+                          <Copy size={10} /> {copiedEupagoRef ? "Copiado!" : "Copiar ref EuPago"}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -625,6 +728,116 @@ export default function InscritoModal({
                 Guardar nota
               </button>
             </div>
+
+            {/* ── Activity / Logs Section ── */}
+            {(fetchMessageLogs || fetchPaymentEvents) && (
+              <>
+                <hr className="border-border my-6" />
+                <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Actividade / Logs</h3>
+                {logsLoading ? (
+                  <div className="flex items-center gap-2 text-ink-400 text-[13px] py-4">
+                    <Loader2 size={14} className="animate-spin" /> A carregar logs...
+                  </div>
+                ) : (
+                  <Tabs defaultValue="emails" className="w-full">
+                    <TabsList className="w-full grid grid-cols-2 mb-3">
+                      <TabsTrigger value="emails" className="text-[12px]">
+                        Emails {messageLogs.length > 0 && <span className="ml-1 text-[10px] opacity-60">({messageLogs.length})</span>}
+                      </TabsTrigger>
+                      <TabsTrigger value="pagamentos" className="text-[12px]">
+                        Pagamentos {paymentEvents.length > 0 && <span className="ml-1 text-[10px] opacity-60">({paymentEvents.length})</span>}
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="emails">
+                      {messageLogs.length === 0 ? (
+                        <p className="text-[13px] text-ink-400 py-3">Sem emails enviados</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {messageLogs.map((log) => {
+                            const st = STATUS_STYLES[log.status] || STATUS_STYLES.queued;
+                            return (
+                              <div key={log.id} className="rounded-lg border border-border bg-off-white px-3 py-2">
+                                <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                                  <span className="text-ink-500">{fmtDate(log.created_at)}</span>
+                                  <span className="font-medium text-ink-700">{log.template_key}</span>
+                                  <span className="font-medium px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: st.bg, color: st.color }}>
+                                    {log.status}
+                                  </span>
+                                  <span className="text-ink-400">{log.provider}</span>
+                                  {log.provider_message_id && (
+                                    <button
+                                      onClick={() => copyToClipboard(log.provider_message_id, setCopiedMsgId, log.id)}
+                                      className="flex items-center gap-0.5 text-ink-400 hover:text-blue-600 transition-colors"
+                                      title={log.provider_message_id}
+                                    >
+                                      <Copy size={10} />
+                                      <span className="text-[10px]">
+                                        {copiedMsgId === log.id ? "Copiado!" : "ID"}
+                                      </span>
+                                    </button>
+                                  )}
+                                </div>
+                                {log.error && (
+                                  <p className="text-[11px] text-red-600 mt-1 truncate" title={log.error}>
+                                    ⚠ {log.error}
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="pagamentos">
+                      {paymentEvents.length === 0 ? (
+                        <p className="text-[13px] text-ink-400 py-3">Sem eventos de pagamento</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {paymentEvents.map((evt) => (
+                            <div key={evt.id} className="rounded-lg border border-border bg-off-white px-3 py-2">
+                              <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                                <span className="text-ink-500">{fmtDate(evt.received_at)}</span>
+                                <span className="font-medium px-1.5 py-0.5 rounded-full text-[10px] bg-blue-50 text-blue-700">
+                                  {evt.event_type}
+                                </span>
+                                {evt.eupago_ref && (
+                                  <span className="text-ink-500">Ref: {evt.eupago_ref}</span>
+                                )}
+                                {evt.processed_at && (
+                                  <span className="text-green-600 text-[11px]">✓ Processado</span>
+                                )}
+                                <button
+                                  onClick={() => copyToClipboard(evt.idempotency_key, setCopiedIdempKey, evt.id)}
+                                  className="flex items-center gap-0.5 text-ink-400 hover:text-blue-600 transition-colors"
+                                  title={evt.idempotency_key}
+                                >
+                                  <Copy size={10} />
+                                  <span className="text-[10px]">
+                                    {copiedIdempKey === evt.id ? "Copiado!" : "Key"}
+                                  </span>
+                                </button>
+                              </div>
+                              <Collapsible>
+                                <CollapsibleTrigger className="text-[11px] text-blue-600 hover:underline mt-1 cursor-pointer">
+                                  Ver payload
+                                </CollapsibleTrigger>
+                                <CollapsibleContent>
+                                  <pre className="text-[10px] text-ink-600 bg-white rounded p-2 mt-1 overflow-x-auto max-h-[120px] border border-border">
+                                    {JSON.stringify(evt.payload, null, 2)}
+                                  </pre>
+                                </CollapsibleContent>
+                              </Collapsible>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -16,7 +16,7 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds } = useInscritos();
 
   const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_auth");
@@ -56,6 +56,7 @@ export default function CRM() {
             onToggleFollowUp={toggleFollowUp}
             onArchive={(id) => updateStatus(id, "arquivado")}
             onDelete={deleteInscrito}
+            fetchFailedEmailIds={fetchFailedEmailIds}
           />
         )}
         {activeView === "lixo" && (
@@ -88,6 +89,8 @@ export default function CRM() {
           onSetGender={setGender}
           onUpdateName={updateName}
           onToggleDoNotContact={toggleDoNotContact}
+          fetchMessageLogs={fetchMessageLogs}
+          fetchPaymentEvents={fetchPaymentEvents}
         />
       )}
     </div>
