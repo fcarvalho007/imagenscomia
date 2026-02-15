@@ -57,7 +57,10 @@ export const RegistrationModal = () => {
     try {
       const data = await registerFree();
       if (data?.alreadyRegistered) {
-        setError("Este email já está inscrito. Usa outro email ou verifica a tua caixa de entrada.");
+        // Don't block — redirect existing user to upgrade with their data
+        close();
+        const existingName = (data as any).name || `${firstName.trim()} ${lastName.trim()}`;
+        navigate(`/upgrade?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
         setLoading(false);
         return;
       }
