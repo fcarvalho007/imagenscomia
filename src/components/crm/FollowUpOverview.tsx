@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Users, Mail, AlertTriangle, Clock, LinkIcon, CheckCircle2, XCircle, Server, ShieldCheck, Timer } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -166,8 +166,65 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
     { label: "Em atraso", count: alerts.overdue, icon: Clock, filter: { subTab: "pessoas" as const, emAtraso: true } },
   ];
 
+  // Event countdown
+  const EVENT_DATE = new Date("2026-02-18T10:00:00Z");
+  const [countdownText, setCountdownText] = useState("");
+  useEffect(() => {
+    const update = () => {
+      const diff = EVENT_DATE.getTime() - Date.now();
+      if (diff <= 0) { setCountdownText("Evento em curso!"); return; }
+      const hours = Math.floor(diff / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      setCountdownText(`T-${hours}h ${mins}m`);
+    };
+    update();
+    const iv = setInterval(update, 60000);
+    return () => clearInterval(iv);
+  }, []);
+
+  // Countdown alerts
+  const countdown48noResend = useMemo(() => {
+    const h48ago = new Date(now - 48 * 3600000).toISOString();
+    return pipeline.filter(i => {
+      const intentDate = i.upgrade_clicked_at || i.timestamp;
+      return intentDate < h48ago && !resendIds.has(i.id);
+    }).length;
+  }, [pipeline, resendIds, now]);
+
+  const countdownFailed24 = useMemo(() =>
+    pipeline.filter(i => failedIds24.has(i.id)).length,
+    [pipeline, failedIds24]
+  );
+
   return (
     <div className="space-y-6">
+      {/* Event Countdown */}
+      <div className="rounded-xl border p-4" style={{ background: "linear-gradient(135deg, #0F172A 0%, #1E293B 100%)", borderColor: "rgba(255,255,255,0.1)" }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-[28px] font-bold font-heading text-white">{countdownText}</p>
+            <p className="text-[12px] text-white/50">até ao evento (18 Fev 10:00)</p>
+          </div>
+          <div className="flex flex-col gap-1 text-[12px]">
+            {countdown48noResend > 0 && (
+              <span className="px-2.5 py-1 rounded-lg bg-red-500/20 text-red-300 font-medium">
+                {countdown48noResend} pessoas com intenção 48h+ sem Resend confirmado
+              </span>
+            )}
+            {countdownFailed24 > 0 && (
+              <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-medium">
+                {countdownFailed24} pessoas com falha nas últimas 24h
+              </span>
+            )}
+            {countdown48noResend === 0 && countdownFailed24 === 0 && (
+              <span className="px-2.5 py-1 rounded-lg bg-green-500/20 text-green-300 font-medium">
+                ✓ Sem alertas críticos
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Funnel */}
       <div>
         <h2 className="font-heading font-bold text-[15px] mb-3" style={{ color: "#0F172A" }}>

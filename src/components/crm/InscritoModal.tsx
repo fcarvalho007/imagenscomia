@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2, ExternalLink, Clock,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2, ExternalLink, Clock, CheckCircle2, AlertTriangle, ChevronDown, Send,
 } from "lucide-react";
 import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -10,6 +10,7 @@ import googleIcon from "@/assets/google_g_icon.svg";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { getTemplateLabel, fmtTimeAgo } from "./templateLabels";
 
 interface InscritoModalProps {
   inscrito: Inscrito;
@@ -769,35 +770,126 @@ export default function InscritoModal({
             </div>
 
             {/* ── Activity / Logs Section ── */}
-            {(fetchMessageLogs || fetchPaymentEvents) && (
+            {(fetchMessageLogs || fetchPaymentEvents) && (() => {
+              // Derived state for sticky summary
+              const resendConfirmedLogs = messageLogs.filter((l: any) => l.provider === "resend" && l.status === "sent" && l.provider_message_id);
+              const lastConfirmed = resendConfirmedLogs[0];
+              const lastLog = messageLogs[0];
+              const hasAnyResendConfirmed = resendConfirmedLogs.length > 0;
+              const lastFailed = messageLogs.find((l: any) => l.status === "failed");
+              const failedRecently = lastFailed && (Date.now() - new Date(lastFailed.created_at).getTime()) < 2 * 3600000;
+
+              // Check if reminder_manual was sent in last 6h
+              const reminderManualRecent = messageLogs.find((l: any) => l.template_key === "reminder_manual" && (Date.now() - new Date(l.created_at).getTime()) < 6 * 3600000);
+
+              // Determine state
+              let estadoLabel = "NUNCA ENVIADO";
+              let estadoColor = "#94A3B8";
+              let estadoBg = "rgba(148,163,184,0.1)";
+              if (lastLog) {
+                if (lastLog.status === "failed") { estadoLabel = "FALHOU"; estadoColor = "#DC2626"; estadoBg = "rgba(239,68,68,0.1)"; }
+                else if (lastLog.status === "queued") { estadoLabel = "PENDENTE"; estadoColor = "#D97706"; estadoBg = "rgba(245,158,11,0.1)"; }
+                else if (lastLog.provider === "resend" && lastLog.provider_message_id) { estadoLabel = "CONFIRMADO"; estadoColor = "#059669"; estadoBg = "rgba(16,185,129,0.1)"; }
+                else if (lastLog.status === "sent") { estadoLabel = "ENVIADO"; estadoColor = "#2563EB"; estadoBg = "rgba(37,99,235,0.1)"; }
+              }
+
+              // Next action
+              let nextAction = "";
+              if (failedRecently) nextAction = "Reenviar quando possível / verificar rate limit";
+              else if (!hasAnyResendConfirmed && !inscrito.paid_at && inscrito.plan_selected && inscrito.plan_selected !== "free") nextAction = "Enviar check-in backlog";
+              else if (inscrito.next_followup_at && new Date(inscrito.next_followup_at).getTime() > Date.now()) nextAction = `Aguardar: ${fmtDate(inscrito.next_followup_at)}`;
+              else if (inscrito.next_followup_at && new Date(inscrito.next_followup_at).getTime() <= Date.now()) nextAction = "Em atraso: rever";
+
+              // Show reenviar button?
+              const showReenviar = sendBacklogCheckin && !inscrito.paid_at && inscrito.plan_selected && inscrito.plan_selected !== "free" && !inscrito.do_not_contact && (
+                (lastLog && lastLog.status === "failed") || !hasAnyResendConfirmed
+              );
+
+              return (
               <>
                 <hr className="border-border my-6" />
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h3 className="font-heading font-bold text-[14px] text-ink-800">Actividade / Logs</h3>
-                  {messageLogs.length > 0 && (() => {
-                    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                    const sent7d = messageLogs.filter((l: any) => l.status === "sent" && new Date(l.created_at).getTime() >= sevenDaysAgo).length;
-                    const failed7d = messageLogs.filter((l: any) => l.status === "failed" && new Date(l.created_at).getTime() >= sevenDaysAgo).length;
-                    const lastLog = messageLogs[0];
-                    return (
-                      <div className="flex items-center gap-2 text-[12px]">
-                        <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
-                          Enviados (7d): {sent7d}
-                        </span>
-                        {failed7d > 0 && (
-                          <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium">
-                            Falhas: {failed7d}
-                          </span>
-                        )}
-                        {lastLog && (
-                          <span className="text-ink-400">
-                            Último: {lastLog.status}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
+
+                {/* Quick Actions Bar */}
+                <div className="flex flex-wrap items-center gap-1.5 mb-4">
+                  {inscrito.last_payment_link && (
+                    <>
+                      <button onClick={copyPaymentLink} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+                        <Copy size={10} /> {copiedPayLink ? "Copiado!" : "Link pgto"}
+                      </button>
+                      <button onClick={() => window.open(inscrito.last_payment_link!, "_blank")} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors">
+                        <ExternalLink size={10} /> Abrir
+                      </button>
+                    </>
+                  )}
+                  {inscrito.eupago_ref && (
+                    <button onClick={copyEupagoRef} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-off-white text-ink-600 hover:bg-surface transition-colors border border-border">
+                      <Copy size={10} /> {copiedEupagoRef ? "Copiado!" : "Ref EuPago"}
+                    </button>
+                  )}
+                  {inscrito.whatsapp && (
+                    <button onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")} className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-green-50 text-green-700 hover:bg-green-100 transition-colors">
+                      <MessageSquare size={10} /> WhatsApp
+                    </button>
+                  )}
                 </div>
+
+                <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Actividade / Logs</h3>
+
+                {/* Sticky Summary Block */}
+                {!logsLoading && (
+                  <div className="rounded-xl border border-border bg-off-white p-3 mb-4 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">Estado</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: estadoBg, color: estadoColor }}>{estadoLabel}</span>
+                    </div>
+                    {lastConfirmed && (
+                      <div className="text-[12px] text-ink-600">
+                        <span className="text-ink-400">Último confirmado:</span>{" "}
+                        <span className="font-medium">{getTemplateLabel(lastConfirmed.template_key)}</span>{" "}
+                        <span className="text-ink-400">{fmtTimeAgo(lastConfirmed.created_at)}</span>
+                      </div>
+                    )}
+                    {nextAction && (
+                      <div className="text-[12px]">
+                        <span className="text-ink-400">Próxima acção:</span>{" "}
+                        <span className="font-medium text-ink-700">{nextAction}</span>
+                      </div>
+                    )}
+
+                    {/* Reenviar button */}
+                    {showReenviar && (
+                      reminderManualRecent ? (
+                        <p className="text-[11px] text-amber-600 mt-1">
+                          ⚠ Lembrete manual já enviado {fmtTimeAgo(reminderManualRecent.created_at)} — aguardar
+                        </p>
+                      ) : (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Reenviar email (lembrete manual) para ${inscrito.email}?`)) return;
+                            setBacklogSending(true);
+                            setBacklogError(null);
+                            try {
+                              await sendBacklogCheckin!(inscrito.id, "reminder_manual");
+                              setBacklogSent(true);
+                            } catch (e: any) {
+                              setBacklogError(e?.message || "Erro ao enviar");
+                            } finally {
+                              setBacklogSending(false);
+                            }
+                          }}
+                          disabled={backlogSending || backlogSent}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium mt-1 transition-colors"
+                          style={{ background: backlogSent ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", color: backlogSent ? "#059669" : "#DC2626" }}
+                        >
+                          {backlogSending ? <Loader2 size={12} className="animate-spin" /> : backlogSent ? <CheckCircle2 size={12} /> : <Send size={12} />}
+                          {backlogSent ? "Enviado ✓" : backlogSending ? "A enviar..." : "Reenviar último email"}
+                        </button>
+                      )
+                    )}
+                    {backlogError && <p className="text-[11px] text-red-600">{backlogError}</p>}
+                  </div>
+                )}
+
                 {logsLoading ? (
                   <div className="flex items-center gap-2 text-ink-400 text-[13px] py-4">
                     <Loader2 size={14} className="animate-spin" /> A carregar logs...
@@ -820,32 +912,56 @@ export default function InscritoModal({
                         <div className="space-y-2">
                           {messageLogs.map((log) => {
                             const st = STATUS_STYLES[log.status] || STATUS_STYLES.queued;
+                            const isConfirmed = log.provider === "resend" && log.provider_message_id;
+                            const isLegacy = log.provider === "internal";
                             return (
-                              <div key={log.id} className="rounded-lg border border-border bg-off-white px-3 py-2">
-                                <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                                  <span className="text-ink-500">{fmtDate(log.created_at)}</span>
-                                  <span className="font-medium text-ink-700">{log.template_key}</span>
+                              <div key={log.id} className="rounded-lg border border-border bg-off-white px-3 py-2.5" style={isLegacy ? { opacity: 0.55 } : {}}>
+                                {/* Title line */}
+                                <div className="flex items-start gap-1.5 mb-1">
+                                  {isConfirmed && <CheckCircle2 size={13} className="text-green-600 mt-0.5 shrink-0" />}
+                                  <span className="text-[13px] font-semibold text-ink-800">{getTemplateLabel(log.template_key)}</span>
+                                </div>
+                                {/* Badges row */}
+                                <div className="flex flex-wrap items-center gap-1.5 text-[11px] mb-1">
                                   <span className="font-medium px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: st.bg, color: st.color }}>
                                     {log.status}
                                   </span>
-                                  <span className="text-ink-400">{log.provider}</span>
-                                  {log.provider_message_id && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[10px]" style={{
+                                    background: isLegacy ? "rgba(148,163,184,0.1)" : "rgba(37,99,235,0.08)",
+                                    color: isLegacy ? "#94A3B8" : "#2563EB",
+                                  }}>
+                                    {isLegacy ? "Internal" : "Resend"}
+                                  </span>
+                                  <span className="text-ink-400">{fmtTimeAgo(log.created_at)}</span>
+                                  {isLegacy && <span className="text-ink-300 text-[10px]" title="Log interno antigo — não prova envio real">⚠ legado</span>}
+                                </div>
+                                {/* Recipient */}
+                                <div className="text-[11px] text-ink-500 mb-1">Para: {inscrito.email}</div>
+                                {/* Resend ID */}
+                                {log.provider_message_id && (
+                                  <div className="flex items-center gap-1 text-[10px] text-ink-400 mb-1">
+                                    <span className="truncate max-w-[180px]" title={log.provider_message_id}>{log.provider_message_id.slice(0, 24)}…</span>
                                     <button
                                       onClick={() => copyToClipboard(log.provider_message_id, setCopiedMsgId, log.id)}
-                                      className="flex items-center gap-0.5 text-ink-400 hover:text-blue-600 transition-colors"
-                                      title={log.provider_message_id}
+                                      className="text-ink-400 hover:text-blue-600 transition-colors"
                                     >
                                       <Copy size={10} />
-                                      <span className="text-[10px]">
-                                        {copiedMsgId === log.id ? "Copiado!" : "ID"}
-                                      </span>
                                     </button>
-                                  )}
-                                </div>
+                                    {copiedMsgId === log.id && <span className="text-green-600">Copiado!</span>}
+                                  </div>
+                                )}
+                                {/* Error collapsible */}
                                 {log.error && (
-                                  <p className="text-[11px] text-red-600 mt-1 truncate" title={log.error}>
-                                    ⚠ {log.error}
-                                  </p>
+                                  <Collapsible>
+                                    <CollapsibleTrigger className="flex items-center gap-1 text-[11px] text-red-600 hover:underline cursor-pointer">
+                                      <AlertTriangle size={10} /> Ver erro
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                      <pre className="text-[10px] text-red-700 bg-red-50 rounded p-2 mt-1 overflow-x-auto max-h-[100px] border border-red-200">
+                                        {log.error}
+                                      </pre>
+                                    </CollapsibleContent>
+                                  </Collapsible>
                                 )}
                               </div>
                             );
@@ -901,7 +1017,8 @@ export default function InscritoModal({
                   </Tabs>
                 )}
               </>
-            )}
+              );
+            })()}
           </div>
         </div>
       </div>

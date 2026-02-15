@@ -232,6 +232,32 @@ export function useInscritos() {
     return new Set((data || []).map((r) => r.registration_id));
   }, []);
 
+  const fetchMessageLogsSummary = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("message_logs")
+      .select("registration_id, template_key, status, provider_message_id, created_at, provider")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error) {
+      console.error("Error fetching message_logs summary:", error);
+      return new Map();
+    }
+    // Keep only the latest log per registration_id
+    const map = new Map<string, { template_key: string; status: string; provider_message_id: string | null; created_at: string; provider: string }>();
+    for (const row of data || []) {
+      if (!map.has(row.registration_id)) {
+        map.set(row.registration_id, {
+          template_key: row.template_key,
+          status: row.status,
+          provider_message_id: row.provider_message_id,
+          created_at: row.created_at,
+          provider: row.provider,
+        });
+      }
+    }
+    return map;
+  }, []);
+
   const sendBacklogCheckin = useCallback(async (registrationId: string, templateKey: string = "followup_backlog_checkin") => {
     const { data, error } = await supabase.functions.invoke("followup-abandoned", {
       body: { mode: "manual_send", registration_id: registrationId, template_key: templateKey },
@@ -243,5 +269,5 @@ export function useInscritos() {
     return data;
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin };
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary };
 }
