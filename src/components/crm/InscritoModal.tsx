@@ -735,18 +735,29 @@ export default function InscritoModal({
                 <hr className="border-border my-6" />
                 <div className="flex items-center gap-3 flex-wrap">
                   <h3 className="font-heading font-bold text-[14px] text-ink-800">Actividade / Logs</h3>
-                  {messageLogs.length > 0 && (
-                    <div className="flex items-center gap-2 text-[12px]">
-                      <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
-                        Enviados: {messageLogs.filter((l: any) => l.status === "sent").length}
-                      </span>
-                      {messageLogs.filter((l: any) => l.status === "failed").length > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium">
-                          Falhas: {messageLogs.filter((l: any) => l.status === "failed").length}
+                  {messageLogs.length > 0 && (() => {
+                    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                    const sent7d = messageLogs.filter((l: any) => l.status === "sent" && new Date(l.created_at).getTime() >= sevenDaysAgo).length;
+                    const failed7d = messageLogs.filter((l: any) => l.status === "failed" && new Date(l.created_at).getTime() >= sevenDaysAgo).length;
+                    const lastLog = messageLogs[0];
+                    return (
+                      <div className="flex items-center gap-2 text-[12px]">
+                        <span className="px-2 py-0.5 rounded-full bg-green-50 text-green-700 font-medium">
+                          Enviados (7d): {sent7d}
                         </span>
-                      )}
-                    </div>
-                  )}
+                        {failed7d > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-medium">
+                            Falhas: {failed7d}
+                          </span>
+                        )}
+                        {lastLog && (
+                          <span className="text-ink-400">
+                            Último: {lastLog.status}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {logsLoading ? (
                   <div className="flex items-center gap-2 text-ink-400 text-[13px] py-4">

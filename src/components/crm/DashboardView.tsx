@@ -59,19 +59,26 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [refreshing, setRefreshing] = useState(false);
   const [visitantes, setVisitantes] = useState(1034);
 
-  // Email counts (7 days)
+  // Email counts (24h + 7 days)
+  const [emailSent24h, setEmailSent24h] = useState(0);
+  const [emailFailed24h, setEmailFailed24h] = useState(0);
   const [emailSent7d, setEmailSent7d] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
   const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
     Promise.all([
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", oneDayAgo),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo),
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "sent").gte("created_at", sevenDaysAgo),
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo),
       supabase.from("message_logs").select("template_key").eq("status", "sent").gte("created_at", sevenDaysAgo),
-    ]).then(([sentRes, failedRes, stageRes]) => {
+    ]).then(([sent24, failed24, sentRes, failedRes, stageRes]) => {
+      setEmailSent24h(sent24.count || 0);
+      setEmailFailed24h(failed24.count || 0);
       setEmailSent7d(sentRes.count || 0);
       setEmailFailed7d(failedRes.count || 0);
       if (stageRes.data) {
@@ -315,19 +322,19 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         ))}
       </div>
 
-      {/* Emails (7 dias) */}
+      {/* Emails (24h + 7 dias) */}
       <div className="grid grid-cols-3 max-md:grid-cols-1 gap-3.5 mb-5">
         <div className="bg-white border border-border rounded-xl p-5">
           <Mail size={20} className="text-green-600" />
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailSent7d}</p>
           <p className="text-[13px] text-ink-500 mt-1">Emails enviados</p>
-          <p className="text-[11px] text-ink-400">Últimos 7 dias</p>
+          <p className="text-[11px] text-ink-400">{emailSent24h} (24h) / {emailSent7d} (7d)</p>
         </div>
         <div className="bg-white border border-border rounded-xl p-5">
           <AlertCircle size={20} className="text-red-500" />
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailFailed7d}</p>
           <p className="text-[13px] text-ink-500 mt-1">Falhas</p>
-          <p className="text-[11px] text-ink-400">Últimos 7 dias</p>
+          <p className="text-[11px] text-ink-400">{emailFailed24h} (24h) / {emailFailed7d} (7d)</p>
         </div>
         <div className="bg-white border border-border rounded-xl p-5">
           <BarChart2 size={20} className="text-blue-600" />
