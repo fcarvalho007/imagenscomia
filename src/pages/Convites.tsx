@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { toast } from "@/hooks/use-toast";
 import livroSeo from "@/assets/livro-guia-seo.png";
 
@@ -685,6 +686,7 @@ const Convites = () => (
   <RegistrationModalProvider>
     <ConvitesContent />
     <RegistrationModal />
+    <WhatsAppSupportButton />
   </RegistrationModalProvider>
 );
 
