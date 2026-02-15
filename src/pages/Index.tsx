@@ -15,6 +15,7 @@ import { FAQSection } from "@/components/landing/FAQSection";
 import { CTAFinalSection } from "@/components/landing/CTAFinalSection";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { LogoMarquee } from "@/components/landing/LogoMarquee";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 const Index = () => {
   usePageMeta({ title: "Criar Imagens com IA para Empresas — Webinar Gratuito 18 Fev 10h", description: "Aprende a criar imagens profissionais com IA para a tua empresa. Sem designer. Webinar gratuito, 18 Fevereiro, 10h. Método testado. Demo ao vivo." });
@@ -35,6 +36,7 @@ const Index = () => {
         <FAQSection />
         <CTAFinalSection />
         <FooterSection />
+        <WhatsAppSupportButton />
         <RegistrationModal />
       </main>
     </RegistrationModalProvider>
