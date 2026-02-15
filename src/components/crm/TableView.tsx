@@ -54,7 +54,7 @@ function fmtRelativeShort(iso: string): string | null {
 }
 
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
-type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact";
+type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend";
 
 export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds }: TableViewProps) {
   const [search, setSearch] = useState("");
@@ -82,11 +82,18 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
   const counts = useMemo(() => {
     const now = Date.now();
     const h48 = 48 * 60 * 60 * 1000;
+    const h36 = 36 * 60 * 60 * 1000;
+    const unpaidIntent = active.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free");
     return {
-      awaiting: active.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free").length,
+      awaiting: unpaidIntent.length,
       expired_link: active.filter((i) => !i.paid_at && i.payment_link_created_at && (now - new Date(i.payment_link_created_at).getTime()) > h48).length,
       failed_email: active.filter((i) => failedIds.has(i.id)).length,
       do_not_contact: active.filter((i) => i.do_not_contact).length,
+      backlog_36h: unpaidIntent.filter((i) => {
+        const ref = i.upgrade_clicked_at || i.timestamp;
+        return (now - new Date(ref).getTime()) > h36;
+      }).length,
+      no_resend: 0, // Will be enriched via message_logs fetch
     };
   }, [active, failedIds]);
 
@@ -103,6 +110,13 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       list = list.filter((i) => failedIds.has(i.id));
     } else if (quickFilter === "do_not_contact") {
       list = list.filter((i) => i.do_not_contact);
+    } else if (quickFilter === "backlog_36h") {
+      const h36 = 36 * 60 * 60 * 1000;
+      list = list.filter((i) => {
+        if (i.paid_at || !i.plan_selected || i.plan_selected === "free") return false;
+        const ref = i.upgrade_clicked_at || i.timestamp;
+        return (Date.now() - new Date(ref).getTime()) > h36;
+      });
     }
 
     if (search.trim()) {
@@ -234,6 +248,10 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         <button className={chipClass("do_not_contact")} onClick={() => toggleQuickFilter("do_not_contact")}>
           <Filter size={12} /> Não contactar
           <span className="text-[10px] opacity-70">({counts.do_not_contact})</span>
+        </button>
+        <button className={chipClass("backlog_36h")} onClick={() => toggleQuickFilter("backlog_36h")}>
+          <Filter size={12} /> Backlog 36h+
+          <span className="text-[10px] opacity-70">({counts.backlog_36h})</span>
         </button>
       </div>
 

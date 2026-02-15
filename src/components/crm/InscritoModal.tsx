@@ -26,6 +26,7 @@ interface InscritoModalProps {
   onToggleDoNotContact?: (id: string) => void;
   fetchMessageLogs?: (id: string) => Promise<any[]>;
   fetchPaymentEvents?: (id: string) => Promise<any[]>;
+  sendBacklogCheckin?: (id: string, templateKey?: string) => Promise<any>;
 }
 
 const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = {
@@ -73,7 +74,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
 };
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -92,6 +93,9 @@ export default function InscritoModal({
   const [logsLoading, setLogsLoading] = useState(false);
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [copiedIdempKey, setCopiedIdempKey] = useState<string | null>(null);
+  const [backlogSending, setBacklogSending] = useState(false);
+  const [backlogSent, setBacklogSent] = useState(false);
+  const [backlogError, setBacklogError] = useState<string | null>(null);
 
   // Fetch logs lazily when modal opens or inscrito changes
   useEffect(() => {
@@ -443,6 +447,41 @@ export default function InscritoModal({
                       <Trash2 size={13} style={{ color: "#f87171" }} />
                       <span className="text-[12px] font-medium" style={{ color: "#f87171" }}>Eliminar definitivamente</span>
                     </button>
+                  )}
+                  {/* Backlog check-in button */}
+                  {sendBacklogCheckin && !inscrito.paid_at && inscrito.plan_selected && inscrito.plan_selected !== "free" && !inscrito.do_not_contact && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Enviar email de check-in backlog para ${inscrito.nome} (${inscrito.email})? Este email será enviado via Resend.`)) return;
+                        setBacklogSending(true);
+                        setBacklogError(null);
+                        try {
+                          await sendBacklogCheckin(inscrito.id, "followup_backlog_checkin");
+                          setBacklogSent(true);
+                        } catch (e: any) {
+                          setBacklogError(e?.message || "Erro ao enviar");
+                        } finally {
+                          setBacklogSending(false);
+                        }
+                      }}
+                      disabled={backlogSending || backlogSent}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: backlogSent ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.12)" }}
+                      onMouseEnter={(e) => { if (!backlogSent) e.currentTarget.style.background = "rgba(59,130,246,0.20)"; }}
+                      onMouseLeave={(e) => { if (!backlogSent) e.currentTarget.style.background = "rgba(59,130,246,0.12)"; }}
+                    >
+                      {backlogSending ? (
+                        <Loader2 size={13} className="animate-spin" style={{ color: "rgba(255,255,255,0.70)" }} />
+                      ) : (
+                        <Bell size={13} style={{ color: backlogSent ? "#22C55E" : "rgba(255,255,255,0.70)" }} />
+                      )}
+                      <span className="text-[12px] font-medium" style={{ color: backlogSent ? "#22C55E" : "rgba(255,255,255,0.70)" }}>
+                        {backlogSent ? "Check-in enviado ✓" : backlogSending ? "A enviar..." : "Enviar check-in backlog"}
+                      </span>
+                    </button>
+                  )}
+                  {backlogError && (
+                    <p className="text-[11px] px-3 mt-0.5" style={{ color: "#f87171" }}>{backlogError}</p>
                   )}
                 </div>
               </>

@@ -232,5 +232,16 @@ export function useInscritos() {
     return new Set((data || []).map((r) => r.registration_id));
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds };
+  const sendBacklogCheckin = useCallback(async (registrationId: string, templateKey: string = "followup_backlog_checkin") => {
+    const { data, error } = await supabase.functions.invoke("followup-abandoned", {
+      body: { mode: "manual_send", registration_id: registrationId, template_key: templateKey },
+    });
+    if (error) {
+      console.error("Error sending backlog checkin:", error);
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin };
 }
