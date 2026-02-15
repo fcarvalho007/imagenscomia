@@ -1,51 +1,29 @@
 
 
-## Refinamentos no CRM para Precisao e Clareza
+## WhatsApp Support Floating Button — Landing Page
 
-### Problemas identificados
+### New file
+**`src/components/landing/WhatsAppSupportButton.tsx`**
 
-**1. Cores inconsistentes no Dashboard vs Pipeline/Tabela**
+A reusable floating action button component:
+- Fixed position bottom-right with safe area padding (`bottom-6 right-6`, extra bottom on iOS via `pb-safe` or `env(safe-area-inset-bottom)`)
+- `z-50` to stay above footer/cookie bars
+- WhatsApp green (`#25D366`) background, white icon, `rounded-full`
+- Inline SVG for the WhatsApp icon (Lucide does not include a WhatsApp icon)
+- Wrapped in a Tooltip (`"Suporte WhatsApp"`) using the existing Radix tooltip from the project
+- Hover animation: `scale-110` + enhanced shadow via Tailwind `transition-all`
+- On click:
+  - Opens `https://wa.me/351915015508?text=Ol%C3%A1!%20Preciso%20de%20apoio%20sobre%20a%20p%C3%A1gina.%20Podem%20ajudar-me%3F` in a new tab
+  - Calls a placeholder analytics function: `console.log("whatsapp_click")`
+- `aria-label="Suporte WhatsApp"` for accessibility
 
-No card "Pipeline Pendente" do Dashboard, os estados usam cores diferentes das usadas no Pipeline kanban e Tabela:
-- Dashboard: "Seleccionaram" = azul (emoji azul, bg-blue-50), "Aguardam pagamento" = amarelo (emoji amarelo, bg-amber-100)
-- Pipeline/Tabela: "Seleccionou e saiu" = laranja (bg-orange-100), "Aguarda pgto" = vermelho (bg-red-100)
+### Modified file
+**`src/pages/Index.tsx`**
 
-Isto cria confusao visual. Devem ser alinhados.
+Import and render `<WhatsAppSupportButton />` inside the `<main>` block, after `<FooterSection />` and before `<RegistrationModal />`. No other sections are touched.
 
-**2. Dado inconsistente na base de dados**
-
-Existe 1 registo com `eupago_ref` preenchido mas `upgrade_clicked_at` a NULL. Isto significa que a referencia EuPago foi gerada mas o timestamp nao foi guardado (possivelmente dados anteriores a implementacao do campo). No CRM, este registo aparece como "Seleccionou e saiu" em vez de "Aguarda pagamento", o que e incorrecto.
-
-**3. Descritor "Seleccionou e saiu" no Dashboard pouco claro**
-
-A descricao "Nao clicaram 'Confirmar e pagar'" e precisa, mas com o novo modal de confirmacao, vale a pena reforcar que estas pessoas confirmaram intencao real no modal.
-
-### Alteracoes propostas
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/DashboardView.tsx` | Alinhar cores do Pipeline Pendente: laranja para "Seleccionaram", vermelho para "Aguardam pgto". Melhorar descricoes. |
-| `src/hooks/useInscritos.ts` | Corrigir logica de `payment_status`: se `eupago_ref` existe e `paid_at` nao, tratar como "awaiting_payment" mesmo sem `upgrade_clicked_at`. |
-
-### Detalhe das alteracoes
-
-**Dashboard — cores alinhadas:**
-```text
-Antes:                          Depois:
-Azul "Seleccionaram"     ->     Laranja (bg-orange-50, border-orange-200)
-Amarelo "Aguardam pgto"  ->     Vermelho (bg-red-50, border-red-200)
-```
-
-Descricoes actualizadas:
-- "Seleccionaram": "Confirmaram no modal mas nao avancaram para pagamento"
-- "Aguardam pagamento": "Referencia EuPago gerada — contactar"
-
-**useInscritos — logica corrigida:**
-A determinacao de `payment_status` passa a considerar tambem `eupago_ref`:
-- Se `paid_at` existe: "paid"
-- Se `upgrade_clicked_at` existe OU `eupago_ref` existe (sem `paid_at`): "awaiting_payment"
-- Se `plan_selected` existe e != "free": "selected"
-- Caso contrario: "free"
-
-Isto garante que nenhum registo com referencia EuPago activa seja classificado incorrectamente como "Seleccionou e saiu".
+### Technical notes
+- The `wa.me` URL works identically on mobile and desktop (WhatsApp handles the redirect), so no device detection logic is needed
+- The component is self-contained and reusable — can be dropped into any other page later
+- No new dependencies required
 
