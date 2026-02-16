@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ExternalLink, Copy, Send, RefreshCw, Loader2, MoreHorizontal, Bell, Check,
+  ExternalLink, Copy, Send, RefreshCw, Loader2, MoreHorizontal, Bell, Check, CheckCircle,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -34,6 +34,8 @@ export default function ActionsSection({
   const [copiedPayLink, setCopiedPayLink] = useState(false);
   const [copiedEupagoRef, setCopiedEupagoRef] = useState(false);
   const [regenLoading, setRegenLoading] = useState(false);
+  const [regenDialogOpen, setRegenDialogOpen] = useState(false);
+  const [regenSuccess, setRegenSuccess] = useState(false);
 
   // Don't show for free or already paid
   if (inscrito.payment_status === "free" || inscrito.paid_at) return null;
@@ -60,9 +62,12 @@ export default function ActionsSection({
 
   const handleRegen = async () => {
     if (!regenerateLink) return;
+    setRegenDialogOpen(false);
     setRegenLoading(true);
     try {
       const result = await regenerateLink(inscrito.id);
+      setRegenSuccess(true);
+      setTimeout(() => setRegenSuccess(false), 4000);
       toast({ title: "Link regenerado", description: result?.paymentLink ? `Novo link criado.` : "Link actualizado." });
       onRefresh?.();
     } catch (e: any) {
@@ -105,7 +110,7 @@ export default function ActionsSection({
             onClick={onOpenResendModal}
             disabled={isManualCoolingDown}
             className="h-8 flex items-center gap-1 px-3 rounded-lg text-[12px] font-medium bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
-            title={isManualCoolingDown ? `Último reenvio ${cooldownLabel}` : undefined}
+            title={isManualCoolingDown ? `Último reenvio ${cooldownLabel}` : "Usa sempre o link de pagamento mais recente"}
           >
             <Send size={12} />
             {isManualCoolingDown ? `Reenviar (${cooldownLabel})` : "Reenviar email"}
@@ -126,14 +131,18 @@ export default function ActionsSection({
 
         {/* Dangerous: Regenerate */}
         {regenerateLink && (
-          <AlertDialog>
+          <AlertDialog open={regenDialogOpen} onOpenChange={setRegenDialogOpen}>
             <AlertDialogTrigger asChild>
               <button
-                disabled={regenLoading}
-                className="h-8 flex items-center gap-1 px-3 rounded-lg text-[12px] font-medium border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+                disabled={regenLoading || regenSuccess}
+                className={`h-8 flex items-center gap-1 px-3 rounded-lg text-[12px] font-medium transition-colors disabled:opacity-70 ${
+                  regenSuccess
+                    ? "border border-green-500/40 text-green-600 bg-green-50 dark:bg-green-950/20"
+                    : "border border-destructive/40 text-destructive hover:bg-destructive/10"
+                }`}
               >
-                {regenLoading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                Regenerar link
+                {regenLoading ? <Loader2 size={12} className="animate-spin" /> : regenSuccess ? <CheckCircle size={12} /> : <RefreshCw size={12} />}
+                {regenSuccess ? "Link regenerado" : "Regenerar link"}
               </button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -168,6 +177,9 @@ export default function ActionsSection({
           </DropdownMenu>
         )}
       </div>
+      {regenSuccess && (
+        <p className="text-[11px] text-green-600 mt-1.5">Link actualizado. O reenvio usará o novo link.</p>
+      )}
     </div>
   );
 }
