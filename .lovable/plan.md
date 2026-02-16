@@ -1,202 +1,192 @@
 
 
-## Dados de Faturacao Obrigatorios no /upgrade + Email Automatico pos-pagamento
+## Robustez Final de Faturacao: Seguranca + Idempotencia + UX
 
 ### Resumo
 
-Recolher dados de faturacao (Nome/Empresa, NIF, Morada, CP, Localidade, Email) no Step 5 antes de permitir pagamento. Apos confirmacao de pagamento (webhook), enviar automaticamente email com todos os dados para info@fredericocarvalho.pt. Mostrar dados no CRM (read-only).
+Quatro blocos: (A) seguranca via edge function invoice-upsert com edit_token, removendo escrita directa do frontend; (B) idempotencia do email invoice_notification no webhook + fallback para dados em falta; (C) melhorias UX no formulario (autocomplete, aria, estados de save com erro); (D) badge + botao copiar no CRM.
 
 ### Ficheiros Alterados
 
 | Ficheiro | Accao |
 |----------|-------|
-| DB migration | Criar tabela `invoice_details` |
-| `src/components/upgrade/StepConfirmation.tsx` | Adicionar formulario de faturacao com validacao PT + autosave + bloquear CTA ate valido |
-| `src/pages/Upsell.tsx` | Passar `userEmail` ao StepConfirmation para pre-preencher e gravar invoice_details |
-| `supabase/functions/eupago-webhook/index.ts` | Apos `paid_at`, ler invoice_details e enviar email via Resend para info@fredericocarvalho.pt + registar em message_logs |
-| `src/components/crm/InscritoModal.tsx` | Adicionar seccao "Faturacao" read-only |
+| DB migration | Adicionar `edit_token` + `edit_token_created_at` a registrations; remover policies INSERT/UPDATE de invoice_details |
+| `supabase/functions/invoice-upsert/index.ts` | Novo — valida edit_token, faz upsert server-side |
+| `supabase/functions/register-free/index.ts` | Gerar edit_token ao criar registo |
+| `src/components/upgrade/InvoiceForm.tsx` | Chamar invoice-upsert em vez de upsert directo; adicionar autocomplete + aria; estados de erro no save |
+| `src/pages/Upsell.tsx` | Passar edit_token (da querystring ou recuperado do DB) ao InvoiceForm |
+| `supabase/functions/eupago-webhook/index.ts` | Adicionar check idempotencia antes de enviar email; fallback "dados em falta" |
+| `src/components/crm/InscritoModal.tsx` | Badge "Completo"/"Em falta" + botao "Copiar dados faturacao" |
+| `supabase/config.toml` | Registar invoice-upsert com verify_jwt = false |
 
 ---
 
-### 1. DB Migration -- Tabela `invoice_details`
+### A. Seguranca — edit_token + Edge Function
+
+**1. DB Migration**
 
 ```sql
-CREATE TABLE invoice_details (
-  registration_id uuid PRIMARY KEY REFERENCES registrations(id) ON DELETE CASCADE,
-  invoice_name text NOT NULL,
-  invoice_vat text NOT NULL,
-  invoice_address text NOT NULL,
-  invoice_zip text NOT NULL,
-  invoice_city text NOT NULL,
-  invoice_email text NOT NULL,
-  updated_at timestamptz DEFAULT now()
-);
+-- Add edit_token to registrations
+ALTER TABLE registrations
+  ADD COLUMN IF NOT EXISTS edit_token text,
+  ADD COLUMN IF NOT EXISTS edit_token_created_at timestamptz;
 
-ALTER TABLE invoice_details ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "allow_anon_select_invoice_details" ON invoice_details FOR SELECT USING (true);
-CREATE POLICY "allow_anon_insert_invoice_details" ON invoice_details FOR INSERT WITH CHECK (true);
-CREATE POLICY "allow_anon_update_invoice_details" ON invoice_details FOR UPDATE USING (true) WITH CHECK (true);
+-- Remove permissive INSERT/UPDATE on invoice_details (keep SELECT for CRM reads)
+DROP POLICY IF EXISTS "allow_anon_insert_invoice_details" ON invoice_details;
+DROP POLICY IF EXISTS "allow_anon_update_invoice_details" ON invoice_details;
 ```
 
-### 2. StepConfirmation.tsx -- Formulario de faturacao
+Apos isto, apenas o service_role (edge functions, webhook) consegue escrever em invoice_details. O SELECT anon permanece para o CRM poder ler.
 
-Dentro do `VariantPayment`, ANTES do bloco de resumo (blue-50 card), adicionar:
+**2. register-free/index.ts — Gerar edit_token**
 
-**Card "Dados para fatura (obrigatorio)":**
-- Fundo `bg-surface` / `border border-border` / `rounded-xl p-5`
-- Titulo: "Dados para fatura" com badge "(obrigatorio)" em vermelho discreto
-- Subtitulo: "Preencher antes de confirmar o pagamento."
-- 6 campos com layout: 1 coluna mobile, 2 colunas desktop (`grid grid-cols-1 sm:grid-cols-2 gap-3`)
-- Cada campo: label + input + mensagem de erro inline (vermelho, 12px)
-- Autosave com debounce 600ms (upsert em invoice_details via supabase client)
-- Micro-indicador "Guardado" discreto (verde, fade-out apos 2s)
-
-**Campos e validacoes (zod schema):**
+Ao criar o registo, gerar um token aleatorio de 32 chars e guardar em `edit_token` + `edit_token_created_at`:
 
 ```text
-invoice_name: string, trim, min 2 chars -> "Indicar nome ou empresa."
-invoice_vat: string, regex /^\d{9}$/ -> "NIF invalido. Deve ter 9 digitos."
-invoice_address: string, trim, min 5 chars -> "Indicar morada completa."
-invoice_zip: string, regex /^\d{4}-\d{3}$/ -> "Codigo postal invalido. Ex.: 1100-420"
-invoice_city: string, trim, min 2 chars -> "Indicar localidade."
-invoice_email: string, email -> "Email invalido."
+const editToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+// ... insert into registrations with edit_token: editToken, edit_token_created_at: new Date().toISOString()
 ```
 
-**Comportamento do CTA:**
-- Botao "Confirmar e pagar" fica `disabled` ate todos os campos passarem validacao
-- Quando disabled, mostra microcopy: "Preencha os dados de faturacao para continuar"
-- Ao clicar (quando habilitado), faz upsert final dos dados antes de chamar `onPay`
+O token e devolvido na resposta para o frontend guardar e passar via querystring ao /upgrade.
 
-**Pre-preenchimento:**
-- `invoice_email` = email do inscrito (prop `userEmail`)
-- Ao montar, fazer `select` de invoice_details pelo registration_id (lookup por email -> registrations.id -> invoice_details); se existir, pre-preencher todos os campos
+**3. Upsell.tsx — Receber e propagar edit_token**
 
-**Auto-format (nao intrusivo):**
-- NIF: remover tudo que nao seja digito ao sair do campo (onBlur)
-- CP: se o utilizador escrever "1234567", formatar para "1234-567" no onBlur
+- Ler `t` da querystring (`searchParams.get("t")`)
+- No recovery flow, o edit_token e devolvido pelo select de registrations
+- Passar `editToken` + `registrationId` como props ao StepConfirmation/InvoiceForm
 
-### 3. Upsell.tsx -- Passar dados ao StepConfirmation
-
-- Adicionar prop `userEmail` ao `StepConfirmation` (valor: `userData.email`)
-- No `handlePayment`, antes de invocar `create-payment`, fazer upsert final dos invoice_details (garantia server-side)
-- O `handlePayment` ja recebe o `plan` do StepConfirmation; nao muda a logica EuPago
-
-### 4. eupago-webhook/index.ts -- Email automatico pos-pagamento
-
-Apos a linha que marca `paid_at` e regista `payment_confirmed` (linha ~143), adicionar:
+**4. supabase/functions/invoice-upsert/index.ts — Nova edge function**
 
 ```text
-// Send invoice notification email
-if (matched && matchedRegId) {
-  try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    
-    // Fetch invoice_details
-    const { data: invoice } = await supabase
-      .from("invoice_details")
-      .select("*")
-      .eq("registration_id", matchedRegId)
-      .maybeSingle();
+POST { registration_id, edit_token, payload: { invoice_name, invoice_vat, ... } }
 
-    // Fetch registration for context
-    const { data: reg } = await supabase
-      .from("registrations")
-      .select("email, name, plan_selected, eupago_ref")
-      .eq("id", matchedRegId)
-      .maybeSingle();
+1. Validar campos com zod (mesma schema do frontend)
+2. SELECT registrations WHERE id = registration_id AND edit_token = edit_token
+3. Se nao encontrar ou token expirado (>30 dias): return 401
+4. UPSERT invoice_details com service_role
+5. Return 200 { success: true }
+```
 
-    if (invoice && reg && RESEND_API_KEY) {
-      const planLabel = { premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Premium + Masterclass" }[reg.plan_selected] || reg.plan_selected;
-      const totalMap = { premium: "18,45", masterclass: "57,81", bundle: "76,26" };
-      const total = totalMap[reg.plan_selected] || amount;
+**5. InvoiceForm.tsx — Usar edge function**
 
-      const subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${total}EUR`;
-      const body = `<h2>Novo pagamento confirmado</h2>
-        <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
-        <p><strong>Produto:</strong> ${planLabel}</p>
-        <p><strong>Total (c/ IVA):</strong> ${total} EUR</p>
-        <p><strong>Data/hora:</strong> ${new Date().toISOString()}</p>
-        <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
-        <hr/>
-        <h3>Dados de faturacao</h3>
-        <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
-        <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
-        <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
-        <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
-        <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
+Substituir os `supabase.from("invoice_details").upsert(...)` por `supabase.functions.invoke("invoice-upsert", { body: { registration_id, edit_token, payload } })`.
 
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: "Webinar IA <noreply@fredericocarvalho.pt>",
-          to: ["info@fredericocarvalho.pt"],
-          subject,
-          html: body,
-        }),
-      });
-      const resendData = await resendRes.json();
+O autosave debounce continua igual, apenas o destino muda de upsert directo para edge function.
 
-      // Log to message_logs
-      await supabase.from("message_logs").insert({
-        registration_id: matchedRegId,
-        channel: "email",
-        provider: "resend",
-        template_key: "invoice_notification",
-        status: resendRes.ok ? "sent" : "failed",
-        provider_message_id: resendData.id || null,
-        payment_url: null,
-        error: resendRes.ok ? null : JSON.stringify(resendData),
-      });
-    }
-  } catch (invoiceErr) {
-    console.error("Invoice email error (non-blocking):", invoiceErr);
-  }
+### B. Idempotencia do Email no Webhook
+
+**eupago-webhook/index.ts** — Antes de enviar o email invoice_notification:
+
+```text
+// 1. Check if already sent
+const { data: alreadySent } = await supabase
+  .from("message_logs")
+  .select("id")
+  .eq("registration_id", matchedRegId)
+  .eq("template_key", "invoice_notification")
+  .eq("status", "sent")
+  .limit(1);
+
+if (alreadySent && alreadySent.length > 0) {
+  console.log("Invoice notification already sent — skipping");
+  // skip sending
 }
 ```
 
-Este bloco e nao-bloqueante: se falhar, o webhook continua a devolver 200.
+**Fallback para dados em falta:**
 
-### 5. InscritoModal.tsx -- Seccao "Faturacao" read-only
+Se `invoice` for null apos o lookup:
 
-No separador "Detalhes" (ou no painel direito), adicionar seccao condicional:
+```text
+// Send "missing details" notification
+const subject = `FATURA -- DADOS EM FALTA -- ${reg.email} -- ${planLabel}`;
+const htmlBody = `<h2>Pagamento confirmado — dados de faturacao em falta</h2>
+  <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
+  <p><strong>Produto:</strong> ${planLabel}</p>
+  <p><strong>Total:</strong> ${totalVal} EUR</p>
+  <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
+  <hr/>
+  <p><strong>Dados de faturacao nao recolhidos.</strong> Solicitar ao cliente.</p>`;
 
-- Titulo: "Faturacao"
-- Fetch de `invoice_details` pelo `registration_id` (quando modal abre)
-- Se existir: mostrar os 6 campos em formato read-only (label + valor)
-- Se nao existir: mostrar "Sem dados de faturacao"
-- Sem botao "Editar" (simplificacao; os dados sao editados pelo cliente no /upgrade)
+// Send + log with template_key = "invoice_notification_missing_details"
+```
+
+### C. UX/UI — InvoiceForm Melhorias
+
+**1. Autocomplete nos inputs:**
+
+```text
+invoice_name    -> autocomplete="organization"
+invoice_address -> autocomplete="street-address"
+invoice_zip     -> autocomplete="postal-code"
+invoice_city    -> autocomplete="address-level2"
+invoice_email   -> autocomplete="email"
+```
+
+**2. Acessibilidade (aria):**
+
+Cada input recebe `aria-invalid={touched && hasError}` e `aria-describedby="err-{key}"`. A mensagem de erro recebe `id="err-{key}"`.
+
+**3. Estados de autosave com erro:**
+
+Adicionar estado `saveError` (boolean). Se o upsert via edge function falhar:
+- Mostrar "Falha ao guardar. Tentar novamente." em vermelho no header do card
+- Manter o CTA "Confirmar e pagar" disabled enquanto `saveError` for true
+- Retry automatico no proximo onChange
+
+O CTA fica disabled quando: `!invoiceValid || saving || saveError`.
+
+### D. CRM — Badge + Copiar
+
+**InvoiceSection no InscritoModal:**
+
+1. Badge junto ao titulo "Faturacao":
+   - Se dados existem: badge verde "Completo"
+   - Se nao existem: badge vermelho "Em falta"
+
+2. Botao "Copiar dados faturacao":
+   - Copia bloco formatado para clipboard:
+   ```text
+   Nome/Empresa: {invoice_name}
+   NIF: {invoice_vat}
+   Morada: {invoice_address}
+   CP: {invoice_zip} {invoice_city}
+   Email fatura: {invoice_email}
+   ```
+   - Feedback "Copiado!" com fade-out 2s
 
 ### O que NAO muda
 
-- Logica de pagamentos EuPago (create-payment, idempotencia)
-- Fluxo de follow-up automatico e manual
+- Logica de pagamentos EuPago (create-payment, precos, redirect)
+- Fluxo de follow-up automatico/manual e idempotencia dos stages
 - Templates de email existentes
-- Valores/precos
-- Webhook idempotency (payment_events)
+- Webhook idempotency para payment_events (duplo webhook)
+- Botao "Gerar link de pagamento" no CRM (Gmail)
 
 ### Fluxo resumido
 
 ```text
-Step 5 (VariantPayment)
-  |
-  v
-[Formulario faturacao] -- validacao zod + autosave debounce
-  |
-  v
-[CTA "Confirmar e pagar"] -- disabled ate valido
-  |
-  v
-upsert final invoice_details -> create-payment -> EuPago redirect
-  |
-  v
-[Webhook] paid_at = now()
-  |
-  v
-Ler invoice_details -> Enviar email Resend -> info@fredericocarvalho.pt
-  |
-  v
-Registar em message_logs (template_key='invoice_notification')
+register-free -> gera edit_token -> devolve ao frontend
+    |
+    v
+/upgrade?email=...&t={edit_token}
+    |
+    v
+Step 5: InvoiceForm
+  - valida campos (zod client-side)
+  - autosave via POST invoice-upsert (com edit_token)
+  - CTA disabled ate valido + ultimo save OK
+    |
+    v
+CTA "Confirmar e pagar"
+  - save final via invoice-upsert
+  - create-payment -> EuPago redirect
+    |
+    v
+eupago-webhook (paid_at)
+  - check message_logs idempotencia
+  - se invoice_details existe: email completo
+  - se nao existe: email "dados em falta"
+  - registar em message_logs
 ```
 
