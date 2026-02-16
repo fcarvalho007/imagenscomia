@@ -1,136 +1,202 @@
 
 
-## Ajustes Finais: Validacao Robusta + Guard-rails + Auditoria
+## Dados de Faturacao Obrigatorios no /upgrade + Email Automatico pos-pagamento
 
 ### Resumo
 
-Tres blocos de alteracoes: (1) validacao de link com fallback HEAD->GET e metadata de diagnostico, (2) cooldown de 6h no reenvio manual, (3) registo de auditoria na regeneracao de link.
+Recolher dados de faturacao (Nome/Empresa, NIF, Morada, CP, Localidade, Email) no Step 5 antes de permitir pagamento. Apos confirmacao de pagamento (webhook), enviar automaticamente email com todos os dados para info@fredericocarvalho.pt. Mostrar dados no CRM (read-only).
 
 ### Ficheiros Alterados
 
 | Ficheiro | Accao |
 |----------|-------|
-| `supabase/functions/followup-abandoned/index.ts` | Melhorar `validateLink` com fallback GET; adicionar cooldown 6h para `reminder_manual`; guardar metadata de validacao no `error` field |
-| `supabase/functions/generate-reminder/index.ts` | Registar `template_key='payment_link_regenerated'` + `provider='internal'` no message_logs (auditoria da regeneracao) |
-| `src/components/crm/InscritoModal.tsx` | Mostrar mensagem de cooldown no botao "Reenviar email" quando ultimo `reminder_manual` < 6h |
-| `src/hooks/useInscritos.ts` | Sem alteracoes |
+| DB migration | Criar tabela `invoice_details` |
+| `src/components/upgrade/StepConfirmation.tsx` | Adicionar formulario de faturacao com validacao PT + autosave + bloquear CTA ate valido |
+| `src/pages/Upsell.tsx` | Passar `userEmail` ao StepConfirmation para pre-preencher e gravar invoice_details |
+| `supabase/functions/eupago-webhook/index.ts` | Apos `paid_at`, ler invoice_details e enviar email via Resend para info@fredericocarvalho.pt + registar em message_logs |
+| `src/components/crm/InscritoModal.tsx` | Adicionar seccao "Faturacao" read-only |
 
 ---
 
-### 1. `followup-abandoned/index.ts` -- validateLink com fallback
+### 1. DB Migration -- Tabela `invoice_details`
 
-Substituir a funcao `validateLink` actual (linhas 51-61) por uma versao que:
+```sql
+CREATE TABLE invoice_details (
+  registration_id uuid PRIMARY KEY REFERENCES registrations(id) ON DELETE CASCADE,
+  invoice_name text NOT NULL,
+  invoice_vat text NOT NULL,
+  invoice_address text NOT NULL,
+  invoice_zip text NOT NULL,
+  invoice_city text NOT NULL,
+  invoice_email text NOT NULL,
+  updated_at timestamptz DEFAULT now()
+);
 
-- Tenta HEAD primeiro
-- Se receber 405 ou 403, tenta GET (sem ler o body completo via `AbortController` timeout)
-- Devolve um objecto com metadata: `{ ok, method, status }`
-- Guarda esta metadata no campo `error` do message_log quando a validacao falha (ex: `link_validation_failed|HEAD:404|GET:404`)
+ALTER TABLE invoice_details ENABLE ROW LEVEL SECURITY;
 
-```text
-async function validateLink(url: string): Promise<{ ok: boolean; method: string; status: number }> {
-  if (!url?.startsWith("https://")) return { ok: false, method: "none", status: 0 };
-  const trimmed = url.trim();
-  if (trimmed.length < 30 || trimmed !== url) return { ok: false, method: "none", status: 0 };
-
-  // Try HEAD first
-  try {
-    const res = await fetch(trimmed, { method: "HEAD", redirect: "follow" });
-    if (res.status >= 200 && res.status < 400) return { ok: true, method: "HEAD", status: res.status };
-    if (res.status !== 405 && res.status !== 403) return { ok: false, method: "HEAD", status: res.status };
-  } catch { /* fall through to GET */ }
-
-  // Fallback: GET with abort
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
-    const res = await fetch(trimmed, { method: "GET", redirect: "follow", signal: ctrl.signal });
-    clearTimeout(timer);
-    const ok = res.status >= 200 && res.status < 400;
-    return { ok, method: "GET", status: res.status };
-  } catch {
-    return { ok: false, method: "GET", status: 0 };
-  }
-}
+CREATE POLICY "allow_anon_select_invoice_details" ON invoice_details FOR SELECT USING (true);
+CREATE POLICY "allow_anon_insert_invoice_details" ON invoice_details FOR INSERT WITH CHECK (true);
+CREATE POLICY "allow_anon_update_invoice_details" ON invoice_details FOR UPDATE USING (true) WITH CHECK (true);
 ```
 
-Todos os locais que chamam `validateLink` serao actualizados para usar `.ok` em vez do boolean directo.
+### 2. StepConfirmation.tsx -- Formulario de faturacao
 
-Quando a validacao falha e a regeneracao tambem falha, o `error` no message_log incluira `link_validation_failed|{method}:{status}`.
+Dentro do `VariantPayment`, ANTES do bloco de resumo (blue-50 card), adicionar:
 
-### 2. `followup-abandoned/index.ts` -- Cooldown 6h para reminder_manual
+**Card "Dados para fatura (obrigatorio)":**
+- Fundo `bg-surface` / `border border-border` / `rounded-xl p-5`
+- Titulo: "Dados para fatura" com badge "(obrigatorio)" em vermelho discreto
+- Subtitulo: "Preencher antes de confirmar o pagamento."
+- 6 campos com layout: 1 coluna mobile, 2 colunas desktop (`grid grid-cols-1 sm:grid-cols-2 gap-3`)
+- Cada campo: label + input + mensagem de erro inline (vermelho, 12px)
+- Autosave com debounce 600ms (upsert em invoice_details via supabase client)
+- Micro-indicador "Guardado" discreto (verde, fade-out apos 2s)
 
-No bloco manual_send (apos a verificacao de idempotencia existente, linhas 374-387), adicionar:
+**Campos e validacoes (zod schema):**
 
 ```text
-// Para reminder_manual: verificar cooldown de 6h
-if (manualMode.templateKey === "reminder_manual") {
-  const { data: recentManual } = await supabase
-    .from("message_logs")
-    .select("created_at")
-    .eq("registration_id", reg.id)
-    .eq("template_key", "reminder_manual")
-    .order("created_at", { ascending: false })
-    .limit(1);
+invoice_name: string, trim, min 2 chars -> "Indicar nome ou empresa."
+invoice_vat: string, regex /^\d{9}$/ -> "NIF invalido. Deve ter 9 digitos."
+invoice_address: string, trim, min 5 chars -> "Indicar morada completa."
+invoice_zip: string, regex /^\d{4}-\d{3}$/ -> "Codigo postal invalido. Ex.: 1100-420"
+invoice_city: string, trim, min 2 chars -> "Indicar localidade."
+invoice_email: string, email -> "Email invalido."
+```
 
-  if (recentManual && recentManual.length > 0) {
-    const lastSentMs = new Date(recentManual[0].created_at).getTime();
-    const cooldownMs = 6 * 60 * 60 * 1000;
-    if (now - lastSentMs < cooldownMs) {
-      const hoursAgo = ((now - lastSentMs) / (60 * 60 * 1000)).toFixed(1);
-      return Response 429 { error: "cooldown", hours_ago: hoursAgo, retry_after_hours: ((cooldownMs - (now - lastSentMs)) / 3600000).toFixed(1) }
+**Comportamento do CTA:**
+- Botao "Confirmar e pagar" fica `disabled` ate todos os campos passarem validacao
+- Quando disabled, mostra microcopy: "Preencha os dados de faturacao para continuar"
+- Ao clicar (quando habilitado), faz upsert final dos dados antes de chamar `onPay`
+
+**Pre-preenchimento:**
+- `invoice_email` = email do inscrito (prop `userEmail`)
+- Ao montar, fazer `select` de invoice_details pelo registration_id (lookup por email -> registrations.id -> invoice_details); se existir, pre-preencher todos os campos
+
+**Auto-format (nao intrusivo):**
+- NIF: remover tudo que nao seja digito ao sair do campo (onBlur)
+- CP: se o utilizador escrever "1234567", formatar para "1234-567" no onBlur
+
+### 3. Upsell.tsx -- Passar dados ao StepConfirmation
+
+- Adicionar prop `userEmail` ao `StepConfirmation` (valor: `userData.email`)
+- No `handlePayment`, antes de invocar `create-payment`, fazer upsert final dos invoice_details (garantia server-side)
+- O `handlePayment` ja recebe o `plan` do StepConfirmation; nao muda a logica EuPago
+
+### 4. eupago-webhook/index.ts -- Email automatico pos-pagamento
+
+Apos a linha que marca `paid_at` e regista `payment_confirmed` (linha ~143), adicionar:
+
+```text
+// Send invoice notification email
+if (matched && matchedRegId) {
+  try {
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    
+    // Fetch invoice_details
+    const { data: invoice } = await supabase
+      .from("invoice_details")
+      .select("*")
+      .eq("registration_id", matchedRegId)
+      .maybeSingle();
+
+    // Fetch registration for context
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("email, name, plan_selected, eupago_ref")
+      .eq("id", matchedRegId)
+      .maybeSingle();
+
+    if (invoice && reg && RESEND_API_KEY) {
+      const planLabel = { premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Premium + Masterclass" }[reg.plan_selected] || reg.plan_selected;
+      const totalMap = { premium: "18,45", masterclass: "57,81", bundle: "76,26" };
+      const total = totalMap[reg.plan_selected] || amount;
+
+      const subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${total}EUR`;
+      const body = `<h2>Novo pagamento confirmado</h2>
+        <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
+        <p><strong>Produto:</strong> ${planLabel}</p>
+        <p><strong>Total (c/ IVA):</strong> ${total} EUR</p>
+        <p><strong>Data/hora:</strong> ${new Date().toISOString()}</p>
+        <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
+        <hr/>
+        <h3>Dados de faturacao</h3>
+        <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
+        <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
+        <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
+        <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
+        <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
+
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: "Webinar IA <noreply@fredericocarvalho.pt>",
+          to: ["info@fredericocarvalho.pt"],
+          subject,
+          html: body,
+        }),
+      });
+      const resendData = await resendRes.json();
+
+      // Log to message_logs
+      await supabase.from("message_logs").insert({
+        registration_id: matchedRegId,
+        channel: "email",
+        provider: "resend",
+        template_key: "invoice_notification",
+        status: resendRes.ok ? "sent" : "failed",
+        provider_message_id: resendData.id || null,
+        payment_url: null,
+        error: resendRes.ok ? null : JSON.stringify(resendData),
+      });
     }
+  } catch (invoiceErr) {
+    console.error("Invoice email error (non-blocking):", invoiceErr);
   }
 }
 ```
 
-### 3. `generate-reminder/index.ts` -- Auditoria da regeneracao
+Este bloco e nao-bloqueante: se falhar, o webhook continua a devolver 200.
 
-Alterar o registo em message_logs (linhas 108-117) para usar `template_key='payment_link_regenerated'` em vez de `'reminder_manual'`, e adicionar `payment_url`:
+### 5. InscritoModal.tsx -- Seccao "Faturacao" read-only
 
-```text
-await supabase.from("message_logs").insert({
-  registration_id: regRow.id,
-  channel: "email",
-  provider: "internal",
-  template_key: "payment_link_regenerated",
-  status: "sent",
-  payment_url: paymentLink || null,
-});
-```
+No separador "Detalhes" (ou no painel direito), adicionar seccao condicional:
 
-Isto separa claramente a accao "regenerar link" (audit) da accao "reenviar email" (delivery).
-
-### 4. `InscritoModal.tsx` -- UI de cooldown
-
-No botao "Reenviar email de pagamento":
-
-- Verificar nos `messageLogs` locais se existe um `reminder_manual` com `created_at` < 6h
-- Se sim, desactivar o botao e mostrar texto "Bloqueado: enviado ha Xh"
-- Se o servidor devolver 429 (cooldown), mostrar toast com o motivo
-
-```text
-// Calcular cooldown a partir dos logs locais
-const lastManualLog = messageLogs.find(l => l.template_key === "reminder_manual");
-const manualCooldownMs = lastManualLog
-  ? Date.now() - new Date(lastManualLog.created_at).getTime()
-  : Infinity;
-const isManualCoolingDown = manualCooldownMs < 6 * 60 * 60 * 1000;
-const cooldownHoursAgo = (manualCooldownMs / (60 * 60 * 1000)).toFixed(1);
-```
-
-Botao mostra: `Reenviar email (enviado ha {cooldownHoursAgo}h)` quando em cooldown, e fica `disabled`.
+- Titulo: "Faturacao"
+- Fetch de `invoice_details` pelo `registration_id` (quando modal abre)
+- Se existir: mostrar os 6 campos em formato read-only (label + valor)
+- Se nao existir: mostrar "Sem dados de faturacao"
+- Sem botao "Editar" (simplificacao; os dados sao editados pelo cliente no /upgrade)
 
 ### O que NAO muda
 
-- Logica de cobranca, valores, webhooks
-- Fluxo de stages automaticos (0/1/2)
-- Botao "Gerar link de pagamento" (Gmail)
-- Templates de email
+- Logica de pagamentos EuPago (create-payment, idempotencia)
+- Fluxo de follow-up automatico e manual
+- Templates de email existentes
+- Valores/precos
+- Webhook idempotency (payment_events)
 
-### Prova objectiva
+### Fluxo resumido
 
-Apos implementacao, executar 1 regeneracao + 1 reenvio manual e verificar nos message_logs que:
-- `payment_link_regenerated` existe com `provider='internal'` e `payment_url` preenchido
-- `reminder_manual` existe com `provider='resend'`, `provider_message_id` preenchido, `payment_url` preenchido
-- Verificar que segundo reenvio < 6h devolve 429
+```text
+Step 5 (VariantPayment)
+  |
+  v
+[Formulario faturacao] -- validacao zod + autosave debounce
+  |
+  v
+[CTA "Confirmar e pagar"] -- disabled ate valido
+  |
+  v
+upsert final invoice_details -> create-payment -> EuPago redirect
+  |
+  v
+[Webhook] paid_at = now()
+  |
+  v
+Ler invoice_details -> Enviar email Resend -> info@fredericocarvalho.pt
+  |
+  v
+Registar em message_logs (template_key='invoice_notification')
+```
 
