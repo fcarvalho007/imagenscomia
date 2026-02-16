@@ -222,8 +222,8 @@ const Upsell = () => {
         <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen">
           <div className="px-4 pt-4 pb-24 sm:pt-6 lg:px-12 lg:pt-10 lg:pb-10">
 
-            {/* Confirmation banner — steps 3+ */}
-            {step >= 3 && (
+            {/* Confirmation banner — steps 3-4 */}
+            {step >= 3 && step <= 4 && (
               <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                 <div>
@@ -247,21 +247,6 @@ const Upsell = () => {
               </p>
             </div>
 
-            {/* Free card — steps 3-4 */}
-            {(step === 3 || step === 4) && (
-              <div className="max-w-[560px] mb-6 rounded-xl border border-dashed border-ink-200 bg-surface p-4">
-                <p className="font-heading font-semibold text-[14px] text-ink-600 mb-2">Incluído na inscrição gratuita (€0)</p>
-                <div className="space-y-1.5">
-                  {["Webinar ao vivo (60 min)", "Demonstrações ao vivo", "Resumo PDF da sessão"].map((b) => (
-                    <div key={b} className="flex items-center gap-2">
-                      <Check className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                      <span className="text-[13px] text-ink-500">{b}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[12px] text-ink-400 mt-2">Nota: a gravação está disponível apenas no Premium Pass.</p>
-              </div>
-            )}
 
             {/* Steps */}
             <AnimatePresence mode="wait">

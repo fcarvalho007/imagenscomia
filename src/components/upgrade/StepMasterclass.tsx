@@ -118,7 +118,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
     >
       Continuar com inscrição gratuita →
     </button>
-    <p className="text-[13px] text-ink-400 text-center mt-2">A vaga no webinar já está garantida.</p>
+    
   </div>
 
   <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
