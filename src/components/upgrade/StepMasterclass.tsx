@@ -116,8 +116,9 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
       onClick={onSkip}
       className="w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors"
     >
-      Continuar sem implementação guiada →
+      Continuar com inscrição gratuita →
     </button>
+    <p className="text-[13px] text-ink-400 text-center mt-2">A vaga no webinar já está garantida.</p>
   </div>
 
   <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>

@@ -117,13 +117,20 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
 /* ═══ Mobile Bar ═══ */
 export const MobileSummaryBar = ({ orderState, total }: Props) => {
   const showIVA = orderState.masterclass || orderState.premium;
+  const isFree = !orderState.premium && !orderState.masterclass;
 
   return (
     <div className="lg:hidden sticky top-0 z-50 h-12 bg-background border-b border-border px-4 flex items-center justify-between">
       <p className="font-medium text-[14px] text-ink-700">A tua inscrição</p>
       <div className="text-right">
-        <span className="font-heading font-bold text-[16px] text-ink-900">{formatPrice(total)}</span>
-        {showIVA && <span className="text-[14px] text-ink-400 ml-1">c/IVA</span>}
+        {isFree ? (
+          <span className="font-heading font-bold text-[14px] text-green-600">Inscrição gratuita confirmada</span>
+        ) : (
+          <>
+            <span className="font-heading font-bold text-[16px] text-ink-900">{formatPrice(total)}</span>
+            {showIVA && <span className="text-[14px] text-ink-400 ml-1">c/IVA</span>}
+          </>
+        )}
       </div>
     </div>
   );
