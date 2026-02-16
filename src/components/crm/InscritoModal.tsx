@@ -78,6 +78,57 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
   failed: { bg: "rgba(239,68,68,0.1)", color: "#DC2626" },
 };
 
+/* ── Invoice Section (read-only) ── */
+function InvoiceSection({ registrationId }: { registrationId: string }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: inv } = await supabase
+        .from("invoice_details" as any)
+        .select("*")
+        .eq("registration_id", registrationId)
+        .maybeSingle();
+      setData(inv);
+      setLoading(false);
+    })();
+  }, [registrationId]);
+
+  if (loading) return null;
+  if (!data) return (
+    <>
+      <hr className="border-border my-6" />
+      <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-2">Faturação</h3>
+      <p className="text-[13px] text-ink-400">Sem dados de faturação</p>
+    </>
+  );
+
+  const fields = [
+    { label: "Nome/Empresa", value: data.invoice_name },
+    { label: "NIF", value: data.invoice_vat },
+    { label: "Morada", value: data.invoice_address },
+    { label: "Código Postal", value: data.invoice_zip },
+    { label: "Localidade", value: data.invoice_city },
+    { label: "Email fatura", value: data.invoice_email },
+  ];
+
+  return (
+    <>
+      <hr className="border-border my-6" />
+      <h3 className="font-heading font-bold text-[14px] text-ink-800 mb-3">Faturação</h3>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+        {fields.map((f) => (
+          <div key={f.label}>
+            <span className="text-[11px] font-medium text-ink-400 uppercase tracking-wider">{f.label}</span>
+            <p className="text-[13px] text-ink-800 font-medium">{f.value}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function InscritoModal({
   inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh,
 }: InscritoModalProps) {
@@ -800,6 +851,9 @@ export default function InscritoModal({
                 )}
               </div>
             )}
+
+            {/* Faturação read-only */}
+            <InvoiceSection registrationId={inscrito.id} />
 
             {/* Funnel */}
             <FunnelView inscrito={inscrito} />
