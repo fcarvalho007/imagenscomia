@@ -379,7 +379,7 @@ serve(async (req) => {
         .eq("template_key", manualMode.templateKey)
         .limit(1);
 
-      if (existing && existing.length > 0) {
+      if (existing && existing.length > 0 && manualMode.templateKey !== "reminder_manual") {
         return new Response(JSON.stringify({ error: "already_sent", template_key: manualMode.templateKey }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

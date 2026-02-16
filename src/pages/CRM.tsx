@@ -18,7 +18,7 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail } = useInscritos();
 
   // Fetch last email map for table enrichment
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
@@ -104,6 +104,9 @@ export default function CRM() {
           fetchMessageLogs={fetchMessageLogs}
           fetchPaymentEvents={fetchPaymentEvents}
           sendBacklogCheckin={sendBacklogCheckin}
+          regenerateLink={regenerateLink}
+          resendPaymentEmail={resendPaymentEmail}
+          onRefresh={refresh}
         />
       )}
     </div>

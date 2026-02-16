@@ -269,5 +269,25 @@ export function useInscritos() {
     return data;
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary };
+  const regenerateLink = useCallback(async (inscritoId: string) => {
+    const reg = inscritos.find((i) => i.id === inscritoId);
+    if (!reg) throw new Error("Inscrito não encontrado");
+    const { data, error } = await supabase.functions.invoke("generate-reminder", {
+      body: { email: reg.email, plan: reg.plan, nome: reg.nome },
+    });
+    if (error) throw error;
+    // Refresh to get updated last_payment_link
+    await fetchData();
+    return data;
+  }, [inscritos, fetchData]);
+
+  const resendPaymentEmail = useCallback(async (inscritoId: string) => {
+    const { data, error } = await supabase.functions.invoke("followup-abandoned", {
+      body: { mode: "manual_send", registration_id: inscritoId, template_key: "reminder_manual" },
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail };
 }
