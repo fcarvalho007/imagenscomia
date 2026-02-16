@@ -98,6 +98,9 @@ serve(async (req) => {
       attempts++;
     }
 
+    // Generate edit_token
+    const editToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+
     // Insert new registration
     const { error: insertError } = await supabase.from("registrations").insert({
       name,
@@ -107,6 +110,8 @@ serve(async (req) => {
       whatsapp: whatsapp?.trim() || null,
       referral_code: referralCode,
       referred_by: referredBy || null,
+      edit_token: editToken,
+      edit_token_created_at: new Date().toISOString(),
     });
 
     if (insertError) {
@@ -167,6 +172,7 @@ serve(async (req) => {
         referralLink: `${origin}/?ref=${referralCode}`,
         alreadyRegistered: false,
         premiumUnlocked: false,
+        editToken,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
