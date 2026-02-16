@@ -243,6 +243,83 @@ async function processPayment(data: PaymentData) {
     } catch (invoiceErr) {
       console.error("Invoice email error (non-blocking):", invoiceErr);
     }
+
+    // ── Email ao cliente: payment_confirmed_customer ──
+    try {
+      const RESEND_API_KEY_CUST = Deno.env.get("RESEND_API_KEY");
+
+      const { data: customerEmailSent } = await supabase
+        .from("message_logs")
+        .select("id")
+        .eq("registration_id", matchedRegId)
+        .eq("template_key", "payment_confirmed_customer")
+        .eq("status", "sent")
+        .limit(1);
+
+      if (customerEmailSent && customerEmailSent.length > 0) {
+        console.log("📧 Customer confirmation already sent — skipping");
+      } else {
+        const { data: regCust } = await supabase
+          .from("registrations")
+          .select("email, name, plan_selected, eupago_ref")
+          .eq("id", matchedRegId)
+          .maybeSingle();
+
+        if (regCust && RESEND_API_KEY_CUST) {
+          const custPlanLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Bundle (Premium + Masterclass)" } as Record<string, string>)[regCust.plan_selected || ""] || regCust.plan_selected || "N/A";
+          const eupagoRefDisplay = transactionID || reference || regCust.eupago_ref || "N/A";
+          const primaryAccessUrl = "https://imagenscomia.lovable.app/live";
+          const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
+
+          const customerSubject = "Pagamento confirmado — obrigado pela confiança";
+          const customerHtml = `<h2>Pagamento confirmado</h2>
+            <p>Agradece-se a confiança. O pagamento foi confirmado e a inscrição está garantida.</p>
+            <hr/>
+            <p><strong>Resumo</strong></p>
+            <ul>
+              <li><strong>Plano:</strong> ${custPlanLabel}</li>
+              <li><strong>Referência:</strong> ${eupagoRefDisplay}</li>
+              <li><strong>Email associado:</strong> ${regCust.email}</li>
+            </ul>
+            <p><strong>Próximo passo</strong></p>
+            <p><a href="${primaryAccessUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;">Aceder / Preparar participação</a></p>
+            <p style="font-size:13px;color:#64748b;">Se o botão não abrir, usar este link: ${primaryAccessUrl}</p>
+            <hr/>
+            <p><strong>Faturação</strong></p>
+            <p>A fatura será emitida e enviada posteriormente para o email indicado nos dados de faturação.</p>
+            <p><strong>Suporte</strong></p>
+            <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
+            <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
+
+          const customerRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+              to: [regCust.email],
+              subject: customerSubject,
+              html: customerHtml,
+            }),
+          });
+          const customerData = await customerRes.json();
+
+          await supabase.from("message_logs").insert({
+            registration_id: matchedRegId,
+            channel: "email",
+            provider: "resend",
+            template_key: "payment_confirmed_customer",
+            status: customerRes.ok ? "sent" : "failed",
+            provider_message_id: customerData.id || null,
+            payment_url: null,
+            error: customerRes.ok ? null : JSON.stringify(customerData),
+          });
+
+          console.log(`📧 Customer confirmation ${customerRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+        }
+      }
+    } catch (custErr) {
+      console.error("Customer email error (non-blocking):", custErr);
+    }
   }
 }
 
