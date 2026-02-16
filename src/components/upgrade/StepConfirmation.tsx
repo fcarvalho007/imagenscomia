@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Check, Loader2, Copy, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import livroGuiaSeo from "@/assets/livro-guia-seo.png";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import type { OrderState } from "@/pages/Upsell";
 import { formatPrice, getTotal } from "@/pages/Upsell";
+import { InvoiceForm } from "./InvoiceForm";
 
 interface Props {
   orderState: OrderState;
@@ -14,6 +15,7 @@ interface Props {
   onBack: () => void;
   userName: string;
   referralCode: string;
+  userEmail?: string;
 }
 
 /* ── Variante A — Só Gratuito ── */
@@ -117,14 +119,18 @@ const VariantPayment = ({
   error,
   onPay,
   onBack,
+  userEmail,
 }: {
   orderState: OrderState;
   loading: boolean;
   error: string | null;
   onPay: (plan: string) => void;
   onBack: () => void;
+  userEmail?: string;
 }) => {
   const [showRedirect, setShowRedirect] = useState(false);
+  const [invoiceValid, setInvoiceValid] = useState(false);
+  const upsertRef = useRef<() => Promise<void>>(async () => {});
   const { premium, masterclass } = orderState;
   const total = getTotal(orderState);
   const subtotal = (premium ? 15 : 0) + (masterclass ? 47 : 0);
@@ -140,10 +146,16 @@ const VariantPayment = ({
     plan = "masterclass";
   }
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Final upsert before payment
+    if ((upsertRef.current as any).__invoiceUpsert) {
+      await (upsertRef.current as any).__invoiceUpsert();
+    }
     setShowRedirect(true);
     onPay(plan);
   };
+
+  const onValidChange = useCallback((valid: boolean) => setInvoiceValid(valid), []);
 
   return (
     <div className="max-w-[480px]">
@@ -151,7 +163,18 @@ const VariantPayment = ({
 
       <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">{title}</h2>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mt-5 mb-5">
+      {/* Invoice Form */}
+      {userEmail && (
+        <div className="mt-5">
+          <InvoiceForm
+            userEmail={userEmail}
+            onValidChange={onValidChange}
+            onUpsertFinal={upsertRef.current}
+          />
+        </div>
+      )}
+
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mb-5">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
@@ -200,7 +223,7 @@ const VariantPayment = ({
       </div>
 
       <button
-        disabled={loading}
+        disabled={loading || !invoiceValid}
         onClick={handleClick}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl shadow-blue transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
@@ -212,6 +235,12 @@ const VariantPayment = ({
           <>Confirmar e pagar {formatPrice(total)} →</>
         )}
       </button>
+
+      {!invoiceValid && (
+        <p className="text-center text-[13px] text-amber-600 mt-2">
+          Preencha os dados de faturação para continuar
+        </p>
+      )}
 
       <p className="text-center text-[14px] text-ink-400 mt-2">
         🔒 Pagamento seguro EuPago

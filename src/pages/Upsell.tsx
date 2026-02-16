@@ -332,6 +332,7 @@ const Upsell = () => {
                     onBack={() => setStep(3)}
                     userName={userData.nome}
                     referralCode={userData.referralCode}
+                    userEmail={userData.email}
                   />
                 </motion.div>
               )}

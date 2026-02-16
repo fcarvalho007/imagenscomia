@@ -59,6 +59,47 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_details: {
+        Row: {
+          invoice_address: string
+          invoice_city: string
+          invoice_email: string
+          invoice_name: string
+          invoice_vat: string
+          invoice_zip: string
+          registration_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          invoice_address: string
+          invoice_city: string
+          invoice_email: string
+          invoice_name: string
+          invoice_vat: string
+          invoice_zip: string
+          registration_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          invoice_address?: string
+          invoice_city?: string
+          invoice_email?: string
+          invoice_name?: string
+          invoice_vat?: string
+          invoice_zip?: string
+          registration_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_details_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_logs: {
         Row: {
           channel: string
