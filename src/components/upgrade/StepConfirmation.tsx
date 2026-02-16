@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { Check, Loader2, Copy, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import livroGuiaSeo from "@/assets/livro-guia-seo.png";
@@ -16,6 +16,8 @@ interface Props {
   userName: string;
   referralCode: string;
   userEmail?: string;
+  registrationId?: string;
+  editToken?: string;
 }
 
 /* ── Variante A — Só Gratuito ── */
@@ -120,6 +122,8 @@ const VariantPayment = ({
   onPay,
   onBack,
   userEmail,
+  registrationId,
+  editToken,
 }: {
   orderState: OrderState;
   loading: boolean;
@@ -127,10 +131,12 @@ const VariantPayment = ({
   onPay: (plan: string) => void;
   onBack: () => void;
   userEmail?: string;
+  registrationId?: string;
+  editToken?: string;
 }) => {
   const [showRedirect, setShowRedirect] = useState(false);
   const [invoiceValid, setInvoiceValid] = useState(false);
-  const upsertRef = useRef<() => Promise<void>>(async () => {});
+  const [invoiceSaveError, setInvoiceSaveError] = useState(false);
   const { premium, masterclass } = orderState;
   const total = getTotal(orderState);
   const subtotal = (premium ? 15 : 0) + (masterclass ? 47 : 0);
@@ -147,15 +153,12 @@ const VariantPayment = ({
   }
 
   const handleClick = async () => {
-    // Final upsert before payment
-    if ((upsertRef.current as any).__invoiceUpsert) {
-      await (upsertRef.current as any).__invoiceUpsert();
-    }
     setShowRedirect(true);
     onPay(plan);
   };
 
   const onValidChange = useCallback((valid: boolean) => setInvoiceValid(valid), []);
+  const onSaveError = useCallback((hasErr: boolean) => setInvoiceSaveError(hasErr), []);
 
   return (
     <div className="max-w-[480px]">
@@ -168,8 +171,10 @@ const VariantPayment = ({
         <div className="mt-5">
           <InvoiceForm
             userEmail={userEmail}
+            registrationId={registrationId}
+            editToken={editToken}
             onValidChange={onValidChange}
-            onUpsertFinal={upsertRef.current}
+            onSaveError={onSaveError}
           />
         </div>
       )}
@@ -223,7 +228,7 @@ const VariantPayment = ({
       </div>
 
       <button
-        disabled={loading || !invoiceValid}
+        disabled={loading || !invoiceValid || invoiceSaveError}
         onClick={handleClick}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 rounded-xl shadow-blue transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >

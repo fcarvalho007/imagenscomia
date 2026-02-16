@@ -196,6 +196,8 @@ export type Database = {
           created_at: string | null
           do_not_contact: boolean
           duvida: string | null
+          edit_token: string | null
+          edit_token_created_at: string | null
           email: string
           eupago_ref: string | null
           first_name: string | null
@@ -223,6 +225,8 @@ export type Database = {
           created_at?: string | null
           do_not_contact?: boolean
           duvida?: string | null
+          edit_token?: string | null
+          edit_token_created_at?: string | null
           email: string
           eupago_ref?: string | null
           first_name?: string | null
@@ -250,6 +254,8 @@ export type Database = {
           created_at?: string | null
           do_not_contact?: boolean
           duvida?: string | null
+          edit_token?: string | null
+          edit_token_created_at?: string | null
           email?: string
           eupago_ref?: string | null
           first_name?: string | null

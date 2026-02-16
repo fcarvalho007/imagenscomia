@@ -54,6 +54,9 @@ const Upsell = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
+
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -65,7 +68,7 @@ const Upsell = () => {
     try {
       const { data, error } = await supabase
         .from("registrations")
-        .select("name, step_reached, plan_selected, eupago_ref, first_name, last_name")
+        .select("id, name, step_reached, plan_selected, eupago_ref, first_name, last_name, edit_token")
         .eq("email", trimmed)
         .maybeSingle();
 
@@ -76,6 +79,8 @@ const Upsell = () => {
         return;
       }
 
+      setRegistrationId(data.id);
+      setEditToken((data as any).edit_token || null);
       setUserData({
         nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
         email: trimmed,
@@ -83,11 +88,9 @@ const Upsell = () => {
         referralCode: "",
       });
 
-      // Resume at saved step or step 1
       const resumeStep = data.step_reached && data.step_reached > 1 ? data.step_reached : 1;
       setStep(resumeStep);
 
-      // Restore order state from plan_selected
       if (data.plan_selected === "premium") setOrderState({ premium: true, masterclass: false });
       else if (data.plan_selected === "masterclass") setOrderState({ premium: false, masterclass: true });
       else if (data.plan_selected === "bundle") setOrderState({ premium: true, masterclass: true });
@@ -333,6 +336,8 @@ const Upsell = () => {
                     userName={userData.nome}
                     referralCode={userData.referralCode}
                     userEmail={userData.email}
+                    registrationId={registrationId || undefined}
+                    editToken={editToken || undefined}
                   />
                 </motion.div>
               )}

@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.followup-abandoned]
 verify_jwt = false
+
+[functions.invoice-upsert]
+verify_jwt = false

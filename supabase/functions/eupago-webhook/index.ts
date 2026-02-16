@@ -147,66 +147,98 @@ async function processPayment(data: PaymentData) {
       .update({ registration_id: matchedRegId, processed_at: new Date().toISOString() })
       .eq("idempotency_key", idempotencyKey);
 
-    // ── Send invoice notification email ──
+    // ── Send invoice notification email (idempotent) ──
     try {
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
-      const { data: invoice } = await supabase
-        .from("invoice_details")
-        .select("*")
+      // Idempotency check: skip if already sent
+      const { data: alreadySent } = await supabase
+        .from("message_logs")
+        .select("id")
         .eq("registration_id", matchedRegId)
-        .maybeSingle();
+        .eq("template_key", "invoice_notification")
+        .eq("status", "sent")
+        .limit(1);
 
-      const { data: reg } = await supabase
-        .from("registrations")
-        .select("email, name, plan_selected, eupago_ref")
-        .eq("id", matchedRegId)
-        .maybeSingle();
+      if (alreadySent && alreadySent.length > 0) {
+        console.log("📧 Invoice notification already sent — skipping");
+      } else {
+        const { data: invoice } = await supabase
+          .from("invoice_details")
+          .select("*")
+          .eq("registration_id", matchedRegId)
+          .maybeSingle();
 
-      if (invoice && reg && RESEND_API_KEY) {
-        const planLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Premium + Masterclass" } as Record<string, string>)[reg.plan_selected || ""] || reg.plan_selected;
-        const totalMap: Record<string, string> = { premium: "18,45", masterclass: "57,81", bundle: "76,26" };
-        const totalVal = totalMap[reg.plan_selected || ""] || amount;
+        const { data: reg } = await supabase
+          .from("registrations")
+          .select("email, name, plan_selected, eupago_ref")
+          .eq("id", matchedRegId)
+          .maybeSingle();
 
-        const subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${totalVal}EUR`;
-        const htmlBody = `<h2>Novo pagamento confirmado</h2>
-          <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
-          <p><strong>Produto:</strong> ${planLabel}</p>
-          <p><strong>Total (c/ IVA):</strong> ${totalVal} EUR</p>
-          <p><strong>Data/hora:</strong> ${new Date().toISOString()}</p>
-          <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
-          <hr/>
-          <h3>Dados de faturação</h3>
-          <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
-          <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
-          <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
-          <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
-          <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
+        if (reg && RESEND_API_KEY) {
+          const planLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Premium + Masterclass" } as Record<string, string>)[reg.plan_selected || ""] || reg.plan_selected;
+          const totalMap: Record<string, string> = { premium: "18,45", masterclass: "57,81", bundle: "76,26" };
+          const totalVal = totalMap[reg.plan_selected || ""] || amount;
 
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-            to: ["info@fredericocarvalho.pt"],
-            subject,
-            html: htmlBody,
-          }),
-        });
-        const resendData = await resendRes.json();
+          let subject: string;
+          let htmlBody: string;
+          let templateKey: string;
 
-        await supabase.from("message_logs").insert({
-          registration_id: matchedRegId,
-          channel: "email",
-          provider: "resend",
-          template_key: "invoice_notification",
-          status: resendRes.ok ? "sent" : "failed",
-          provider_message_id: resendData.id || null,
-          payment_url: null,
-          error: resendRes.ok ? null : JSON.stringify(resendData),
-        });
+          if (invoice) {
+            // Full invoice email
+            templateKey = "invoice_notification";
+            subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${totalVal}EUR`;
+            htmlBody = `<h2>Novo pagamento confirmado</h2>
+              <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
+              <p><strong>Produto:</strong> ${planLabel}</p>
+              <p><strong>Total (c/ IVA):</strong> ${totalVal} EUR</p>
+              <p><strong>Data/hora:</strong> ${new Date().toISOString()}</p>
+              <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
+              <hr/>
+              <h3>Dados de faturação</h3>
+              <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
+              <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
+              <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
+              <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
+              <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
+          } else {
+            // Missing details fallback
+            templateKey = "invoice_notification_missing_details";
+            subject = `FATURA -- DADOS EM FALTA -- ${reg.email} -- ${planLabel}`;
+            htmlBody = `<h2>Pagamento confirmado — dados de faturação em falta</h2>
+              <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
+              <p><strong>Produto:</strong> ${planLabel}</p>
+              <p><strong>Total:</strong> ${totalVal} EUR</p>
+              <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
+              <hr/>
+              <p><strong>Dados de faturação não recolhidos.</strong> Solicitar ao cliente.</p>`;
+          }
 
-        console.log(`📧 Invoice email ${resendRes.ok ? "sent" : "FAILED"} for ${reg.email}`);
+          const resendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+              to: ["info@fredericocarvalho.pt"],
+              subject,
+              html: htmlBody,
+            }),
+          });
+          const resendData = await resendRes.json();
+
+          await supabase.from("message_logs").insert({
+            registration_id: matchedRegId,
+            channel: "email",
+            provider: "resend",
+            template_key: templateKey,
+            status: resendRes.ok ? "sent" : "failed",
+            provider_message_id: resendData.id || null,
+            payment_url: null,
+            error: resendRes.ok ? null : JSON.stringify(resendData),
+          });
+
+          console.log(`📧 Invoice email (${templateKey}) ${resendRes.ok ? "sent" : "FAILED"} for ${reg.email}`);
+        }
       }
     } catch (invoiceErr) {
       console.error("Invoice email error (non-blocking):", invoiceErr);

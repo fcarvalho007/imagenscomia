@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { z } from "zod";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const invoiceSchema = z.object({
@@ -16,11 +16,22 @@ export type InvoiceData = z.infer<typeof invoiceSchema>;
 
 interface Props {
   userEmail: string;
+  registrationId?: string;
+  editToken?: string;
   onValidChange: (valid: boolean) => void;
-  onUpsertFinal: () => Promise<void>;
+  onSaveError?: (hasError: boolean) => void;
 }
 
-export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) {
+const AUTOCOMPLETE_MAP: Record<keyof InvoiceData, string> = {
+  invoice_name: "organization",
+  invoice_vat: "off",
+  invoice_address: "street-address",
+  invoice_zip: "postal-code",
+  invoice_city: "address-level2",
+  invoice_email: "email",
+};
+
+export function InvoiceForm({ userEmail, registrationId, editToken, onValidChange, onSaveError }: Props) {
   const [form, setForm] = useState<InvoiceData>({
     invoice_name: "",
     invoice_vat: "",
@@ -33,21 +44,46 @@ export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) 
   const [touched, setTouched] = useState<Partial<Record<keyof InvoiceData, boolean>>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [regId, setRegId] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState(false);
+  const [regId, setRegId] = useState<string | null>(registrationId || null);
+  const [token, setToken] = useState<string | null>(editToken || null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Lookup registration_id + pre-fill
+  // Lookup registration_id + edit_token + pre-fill
   useEffect(() => {
+    if (regId && token) {
+      // Already have both, just pre-fill
+      (async () => {
+        const { data: inv } = await supabase
+          .from("invoice_details" as any)
+          .select("*")
+          .eq("registration_id", regId)
+          .maybeSingle();
+        if (inv) {
+          const d = inv as any;
+          setForm({
+            invoice_name: d.invoice_name || "",
+            invoice_vat: d.invoice_vat || "",
+            invoice_address: d.invoice_address || "",
+            invoice_zip: d.invoice_zip || "",
+            invoice_city: d.invoice_city || "",
+            invoice_email: d.invoice_email || userEmail,
+          });
+        }
+      })();
+      return;
+    }
     if (!userEmail) return;
     (async () => {
       const { data: reg } = await supabase
         .from("registrations")
-        .select("id")
+        .select("id, edit_token")
         .eq("email", userEmail)
         .maybeSingle();
       if (!reg) return;
       setRegId(reg.id);
+      setToken((reg as any).edit_token || null);
 
       const { data: inv } = await supabase
         .from("invoice_details" as any)
@@ -66,14 +102,14 @@ export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) 
         });
       }
     })();
-  }, [userEmail]);
+  }, [userEmail, regId, token]);
 
   // Validate on form change
   useEffect(() => {
     const result = invoiceSchema.safeParse(form);
     if (result.success) {
       setErrors({});
-      onValidChange(true);
+      onValidChange(!saveError);
     } else {
       const errs: Partial<Record<keyof InvoiceData, string>> = {};
       result.error.issues.forEach((i) => {
@@ -83,51 +119,47 @@ export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) 
       setErrors(errs);
       onValidChange(false);
     }
-  }, [form, onValidChange]);
+  }, [form, onValidChange, saveError]);
 
-  // Autosave debounce
+  // Notify parent of saveError changes
+  useEffect(() => {
+    onSaveError?.(saveError);
+  }, [saveError, onSaveError]);
+
+  // Save via edge function
   const doSave = useCallback(async (data: InvoiceData) => {
-    if (!regId) return;
+    if (!regId || !token) return;
     const result = invoiceSchema.safeParse(data);
     if (!result.success) return;
     setSaving(true);
     try {
-      await supabase.from("invoice_details" as any).upsert({
-        registration_id: regId,
-        ...result.data,
-        updated_at: new Date().toISOString(),
-      } as any);
+      const res = await supabase.functions.invoke("invoice-upsert", {
+        body: { registration_id: regId, edit_token: token, payload: result.data },
+      });
+      if (res.error || (res.data && res.data.error)) {
+        throw new Error(res.data?.error || "Save failed");
+      }
+      setSaveError(false);
       setSaved(true);
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch {
+      setSaveError(true);
+    }
     setSaving(false);
-  }, [regId]);
+  }, [regId, token]);
 
+  // Autosave debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => doSave(form), 600);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [form, doSave]);
 
-  // Expose upsert for parent
-  useEffect(() => {
-    // Store final upsert fn on the parent's callback ref
-    (onUpsertFinal as any).__invoiceUpsert = async () => {
-      if (!regId) return;
-      const result = invoiceSchema.safeParse(form);
-      if (!result.success) return;
-      await supabase.from("invoice_details" as any).upsert({
-        registration_id: regId,
-        ...result.data,
-        updated_at: new Date().toISOString(),
-      } as any);
-    };
-  }, [form, regId, onUpsertFinal]);
-
   const handleChange = (key: keyof InvoiceData, value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
     setTouched((t) => ({ ...t, [key]: true }));
+    if (saveError) setSaveError(false);
   };
 
   const handleBlur = (key: keyof InvoiceData) => {
@@ -144,21 +176,29 @@ export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) 
     }
   };
 
-  const field = (key: keyof InvoiceData, label: string, placeholder: string, helpText?: string) => (
-    <div>
-      <label className="block text-[13px] font-medium text-ink-700 mb-1">{label}</label>
-      <input
-        type={key === "invoice_email" ? "email" : "text"}
-        value={form[key]}
-        onChange={(e) => handleChange(key, e.target.value)}
-        onBlur={() => handleBlur(key)}
-        placeholder={placeholder}
-        className={`w-full bg-white border ${touched[key] && errors[key] ? "border-red-400" : "border-border"} h-10 px-3 rounded-lg text-ink-900 placeholder:text-ink-300 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-[14px]`}
-      />
-      {helpText && !errors[key] && <p className="text-[11px] text-ink-400 mt-0.5">{helpText}</p>}
-      {touched[key] && errors[key] && <p className="text-[12px] text-red-500 mt-0.5">{errors[key]}</p>}
-    </div>
-  );
+  const field = (key: keyof InvoiceData, label: string, placeholder: string, helpText?: string) => {
+    const hasError = touched[key] && errors[key];
+    const errId = `err-${key}`;
+    return (
+      <div>
+        <label htmlFor={key} className="block text-[13px] font-medium text-ink-700 mb-1">{label}</label>
+        <input
+          id={key}
+          type={key === "invoice_email" ? "email" : "text"}
+          autoComplete={AUTOCOMPLETE_MAP[key]}
+          value={form[key]}
+          onChange={(e) => handleChange(key, e.target.value)}
+          onBlur={() => handleBlur(key)}
+          placeholder={placeholder}
+          aria-invalid={!!hasError}
+          aria-describedby={hasError ? errId : undefined}
+          className={`w-full bg-white border ${hasError ? "border-red-400" : "border-border"} h-10 px-3 rounded-lg text-ink-900 placeholder:text-ink-300 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-[14px]`}
+        />
+        {helpText && !errors[key] && <p className="text-[11px] text-ink-400 mt-0.5">{helpText}</p>}
+        {hasError && <p id={errId} className="text-[12px] text-red-500 mt-0.5" role="alert">{errors[key]}</p>}
+      </div>
+    );
+  };
 
   return (
     <div className="border border-border rounded-xl p-5 mb-5 bg-surface">
@@ -167,9 +207,14 @@ export function InvoiceForm({ userEmail, onValidChange, onUpsertFinal }: Props) 
           Dados para fatura <span className="text-[12px] font-medium text-red-500 ml-1">(obrigatório)</span>
         </h3>
         {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-300" />}
-        {saved && !saving && (
+        {saved && !saving && !saveError && (
           <span className="flex items-center gap-1 text-[11px] text-green-600 font-medium animate-in fade-in">
             <Check className="w-3 h-3" /> Guardado
+          </span>
+        )}
+        {saveError && !saving && (
+          <span className="flex items-center gap-1 text-[11px] text-red-500 font-medium animate-in fade-in">
+            <AlertCircle className="w-3 h-3" /> Falha ao guardar
           </span>
         )}
       </div>
