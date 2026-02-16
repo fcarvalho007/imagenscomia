@@ -83,6 +83,21 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
 
+    // Lookup registration for rid+token in successUrl
+    let regId = "";
+    let editToken = "";
+    if (email) {
+      const { data: regLookup } = await supabase
+        .from("registrations")
+        .select("id, edit_token")
+        .eq("email", email)
+        .maybeSingle();
+      if (regLookup) {
+        regId = regLookup.id;
+        editToken = regLookup.edit_token || "";
+      }
+    }
+
     const eupagoResponse = await fetch(
       "https://clientes.eupago.pt/api/v1.02/paybylink/create",
       {
@@ -98,7 +113,7 @@ serve(async (req) => {
               currency: "EUR",
             },
             identifier: `${product.identifier}-${email}-${Date.now()}`,
-            successUrl: `${origin}/confirmacao?plan=${plan}&email=${encodeURIComponent(email || '')}`,
+            successUrl: `${origin}/upgrade/sucesso?rid=${regId}&t=${encodeURIComponent(editToken)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,
             lang: "PT",
@@ -131,13 +146,6 @@ serve(async (req) => {
     // Save transactionID + reference + payment link to DB
     if (email) {
       try {
-        // Look up registration_id for payment_events
-        const { data: regRow } = await supabase
-          .from("registrations")
-          .select("id")
-          .eq("email", email)
-          .maybeSingle();
-
         await supabase
           .from("registrations")
           .update({
@@ -152,10 +160,10 @@ serve(async (req) => {
         console.log(`✅ Saved transactionID=${transactionID} for ${email}`);
 
         // Log to payment_events
-        if (regRow) {
+        if (regId) {
           const idempotencyKey = `link-${email}-${plan}-${transactionID}`;
           await supabase.from("payment_events").insert({
-            registration_id: regRow.id,
+            registration_id: regId,
             event_type: "link_created",
             eupago_ref: transactionID,
             idempotency_key: idempotencyKey,

@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import CRM from "./pages/CRM";
 import WebinarLive from "./pages/WebinarLive";
 import Termos from "./pages/Termos";
+import UpgradeSucesso from "./pages/UpgradeSucesso";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/crm" element={<CRM />} />
           <Route path="/live" element={<WebinarLive />} />
           <Route path="/termos" element={<Termos />} />
+          <Route path="/upgrade/sucesso" element={<UpgradeSucesso />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
