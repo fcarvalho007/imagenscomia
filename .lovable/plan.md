@@ -1,192 +1,150 @@
 
 
-## Robustez Final de Faturacao: Seguranca + Idempotencia + UX
+## Redesign da Ficha de Cliente (InscritoModal) -- UX/UI melhorado
 
 ### Resumo
 
-Quatro blocos: (A) seguranca via edge function invoice-upsert com edit_token, removendo escrita directa do frontend; (B) idempotencia do email invoice_notification no webhook + fallback para dados em falta; (C) melhorias UX no formulario (autocomplete, aria, estados de save com erro); (D) badge + botao copiar no CRM.
+Refactoring profundo do InscritoModal para melhorar hierarquia visual, separar informacao de accoes, criar timeline de logs com filtros, e adicionar modal de pre-validacao no reenvio. O ficheiro actual tem 1222 linhas -- sera partido em componentes menores.
 
-### Ficheiros Alterados
+### Ficheiros
 
 | Ficheiro | Accao |
 |----------|-------|
-| DB migration | Adicionar `edit_token` + `edit_token_created_at` a registrations; remover policies INSERT/UPDATE de invoice_details |
-| `supabase/functions/invoice-upsert/index.ts` | Novo — valida edit_token, faz upsert server-side |
-| `supabase/functions/register-free/index.ts` | Gerar edit_token ao criar registo |
-| `src/components/upgrade/InvoiceForm.tsx` | Chamar invoice-upsert em vez de upsert directo; adicionar autocomplete + aria; estados de erro no save |
-| `src/pages/Upsell.tsx` | Passar edit_token (da querystring ou recuperado do DB) ao InvoiceForm |
-| `supabase/functions/eupago-webhook/index.ts` | Adicionar check idempotencia antes de enviar email; fallback "dados em falta" |
-| `src/components/crm/InscritoModal.tsx` | Badge "Completo"/"Em falta" + botao "Copiar dados faturacao" |
-| `supabase/config.toml` | Registar invoice-upsert com verify_jwt = false |
+| `src/components/crm/InscritoModal.tsx` | Refactoring completo: novo header, seccoes separadas, timeline |
+| `src/components/crm/modal/ClientHeader.tsx` | Novo -- header compacto com estado, plano, ref, proxima accao |
+| `src/components/crm/modal/ActionsSection.tsx` | Novo -- bloco de accoes ordenado (primario, secundario, perigoso) |
+| `src/components/crm/modal/LinkFollowUpSection.tsx` | Novo -- info de link/follow-up limpa com badges acessiveis |
+| `src/components/crm/modal/ResendModal.tsx` | Novo -- modal de pre-validacao antes de reenviar email |
+| `src/components/crm/modal/ActivityTimeline.tsx` | Novo -- timeline compacta com chips de filtro |
+| `src/components/crm/modal/InvoiceSection.tsx` | Extraido do InscritoModal (ja existe inline) |
+
+### Arquitectura de Componentes
+
+```text
+InscritoModal
+  +-- TopBar (navegacao prev/next + fechar) [manter inline]
+  +-- LeftPanel (nome, email, whatsapp, gender, accoes admin)
+  |     Simplificado: remover accoes de pagamento daqui
+  +-- RightPanel
+        +-- ClientHeader (NOVO -- sticky summary)
+        +-- ActionsSection (NOVO -- botoes de pagamento agrupados)
+        +-- LinkFollowUpSection (NOVO -- estado do link + follow-up)
+        +-- ResendModal (NOVO -- dialog de pre-validacao)
+        +-- InvoiceSection (extraido)
+        +-- FunnelView (manter)
+        +-- Origem + Duvida + Notas (manter)
+        +-- ActivityTimeline (NOVO -- substitui Tabs actuais)
+```
 
 ---
 
-### A. Seguranca — edit_token + Edge Function
+### 1. ClientHeader -- Header compacto fixo no topo do painel direito
 
-**1. DB Migration**
+Substitui o "Compact Summary" actual (linhas 579-621). Informacao agrupada, sem duplicacao.
 
-```sql
--- Add edit_token to registrations
-ALTER TABLE registrations
-  ADD COLUMN IF NOT EXISTS edit_token text,
-  ADD COLUMN IF NOT EXISTS edit_token_created_at timestamptz;
+**Conteudo:**
+- Chip de estado colorido: "Pago" (verde), "Aguarda pagamento" (vermelho), "Seleccionou e saiu" (laranja), "Gratuito" (cinza)
+- Plano + preco (ex: "Bundle -- EUR76,26")
+- Ref EuPago com botao copiar (truncada, tooltip com valor completo)
+- Proxima accao: data/hora do proximo follow-up OU "Concluido" OU "Em atraso"
+- Passo X/5
 
--- Remove permissive INSERT/UPDATE on invoice_details (keep SELECT for CRM reads)
-DROP POLICY IF EXISTS "allow_anon_insert_invoice_details" ON invoice_details;
-DROP POLICY IF EXISTS "allow_anon_update_invoice_details" ON invoice_details;
-```
+**Layout:** uma unica linha flex-wrap com chips, sem card pesado. `sticky top-0 z-10 bg-white` para ficar visivel durante scroll.
 
-Apos isto, apenas o service_role (edge functions, webhook) consegue escrever em invoice_details. O SELECT anon permanece para o CRM poder ler.
+### 2. ActionsSection -- Bloco "Accoes" separado
 
-**2. register-free/index.ts — Gerar edit_token**
+Remove accoes de pagamento que estao espalhadas (linhas 624-878) e centraliza tudo num unico bloco organizado por prioridade.
 
-Ao criar o registo, gerar um token aleatorio de 32 chars e guardar em `edit_token` + `edit_token_created_at`:
+**Ordem dos botoes:**
+1. **Primario:** "Abrir link" (ExternalLink) -- azul solido, so aparece se `last_payment_link` existe
+2. **Secundarios:** "Copiar link" | "Reenviar email" (com microcopy cooldown) | "Copiar ref EuPago"
+3. **Perigoso:** "Regenerar link EuPago" -- border vermelho/laranja, com confirm dialog
+4. **Menu "Mais opcoes" (...):** "Gerar NOVO link de pagamento (Gmail)" -- o botao grande amber actual move-se para ca
 
-```text
-const editToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
-// ... insert into registrations with edit_token: editToken, edit_token_created_at: new Date().toISOString()
-```
+**Microcopy no Reenviar:**
+- Se `reminder_manual` enviado < 6h: botao disabled + texto "Ultimo reenvio ha Xh"
+- Se nunca enviado: "Reenviar email de pagamento"
 
-O token e devolvido na resposta para o frontend guardar e passar via querystring ao /upgrade.
+**Visibilidade:** so aparece para `payment_status !== "free"` e `!paid_at`.
 
-**3. Upsell.tsx — Receber e propagar edit_token**
+### 3. LinkFollowUpSection -- Info de link limpa
 
-- Ler `t` da querystring (`searchParams.get("t")`)
-- No recovery flow, o edit_token e devolvido pelo select de registrations
-- Passar `editToken` + `registrationId` como props ao StepConfirmation/InvoiceForm
+Substitui o bloco actual de follow-up info (linhas 627-710).
 
-**4. supabase/functions/invoice-upsert/index.ts — Nova edge function**
+**Conteudo:**
+- Validade do link: badge com texto + icone (nao depender so da cor)
+  - "Link valido (~16h restantes)" + CheckCircle verde
+  - "Link a expirar (~3h)" + AlertTriangle amarelo
+  - "Link expirado" + XCircle vermelho
+- Criado em: data/hora
+- Ultimo envio: data/hora (de `last_payment_link_sent_at`)
+- Proximo envio: data/hora (de `next_followup_at`)
+- Follow-up automatico: etapa X/3
 
-```text
-POST { registration_id, edit_token, payload: { invoice_name, invoice_vat, ... } }
+**Layout:** grid 2x2 compacto com labels em caps pequenas.
 
-1. Validar campos com zod (mesma schema do frontend)
-2. SELECT registrations WHERE id = registration_id AND edit_token = edit_token
-3. Se nao encontrar ou token expirado (>30 dias): return 401
-4. UPSERT invoice_details com service_role
-5. Return 200 { success: true }
-```
+### 4. ResendModal -- Pre-validacao antes de reenviar
 
-**5. InvoiceForm.tsx — Usar edge function**
+Substitui o `showResendConfirm` inline actual (linhas 756-795) por um Dialog/modal dedicado.
 
-Substituir os `supabase.from("invoice_details").upsert(...)` por `supabase.functions.invoke("invoice-upsert", { body: { registration_id, edit_token, payload } })`.
+**Fluxo ao clicar "Reenviar email":**
+1. Abre modal
+2. Faz HEAD (com fallback GET) ao `last_payment_link` via edge function ou client-side
+3. Mostra resultado:
+   - "Link OK (status 200)" com CheckCircle verde
+   - "Link expirado (status 404)" com XCircle vermelho + opcao "Regenerar e reenviar" (um so clique)
+4. Confirma destinatario (email do inscrito, read-only)
+5. Botao "Confirmar envio"
+6. Apos envio: toast com `provider_message_id`
 
-O autosave debounce continua igual, apenas o destino muda de upsert directo para edge function.
+**Nota tecnica:** A validacao do link pode ser feita client-side com `fetch(url, { method: "HEAD", mode: "no-cors" })` -- mas como no-cors nao da status, melhor chamar a edge function `followup-abandoned` em modo `validate_link` (novo mode) ou fazer a validacao no invoice-upsert. Alternativa mais simples: usar o resultado do ultimo `message_log` com `link_validation` no campo error. Para MVP, mostrar a idade do link (ja calculada) como proxy de validade e oferecer "Regenerar" se > 24h.
 
-### B. Idempotencia do Email no Webhook
+**Decisao pratica para MVP:** Usar a idade do link como proxy (< 12h = OK, 12-24h = A expirar, > 24h = Expirado). Se expirado, o botao muda para "Regenerar e reenviar". Nao adicionar nova edge function so para validar link -- a validacao real ja acontece no momento do envio (followup-abandoned).
 
-**eupago-webhook/index.ts** — Antes de enviar o email invoice_notification:
+### 5. ActivityTimeline -- Logs em timeline com filtros
 
-```text
-// 1. Check if already sent
-const { data: alreadySent } = await supabase
-  .from("message_logs")
-  .select("id")
-  .eq("registration_id", matchedRegId)
-  .eq("template_key", "invoice_notification")
-  .eq("status", "sent")
-  .limit(1);
+Substitui as Tabs "Emails" / "Pagamentos" actuais (linhas 1093-1212).
 
-if (alreadySent && alreadySent.length > 0) {
-  console.log("Invoice notification already sent — skipping");
-  // skip sending
-}
-```
+**Filtros (chips horizontais):**
+- Tudo | Emails | Pagamentos | Erros | Manual
+- Toggle "So falhas" (checkbox/switch)
 
-**Fallback para dados em falta:**
+**Timeline unificada:**
+- Merge de `messageLogs` + `paymentEvents` numa unica lista ordenada por data (desc)
+- Cada item:
+  - Icone lateral (Mail para emails, CreditCard para pagamentos, AlertTriangle para erros)
+  - Linha de tempo vertical (border-left tracejado)
+  - Titulo: template label humano ou event_type
+  - Badges: estado (sent/failed/queued), canal (Resend/Internal), hora relativa
+  - IDs truncados com botao "Copiar"
+  - "Ver detalhes" collapsible para payload/error
 
-Se `invoice` for null apos o lookup:
+**Layout:** vertical timeline com `border-l-2 border-dashed` e dots nos pontos.
 
-```text
-// Send "missing details" notification
-const subject = `FATURA -- DADOS EM FALTA -- ${reg.email} -- ${planLabel}`;
-const htmlBody = `<h2>Pagamento confirmado — dados de faturacao em falta</h2>
-  <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
-  <p><strong>Produto:</strong> ${planLabel}</p>
-  <p><strong>Total:</strong> ${totalVal} EUR</p>
-  <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
-  <hr/>
-  <p><strong>Dados de faturacao nao recolhidos.</strong> Solicitar ao cliente.</p>`;
+### 6. Acessibilidade e Consistencia
 
-// Send + log with template_key = "invoice_notification_missing_details"
-```
+Em todos os componentes novos:
+- `aria-label` em botoes de copiar (ex: "Copiar referencia EuPago")
+- `aria-label` em botoes de abrir (ex: "Abrir link de pagamento")
+- Contraste minimo: nunca texto cinza claro em fundo branco sem peso >= 500
+- Botoes com altura consistente: `h-8` para secundarios, `h-9` para primarios
+- Labels em portugues consistentes (sem mistura en/pt)
+- Badges com texto + icone (nunca so cor)
 
-### C. UX/UI — InvoiceForm Melhorias
+### 7. Limpeza do InscritoModal principal
 
-**1. Autocomplete nos inputs:**
-
-```text
-invoice_name    -> autocomplete="organization"
-invoice_address -> autocomplete="street-address"
-invoice_zip     -> autocomplete="postal-code"
-invoice_city    -> autocomplete="address-level2"
-invoice_email   -> autocomplete="email"
-```
-
-**2. Acessibilidade (aria):**
-
-Cada input recebe `aria-invalid={touched && hasError}` e `aria-describedby="err-{key}"`. A mensagem de erro recebe `id="err-{key}"`.
-
-**3. Estados de autosave com erro:**
-
-Adicionar estado `saveError` (boolean). Se o upsert via edge function falhar:
-- Mostrar "Falha ao guardar. Tentar novamente." em vermelho no header do card
-- Manter o CTA "Confirmar e pagar" disabled enquanto `saveError` for true
-- Retry automatico no proximo onChange
-
-O CTA fica disabled quando: `!invoiceValid || saving || saveError`.
-
-### D. CRM — Badge + Copiar
-
-**InvoiceSection no InscritoModal:**
-
-1. Badge junto ao titulo "Faturacao":
-   - Se dados existem: badge verde "Completo"
-   - Se nao existem: badge vermelho "Em falta"
-
-2. Botao "Copiar dados faturacao":
-   - Copia bloco formatado para clipboard:
-   ```text
-   Nome/Empresa: {invoice_name}
-   NIF: {invoice_vat}
-   Morada: {invoice_address}
-   CP: {invoice_zip} {invoice_city}
-   Email fatura: {invoice_email}
-   ```
-   - Feedback "Copiado!" com fade-out 2s
+O ficheiro principal fica como orquestrador:
+- Mantém state management (logs, loading, etc.)
+- Renderiza: TopBar + LeftPanel + RightPanel
+- RightPanel usa os novos componentes
+- Remove ~500 linhas de JSX inline, move para componentes
 
 ### O que NAO muda
 
-- Logica de pagamentos EuPago (create-payment, precos, redirect)
-- Fluxo de follow-up automatico/manual e idempotencia dos stages
-- Templates de email existentes
-- Webhook idempotency para payment_events (duplo webhook)
-- Botao "Gerar link de pagamento" no CRM (Gmail)
-
-### Fluxo resumido
-
-```text
-register-free -> gera edit_token -> devolve ao frontend
-    |
-    v
-/upgrade?email=...&t={edit_token}
-    |
-    v
-Step 5: InvoiceForm
-  - valida campos (zod client-side)
-  - autosave via POST invoice-upsert (com edit_token)
-  - CTA disabled ate valido + ultimo save OK
-    |
-    v
-CTA "Confirmar e pagar"
-  - save final via invoice-upsert
-  - create-payment -> EuPago redirect
-    |
-    v
-eupago-webhook (paid_at)
-  - check message_logs idempotencia
-  - se invoice_details existe: email completo
-  - se nao existe: email "dados em falta"
-  - registar em message_logs
-```
+- Props interface do InscritoModal (compatibilidade total com CRM.tsx)
+- Logica de fetch de logs, payment events
+- Left panel (nome, email, whatsapp, gender, accoes admin como arquivar/eliminar)
+- FunnelView, Origem, Duvida, Notas
+- InvoiceSection (apenas extraido para ficheiro proprio)
+- Nenhuma edge function ou DB migration
 
