@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2, ExternalLink, Clock, CheckCircle2, AlertTriangle, ChevronDown, Send,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Info, Pencil, Check, Bell, Loader2, ExternalLink, Clock, CheckCircle2, AlertTriangle, ChevronDown, Send, RefreshCw,
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import FunnelView from "@/components/crm/FunnelView";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -28,6 +29,9 @@ interface InscritoModalProps {
   fetchMessageLogs?: (id: string) => Promise<any[]>;
   fetchPaymentEvents?: (id: string) => Promise<any[]>;
   sendBacklogCheckin?: (id: string, templateKey?: string) => Promise<any>;
+  regenerateLink?: (id: string) => Promise<any>;
+  resendPaymentEmail?: (id: string) => Promise<any>;
+  onRefresh?: () => void;
 }
 
 const PLAN_INFO: Record<string, { bg: string; color: string; label: string }> = {
@@ -75,7 +79,7 @@ const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
 };
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [copiedRef, setCopiedRef] = useState(false);
@@ -97,6 +101,9 @@ export default function InscritoModal({
   const [backlogSending, setBacklogSending] = useState(false);
   const [backlogSent, setBacklogSent] = useState(false);
   const [backlogError, setBacklogError] = useState<string | null>(null);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showResendConfirm, setShowResendConfirm] = useState(false);
 
   // Fetch logs lazily when modal opens or inscrito changes
   useEffect(() => {
@@ -624,6 +631,85 @@ export default function InscritoModal({
                     );
                   })()}
                 </div>
+
+                {/* Manual recovery actions */}
+                {inscrito.plan !== "free" && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {regenerateLink && (
+                      <button
+                        onClick={async () => {
+                          setRegenLoading(true);
+                          try {
+                            const result = await regenerateLink(inscrito.id);
+                            toast({ title: "Link regenerado com sucesso", description: result?.paymentLink ? `Novo link: ${result.paymentLink.slice(0, 50)}...` : "Link actualizado." });
+                            onRefresh?.();
+                          } catch (e: any) {
+                            toast({ title: "Erro ao regenerar link", description: e?.message || "Tenta novamente.", variant: "destructive" });
+                          } finally {
+                            setRegenLoading(false);
+                          }
+                        }}
+                        disabled={regenLoading}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      >
+                        {regenLoading ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                        Regenerar link EuPago
+                      </button>
+                    )}
+                    {resendPaymentEmail && (
+                      <>
+                        <button
+                          onClick={() => setShowResendConfirm(true)}
+                          disabled={resendLoading}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                        >
+                          {resendLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                          Reenviar email de pagamento
+                        </button>
+                        {showResendConfirm && (
+                          <div className="w-full mt-1 p-3 rounded-lg border border-blue-200 bg-blue-50/50">
+                            <p className="text-[12px] text-ink-700 mb-2">
+                              Enviar email de pagamento via Resend para <strong>{inscrito.email}</strong>?
+                            </p>
+                            {inscrito.last_payment_link && (
+                              <p className="text-[11px] text-ink-500 mb-2 truncate">Link: {inscrito.last_payment_link}</p>
+                            )}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  setResendLoading(true);
+                                  setShowResendConfirm(false);
+                                  try {
+                                    const result = await resendPaymentEmail(inscrito.id);
+                                    toast({ title: "Email enviado com sucesso", description: result?.messageId ? `ID: ${result.messageId}` : "Enviado via Resend." });
+                                    // Refresh logs
+                                    if (fetchMessageLogs) {
+                                      const logs = await fetchMessageLogs(inscrito.id);
+                                      setMessageLogs(logs);
+                                    }
+                                  } catch (e: any) {
+                                    toast({ title: "Erro ao enviar email", description: e?.message || "Tenta novamente.", variant: "destructive" });
+                                  } finally {
+                                    setResendLoading(false);
+                                  }
+                                }}
+                                className="px-3 py-1.5 rounded text-[11px] font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                              >
+                                Confirmar envio
+                              </button>
+                              <button
+                                onClick={() => setShowResendConfirm(false)}
+                                className="px-3 py-1.5 rounded text-[11px] font-medium border border-border text-ink-500 hover:bg-surface transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {!reminderData ? (
                   <button
