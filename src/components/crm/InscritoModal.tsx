@@ -580,31 +580,49 @@ export default function InscritoModal({
                     </span>
                   </div>
 
-                  {/* Payment link quick actions */}
-                  {inscrito.last_payment_link && (
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      <button
-                        onClick={copyPaymentLink}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                      >
-                        <Copy size={10} /> {copiedPayLink ? "Copiado!" : "Copiar link de pagamento"}
-                      </button>
-                      <button
-                        onClick={() => window.open(inscrito.last_payment_link!, "_blank")}
-                        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
-                      >
-                        <ExternalLink size={10} /> Abrir link
-                      </button>
-                      {inscrito.eupago_ref && (
-                        <button
-                          onClick={copyEupagoRef}
-                          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-off-white text-ink-600 hover:bg-surface transition-colors border border-border"
-                        >
-                          <Copy size={10} /> {copiedEupagoRef ? "Copiado!" : "Copiar ref EuPago"}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                  {/* Payment link quick actions + status */}
+                  {inscrito.last_payment_link && (() => {
+                    const linkAgeMs = inscrito.payment_link_created_at
+                      ? Date.now() - new Date(inscrito.payment_link_created_at).getTime()
+                      : Infinity;
+                    const linkAgeH = Math.round(linkAgeMs / (60 * 60 * 1000));
+                    const linkColor = linkAgeH < 12 ? "#22C55E" : linkAgeH < 24 ? "#F59E0B" : "#DC2626";
+                    const linkLabel = linkAgeH < 12 ? "OK" : linkAgeH < 24 ? "A expirar" : "Expirado";
+                    return (
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${linkColor}20`, color: linkColor }}>
+                            Link: {linkLabel} ({linkAgeH}h)
+                          </span>
+                          {inscrito.payment_link_created_at && (
+                            <span className="text-[10px] text-ink-400">Criado em {fmtDate(inscrito.payment_link_created_at)}</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button
+                            onClick={copyPaymentLink}
+                            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                          >
+                            <Copy size={10} /> {copiedPayLink ? "Copiado!" : "Copiar link"}
+                          </button>
+                          <button
+                            onClick={() => window.open(inscrito.last_payment_link!, "_blank")}
+                            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                          >
+                            <ExternalLink size={10} /> Abrir
+                          </button>
+                          {inscrito.eupago_ref && (
+                            <button
+                              onClick={copyEupagoRef}
+                              className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-off-white text-ink-600 hover:bg-surface transition-colors border border-border"
+                            >
+                              <Copy size={10} /> {copiedEupagoRef ? "Copiado!" : "Ref EuPago"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {!reminderData ? (

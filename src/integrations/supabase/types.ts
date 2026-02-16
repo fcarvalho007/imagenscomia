@@ -65,6 +65,7 @@ export type Database = {
           created_at: string
           error: string | null
           id: string
+          payment_url: string | null
           provider: string
           provider_message_id: string | null
           registration_id: string
@@ -77,6 +78,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          payment_url?: string | null
           provider: string
           provider_message_id?: string | null
           registration_id: string
@@ -89,6 +91,7 @@ export type Database = {
           created_at?: string
           error?: string | null
           id?: string
+          payment_url?: string | null
           provider?: string
           provider_message_id?: string | null
           registration_id?: string

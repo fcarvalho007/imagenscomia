@@ -48,6 +48,18 @@ function replacePlaceholders(text: string, vars: Record<string, string>): string
   return result;
 }
 
+async function validateLink(url: string): Promise<boolean> {
+  if (!url || !url.startsWith("https://")) return false;
+  const trimmed = url.trim();
+  if (trimmed.length < 30 || trimmed !== url) return false;
+  try {
+    const res = await fetch(trimmed, { method: "HEAD", redirect: "follow" });
+    return res.status >= 200 && res.status < 400;
+  } catch {
+    return false;
+  }
+}
+
 async function refreshPaymentLink(
   reg: any,
   supabase: any,
@@ -55,6 +67,7 @@ async function refreshPaymentLink(
   supabaseUrl: string,
   nowMs: number,
   stage: number,
+  forceRefresh = false,
 ): Promise<string | null> {
   const plan = reg.plan_selected || "premium";
   const product = PRODUCTS[plan] || PRODUCTS.premium;
@@ -62,7 +75,7 @@ async function refreshPaymentLink(
     ? nowMs - new Date(reg.payment_link_created_at).getTime()
     : Infinity;
 
-  if (reg.last_payment_link && linkAge <= 48 * 60 * 60 * 1000) {
+  if (!forceRefresh && reg.last_payment_link && linkAge <= 12 * 60 * 60 * 1000) {
     return reg.last_payment_link;
   }
 
@@ -189,7 +202,7 @@ async function sendEmail(
     return { success: false, messageId: null, error: "template_empty_body" };
   }
 
-  // Insert queued log
+  // Insert queued log with payment_url
   const { data: logRow, error: logError } = await supabase
     .from("message_logs")
     .insert({
@@ -198,7 +211,8 @@ async function sendEmail(
       provider: "resend",
       template_key: templateKey,
       status: "queued",
-    })
+      payment_url: paymentLink || null,
+    } as any)
     .select("id")
     .single();
 
@@ -238,8 +252,9 @@ async function sendEmail(
       await supabase.from("message_logs").update({
         status: "sent",
         provider_message_id: resendData.id,
+        payment_url: paymentLink || null,
         updated_at: new Date().toISOString(),
-      }).eq("id", logRow.id);
+      } as any).eq("id", logRow.id);
       console.log(`✅ Resend sent for ${reg.email}, id=${resendData.id}`);
       return { success: true, messageId: resendData.id, error: null };
     } else {
@@ -376,6 +391,12 @@ serve(async (req) => {
       if (!paymentLink && EUPAGO_API_KEY) {
         paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0);
       }
+      // Validate link before manual send
+      if (paymentLink && !(await validateLink(paymentLink))) {
+        if (EUPAGO_API_KEY) {
+          paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0, true);
+        }
+      }
       if (!paymentLink) {
         return new Response(JSON.stringify({ error: "no_payment_link" }), {
           status: 400,
@@ -453,10 +474,31 @@ serve(async (req) => {
                 ? now - new Date(reg.payment_link_created_at).getTime()
                 : Infinity;
 
-              if ((!paymentLink || linkAge > 48 * 60 * 60 * 1000) && EUPAGO_API_KEY) {
+              if ((!paymentLink || linkAge > 12 * 60 * 60 * 1000) && EUPAGO_API_KEY) {
                 paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, stage);
               }
 
+              // Validate link health before sending
+              if (paymentLink && !(await validateLink(paymentLink))) {
+                console.warn(`⚠️ Link failed validation for ${reg.email}, regenerating...`);
+                if (EUPAGO_API_KEY) {
+                  paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, stage, true);
+                }
+                if (!paymentLink || !(await validateLink(paymentLink))) {
+                  console.error(`❌ Link validation failed after regeneration for ${reg.email}`);
+                  await supabase.from("message_logs").insert({
+                    registration_id: reg.id,
+                    channel: "email",
+                    provider: "resend",
+                    template_key: templateKey,
+                    status: "failed",
+                    error: "link_validation_failed",
+                    payment_url: paymentLink || null,
+                  } as any);
+                  summary.errors++;
+                  continue;
+                }
+              }
               if (paymentLink) {
                 const result = await sendEmail(reg, templateKey, paymentLink, supabase, RESEND_API_KEY);
                 if (result.success) {
@@ -507,6 +549,9 @@ serve(async (req) => {
           if (!paymentLink && EUPAGO_API_KEY) {
             paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0);
           }
+          if (paymentLink && !(await validateLink(paymentLink)) && EUPAGO_API_KEY) {
+            paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0, true);
+          }
           if (paymentLink) {
             const result = await sendEmail(reg, backlogTemplateKey, paymentLink, supabase, RESEND_API_KEY);
             if (result.success) {
@@ -534,6 +579,9 @@ serve(async (req) => {
           let paymentLink = reg.last_payment_link;
           if (!paymentLink && EUPAGO_API_KEY) {
             paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0);
+          }
+          if (paymentLink && !(await validateLink(paymentLink)) && EUPAGO_API_KEY) {
+            paymentLink = await refreshPaymentLink(reg, supabase, EUPAGO_API_KEY, supabaseUrl, now, 0, true);
           }
           if (paymentLink) {
             const result = await sendEmail(reg, "followup_final_before_event", paymentLink, supabase, RESEND_API_KEY);
