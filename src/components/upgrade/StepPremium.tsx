@@ -33,10 +33,10 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
-      {firstName ? `${firstName}, a` : "A"} tua inscrição gratuita está confirmada.
+      Adicionar Premium Pass (opcional)
     </h2>
     <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
-      Mas queres adicionar o Premium Pass para mais tranquilidade?
+      Para aplicar o método com mais tranquilidade, ao teu ritmo.
     </p>
 
     {/* Premium Card */}
@@ -86,7 +86,7 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         Garantir Premium Pass →
       </button>
       <p className="text-[13px] text-ink-400 text-center mt-2">
-        Upgrade ideal para aplicar o método depois do webinar.
+        Recomendado para quem quer rever e aplicar sem pressa.
       </p>
     </div>
 
@@ -102,8 +102,9 @@ export const StepPremium = ({ onAddPremium, onSkip, userName }: Props) => {
       onClick={onSkip}
       className="w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors"
     >
-      Continuar sem gravação, Q&A nem guia →
+      Continuar com inscrição gratuita →
     </button>
+    <p className="text-[13px] text-ink-400 text-center mt-2">A vaga no webinar já está garantida.</p>
   </div>
 
   <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>

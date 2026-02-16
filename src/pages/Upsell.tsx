@@ -11,7 +11,7 @@ import { StepPremium } from "@/components/upgrade/StepPremium";
 import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepConfirmation } from "@/components/upgrade/StepConfirmation";
 import { toast } from "sonner";
-import { Mail, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Loader2, ArrowRight, CheckCircle2, Check } from "lucide-react";
 
 export interface OrderState {
   premium: boolean;
@@ -221,6 +221,19 @@ const Upsell = () => {
         {/* Right content */}
         <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen">
           <div className="px-4 pt-4 pb-24 sm:pt-6 lg:px-12 lg:pt-10 lg:pb-10">
+
+            {/* Confirmation banner — steps 3+ */}
+            {step >= 3 && (
+              <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
+                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-[15px] text-green-800">Vaga garantida no Webinar Gratuito</p>
+                  <p className="text-[13px] text-green-700 mt-0.5">18 Fev · 10h00 · 60 min · Online ao vivo</p>
+                  <p className="text-[13px] text-green-600 mt-1">Esta página é opcional: serve apenas para adicionar extras.</p>
+                </div>
+              </div>
+            )}
+
             {/* Progress bar */}
             <div className="max-w-[560px] mb-5 lg:mb-8">
               <div className="w-full h-1.5 rounded-full bg-border overflow-hidden">
@@ -230,9 +243,25 @@ const Upsell = () => {
                 />
               </div>
               <p className="text-right text-[14px] text-ink-400 font-medium mt-1.5">
-                Passo {step} de 5
+                Passo {step}/5{(step === 3 || step === 4) && " — Melhorias opcionais"}
               </p>
             </div>
+
+            {/* Free card — steps 3-4 */}
+            {(step === 3 || step === 4) && (
+              <div className="max-w-[560px] mb-6 rounded-xl border border-dashed border-ink-200 bg-surface p-4">
+                <p className="font-heading font-semibold text-[14px] text-ink-600 mb-2">Incluído na inscrição gratuita (€0)</p>
+                <div className="space-y-1.5">
+                  {["Webinar ao vivo (60 min)", "Demonstrações ao vivo", "Resumo PDF da sessão"].map((b) => (
+                    <div key={b} className="flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 text-green-600 shrink-0" />
+                      <span className="text-[13px] text-ink-500">{b}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[12px] text-ink-400 mt-2">Nota: a gravação está disponível apenas no Premium Pass.</p>
+              </div>
+            )}
 
             {/* Steps */}
             <AnimatePresence mode="wait">
@@ -325,6 +354,39 @@ const Upsell = () => {
           </div>
         </div>
       </div>
+
+      {/* Sticky mobile footer — steps 3-4 */}
+      {(step === 3 || step === 4) && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border p-4">
+          {(orderState.premium || orderState.masterclass) ? (
+            <>
+              <button
+                onClick={() => advanceStep(step + 1)}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[15px] py-3.5 rounded-xl transition-colors"
+              >
+                Continuar com upgrade →
+              </button>
+              <button
+                onClick={() => advanceStep(step + 1)}
+                className="w-full text-center text-[13px] text-ink-400 mt-2 hover:text-ink-600 transition-colors"
+              >
+                Continuar com inscrição gratuita
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={step === 3
+                ? () => { saveStepData(4); advanceStep(4); }
+                : () => { saveStepData(5); advanceStep(5); }
+              }
+              className="w-full py-3.5 rounded-xl border border-ink-200 text-ink-600 hover:bg-ink-50 font-medium text-[14px] transition-colors"
+            >
+              Continuar com inscrição gratuita →
+            </button>
+          )}
+        </div>
+      )}
+
       <WhatsAppSupportButton />
     </div>
   );
