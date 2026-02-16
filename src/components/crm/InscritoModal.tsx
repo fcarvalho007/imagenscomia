@@ -656,15 +656,25 @@ export default function InscritoModal({
                         Regenerar link EuPago
                       </button>
                     )}
-                    {resendPaymentEmail && (
+                    {resendPaymentEmail && (() => {
+                      // Cooldown: check if reminder_manual was sent < 6h ago
+                      const lastManualLog = messageLogs.find(l => l.template_key === "reminder_manual");
+                      const manualCooldownMs = lastManualLog
+                        ? Date.now() - new Date(lastManualLog.created_at).getTime()
+                        : Infinity;
+                      const isManualCoolingDown = manualCooldownMs < 6 * 60 * 60 * 1000;
+                      const cooldownHoursAgo = (manualCooldownMs / (60 * 60 * 1000)).toFixed(1);
+
+                      return (
                       <>
                         <button
                           onClick={() => setShowResendConfirm(true)}
-                          disabled={resendLoading}
+                          disabled={resendLoading || isManualCoolingDown}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
+                          title={isManualCoolingDown ? `Enviado há ${cooldownHoursAgo}h — cooldown de 6h` : undefined}
                         >
                           {resendLoading ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-                          Reenviar email de pagamento
+                          {isManualCoolingDown ? `Reenviar (enviado há ${cooldownHoursAgo}h)` : "Reenviar email de pagamento"}
                         </button>
                         {showResendConfirm && (
                           <div className="w-full mt-1 p-3 rounded-lg border border-blue-200 bg-blue-50/50">
@@ -707,7 +717,8 @@ export default function InscritoModal({
                           </div>
                         )}
                       </>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
 

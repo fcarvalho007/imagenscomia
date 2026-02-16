@@ -110,8 +110,9 @@ serve(async (req) => {
         registration_id: regRow.id,
         channel: "email",
         provider: "internal",
-        template_key: "reminder_manual",
-        status: "queued",
+        template_key: "payment_link_regenerated",
+        status: "sent",
+        payment_url: paymentLink || null,
       }).then(({ error }) => {
         if (error) console.warn("message_logs insert (non-blocking):", error.message);
       });
