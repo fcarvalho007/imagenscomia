@@ -1,0 +1,1 @@
+ALTER TABLE message_logs ADD COLUMN payment_url text;
