@@ -1,79 +1,136 @@
 
 
-## CRM: Regenerar Link + Reenviar Email Manual
+## Ajustes Finais: Validacao Robusta + Guard-rails + Auditoria
 
-### Overview
+### Resumo
 
-Add two manual action buttons to the InscritoModal for pending-payment inscriptions: "Regenerar link EuPago" (force-refresh link with HEAD validation) and "Reenviar email de pagamento" (send via Resend with full audit trail).
+Tres blocos de alteracoes: (1) validacao de link com fallback HEAD->GET e metadata de diagnostico, (2) cooldown de 6h no reenvio manual, (3) registo de auditoria na regeneracao de link.
 
-### Files Changed
+### Ficheiros Alterados
 
-| File | Action | Scope |
-|------|--------|-------|
-| `supabase/functions/followup-abandoned/index.ts` | Edit | Skip idempotency check for `reminder_manual` template_key (allow multiple sends) |
-| `src/components/crm/InscritoModal.tsx` | Edit | Add "Regenerar link" and "Reenviar email" buttons with confirmation dialogs and toast feedback |
-| `src/hooks/useInscritos.ts` | Edit | Add `regenerateLink` and `resendPaymentEmail` helper functions |
+| Ficheiro | Accao |
+|----------|-------|
+| `supabase/functions/followup-abandoned/index.ts` | Melhorar `validateLink` com fallback GET; adicionar cooldown 6h para `reminder_manual`; guardar metadata de validacao no `error` field |
+| `supabase/functions/generate-reminder/index.ts` | Registar `template_key='payment_link_regenerated'` + `provider='internal'` no message_logs (auditoria da regeneracao) |
+| `src/components/crm/InscritoModal.tsx` | Mostrar mensagem de cooldown no botao "Reenviar email" quando ultimo `reminder_manual` < 6h |
+| `src/hooks/useInscritos.ts` | Sem alteracoes |
 
-### Detailed Changes
+---
 
-**1. `followup-abandoned/index.ts` — Allow repeated `reminder_manual` sends**
+### 1. `followup-abandoned/index.ts` -- validateLink com fallback
 
-The current idempotency check (lines 375-387) blocks any template_key that was already sent. For `reminder_manual`, this must be relaxed since it's a manual recovery action that may need to be repeated.
+Substituir a funcao `validateLink` actual (linhas 51-61) por uma versao que:
 
-Change: Skip the idempotency check when `templateKey === "reminder_manual"` or starts with `"reminder_manual"`.
+- Tenta HEAD primeiro
+- Se receber 405 ou 403, tenta GET (sem ler o body completo via `AbortController` timeout)
+- Devolve um objecto com metadata: `{ ok, method, status }`
+- Guarda esta metadata no campo `error` do message_log quando a validacao falha (ex: `link_validation_failed|HEAD:404|GET:404`)
 
 ```text
-// Before:
-if (existing && existing.length > 0) {
-  return 409 already_sent
-}
+async function validateLink(url: string): Promise<{ ok: boolean; method: string; status: number }> {
+  if (!url?.startsWith("https://")) return { ok: false, method: "none", status: 0 };
+  const trimmed = url.trim();
+  if (trimmed.length < 30 || trimmed !== url) return { ok: false, method: "none", status: 0 };
 
-// After:
-if (existing && existing.length > 0 && manualMode.templateKey !== "reminder_manual") {
-  return 409 already_sent
+  // Try HEAD first
+  try {
+    const res = await fetch(trimmed, { method: "HEAD", redirect: "follow" });
+    if (res.status >= 200 && res.status < 400) return { ok: true, method: "HEAD", status: res.status };
+    if (res.status !== 405 && res.status !== 403) return { ok: false, method: "HEAD", status: res.status };
+  } catch { /* fall through to GET */ }
+
+  // Fallback: GET with abort
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(trimmed, { method: "GET", redirect: "follow", signal: ctrl.signal });
+    clearTimeout(timer);
+    const ok = res.status >= 200 && res.status < 400;
+    return { ok, method: "GET", status: res.status };
+  } catch {
+    return { ok: false, method: "GET", status: 0 };
+  }
 }
 ```
 
-**2. `src/hooks/useInscritos.ts` — Add two new functions**
+Todos os locais que chamam `validateLink` serao actualizados para usar `.ok` em vez do boolean directo.
 
-A) `regenerateLink(inscritoId)`:
-- Calls `generate-reminder` edge function (already creates a fresh EuPago link, validates, and updates DB)
-- Returns `{ paymentLink, transactionID }`
-- Updates local state with new `last_payment_link` and `payment_link_created_at`
+Quando a validacao falha e a regeneracao tambem falha, o `error` no message_log incluira `link_validation_failed|{method}:{status}`.
 
-B) `resendPaymentEmail(inscritoId)`:
-- Calls `followup-abandoned` with `mode: "manual_send"`, `template_key: "reminder_manual"`
-- Returns the response (includes `success`, `messageId`, `payment_url`)
-- No local state changes needed (logs are in message_logs)
+### 2. `followup-abandoned/index.ts` -- Cooldown 6h para reminder_manual
 
-**3. `src/components/crm/InscritoModal.tsx` — Two new action buttons**
+No bloco manual_send (apos a verificacao de idempotencia existente, linhas 374-387), adicionar:
 
-Place them in the payment section (between the link status block and the existing "Gerar link de pagamento" button), visible only when `payment_status` is `"awaiting_payment"` or `"selected"` and plan is not free.
+```text
+// Para reminder_manual: verificar cooldown de 6h
+if (manualMode.templateKey === "reminder_manual") {
+  const { data: recentManual } = await supabase
+    .from("message_logs")
+    .select("created_at")
+    .eq("registration_id", reg.id)
+    .eq("template_key", "reminder_manual")
+    .order("created_at", { ascending: false })
+    .limit(1);
 
-A) **"Regenerar link EuPago"** button:
-- Icon: `RefreshCw`
-- On click: calls `regenerateLink`, shows loading spinner
-- On success: toast "Link regenerado com sucesso" + shows new link with Abrir/Copiar buttons
-- On error: toast with error message
-- Updates the inscrito's `last_payment_link` in local state via `refresh()`
+  if (recentManual && recentManual.length > 0) {
+    const lastSentMs = new Date(recentManual[0].created_at).getTime();
+    const cooldownMs = 6 * 60 * 60 * 1000;
+    if (now - lastSentMs < cooldownMs) {
+      const hoursAgo = ((now - lastSentMs) / (60 * 60 * 1000)).toFixed(1);
+      return Response 429 { error: "cooldown", hours_ago: hoursAgo, retry_after_hours: ((cooldownMs - (now - lastSentMs)) / 3600000).toFixed(1) }
+    }
+  }
+}
+```
 
-B) **"Reenviar email de pagamento"** button:
-- Icon: `Send`
-- On click: shows confirm dialog ("Enviar email de pagamento para {email}?")
-- On confirm: calls `resendPaymentEmail`, shows loading
-- On success: toast "Email enviado com sucesso" + shows provider_message_id
-- On error: toast with error, or if `already_sent` (409), explain it was already sent (though we're relaxing this for reminder_manual)
-- After success, refresh message logs
+### 3. `generate-reminder/index.ts` -- Auditoria da regeneracao
 
-Both buttons are styled consistently with the existing action buttons in the payment section (blue-50 bg, compact).
+Alterar o registo em message_logs (linhas 108-117) para usar `template_key='payment_link_regenerated'` em vez de `'reminder_manual'`, e adicionar `payment_url`:
 
-### What Does NOT Change
+```text
+await supabase.from("message_logs").insert({
+  registration_id: regRow.id,
+  channel: "email",
+  provider: "internal",
+  template_key: "payment_link_regenerated",
+  status: "sent",
+  payment_url: paymentLink || null,
+});
+```
 
-- `generate-reminder` edge function (already does the right thing: creates EuPago link, validates, updates DB, creates audit trail)
-- Payment amounts, webhook processing, stage-based follow-up idempotency
-- Existing "Gerar link de pagamento" button (kept as-is for Gmail-based workflow)
-- Template content or email_templates table
+Isto separa claramente a accao "regenerar link" (audit) da accao "reenviar email" (delivery).
 
-### Proof Delivery
+### 4. `InscritoModal.tsx` -- UI de cooldown
 
-After implementation, will execute a manual send via the CRM to produce a real `message_logs` row with `provider='resend'`, `provider_message_id`, and `payment_url` filled.
+No botao "Reenviar email de pagamento":
+
+- Verificar nos `messageLogs` locais se existe um `reminder_manual` com `created_at` < 6h
+- Se sim, desactivar o botao e mostrar texto "Bloqueado: enviado ha Xh"
+- Se o servidor devolver 429 (cooldown), mostrar toast com o motivo
+
+```text
+// Calcular cooldown a partir dos logs locais
+const lastManualLog = messageLogs.find(l => l.template_key === "reminder_manual");
+const manualCooldownMs = lastManualLog
+  ? Date.now() - new Date(lastManualLog.created_at).getTime()
+  : Infinity;
+const isManualCoolingDown = manualCooldownMs < 6 * 60 * 60 * 1000;
+const cooldownHoursAgo = (manualCooldownMs / (60 * 60 * 1000)).toFixed(1);
+```
+
+Botao mostra: `Reenviar email (enviado ha {cooldownHoursAgo}h)` quando em cooldown, e fica `disabled`.
+
+### O que NAO muda
+
+- Logica de cobranca, valores, webhooks
+- Fluxo de stages automaticos (0/1/2)
+- Botao "Gerar link de pagamento" (Gmail)
+- Templates de email
+
+### Prova objectiva
+
+Apos implementacao, executar 1 regeneracao + 1 reenvio manual e verificar nos message_logs que:
+- `payment_link_regenerated` existe com `provider='internal'` e `payment_url` preenchido
+- `reminder_manual` existe com `provider='resend'`, `provider_message_id` preenchido, `payment_url` preenchido
+- Verificar que segundo reenvio < 6h devolve 429
+
