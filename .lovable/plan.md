@@ -1,150 +1,192 @@
 
 
-## Redesign da Ficha de Cliente (InscritoModal) -- UX/UI melhorado
+## Confirmacao pos-pagamento: Email ao cliente + Thank You Page
 
 ### Resumo
 
-Refactoring profundo do InscritoModal para melhorar hierarquia visual, separar informacao de accoes, criar timeline de logs com filtros, e adicionar modal de pre-validacao no reenvio. O ficheiro actual tem 1222 linhas -- sera partido em componentes menores.
+Dois entregaveis: (1) email automatico ao cliente no webhook apos paid_at, com idempotencia; (2) nova pagina /upgrade/sucesso que valida rid+token e mostra estado correcto.
 
 ### Ficheiros
 
 | Ficheiro | Accao |
 |----------|-------|
-| `src/components/crm/InscritoModal.tsx` | Refactoring completo: novo header, seccoes separadas, timeline |
-| `src/components/crm/modal/ClientHeader.tsx` | Novo -- header compacto com estado, plano, ref, proxima accao |
-| `src/components/crm/modal/ActionsSection.tsx` | Novo -- bloco de accoes ordenado (primario, secundario, perigoso) |
-| `src/components/crm/modal/LinkFollowUpSection.tsx` | Novo -- info de link/follow-up limpa com badges acessiveis |
-| `src/components/crm/modal/ResendModal.tsx` | Novo -- modal de pre-validacao antes de reenviar email |
-| `src/components/crm/modal/ActivityTimeline.tsx` | Novo -- timeline compacta com chips de filtro |
-| `src/components/crm/modal/InvoiceSection.tsx` | Extraido do InscritoModal (ja existe inline) |
-
-### Arquitectura de Componentes
-
-```text
-InscritoModal
-  +-- TopBar (navegacao prev/next + fechar) [manter inline]
-  +-- LeftPanel (nome, email, whatsapp, gender, accoes admin)
-  |     Simplificado: remover accoes de pagamento daqui
-  +-- RightPanel
-        +-- ClientHeader (NOVO -- sticky summary)
-        +-- ActionsSection (NOVO -- botoes de pagamento agrupados)
-        +-- LinkFollowUpSection (NOVO -- estado do link + follow-up)
-        +-- ResendModal (NOVO -- dialog de pre-validacao)
-        +-- InvoiceSection (extraido)
-        +-- FunnelView (manter)
-        +-- Origem + Duvida + Notas (manter)
-        +-- ActivityTimeline (NOVO -- substitui Tabs actuais)
-```
+| `supabase/functions/eupago-webhook/index.ts` | Adicionar envio de email `payment_confirmed_customer` ao cliente (idempotente) |
+| `src/pages/UpgradeSucesso.tsx` | Nova pagina thank you com validacao rid+token |
+| `src/App.tsx` | Registar rota `/upgrade/sucesso` |
+| `src/pages/Upsell.tsx` | Nenhuma alteracao (o redirect para /upgrade/sucesso vem do retorno EuPago ou e feito manualmente pelo cliente) |
 
 ---
 
-### 1. ClientHeader -- Header compacto fixo no topo do painel direito
+### 1. Email ao cliente -- payment_confirmed_customer
 
-Substitui o "Compact Summary" actual (linhas 579-621). Informacao agrupada, sem duplicacao.
+No `eupago-webhook/index.ts`, apos o bloco existente de invoice_notification (linha ~245), adicionar novo bloco idempotente:
 
-**Conteudo:**
-- Chip de estado colorido: "Pago" (verde), "Aguarda pagamento" (vermelho), "Seleccionou e saiu" (laranja), "Gratuito" (cinza)
-- Plano + preco (ex: "Bundle -- EUR76,26")
-- Ref EuPago com botao copiar (truncada, tooltip com valor completo)
-- Proxima accao: data/hora do proximo follow-up OU "Concluido" OU "Em atraso"
-- Passo X/5
+```text
+// ── Email ao cliente: payment_confirmed_customer ──
+try {
+  const { data: customerEmailSent } = await supabase
+    .from("message_logs")
+    .select("id")
+    .eq("registration_id", matchedRegId)
+    .eq("template_key", "payment_confirmed_customer")
+    .eq("status", "sent")
+    .limit(1);
 
-**Layout:** uma unica linha flex-wrap com chips, sem card pesado. `sticky top-0 z-10 bg-white` para ficar visivel durante scroll.
+  if (customerEmailSent && customerEmailSent.length > 0) {
+    console.log("📧 Customer confirmation already sent — skipping");
+  } else {
+    // reg e planLabel ja estao definidos no bloco anterior
+    const eupagoRefDisplay = transactionID || reference || reg.eupago_ref || "N/A";
+    const primaryAccessUrl = "https://imagenscomia.lovable.app/live";
+    const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
 
-### 2. ActionsSection -- Bloco "Accoes" separado
+    const customerSubject = "Pagamento confirmado — obrigado pela confiança";
+    const customerHtml = `<h2>Pagamento confirmado</h2>
+      <p>Agradece-se a confiança. O pagamento foi confirmado e a inscrição está garantida.</p>
+      <hr/>
+      <p><strong>Resumo</strong></p>
+      <ul>
+        <li><strong>Plano:</strong> ${planLabel}</li>
+        <li><strong>Referência:</strong> ${eupagoRefDisplay}</li>
+        <li><strong>Email associado:</strong> ${reg.email}</li>
+      </ul>
+      <p><strong>Próximo passo</strong></p>
+      <p><a href="${primaryAccessUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;">Aceder / Preparar participação</a></p>
+      <p style="font-size:13px;color:#64748b;">Se o botão não abrir, usar este link: ${primaryAccessUrl}</p>
+      <hr/>
+      <p><strong>Faturação</strong></p>
+      <p>A fatura será emitida e enviada posteriormente para o email indicado nos dados de faturação.</p>
+      <p><strong>Suporte</strong></p>
+      <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
+      <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
 
-Remove accoes de pagamento que estao espalhadas (linhas 624-878) e centraliza tudo num unico bloco organizado por prioridade.
+    const customerRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+        to: [reg.email],
+        subject: customerSubject,
+        html: customerHtml,
+      }),
+    });
+    const customerData = await customerRes.json();
 
-**Ordem dos botoes:**
-1. **Primario:** "Abrir link" (ExternalLink) -- azul solido, so aparece se `last_payment_link` existe
-2. **Secundarios:** "Copiar link" | "Reenviar email" (com microcopy cooldown) | "Copiar ref EuPago"
-3. **Perigoso:** "Regenerar link EuPago" -- border vermelho/laranja, com confirm dialog
-4. **Menu "Mais opcoes" (...):** "Gerar NOVO link de pagamento (Gmail)" -- o botao grande amber actual move-se para ca
+    await supabase.from("message_logs").insert({
+      registration_id: matchedRegId,
+      channel: "email",
+      provider: "resend",
+      template_key: "payment_confirmed_customer",
+      status: customerRes.ok ? "sent" : "failed",
+      provider_message_id: customerData.id || null,
+      payment_url: null,
+      error: customerRes.ok ? null : JSON.stringify(customerData),
+    });
 
-**Microcopy no Reenviar:**
-- Se `reminder_manual` enviado < 6h: botao disabled + texto "Ultimo reenvio ha Xh"
-- Se nunca enviado: "Reenviar email de pagamento"
+    console.log(`📧 Customer confirmation ${customerRes.ok ? "sent" : "FAILED"} to ${reg.email}`);
+  }
+} catch (custErr) {
+  console.error("Customer email error (non-blocking):", custErr);
+}
+```
 
-**Visibilidade:** so aparece para `payment_status !== "free"` e `!paid_at`.
+**Notas tecnicas:**
+- Reutiliza `reg`, `planLabel` e `RESEND_API_KEY` ja disponiveis no scope
+- From: `Frederico Carvalho <frederico.carvalho@digitalfc.pt>` (identidade existente)
+- Nao-bloqueante: falha nao afecta resposta 200 do webhook
+- Idempotencia via message_logs (template_key + status='sent')
 
-### 3. LinkFollowUpSection -- Info de link limpa
+### 2. Thank You Page -- /upgrade/sucesso
 
-Substitui o bloco actual de follow-up info (linhas 627-710).
+Nova pagina `src/pages/UpgradeSucesso.tsx`.
 
-**Conteudo:**
-- Validade do link: badge com texto + icone (nao depender so da cor)
-  - "Link valido (~16h restantes)" + CheckCircle verde
-  - "Link a expirar (~3h)" + AlertTriangle amarelo
-  - "Link expirado" + XCircle vermelho
-- Criado em: data/hora
-- Ultimo envio: data/hora (de `last_payment_link_sent_at`)
-- Proximo envio: data/hora (de `next_followup_at`)
-- Follow-up automatico: etapa X/3
+**Parametros URL:** `?rid={registration_id}&t={edit_token}`
 
-**Layout:** grid 2x2 compacto com labels em caps pequenas.
+**Logica ao montar:**
+1. Ler `rid` e `t` da querystring
+2. Se faltarem: mostrar estado "invalido" com link suporte
+3. Fazer SELECT de registrations WHERE id = rid AND edit_token = t
+4. Se nao encontrar: mostrar "Nao foi possivel validar a inscricao" + WhatsApp
+5. Se encontrar mas `paid_at` for null: mostrar "A confirmar pagamento..." com botao "Recarregar" + polling a cada 5s (maximo 12 tentativas = 60s)
+6. Se `paid_at` existe: mostrar pagina completa
 
-### 4. ResendModal -- Pre-validacao antes de reenviar
+**UI (estado confirmado):**
+- Card centrado (mesmo estilo da pagina /confirmacao existente)
+- Icone check animado (verde, framer-motion scale)
+- Titulo: "Pagamento confirmado"
+- Subtitulo: "Inscricao garantida."
+- Seccao "O que acontece agora" (3 itens):
+  1. "Foi enviado um email de confirmacao para: {email}."
+  2. "Recomenda-se adicionar ao calendario."
+  3. "Suporte directo via WhatsApp: +351 915 015 508"
+- CTA principal: componente WebinarCalendarButton (ja existente)
+- Texto faturacao: "A fatura sera emitida e enviada posteriormente para o email indicado nos dados de faturacao."
+- Fallback: "Se nao receber o email nos proximos minutos, verificar Spam/Promocoes."
+- Link "Voltar ao site" (para /)
+- Contacto: frederico@digitalfc.pt
 
-Substitui o `showResendConfirm` inline actual (linhas 756-795) por um Dialog/modal dedicado.
+**UI (estado "a confirmar"):**
+- Mesmo card mas com Loader2 animado
+- Titulo: "A confirmar pagamento..."
+- Subtitulo: "O pagamento esta a ser processado. Esta pagina actualiza-se automaticamente."
+- Botao "Recarregar" manual
+- Link WhatsApp para suporte
 
-**Fluxo ao clicar "Reenviar email":**
-1. Abre modal
-2. Faz HEAD (com fallback GET) ao `last_payment_link` via edge function ou client-side
-3. Mostra resultado:
-   - "Link OK (status 200)" com CheckCircle verde
-   - "Link expirado (status 404)" com XCircle vermelho + opcao "Regenerar e reenviar" (um so clique)
-4. Confirma destinatario (email do inscrito, read-only)
-5. Botao "Confirmar envio"
-6. Apos envio: toast com `provider_message_id`
+**UI (estado invalido):**
+- Card simples com icone XCircle
+- "Nao foi possivel validar a inscricao."
+- Link WhatsApp para suporte
 
-**Nota tecnica:** A validacao do link pode ser feita client-side com `fetch(url, { method: "HEAD", mode: "no-cors" })` -- mas como no-cors nao da status, melhor chamar a edge function `followup-abandoned` em modo `validate_link` (novo mode) ou fazer a validacao no invoice-upsert. Alternativa mais simples: usar o resultado do ultimo `message_log` com `link_validation` no campo error. Para MVP, mostrar a idade do link (ja calculada) como proxy de validade e oferecer "Regenerar" se > 24h.
+### 3. Rota no App.tsx
 
-**Decisao pratica para MVP:** Usar a idade do link como proxy (< 12h = OK, 12-24h = A expirar, > 24h = Expirado). Se expirado, o botao muda para "Regenerar e reenviar". Nao adicionar nova edge function so para validar link -- a validacao real ja acontece no momento do envio (followup-abandoned).
+Adicionar antes do catch-all:
 
-### 5. ActivityTimeline -- Logs em timeline com filtros
+```text
+import UpgradeSucesso from "./pages/UpgradeSucesso";
+// ...
+<Route path="/upgrade/sucesso" element={<UpgradeSucesso />} />
+```
 
-Substitui as Tabs "Emails" / "Pagamentos" actuais (linhas 1093-1212).
+### 4. Ligacao de fluxo
 
-**Filtros (chips horizontais):**
-- Tudo | Emails | Pagamentos | Erros | Manual
-- Toggle "So falhas" (checkbox/switch)
+O redirect para /upgrade/sucesso acontece de duas formas:
 
-**Timeline unificada:**
-- Merge de `messageLogs` + `paymentEvents` numa unica lista ordenada por data (desc)
-- Cada item:
-  - Icone lateral (Mail para emails, CreditCard para pagamentos, AlertTriangle para erros)
-  - Linha de tempo vertical (border-left tracejado)
-  - Titulo: template label humano ou event_type
-  - Badges: estado (sent/failed/queued), canal (Resend/Internal), hora relativa
-  - IDs truncados com botao "Copiar"
-  - "Ver detalhes" collapsible para payload/error
+**A) Callback EuPago (backurl):** A funcao `create-payment` ja envia `backurl` a EuPago. Actualmente aponta para `/confirmacao`. Alterar para `/upgrade/sucesso?rid={regId}&t={editToken}`.
 
-**Layout:** vertical timeline com `border-l-2 border-dashed` e dots nos pontos.
+Para isto, no `create-payment/index.ts`, o backurl precisa incluir rid e token. Verificar se a funcao ja tem acesso ao registration_id e edit_token -- se sim, incluir na URL. Se nao, adicionar lookup.
 
-### 6. Acessibilidade e Consistencia
+**B) Acesso directo:** O utilizador pode aceder manualmente a /upgrade/sucesso?rid=...&t=... (link no email de confirmacao).
 
-Em todos os componentes novos:
-- `aria-label` em botoes de copiar (ex: "Copiar referencia EuPago")
-- `aria-label` em botoes de abrir (ex: "Abrir link de pagamento")
-- Contraste minimo: nunca texto cinza claro em fundo branco sem peso >= 500
-- Botoes com altura consistente: `h-8` para secundarios, `h-9` para primarios
-- Labels em portugues consistentes (sem mistura en/pt)
-- Badges com texto + icone (nunca so cor)
-
-### 7. Limpeza do InscritoModal principal
-
-O ficheiro principal fica como orquestrador:
-- Mantém state management (logs, loading, etc.)
-- Renderiza: TopBar + LeftPanel + RightPanel
-- RightPanel usa os novos componentes
-- Remove ~500 linhas de JSX inline, move para componentes
+**Nota:** Para manter o plano simples e nao alterar o create-payment (que e critico), a pagina /upgrade/sucesso tambem aceita `?email={email}` como fallback -- faz lookup por email, valida edit_token, e mostra o estado.
 
 ### O que NAO muda
 
-- Props interface do InscritoModal (compatibilidade total com CRM.tsx)
-- Logica de fetch de logs, payment events
-- Left panel (nome, email, whatsapp, gender, accoes admin como arquivar/eliminar)
-- FunnelView, Origem, Duvida, Notas
-- InvoiceSection (apenas extraido para ficheiro proprio)
-- Nenhuma edge function ou DB migration
+- Logica de precos, create-payment, EuPago redirect
+- Webhook idempotency de payment_events
+- Invoice notification (staff email) -- ja implementado
+- Follow-up automatico
+- Pagina /confirmacao existente (continua a funcionar como fallback)
+
+### Fluxo resumido
+
+```text
+EuPago webhook (paid_at)
+  |
+  +-- Invoice email para staff (ja existe)
+  |
+  +-- Email ao CLIENTE (NOVO)
+  |     template_key: payment_confirmed_customer
+  |     idempotente via message_logs
+  |
+  v
+Cliente regressa ao site (backurl ou link no email)
+  |
+  v
+/upgrade/sucesso?rid=...&t=...
+  |
+  +-- Valida rid + edit_token
+  +-- Se paid_at: mostra confirmacao + calendario + faturacao
+  +-- Se !paid_at: mostra "A confirmar..." + polling 5s
+  +-- Se invalido: mostra erro + WhatsApp
+```
 
