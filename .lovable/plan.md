@@ -1,99 +1,112 @@
 
 
-## Nova Pagina /gravacao — Venda da Gravacao (27 euros)
+## Nova Pagina /gravacao: Modal de Inscricao + Funil /upgrade-gravacao + CRM
 
-Pagina de venda pos-evento, reutilizando componentes e padroes visuais da homepage.
-
----
-
-### Ficheiros a criar
-
-| Ficheiro | Descricao |
-|----------|-----------|
-| `src/pages/Gravacao.tsx` | Pagina principal com todas as seccoes inline (hero, pack, bloqueios, metodo, galeria, audiencia, presenter, FAQ, CTA final, footer) |
-
-### Ficheiros a alterar
-
-| Ficheiro | Alteracao |
-|----------|-----------|
-| `src/App.tsx` | Adicionar route `/gravacao` |
-| `supabase/functions/create-payment/index.ts` | Adicionar plano `gravacao` com value 33.21 (27 + 23% IVA) |
+Tres alteracoes interligadas para suportar o fluxo pos-webinar de venda da gravacao.
 
 ---
 
-### Estrutura da pagina (Gravacao.tsx)
+### 1. Substituir PurchaseModal pelo RegistrationModal na pagina /gravacao
 
-Uma unica pagina self-contained com todas as seccoes. Reutiliza componentes existentes (ScrollReveal, ColorBends, ElectricBorder, GallerySection, PresenterSection, FooterSection, WhatsAppSupportButton) e o PurchaseModal para o fluxo de pagamento.
+**Problema actual:** A pagina /gravacao usa o `PurchaseModal` (so pede primeiro nome, ultimo nome e email). O modal correcto e o `RegistrationModal` completo (nome completo, email, WhatsApp, checkbox de termos).
 
-#### Seccoes (de cima para baixo):
+**Solucao:** Na pagina `Gravacao.tsx`, substituir o `PurchaseModal` por um formulario de captura inline (mesmo padrao do `CaptureView` dentro do `RegistrationModal`) que, apos registo bem-sucedido, redireciona para `/upgrade-gravacao`.
 
-**1. Hero (navy/gradiente com ColorBends)**
-- Badge pill: "ACESSO IMEDIATO"
-- H1: "Gravacao: Imagens Profissionais com Inteligencia Artificial"
-- Sub: "Do briefing a imagem pronta a publicar -- com metodo, exemplos e passos replicaveis."
-- Micro-linha: "Inclui documentos de apoio para aplicar no dia seguinte."
-- 4 quick-facts (mesmo padrao da home): Formato (Gravacao HD), Acesso (Imediato), Documentos (Incluidos), Investimento (27 euros)
-- CTA verde (ElectricBorder): "Quero acesso imediato (27 euros)" -- abre PurchaseModal com plan="gravacao"
-- Link secundario: "Ver o que esta incluido" (scroll para seccao pack)
-- Badge Google Reviews (mesmo da home): "5,0 stars 1 194 avaliacoes no Google"
-- Microcopy: "Pagamento seguro. Acesso imediato apos confirmacao."
-
-**2. O que recebe (Pack 27 euros)**
-- Fundo off-white
-- Cartao premium com lista: Gravacao HD, Resumo PDF, Checklist ferramentas, Estrutura briefing reutilizavel, Checklist anti-erros, Mini-biblioteca de prompts base
-- CTA repetido
-
-**3. Isto resolve estes 6 bloqueios**
-- Mesmo padrao visual do ChallengesSection (cards numerados 01-06)
-- Copy adaptado ao pos-evento
-- Fecho: "Se houver identificacao com 2 ou mais pontos, esta gravacao encurta meses de tentativa e erro."
-
-**4. O metodo (em 3 blocos)**
-- Mesmo padrao do ProgramSection (cards 01/02/03 com border-left colorido)
-- Etiqueta "METODO" em vez de "AO VIVO"
-- Copy adaptado
-- CTA repetido
-
-**5. Galeria**
-- Reutiliza o componente GallerySection existente (mesmas imagens)
-
-**6. Para quem e / nao e**
-- Mesmo padrao do AudienceSection
-- Copy adaptado (sem "webinar", foco na "gravacao")
-
-**7. Quem apresenta**
-- Reutiliza o componente PresenterSection existente
-
-**8. Perguntas frequentes**
-- Acordeao com FAQs adaptadas: acesso, duracao, documentos, ferramentas gratuitas, conhecimentos tecnicos, fatura, dificuldades
-
-**9. CTA Final**
-- Navy com particles-bg (mesmo padrao CTAFinalSection)
-- Headline: "Acesso imediato a gravacao + pack de apoio."
-- Sub: "Metodo pronto a aplicar no dia seguinte."
-- CTA verde: "Garantir acesso (27 euros)"
-
-**10. Footer + WhatsApp**
-- Reutiliza FooterSection e WhatsAppSupportButton
+**Alteracoes no ficheiro `src/pages/Gravacao.tsx`:**
+- Remover import e uso do `PurchaseModal`
+- Adicionar um modal proprio com os mesmos campos do `RegistrationModal.CaptureView`: nome completo, email, WhatsApp, checkbox de termos, botoes legais
+- Ao submeter, chamar `register-free` (com campo extra `registration_source: "gravacao"`) e redirecionar para `/upgrade-gravacao?name=...&email=...`
+- Titulo do modal adaptado: "Quero acesso a gravacao + pack de apoio" em vez de "Quero confirmar o meu lugar para o Webinar Gratuito"
 
 ---
 
-### Fluxo de pagamento
+### 2. Nova pagina /upgrade-gravacao
 
-O CTA abre o PurchaseModal existente com `plan="gravacao"`. O create-payment recebe o novo plano e gera link EuPago.
+**Ficheiro novo:** `src/pages/UpgradeGravacao.tsx`
 
-Novo produto no create-payment:
-```text
-gravacao: {
-  value: 33.21,  // 27 + 23% IVA
-  identifier: "WEBINAR-GRAVACAO",
-  description: "Gravacao + Pack de Apoio — Webinar IA",
-}
+Baseada no `Upsell.tsx` mas com fluxo simplificado de 3 passos:
+
+| Passo | Conteudo |
+|-------|----------|
+| 1 | StepQualification ("Como soubeste desta formacao?") — reutiliza o componente existente |
+| 2 | StepMasterclass (Masterclass a 47 euros + IVA) — reutiliza o componente existente |
+| 3 | StepConfirmation — checkout com dados de faturacao e pagamento |
+
+**Diferencas face ao /upgrade original:**
+- Nao mostra o passo de personalizacao (StepPersonalization)
+- Nao mostra o passo Premium (StepPremium) — salta directo para Masterclass
+- O banner de confirmacao diz "Gravacao + Pack de apoio garantidos" em vez de "Vaga garantida no Webinar Gratuito"
+- Barra de progresso: 3 passos em vez de 5
+- Se o utilizador nao adicionar a Masterclass (skip), vai para o StepConfirmation que mostra so o plano `gravacao` (27 euros)
+- O `OrderState` inclui `gravacao: true` por defeito (ja que e a razao de estar nesta pagina)
+
+**Logica de pagamento:**
+- Se so gravacao: plan = "gravacao", total = 33.21 euros
+- Se gravacao + masterclass: plan = "gravacao-masterclass" (novo bundle), total = 33.21 + 57.81 = 91.02 euros
+- O `create-payment` precisa de suportar o novo plan "gravacao-masterclass"
+
+**Rota no `src/App.tsx`:**
+- Adicionar `<Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />`
+
+---
+
+### 3. Backend: campo registration_source
+
+**Migracao SQL:**
+```sql
+ALTER TABLE registrations ADD COLUMN registration_source text NOT NULL DEFAULT 'webinar';
 ```
 
-### SEO
+Valores possiveis: `'webinar'` (pre-evento, default) e `'gravacao'` (pos-evento).
 
-usePageMeta com titulo e descricao adequados:
-- Titulo: "Gravacao: Criar Imagens com IA para Empresas — Acesso Imediato"
-- Descricao: "Acesso imediato a gravacao do webinar + documentos de apoio. Metodo testado para criar imagens profissionais com IA. 27 euros, pagamento unico."
+**Alteracoes no `register-free/index.ts`:**
+- Aceitar campo opcional `registrationSource` no body
+- Passar `registration_source` no insert (default: `'webinar'`)
+
+**Alteracoes no `create-payment/index.ts`:**
+- Adicionar produto `"gravacao-masterclass"` com value 91.02 (74 + 23% IVA), identifier `"WEBINAR-GRAVMC"`, description `"Gravacao + Pack + Masterclass"`
+
+---
+
+### 4. CRM: distinguir pre-webinar vs pos-webinar
+
+**Alteracoes no `useInscritos.ts`:**
+- O `mapRegistration` mapeia o novo campo `registration_source` para o objecto `Inscrito`
+
+**Alteracoes no tipo `Inscrito` (`src/pages/crm/mockData.ts`):**
+- Adicionar campo `registration_source: "webinar" | "gravacao"`
+
+**Alteracoes no `CRMSidebar.tsx`:**
+- Nenhuma alteracao na sidebar — a distincao e feita via filtro dentro das vistas existentes
+
+**Alteracoes no `PipelineView.tsx`:**
+- Adicionar um toggle/filtro no topo: "Todos" | "Pre-webinar" | "Pos-webinar (Gravacao)"
+- Quando "Pos-webinar" activo, filtrar `inscritos` por `registration_source === "gravacao"`
+- Badge visual nos cards: pill "POS-WEBINAR" (cinza escuro) quando `registration_source === "gravacao"`
+
+**Alteracoes no `TableView.tsx`:**
+- Adicionar coluna "Origem" que mostra "Webinar" ou "Gravacao"
+- Filtro rapido na barra de filtros
+
+**Alteracoes no `DashboardView.tsx`:**
+- Novo KPI card: "Pos-webinar" com contagem de inscritos com `registration_source === "gravacao"`
+- Receita separada: mostrar receita pre vs pos-webinar
+
+---
+
+### Resumo de ficheiros
+
+| Ficheiro | Accao |
+|----------|-------|
+| `src/pages/Gravacao.tsx` | Substituir PurchaseModal por modal de inscricao completo |
+| `src/pages/UpgradeGravacao.tsx` | **Novo** — funil de 3 passos (qualificacao, masterclass, confirmacao) |
+| `src/App.tsx` | Adicionar routes `/upgrade-gravacao` |
+| `src/pages/crm/mockData.ts` | Adicionar `registration_source` ao tipo Inscrito |
+| `src/hooks/useInscritos.ts` | Mapear `registration_source` |
+| `src/components/crm/PipelineView.tsx` | Filtro pre/pos-webinar + badge |
+| `src/components/crm/TableView.tsx` | Coluna "Origem" + filtro |
+| `src/components/crm/DashboardView.tsx` | KPI pos-webinar |
+| `supabase/functions/register-free/index.ts` | Aceitar `registrationSource` |
+| `supabase/functions/create-payment/index.ts` | Novo plan `gravacao-masterclass` |
+| Migracao SQL | Adicionar coluna `registration_source` |
 
