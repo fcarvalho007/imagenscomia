@@ -59,6 +59,11 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
       </span>
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+        {inscrito.registration_source === "gravacao" && (
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-600">
+            PÓS-WEBINAR
+          </span>
+        )}
         <span
           className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full"
           style={{ background: badge.bg, color: badge.color }}
@@ -96,15 +101,17 @@ function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSe
 
 export default function PipelineView({ inscritos, onSelectInscrito }: PipelineViewProps) {
   const [search, setSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao">("all");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([COLUMNS[0].title]));
   const isMobile = useIsMobile();
 
   const filtered = useMemo(() => {
-    const active = inscritos.filter((i) => i.status === "activo");
+    let active = inscritos.filter((i) => i.status === "activo");
+    if (sourceFilter !== "all") active = active.filter((i) => i.registration_source === sourceFilter);
     if (!search.trim()) return active;
     const q = search.toLowerCase();
     return active.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
-  }, [inscritos, search]);
+  }, [inscritos, search, sourceFilter]);
 
   const toggleSection = (title: string) => {
     setOpenSections((prev) => {
@@ -122,14 +129,27 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Pipeline</h1>
           <p className="text-sm text-ink-500">Visão kanban dos inscritos por estado</p>
         </div>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar inscrito..."
-            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex bg-white border border-border rounded-lg overflow-hidden text-[13px]">
+            {(["all", "webinar", "gravacao"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setSourceFilter(f)}
+                className={`px-3 py-2 font-medium transition-colors ${sourceFilter === f ? "bg-blue-600 text-white" : "text-ink-600 hover:bg-off-white"}`}
+              >
+                {f === "all" ? "Todos" : f === "webinar" ? "Pré-webinar" : "Pós-webinar"}
+              </button>
+            ))}
+          </div>
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar inscrito..."
+              className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
+            />
+          </div>
         </div>
       </div>
 

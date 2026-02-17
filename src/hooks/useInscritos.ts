@@ -58,6 +58,7 @@ function mapRegistration(r: any): Inscrito {
     next_followup_at: r.next_followup_at || null,
     do_not_contact: r.do_not_contact ?? false,
     last_payment_link_sent_at: r.last_payment_link_sent_at || null,
+    registration_source: (r.registration_source as "webinar" | "gravacao") || "webinar",
   };
 }
 

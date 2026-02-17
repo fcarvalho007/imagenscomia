@@ -33,6 +33,11 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     identifier: "WEBINAR-GRAVACAO",
     description: "Gravação + Pack de Apoio — Webinar IA",
   },
+  "gravacao-masterclass": {
+    value: 91.02,
+    identifier: "WEBINAR-GRAVMC",
+    description: "Gravação + Pack + Masterclass — Webinar IA",
+  },
 };
 
 serve(async (req) => {

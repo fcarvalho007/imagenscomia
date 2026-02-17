@@ -1,0 +1,1 @@
+ALTER TABLE public.registrations ADD COLUMN registration_source text NOT NULL DEFAULT 'webinar';
