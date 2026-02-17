@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 type PageStatus = "loading" | "redirecting" | "timeout" | "paid" | "error";
-type ErrorType = "not_found" | "network" | "generic";
+type ErrorType = "not_found" | "network" | "generic" | "link_invalid";
 
 const WHATSAPP_URL = "https://api.whatsapp.com/send?phone=351915015508&text=WebinarAI%20Pagamento";
 const TIMEOUT_MS = 12_000;
@@ -57,6 +57,14 @@ const Pagar = () => {
         return;
       }
 
+      if (data.status === "error_link_invalid") {
+        resolvedRef.current = true;
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        setStatus("error");
+        setErrorType("link_invalid");
+        return;
+      }
+
       if (data.status === "paid") {
         resolvedRef.current = true;
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -104,6 +112,10 @@ const Pagar = () => {
     generic: {
       title: "Não foi possível processar",
       subtitle: "Ocorreu um erro inesperado. Tente novamente ou contacte o suporte.",
+    },
+    link_invalid: {
+      title: "Não foi possível abrir o checkout",
+      subtitle: "O link de pagamento não está disponível de momento. Tente novamente ou fale connosco.",
     },
   };
 

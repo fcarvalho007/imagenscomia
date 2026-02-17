@@ -114,7 +114,9 @@ serve(async (req) => {
               value: product.value,
               currency: "EUR",
             },
-            identifier: orderId ? `ORDER-${orderId}` : `${product.identifier}-${email}-${Date.now()}`,
+            identifier: orderId
+              ? `ORDER-${orderId}-${(nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30)}`
+              : `${product.identifier}-${Date.now()}`,
             successUrl: `${origin}/upgrade/sucesso?rid=${regId}&t=${encodeURIComponent(editToken)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,
@@ -131,7 +133,16 @@ serve(async (req) => {
     );
 
     const data = await eupagoResponse.json();
-    console.log("EuPago full response:", JSON.stringify(data));
+    console.log("EuPago response keys:", Object.keys(data));
+    console.log("EuPago response (safe):", JSON.stringify({
+      transactionStatus: data.transactionStatus,
+      url: data.url,
+      redirectUrl: data.redirectUrl,
+      paymentLink: data.paymentLink,
+      payment_url: data.payment_url,
+      reference: data.reference,
+      transactionID: data.transactionID,
+    }));
 
     if (!eupagoResponse.ok || data.transactionStatus !== "Success") {
       console.error("EuPago error:", JSON.stringify(data));
