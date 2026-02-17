@@ -14,6 +14,7 @@ import Termos from "./pages/Termos";
 import UpgradeSucesso from "./pages/UpgradeSucesso";
 import Pagar from "./pages/Pagar";
 import Gravacao from "./pages/Gravacao";
+import UpgradeGravacao from "./pages/UpgradeGravacao";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/upgrade/sucesso" element={<UpgradeSucesso />} />
           <Route path="/pagar" element={<Pagar />} />
           <Route path="/gravacao" element={<Gravacao />} />
+          <Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

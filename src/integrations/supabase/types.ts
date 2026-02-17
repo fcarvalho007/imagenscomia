@@ -217,6 +217,7 @@ export type Database = {
           premium_unlocked: boolean | null
           referral_code: string
           referred_by: string | null
+          registration_source: string
           sources: string | null
           step_reached: number | null
           upgrade_clicked_at: string | null
@@ -247,6 +248,7 @@ export type Database = {
           premium_unlocked?: boolean | null
           referral_code: string
           referred_by?: string | null
+          registration_source?: string
           sources?: string | null
           step_reached?: number | null
           upgrade_clicked_at?: string | null
@@ -277,6 +279,7 @@ export type Database = {
           premium_unlocked?: boolean | null
           referral_code?: string
           referred_by?: string | null
+          registration_source?: string
           sources?: string | null
           step_reached?: number | null
           upgrade_clicked_at?: string | null

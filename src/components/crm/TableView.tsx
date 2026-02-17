@@ -358,6 +358,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     {col.label}<SortIcon col={col.key} />
                   </th>
                 ))}
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[80px] max-lg:hidden">Origem</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">Dúvida</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[110px] cursor-pointer select-none" onClick={() => toggleSort("timestamp")}>
                   Inscrição<SortIcon col="timestamp" />
@@ -458,6 +459,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         </div>
                         <span className="text-xs text-ink-500">{i.step_reached}/5</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 max-lg:hidden">
+                      <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${i.registration_source === "gravacao" ? "bg-ink-100 text-ink-700" : "bg-surface text-ink-400"}`}>
+                        {i.registration_source === "gravacao" ? "Gravação" : "Webinar"}
+                      </span>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       {i.duvida ? (

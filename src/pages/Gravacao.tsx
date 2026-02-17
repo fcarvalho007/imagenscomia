@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Film, Zap, FileText, CreditCard, Check, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Film, Zap, FileText, CreditCard, Check, X, User, Mail, Phone, Loader2 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import ColorBends from "@/components/landing/ColorBends";
@@ -9,8 +10,11 @@ import { GallerySection } from "@/components/landing/GallerySection";
 import { PresenterSection } from "@/components/landing/PresenterSection";
 import { FooterSection } from "@/components/landing/FooterSection";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
-import { PurchaseModal } from "@/components/webinar/PurchaseModal";
+import { LegalModal } from "@/components/legal/LegalModal";
+import { TermosContent } from "@/components/legal/TermosContent";
+import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { supabase } from "@/integrations/supabase/client";
 import particlesBg from "@/assets/particles-bg.jpg";
 
 const fade = (delay: number) => ({
@@ -101,9 +105,44 @@ const Gravacao = () => {
     description: "Acesso imediato à gravação do webinar + documentos de apoio. Método testado para criar imagens profissionais com IA. 27 €, pagamento único.",
   });
 
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<React.ReactNode | null>(null);
+  const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
 
   const openModal = () => setModalOpen(true);
+
+  const handleRegistration = async () => {
+    if (!fullName.trim()) { setError("O nome é obrigatório."); return; }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) { setError("Indique um email válido."); return; }
+    if (!whatsapp.trim()) { setError("Indique o seu WhatsApp ou telemóvel."); return; }
+    if (!acceptedTerms) { setError("É necessário aceitar os termos para continuar."); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const firstName = fullName.trim().split(" ")[0] || "";
+      const lastName = fullName.trim().split(" ").slice(1).join(" ");
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPhone = whatsapp.replace(/[^\d]/g, "");
+      const { data, error: fnError } = await supabase.functions.invoke("register-free", {
+        body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, registrationSource: "gravacao" },
+      });
+      if (fnError) throw fnError;
+      setModalOpen(false);
+      navigate(`/upgrade-gravacao?name=${encodeURIComponent(fullName.trim())}&email=${encodeURIComponent(normalizedEmail)}${data?.referralCode ? `&ref_code=${data.referralCode}` : ""}`);
+      setTimeout(() => { try { const fbqSafe = (window as any)?.fbq; if (typeof fbqSafe === "function") fbqSafe("track", "Lead"); } catch {} }, 0);
+    } catch (err: unknown) {
+      console.error("Registration error:", err);
+      setError("Não foi possível concluir. Verifique os dados e tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const scrollToPack = () => {
     document.getElementById("pack-section")?.scrollIntoView({ behavior: "smooth" });
@@ -460,13 +499,88 @@ const Gravacao = () => {
       <FooterSection />
       <WhatsAppSupportButton />
 
-      {/* ═══ MODAL ═══ */}
-      <PurchaseModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        plan="gravacao"
-        planLabel="Gravação + Pack de Apoio — 27 €"
-      />
+      {/* ═══ MODAL DE INSCRIÇÃO ═══ */}
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={() => setModalOpen(false)}
+          >
+            <div className="absolute inset-0 bg-ink-900/75 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -8 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-[460px] bg-background rounded-2xl p-8 overflow-y-auto max-h-[90vh] shadow-card-lg"
+              style={{ border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 25px 60px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)", backdropFilter: "blur(20px)" }}
+            >
+              <button
+                onClick={() => setModalOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface flex items-center justify-center text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
+                Quero acesso à gravação + pack de apoio
+              </h3>
+              <p className="text-[15px] text-ink-500 mb-3">Acesso imediato após pagamento · 27 €</p>
+
+              <div className="space-y-3 mb-4">
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+                  <input type="text" placeholder="Primeiro e Último nome" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
+                </div>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
+                </div>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
+                  <input type="tel" placeholder="Whatsapp/Telemóvel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
+                    className="w-full bg-surface border border-border h-12 pl-10 pr-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm" />
+                </div>
+              </div>
+
+              <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
+                <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-600/20 shrink-0" />
+                <span className="text-[14px] text-ink-400 leading-relaxed">
+                  Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing do Frederico Carvalho. Os dados pessoais serão tratados pela sua empresa Fomentar Sonhos.{" "}
+                  <button type="button" onClick={() => setLegalModal("privacidade")} className="underline hover:text-ink-600">Política de Privacidade</button> e{" "}
+                  <button type="button" onClick={() => setLegalModal("termos")} className="underline hover:text-ink-600">Termos e Condições</button>.
+                </span>
+              </label>
+
+              {error && <p className="text-sm text-red-500 text-center mb-3">{error}</p>}
+
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                disabled={loading || !acceptedTerms}
+                onClick={handleRegistration}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
+                {loading ? "A registar..." : "Quero acesso imediato (27 €)"}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <LegalModal open={legalModal === "privacidade"} onOpenChange={(v) => !v && setLegalModal(null)} title="Política de Privacidade">
+        <PrivacidadeContent />
+      </LegalModal>
+      <LegalModal open={legalModal === "termos"} onOpenChange={(v) => !v && setLegalModal(null)} title="Termos e Condições">
+        <TermosContent />
+      </LegalModal>
     </div>
   );
 };
