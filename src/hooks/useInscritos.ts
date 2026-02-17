@@ -127,13 +127,26 @@ export function useInscritos() {
   }, []);
 
   const deleteInscrito = useCallback(async (inscritoId: string) => {
-    const { error } = await supabase
-      .from("registrations")
-      .delete()
-      .eq("id", inscritoId);
-
-    if (error) {
-      console.error("Error deleting registration:", error);
+    const crmSecret = localStorage.getItem("crm_admin_secret") || "";
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-registration`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-crm-secret": crmSecret,
+          },
+          body: JSON.stringify({ registration_id: inscritoId }),
+        }
+      );
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error("Error deleting registration:", errData);
+        return;
+      }
+    } catch (err) {
+      console.error("Error deleting registration:", err);
       return;
     }
     setInscritos((prev) => prev.filter((i) => i.id !== inscritoId));

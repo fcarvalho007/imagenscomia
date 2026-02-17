@@ -3,7 +3,7 @@ import { Copy, Check, Linkedin, Twitter } from "lucide-react";
 import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 
-const SITE_URL = "https://imagenscomia.lovable.app";
+const SITE_URL = import.meta.env.VITE_PUBLIC_SITE_URL || "https://imagenscomia.com";
 const SHARE_TEXT = `Vou assistir ao webinar gratuito "${WEBINAR_CONFIG.title}" com Frederico Carvalho! 🚀`;
 
 const ConfirmacaoExtras = () => {

@@ -42,7 +42,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const origin = req.headers.get("origin") || "https://imagenscomia.lovable.app";
+    const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
 
     // Generate new EuPago pay-by-link
     const eupagoResponse = await fetch(

@@ -291,7 +291,8 @@ async function processPayment(data: PaymentData) {
         if (regCust && RESEND_API_KEY_CUST) {
           const custPlanLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Bundle (Premium + Masterclass)" } as Record<string, string>)[regCust.plan_selected || ""] || regCust.plan_selected || "N/A";
           const eupagoRefDisplay = transactionID || reference || regCust.eupago_ref || "N/A";
-          const primaryAccessUrl = "https://imagenscomia.lovable.app/live";
+          const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
+          const primaryAccessUrl = `${siteUrl}/live`;
           const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
 
           const customerSubject = "Pagamento confirmado — obrigado pela confiança";
