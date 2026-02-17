@@ -28,6 +28,11 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     identifier: "WEBINAR-BUNDLE",
     description: "Premium Pass + Masterclass + Workshop",
   },
+  gravacao: {
+    value: 33.21,
+    identifier: "WEBINAR-GRAVACAO",
+    description: "Gravação + Pack de Apoio — Webinar IA",
+  },
 };
 
 serve(async (req) => {

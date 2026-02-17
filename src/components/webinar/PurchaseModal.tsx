@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react";
 interface PurchaseModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  plan: "premium" | "masterclass";
+  plan: "premium" | "masterclass" | "gravacao";
   planLabel: string;
 }
 
@@ -75,7 +75,7 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
-      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26 };
+      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26, gravacao: 33.21 };
       const capturedPlan = plan;
       setTimeout(() => {
         try {
