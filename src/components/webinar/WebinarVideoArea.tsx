@@ -54,12 +54,6 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
           <h2 className="font-heading font-bold text-[20px] sm:text-[24px] text-foreground">
             Transmissão ao vivo
           </h2>
-          <p className="text-[15px] text-muted-foreground mt-1">
-            {WEBINAR_CONFIG.metaLine}
-          </p>
-          <p className="text-[13px] text-ink-400 mt-1">
-            Se aparecer "offline", é normal — a transmissão abre alguns minutos antes.
-          </p>
         </div>
 
         {/* YouTube embed */}
