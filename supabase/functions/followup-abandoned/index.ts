@@ -103,7 +103,7 @@ async function refreshPaymentLink(
       body: JSON.stringify({
         payment: {
           amount: { value: product.value, currency: "EUR" },
-          identifier: `${product.identifier}-${reg.email}-${Date.now()}`,
+          identifier: reg.order_id ? `ORDER-${reg.order_id}` : `${product.identifier}-${reg.email}-${Date.now()}`,
           successUrl: `${origin}/confirmacao?plan=${plan}&email=${encodeURIComponent(reg.email)}`,
           failUrl: `${origin}/?payment=failed`,
           backUrl: `${origin}/upgrade`,
@@ -179,9 +179,15 @@ async function sendEmail(
   const product = PRODUCTS[plan] || PRODUCTS.premium;
   const firstName = reg.first_name || (reg.name || "").split(" ")[0] || "participante";
 
+  // Use stable payment page URL if order_id exists, otherwise direct link
+  const paymentPageUrl = reg.order_id
+    ? `https://imagenscomia.lovable.app/pagar?o=${reg.order_id}`
+    : paymentLink;
+
   const templateVars: Record<string, string> = {
     name: firstName,
-    payment_link: paymentLink,
+    payment_link: paymentPageUrl,
+    payment_page_url: paymentPageUrl,
     plan_selected: product.label,
     support_whatsapp: "915 015 508",
     webinar_date: "18 Fev 2026 · 10h00",
@@ -452,7 +458,7 @@ serve(async (req) => {
     // ── Normal cron mode ──
     const { data: candidates, error: fetchError } = await supabase
       .from("registrations")
-      .select("id, email, name, first_name, plan_selected, eupago_ref, upgrade_clicked_at, created_at, followup_stage, last_followup_at, last_payment_link, payment_link_created_at, do_not_contact, paid_at, next_followup_at")
+      .select("id, email, name, first_name, plan_selected, eupago_ref, upgrade_clicked_at, created_at, followup_stage, last_followup_at, last_payment_link, payment_link_created_at, do_not_contact, paid_at, next_followup_at, order_id")
       .is("paid_at", null)
       .eq("do_not_contact", false)
       .not("plan_selected", "is", null)

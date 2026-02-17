@@ -83,18 +83,20 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
 
-    // Lookup registration for rid+token in successUrl
+    // Lookup registration for rid+token+order_id in successUrl
     let regId = "";
     let editToken = "";
+    let orderId = "";
     if (email) {
       const { data: regLookup } = await supabase
         .from("registrations")
-        .select("id, edit_token")
+        .select("id, edit_token, order_id")
         .eq("email", email)
         .maybeSingle();
       if (regLookup) {
         regId = regLookup.id;
         editToken = regLookup.edit_token || "";
+        orderId = regLookup.order_id || "";
       }
     }
 
@@ -112,7 +114,7 @@ serve(async (req) => {
               value: product.value,
               currency: "EUR",
             },
-            identifier: `${product.identifier}-${email}-${Date.now()}`,
+            identifier: orderId ? `ORDER-${orderId}` : `${product.identifier}-${email}-${Date.now()}`,
             successUrl: `${origin}/upgrade/sucesso?rid=${regId}&t=${encodeURIComponent(editToken)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,

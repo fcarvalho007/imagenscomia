@@ -102,6 +102,9 @@ serve(async (req) => {
     // Generate edit_token
     const editToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
 
+    // Generate order_id (12 chars, alphanumeric)
+    const orderId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+
     // Insert new registration
     const { error: insertError } = await supabase.from("registrations").insert({
       name,
@@ -113,6 +116,7 @@ serve(async (req) => {
       referred_by: referredBy || null,
       edit_token: editToken,
       edit_token_created_at: new Date().toISOString(),
+      order_id: orderId,
     });
 
     if (insertError) {
