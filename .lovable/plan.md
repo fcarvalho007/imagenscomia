@@ -1,50 +1,61 @@
 
 
-## Atualizar /live com embed YouTube e fallback UX
+## Alteracoes na pagina /live e homepage
 
-Duas alteracoes simples: config e componente de video.
+Tres mudancas simples, todas baseadas em logica de tempo no cliente.
 
 ---
 
-### Ficheiros a alterar
+### 1. Limpar textos no WebinarVideoArea (estado live)
+
+**Ficheiro:** `src/components/webinar/WebinarVideoArea.tsx`
+
+- Remover a linha "Se aparecer 'offline'..." (linhas 60-62)
+- Remover o subtitulo com `WEBINAR_CONFIG.metaLine` (linhas 57-59)
+- Manter apenas o titulo "Transmissao ao vivo" acima do player
+
+---
+
+### 2. Voltar ao countdown ate as 09:30h, depois mostrar player
+
+**Ficheiro:** `src/components/webinar/webinarConfig.ts`
+
+- Alterar `isLive: true` para `isLive: false`
+
+**Ficheiro:** `src/pages/WebinarLive.tsx`
+
+- Alterar o threshold de "near start" de 30 minutos para 30 minutos (ja esta assim, 09:30 = 30 min antes das 10:00)
+- A logica existente ja faz exactamente o que e pedido: `isNearStart = timeDiff <= 30 * 60 * 1000 && timeDiff > 0`
+- Resultado: ate 09:30 ve-se o countdown; a partir das 09:30 ve-se o player YouTube
+
+Nao e preciso nenhum cron job ou agendamento — o browser calcula a hora actual e decide qual estado mostrar.
+
+---
+
+### 3. Homepage redireciona para /live a partir das 09:30h
+
+**Ficheiro:** `src/pages/Index.tsx`
+
+- Adicionar verificacao de tempo no topo do componente
+- Se `new Date() >= new Date("2026-02-18T09:30:00+00:00")`, fazer `Navigate` para `/live`
+- Antes das 09:30, a homepage funciona normalmente com a landing page
+
+```text
+Logica no Index.tsx:
+  const now = new Date();
+  const switchTime = new Date("2026-02-18T09:30:00+00:00");
+  if (now >= switchTime) return <Navigate to="/live" replace />;
+  // ... resto da landing page
+```
+
+---
+
+### Resumo de ficheiros
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/webinar/webinarConfig.ts` | Colocar `isLive: true` e preencher `EMBED_IFRAME_HTML` com o iframe do YouTube |
-| `src/components/webinar/WebinarVideoArea.tsx` | Redesenhar o estado "live": adicionar titulo/subtitulo/nota acima do player, botao fallback + texto abaixo |
+| `src/components/webinar/WebinarVideoArea.tsx` | Remover disclaimer "offline" e subtitulo metaLine |
+| `src/components/webinar/webinarConfig.ts` | `isLive: false` |
+| `src/pages/Index.tsx` | Redirect para /live apos 09:30h de 18 Fev |
 
----
-
-### Detalhes
-
-**1. webinarConfig.ts**
-
-- `isLive: true` — forca o estado live independentemente da hora
-- `EMBED_IFRAME_HTML`: iframe embed do YouTube com o video `hYsTZA9bcPA`:
-  ```
-  <iframe src="https://www.youtube.com/embed/hYsTZA9bcPA" ... />
-  ```
-
-**2. WebinarVideoArea.tsx — estado live redesenhado**
-
-Estrutura do bloco live (de cima para baixo):
-
-- **Acima do player:**
-  - Titulo: "Transmissao ao vivo" (h2, font-heading, bold)
-  - Subtitulo: "Quarta-feira, 18 de Fevereiro . 10h00 (Portugal)" (texto ink-500)
-  - Nota: "Se aparecer 'offline', e normal — a transmissao abre alguns minutos antes." (texto pequeno ink-400)
-
-- **Player:**
-  - Container com `width: 100%`, `aspect-ratio: 16 / 9`, `border-radius`, overflow hidden
-  - iframe YouTube embed com `allow="autoplay; encrypted-media; picture-in-picture"` e `allowFullScreen`
-  - Nao usar `dangerouslySetInnerHTML` — renderizar o iframe directamente em JSX para controlo total dos atributos
-
-- **Abaixo do player:**
-  - Botao secundario (variant="outline", tamanho normal): "Abrir no YouTube" — link para `https://youtube.com/live/hYsTZA9bcPA`, target `_blank`, rel `noopener noreferrer`
-  - Texto pequeno (13px, ink-400): "Se o player nao carregar, abrir no YouTube resolve quase sempre."
-
-**Mobile:** O player fica full-width naturalmente com `w-full` + `aspect-ratio: 16/9`. O botao e texto de fallback ficam centrados e visiveis sem scroll.
-
-### Sem alteracoes noutros ficheiros
-
-A pagina `WebinarLive.tsx` ja consome o `WebinarVideoArea` e passa `isLive` — nao precisa de ser tocada.
+Nenhuma alteracao no backend. Tudo e logica de tempo no browser.
