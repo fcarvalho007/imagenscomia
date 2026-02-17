@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function generateCode(): string {
@@ -29,14 +29,15 @@ serve(async (req) => {
 
     const { firstName, lastName, email, whatsapp, referredBy } = await req.json();
 
-    if (!firstName || !lastName || !email) {
+    if (!firstName || !email) {
       return new Response(
         JSON.stringify({ error: "Nome e email são obrigatórios" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const name = `${firstName.trim()} ${lastName.trim()}`;
+    const name = `${firstName.trim()} ${(lastName || "").trim()}`.trim();
+    const cleanPhone = whatsapp ? whatsapp.replace(/[\s\-\(\)\.]/g, "") : null;
 
     // Check if email already exists
     const { data: existing } = await supabase
@@ -107,7 +108,7 @@ serve(async (req) => {
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       email: email.toLowerCase().trim(),
-      whatsapp: whatsapp?.trim() || null,
+      whatsapp: cleanPhone || null,
       referral_code: referralCode,
       referred_by: referredBy || null,
       edit_token: editToken,
@@ -151,9 +152,9 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             first_name: firstName.trim(),
-            last_name: lastName.trim(),
+            last_name: (lastName || "").trim(),
             email: email.toLowerCase().trim(),
-            cellphone: whatsapp?.trim() || null,
+            cellphone: cleanPhone || null,
             referral_code: referralCode,
           }),
         }

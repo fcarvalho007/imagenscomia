@@ -28,8 +28,10 @@ export const RegistrationModal = () => {
   const lastName = fullName.trim().split(" ").slice(1).join(" ");
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPhone = whatsapp ? whatsapp.replace(/[\s\-\(\)\.]/g, "") : undefined;
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { firstName, lastName, email, whatsapp: whatsapp || undefined, referredBy: referredBy || undefined },
+      body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined },
     });
     if (fnError) throw fnError;
     return { referralCode: data.referralCode, referralLink: data.referralLink, alreadyRegistered: data.alreadyRegistered };
@@ -57,20 +59,29 @@ export const RegistrationModal = () => {
     try {
       const data = await registerFree();
       if (data?.alreadyRegistered) {
-        // Don't block — redirect existing user to upgrade with their data
         close();
         const existingName = (data as any).name || `${firstName.trim()} ${lastName.trim()}`;
         navigate(`/upgrade?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
         setLoading(false);
         return;
       }
-      fbq('track', 'Lead');
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
-    } catch (err) {
+      // Fire tracking after navigation — never block the flow
+      if (typeof fbq !== "undefined") {
+        try { fbq('track', 'Lead'); } catch (_) {}
+      }
+    } catch (err: unknown) {
       console.error("Registration error:", err);
-      setError("Erro ao processar. Tente novamente.");
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("already") || message.includes("duplicate")) {
+        setError("Este email já está inscrito.");
+      } else if (message.includes("obrigatório") || message.includes("required")) {
+        setError("Preencha todos os campos obrigatórios.");
+      } else {
+        setError("Não foi possível concluir. Verifique os dados e tente novamente.");
+      }
     } finally {
       setLoading(false);
     }
