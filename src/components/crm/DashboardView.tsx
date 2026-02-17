@@ -34,12 +34,16 @@ interface DashboardViewProps {
   onRefresh?: () => Promise<void>;
 }
 
-const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
+const PLAN_BADGE_MAP: Record<string, { bg: string; color: string; label: string }> = {
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
   premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium €15" },
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC €57,81" },
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle €76,26" },
+  gravacao: { bg: "rgba(245,158,11,0.1)", color: "#D97706", label: "Gravação €33,21" },
+  "gravacao-masterclass": { bg: "rgba(124,58,237,0.15)", color: "#7C3AED", label: "Grav+MC €91,02" },
 };
+const DEFAULT_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Desconhecido" };
+const PLAN_BADGE = (plan: string) => PLAN_BADGE_MAP[plan] || DEFAULT_BADGE;
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -434,7 +438,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </div>
               <div className="space-y-1.5">
                 {stats.pendingOver6h.slice(0, 5).map((i) => {
-                  const badge = PLAN_BADGE[i.plan];
+                  const badge = PLAN_BADGE(i.plan);
                   const ref = i.upgrade_clicked_at || i.timestamp;
                   const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
                   const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
@@ -494,7 +498,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           <h3 className="font-heading font-bold text-sm text-ink-900">Distribuição por Plano</h3>
           <p className="text-xs text-ink-400 mb-4">Breakdown dos inscritos</p>
   {(["free", "premium", "masterclass", "bundle"] as const).map((plan) => {
-            const info = PLAN_BADGE[plan];
+            const info = PLAN_BADGE(plan);
             const count = stats.planCounts[plan];
             const pendingCount = plan !== "free" ? stats.pendingCounts[plan] || 0 : 0;
             const pct = stats.total ? ((count / stats.total) * 100).toFixed(0) : "0";
@@ -614,7 +618,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               return 0;
             })
             .map((i) => {
-              const badge = PLAN_BADGE[i.plan];
+              const badge = PLAN_BADGE(i.plan);
               const isCustom = i.duvida.includes("Outro:");
               return (
                 <div

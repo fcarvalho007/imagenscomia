@@ -34,7 +34,10 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
   premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium" },
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
+  gravacao: { bg: "rgba(245,158,11,0.1)", color: "#D97706", label: "Gravação" },
+  "gravacao-masterclass": { bg: "rgba(124,58,237,0.15)", color: "#7C3AED", label: "Grav+MC" },
 };
+const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "—" };
 
 export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewProps) {
   const [search, setSearch] = useState("");
@@ -125,7 +128,7 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
                 </thead>
                 <tbody>
                   {filtered.map((i) => {
-                    const badge = PLAN_BADGE[i.plan];
+                    const badge = PLAN_BADGE[i.plan] || DEFAULT_PLAN_BADGE;
                     const gradIdx = parseInt(i.id, 10) % GRADIENTS.length;
                     const isSelected = selected.has(i.id);
                     return (
