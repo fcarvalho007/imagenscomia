@@ -1,57 +1,143 @@
 
 
-## Fix: ResendModal a aparecer atras da ficha de cliente (ecrã preto)
+## Correcao: Modal de inscricao "nao avanca" apos submissao
 
-### Problema
+### Causa raiz identificada
 
-O InscritoModal usa um overlay e card customizados com `z-[100]` e `z-[101]`. Quando o ResendModal abre, o Radix Dialog cria o seu proprio overlay via Portal com `z-50` -- que fica **por baixo** do InscritoModal. O conteudo do ResendModal tambem fica preso atras, resultando num ecra preto sem interaccao possivel.
+Na linha 67 de `RegistrationModal.tsx`, apos o registo ser gravado com sucesso na base de dados, o codigo executa:
 
-### Solucao
+```text
+fbq('track', 'Lead');
+```
 
-Passar `z-index` elevado ao ResendModal para que o overlay e conteudo do Radix Dialog fiquem **acima** do InscritoModal (`z-[101]`).
+Se o Facebook Pixel nao estiver carregado (bloqueador de anuncios, ligacao lenta, Safari ITP), `fbq` lanca um `ReferenceError`. Este erro e apanhado pelo `catch`, que mostra "Erro ao processar" -- mas o registo ja foi gravado. O utilizador fica "preso" sem avancar.
 
-### Ficheiro a alterar
+**Nota:** O ficheiro `Confirmacao.tsx` ja usa a proteccao correcta (`typeof fbq !== "undefined"`), mas `RegistrationModal.tsx` e `PurchaseModal.tsx` nao.
+
+### Ficheiros a alterar
 
 | Ficheiro | Accao |
 |----------|-------|
-| `src/components/crm/modal/ResendModal.tsx` | Adicionar classes de z-index ao DialogContent e ao overlay para ficarem acima de `z-[101]` |
+| `src/components/landing/RegistrationModal.tsx` | Proteger fbq, melhorar erros, normalizar inputs |
+| `src/components/webinar/PurchaseModal.tsx` | Proteger fbq |
+| `supabase/functions/register-free/index.ts` | Melhorar CORS headers, aceitar lastName vazio, normalizar whatsapp |
 
-### Alteracao
+---
 
-No `ResendModal.tsx`, passar `className` ao `DialogContent` para forcar `z-[200]`, e usar `overlayClassName` (ou wrapper) para o overlay tambem ficar acima.
+### 1. RegistrationModal.tsx -- Correcoes
 
-Na pratica, com shadcn/Radix Dialog, a forma correcta e:
+**a) Proteger fbq (causa raiz do bug):**
 
-1. No `DialogContent`, adicionar `className="z-[200]"`
-2. O overlay do Dialog (renderizado dentro do DialogPortal pelo componente `dialog.tsx`) tambem precisa de z-index elevado
-
-Como o componente `dialog.tsx` do shadcn ja usa `z-50` fixo no overlay e no content, a forma mais limpa e passar classes extras:
+Mover `fbq` para depois do `close()` e proteger:
 
 ```text
-<DialogContent className="max-w-md z-[200]">
+// ANTES (linha 67):
+fbq('track', 'Lead');
+
+// DEPOIS:
+if (typeof fbq !== "undefined") {
+  try { fbq('track', 'Lead'); } catch (_) {}
+}
 ```
 
-E no componente `dialog.tsx`, o overlay tambem usa `z-50`. Como nao queremos alterar o componente global, a alternativa e:
+**b) Normalizar inputs antes do envio:**
 
-- Envolver o Dialog num div com `style={{ position: "relative", zIndex: 200 }}` -- mas Portals ignoram isso.
+- Email: `email.trim().toLowerCase()`
+- WhatsApp: remover espacos, tracos, parenteses; normalizar para formato limpo
 
-A solucao mais fiavel: alterar o `DialogContent` no `ResendModal` para incluir override do overlay via prop `forceMount` ou simplesmente ajustar o z-index directamente no JSX do ResendModal, substituindo o Dialog do shadcn por elementos controlados manualmente (overlay + card) com z-index correcto -- tal como o InscritoModal ja faz.
+```text
+const normalizedPhone = whatsapp.replace(/[\s\-\(\)\.]/g, "");
+```
 
-**Decisao pratica:** Substituir o Radix Dialog no ResendModal por overlay+card manual com `z-[200]` e `z-[201]`, mantendo a mesma UI. Isto elimina o conflito de z-index dos Portals e resolve o ecra preto.
+**c) Melhorar mensagens de erro:**
 
-### UI melhorada do ResendModal
+No `catch`, verificar o tipo de erro e mostrar mensagem mais especifica:
 
-Ao refazer o componente, tambem melhorar:
+```text
+catch (err: unknown) {
+  console.error("Registration error:", err);
+  const message = err instanceof Error ? err.message : "";
+  if (message.includes("already") || message.includes("duplicate")) {
+    setError("Este email já está inscrito.");
+  } else if (message.includes("obrigatório") || message.includes("required")) {
+    setError("Preencha todos os campos obrigatórios.");
+  } else {
+    setError("Não foi possível concluir. Verifique os dados e tente novamente.");
+  }
+}
+```
 
-- Animacao de entrada (fade-in + scale suave via Tailwind `animate-in`)
-- Botao "Fechar" (X) no canto superior direito
-- Focus trap basico (fechar com Escape)
-- Contraste e legibilidade dos estados (link valido/expirado/a expirar)
+**d) Validacao de lastName:**
+
+Aceitar nome com uma unica palavra (sem apelido). Se o utilizador escrever apenas "Maria", enviar `lastName` como string vazia em vez de bloquear:
+
+```text
+const lastName = fullName.trim().split(" ").slice(1).join(" ") || "";
+```
+
+Isto ja e o comportamento actual no frontend, mas o backend rejeita `!lastName`. Corrigir no backend (ponto 3).
+
+### 2. PurchaseModal.tsx -- Proteger fbq
+
+Linha 79:
+
+```text
+// ANTES:
+fbq('track', 'Purchase', { value: prices[plan] || 0, currency: 'EUR' });
+
+// DEPOIS:
+if (typeof fbq !== "undefined") {
+  try { fbq('track', 'Purchase', { value: prices[plan] || 0, currency: 'EUR' }); } catch (_) {}
+}
+```
+
+### 3. register-free/index.ts -- Backend
+
+**a) Aceitar lastName vazio:**
+
+Linha 32 -- remover `!lastName` da validacao:
+
+```text
+// ANTES:
+if (!firstName || !lastName || !email) {
+
+// DEPOIS:
+if (!firstName || !email) {
+```
+
+**b) Normalizar whatsapp no backend:**
+
+Antes de gravar, limpar o numero:
+
+```text
+const cleanPhone = whatsapp
+  ? whatsapp.replace(/[\s\-\(\)\.]/g, "")
+  : null;
+```
+
+**c) Melhorar CORS headers:**
+
+Actualizar para incluir os headers que o cliente Supabase envia:
+
+```text
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+```
 
 ### O que NAO muda
 
-- Logica de envio (handleSend, handleRegenAndSend)
-- Props interface
-- ActionsSection
-- InscritoModal (apenas renderiza o ResendModal, sem alteracoes)
+- Logica de sync-egoi (ja e non-blocking com try/catch)
+- Logica de referrals e premium_unlocked
+- Estrutura da base de dados (nenhuma migracao necessaria)
+- Copy/texto do site (excepto mensagens de erro)
+- Fluxo de upsell/confirmacao
 
+### Resultado esperado
+
+- O utilizador avanca SEMPRE quando a BD confirma o registo, independentemente de ad blockers
+- Erros de terceiros (fbq, E-goi) nunca bloqueiam a inscricao
+- Mensagens de erro claras e especificas
+- Inputs normalizados (email lowercase, telefone limpo)
