@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.resolve-payment]
 verify_jwt = false
+
+[functions.delete-registration]
+verify_jwt = false

@@ -92,7 +92,7 @@ async function refreshPaymentLink(
     return reg.last_payment_link;
   }
 
-  const origin = "https://imagenscomia.lovable.app";
+  const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
   try {
     const eupagoRes = await fetch("https://clientes.eupago.pt/api/v1.02/paybylink/create", {
       method: "POST",
@@ -180,8 +180,9 @@ async function sendEmail(
   const firstName = reg.first_name || (reg.name || "").split(" ")[0] || "participante";
 
   // Use stable payment page URL if order_id exists, otherwise direct link
+  const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
   const paymentPageUrl = reg.order_id
-    ? `https://imagenscomia.lovable.app/pagar?o=${reg.order_id}`
+    ? `${siteUrl}/pagar?o=${reg.order_id}`
     : paymentLink;
 
   const templateVars: Record<string, string> = {

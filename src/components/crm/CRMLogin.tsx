@@ -7,12 +7,14 @@ interface CRMLoginProps {
 
 export default function CRMLogin({ onLogin }: CRMLoginProps) {
   const [email, setEmail] = useState("");
+  const [secret, setSecret] = useState("");
   const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === "fredericodigital@gmail.com") {
       sessionStorage.setItem("crm_auth", "1");
+      if (secret) localStorage.setItem("crm_admin_secret", secret);
       onLogin();
     } else {
       setError(true);
@@ -46,6 +48,23 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
           value={email}
           onChange={(e) => { setEmail(e.target.value); setError(false); }}
           placeholder="email@exemplo.pt"
+          className="w-full rounded-lg px-3.5 py-2.5 text-sm text-white outline-none mb-4"
+          style={{
+            background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.12)",
+          }}
+          onFocus={(e) => (e.target.style.borderColor = "rgba(99,179,237,0.6)")}
+          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
+        />
+
+        <label className="block text-[13px] font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+          Chave CRM
+        </label>
+        <input
+          type="password"
+          value={secret}
+          onChange={(e) => { setSecret(e.target.value); setError(false); }}
+          placeholder="••••••••"
           className="w-full rounded-lg px-3.5 py-2.5 text-sm text-white outline-none mb-4"
           style={{
             background: "rgba(255,255,255,0.06)",

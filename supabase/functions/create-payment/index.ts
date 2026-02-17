@@ -81,7 +81,7 @@ serve(async (req) => {
       }
     }
 
-    const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
+    const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
 
     // Lookup registration for rid+token+order_id in successUrl
     let regId = "";
