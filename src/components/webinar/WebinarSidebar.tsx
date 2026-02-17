@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
-import { PurchaseModal } from "./PurchaseModal";
-
-type PlanKey = "premium" | "masterclass" | null;
+import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 
 const OfferCard = ({
   title,
@@ -65,7 +62,7 @@ const OfferCard = ({
 );
 
 export const WebinarSidebar = () => {
-  const [activePlan, setActivePlan] = useState<PlanKey>(null);
+  const { open } = useRegistrationModal();
 
   return (
     <div className="lg:sticky lg:top-[72px] space-y-4">
@@ -83,7 +80,7 @@ export const WebinarSidebar = () => {
           { icon: <FileText className="w-4 h-4" />, text: "Guia completo de prompts (30+ páginas)" },
         ]}
         ctaLabel="Garantir Premium Pass"
-        onCtaClick={() => setActivePlan("premium")}
+        onCtaClick={() => open("free")}
         priceNote={
           <>
             <span className="block">Early bird: €15 + IVA</span>
@@ -102,7 +99,7 @@ export const WebinarSidebar = () => {
         ]}
         dateLine="5 de Março (quinta-feira) · Online · 3 horas"
         ctaLabel="Garantir lugar na Masterclass"
-        onCtaClick={() => setActivePlan("masterclass")}
+        onCtaClick={() => open("free")}
         priceNote={
           <>
             <span className="block">Early bird: €47 + IVA</span>
@@ -125,13 +122,6 @@ export const WebinarSidebar = () => {
         </a>
       </div>
 
-      {/* Purchase Modal */}
-      <PurchaseModal
-        open={activePlan !== null}
-        onOpenChange={(open) => { if (!open) setActivePlan(null); }}
-        plan={activePlan || "premium"}
-        planLabel={activePlan === "masterclass" ? "Masterclass Imagem → Vídeo" : "Premium Pass"}
-      />
     </div>
   );
 };

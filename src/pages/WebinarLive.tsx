@@ -8,6 +8,8 @@ import { WebinarFooter } from "@/components/webinar/WebinarFooter";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 import { useCountdown } from "@/hooks/useCountdown";
+import { RegistrationModalProvider } from "@/hooks/useRegistrationModal";
+import { RegistrationModal } from "@/components/landing/RegistrationModal";
 
 const WebinarLive = () => {
   const countdown = useCountdown(WEBINAR_CONFIG.startDate);
@@ -22,6 +24,7 @@ const WebinarLive = () => {
   const isEnded = now > endTime && !WEBINAR_CONFIG.isLive;
 
   return (
+    <RegistrationModalProvider>
     <div className="min-h-screen bg-[#FAFBFC] font-sans">
       {/* Header bar */}
       <header className="border-b border-border bg-white/80 backdrop-blur-sm sticky top-0 z-30">
@@ -84,7 +87,9 @@ const WebinarLive = () => {
 
       <WebinarFooter />
       <WhatsAppSupportButton />
+      <RegistrationModal />
     </div>
+    </RegistrationModalProvider>
   );
 };
 
