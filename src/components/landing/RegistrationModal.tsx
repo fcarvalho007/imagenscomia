@@ -19,7 +19,7 @@ export const RegistrationModal = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<React.ReactNode | null>(null);
   const [step, setStep] = useState<Step>("capture");
   const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("simple");
   const [referralData, setReferralData] = useState<{ referralCode: string; referralLink: string } | null>(null);
@@ -29,7 +29,7 @@ export const RegistrationModal = () => {
 
   const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPhone = whatsapp ? whatsapp.replace(/[\s\-\(\)\.]/g, "") : undefined;
+    const normalizedPhone = whatsapp ? whatsapp.replace(/[^\d]/g, "") : undefined;
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
       body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined },
     });
@@ -69,16 +69,28 @@ export const RegistrationModal = () => {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
       // Fire tracking after navigation — never block the flow
-      if (typeof fbq !== "undefined") {
-        try { fbq('track', 'Lead'); } catch (_) {}
-      }
+      setTimeout(() => {
+        try {
+          const fbqSafe = (window as any)?.fbq;
+          if (typeof fbqSafe === "function") fbqSafe("track", "Lead");
+        } catch {}
+      }, 0);
     } catch (err: unknown) {
       console.error("Registration error:", err);
       const message = err instanceof Error ? err.message : "";
       if (message.includes("already") || message.includes("duplicate")) {
-        setError("Este email já está inscrito.");
+        setError(
+          <>
+            Este email já está inscrito.{" "}
+            <a href="/live" className="underline font-medium hover:text-red-700">
+              Aceder ao webinar
+            </a>
+          </>
+        );
       } else if (message.includes("obrigatório") || message.includes("required")) {
         setError("Preencha todos os campos obrigatórios.");
+      } else if (message.includes("fetch") || message.includes("network") || message.includes("Failed")) {
+        setError("Ligação instável. Verifique a sua internet e tente novamente.");
       } else {
         setError("Não foi possível concluir. Verifique os dados e tente novamente.");
       }
@@ -221,7 +233,7 @@ const CaptureView = ({
   acceptedTerms: boolean;
   setAcceptedTerms: (v: boolean) => void;
   loading: boolean;
-  error: string | null;
+  error: React.ReactNode | null;
   onSubmit: () => void;
 }) => {
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
