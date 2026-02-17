@@ -1,61 +1,32 @@
 
 
-## Alteracoes na pagina /live e homepage
+## Usar o modal de registo da homepage na pagina /live
 
-Tres mudancas simples, todas baseadas em logica de tempo no cliente.
-
----
-
-### 1. Limpar textos no WebinarVideoArea (estado live)
-
-**Ficheiro:** `src/components/webinar/WebinarVideoArea.tsx`
-
-- Remover a linha "Se aparecer 'offline'..." (linhas 60-62)
-- Remover o subtitulo com `WEBINAR_CONFIG.metaLine` (linhas 57-59)
-- Manter apenas o titulo "Transmissao ao vivo" acima do player
+Tres alteracoes simples para reutilizar o `RegistrationModal` existente.
 
 ---
 
-### 2. Voltar ao countdown ate as 09:30h, depois mostrar player
+### 1. WebinarSidebar.tsx
 
-**Ficheiro:** `src/components/webinar/webinarConfig.ts`
+- Remover import do `PurchaseModal` e o state `activePlan`
+- Importar `useRegistrationModal` 
+- Nos `onCtaClick` dos dois `OfferCard`, chamar `open("free")` (abre o modal no step "capture" com os campos nome, email, WhatsApp e RGPD)
+- Apos registo, o modal navega automaticamente para `/upgrade` (logica ja existente no RegistrationModal)
 
-- Alterar `isLive: true` para `isLive: false`
+### 2. WebinarLive.tsx (pagina /live)
 
-**Ficheiro:** `src/pages/WebinarLive.tsx`
+- Envolver o conteudo com `RegistrationModalProvider` (necessario para o contexto do modal funcionar)
+- Adicionar o componente `RegistrationModal` dentro do provider (renderiza o modal quando `isOpen` e true)
 
-- Alterar o threshold de "near start" de 30 minutos para 30 minutos (ja esta assim, 09:30 = 30 min antes das 10:00)
-- A logica existente ja faz exactamente o que e pedido: `isNearStart = timeDiff <= 30 * 60 * 1000 && timeDiff > 0`
-- Resultado: ate 09:30 ve-se o countdown; a partir das 09:30 ve-se o player YouTube
+### 3. Sem alteracoes no RegistrationModal
 
-Nao e preciso nenhum cron job ou agendamento — o browser calcula a hora actual e decide qual estado mostrar.
-
----
-
-### 3. Homepage redireciona para /live a partir das 09:30h
-
-**Ficheiro:** `src/pages/Index.tsx`
-
-- Adicionar verificacao de tempo no topo do componente
-- Se `new Date() >= new Date("2026-02-18T09:30:00+00:00")`, fazer `Navigate` para `/live`
-- Antes das 09:30, a homepage funciona normalmente com a landing page
-
-```text
-Logica no Index.tsx:
-  const now = new Date();
-  const switchTime = new Date("2026-02-18T09:30:00+00:00");
-  if (now >= switchTime) return <Navigate to="/live" replace />;
-  // ... resto da landing page
-```
+O modal ja tem toda a logica: campos de captura, validacao RGPD, registo via `register-free`, e navegacao para `/upgrade` com nome e email nos query params. Reutiliza-se tal como esta.
 
 ---
 
-### Resumo de ficheiros
+### Fluxo resultante
 
-| Ficheiro | Alteracao |
-|----------|-----------|
-| `src/components/webinar/WebinarVideoArea.tsx` | Remover disclaimer "offline" e subtitulo metaLine |
-| `src/components/webinar/webinarConfig.ts` | `isLive: false` |
-| `src/pages/Index.tsx` | Redirect para /live apos 09:30h de 18 Fev |
+1. Utilizador clica "Garantir Premium Pass" ou "Garantir lugar na Masterclass"
+2. Abre o mesmo modal da homepage (nome, email, WhatsApp, checkbox RGPD)
+3. Apos submissao, navega para `/upgrade` (passo 1) onde pode escolher Premium, Masterclass ou ambos
 
-Nenhuma alteracao no backend. Tudo e logica de tempo no browser.
