@@ -76,7 +76,9 @@ export const PurchaseModal = ({
       }
 
       const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26 };
-      fbq('track', 'Purchase', { value: prices[plan] || 0, currency: 'EUR' });
+      if (typeof fbq !== "undefined") {
+        try { fbq('track', 'Purchase', { value: prices[plan] || 0, currency: 'EUR' }); } catch (_) {}
+      }
 
       window.location.href = data.paymentLink;
     } catch (err: unknown) {
