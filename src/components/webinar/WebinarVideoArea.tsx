@@ -1,5 +1,6 @@
-import { Clock, Radio } from "lucide-react";
+import { Clock, ExternalLink } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
+import { Button } from "@/components/ui/button";
 
 interface CountdownValues {
   days: number;
@@ -24,6 +25,9 @@ const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
+const YOUTUBE_LIVE_URL = `https://youtube.com/live/${WEBINAR_CONFIG.YOUTUBE_VIDEO_ID}`;
+const YOUTUBE_EMBED_URL = `https://www.youtube.com/embed/${WEBINAR_CONFIG.YOUTUBE_VIDEO_ID}`;
+
 export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
   // Ended state
   if (isEnded) {
@@ -44,28 +48,51 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
   // Live state
   if (isLive) {
     return (
-      <div className="aspect-video rounded-xl overflow-hidden bg-black mb-6 relative">
-        {WEBINAR_CONFIG.EMBED_IFRAME_HTML ? (
-          <div
+      <div className="mb-6">
+        {/* Header above player */}
+        <div className="mb-4">
+          <h2 className="font-heading font-bold text-[20px] sm:text-[24px] text-foreground">
+            Transmissão ao vivo
+          </h2>
+          <p className="text-[15px] text-muted-foreground mt-1">
+            {WEBINAR_CONFIG.metaLine}
+          </p>
+          <p className="text-[13px] text-ink-400 mt-1">
+            Se aparecer "offline", é normal — a transmissão abre alguns minutos antes.
+          </p>
+        </div>
+
+        {/* YouTube embed */}
+        <div
+          className="w-full rounded-xl overflow-hidden bg-black"
+          style={{ aspectRatio: "16 / 9" }}
+        >
+          <iframe
+            src={YOUTUBE_EMBED_URL}
             className="w-full h-full"
-            dangerouslySetInnerHTML={{ __html: WEBINAR_CONFIG.EMBED_IFRAME_HTML }}
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            title="Webinar ao vivo"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-ink-900">
-            <div className="text-center px-6">
-              <div className="inline-flex items-center gap-2 bg-red-500/20 text-red-400 text-[13px] font-semibold px-3 py-1 rounded-full mb-4">
-                <Radio className="w-3.5 h-3.5 animate-pulse" />
-                EM DIRETO
-              </div>
-              <h2 className="font-heading font-bold text-[20px] sm:text-[24px] text-white mb-2">
-                Transmissão em curso
-              </h2>
-              <p className="text-[14px] text-white/50">
-                O embed será colocado aqui quando disponível.
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
+
+        {/* Fallback below player */}
+        <div className="flex flex-col items-center gap-2 mt-4">
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href={YOUTUBE_LIVE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="gap-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Abrir no YouTube
+            </a>
+          </Button>
+          <p className="text-[13px] text-ink-400">
+            Se o player não carregar, abrir no YouTube resolve quase sempre.
+          </p>
+        </div>
       </div>
     );
   }
