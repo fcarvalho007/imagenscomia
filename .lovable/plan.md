@@ -1,112 +1,57 @@
 
+Implementarei um sistema de autenticação real para o CRM, abandonando o sistema baseado em mock e `sessionStorage`. Seguirei as melhores práticas de segurança da Supabase, utilizando o sistema de Roles (Funções) com RLS (Row-Level Security).
 
-## Nova Pagina /gravacao: Modal de Inscricao + Funil /upgrade-gravacao + CRM
+### Detalhes Técnicos do Plano:
 
-Tres alteracoes interligadas para suportar o fluxo pos-webinar de venda da gravacao.
+1.  **Infraestrutura de Banco de Dados (Migração SQL)**:
+    *   **Roles**: Criação do enum `public.app_role` com o valor `'admin'`.
+    *   **Tabela de Roles**: Criação da tabela `public.user_roles` vinculada ao `auth.users`.
+    *   **Função de Segurança**: Implementação da função `has_role(uuid, role)` com `SECURITY DEFINER` para permitir verificações de permissão rápidas e seguras em políticas RLS.
+    *   **Políticas de RLS**: Configuração das tabelas sensíveis (`registrations`, `message_logs`, `payment_events`, `invoice_details`, `email_templates`) para que apenas usuários com a role `'admin'` possam visualizar e gerenciar os dados.
+    *   **Atribuição Automática**: Criação de um trigger que atribui automaticamente a role `'admin'` a qualquer usuário que se registe com o email `fredericodigital@gmail.com`.
 
----
+2.  **Componente de Login (`CRMLogin.tsx`)**:
+    *   Substituição da lógica manual por `supabase.auth.signInWithPassword`.
+    *   Alteração do campo "Chave CRM" para "Palavra-passe".
+    *   Tratamento de erros de autenticação (ex: credenciais inválidas).
 
-### 1. Substituir PurchaseModal pelo RegistrationModal na pagina /gravacao
+3.  **Página Principal do CRM (`CRM.tsx`)**:
+    *   Mudança da gestão de estado de `sessionStorage` para `supabase.auth.onAuthStateChange`.
+    *   Adição de uma verificação de role após o login para garantir que apenas administradores acedam à interface.
 
-**Problema actual:** A pagina /gravacao usa o `PurchaseModal` (so pede primeiro nome, ultimo nome e email). O modal correcto e o `RegistrationModal` completo (nome completo, email, WhatsApp, checkbox de termos).
+4.  **Hook de Dados (`useInscritos.ts`)**:
+    *   Remoção da dependência da "CRM Key" (secret) no `localStorage`.
+    *   Atualização da função `deleteInscrito` para enviar o token de autenticação (JWT) no cabeçalho `Authorization` em vez do segredo estático.
 
-**Solucao:** Na pagina `Gravacao.tsx`, substituir o `PurchaseModal` por um formulario de captura inline (mesmo padrao do `CaptureView` dentro do `RegistrationModal`) que, apos registo bem-sucedido, redireciona para `/upgrade-gravacao`.
+5.  **Backend Function (`delete-registration`)**:
+    *   Atualização da Edge Function para validar o JWT do utilizador.
+    *   Verificação direta na tabela `user_roles` para confirmar se o utilizador que solicita a eliminação tem permissões de administrador.
 
-**Alteracoes no ficheiro `src/pages/Gravacao.tsx`:**
-- Remover import e uso do `PurchaseModal`
-- Adicionar um modal proprio com os mesmos campos do `RegistrationModal.CaptureView`: nome completo, email, WhatsApp, checkbox de termos, botoes legais
-- Ao submeter, chamar `register-free` (com campo extra `registration_source: "gravacao"`) e redirecionar para `/upgrade-gravacao?name=...&email=...`
-- Titulo do modal adaptado: "Quero acesso a gravacao + pack de apoio" em vez de "Quero confirmar o meu lugar para o Webinar Gratuito"
+### Fluxo de Trabalho:
+- Primeiro, executarei a migração do banco de dados para garantir que o sistema de permissões esteja pronto.
+- Em seguida, atualizarei as Edge Functions.
+- Por fim, farei as alterações no Frontend para integrar com o sistema de autenticação real.
 
----
-
-### 2. Nova pagina /upgrade-gravacao
-
-**Ficheiro novo:** `src/pages/UpgradeGravacao.tsx`
-
-Baseada no `Upsell.tsx` mas com fluxo simplificado de 3 passos:
-
-| Passo | Conteudo |
-|-------|----------|
-| 1 | StepQualification ("Como soubeste desta formacao?") — reutiliza o componente existente |
-| 2 | StepMasterclass (Masterclass a 47 euros + IVA) — reutiliza o componente existente |
-| 3 | StepConfirmation — checkout com dados de faturacao e pagamento |
-
-**Diferencas face ao /upgrade original:**
-- Nao mostra o passo de personalizacao (StepPersonalization)
-- Nao mostra o passo Premium (StepPremium) — salta directo para Masterclass
-- O banner de confirmacao diz "Gravacao + Pack de apoio garantidos" em vez de "Vaga garantida no Webinar Gratuito"
-- Barra de progresso: 3 passos em vez de 5
-- Se o utilizador nao adicionar a Masterclass (skip), vai para o StepConfirmation que mostra so o plano `gravacao` (27 euros)
-- O `OrderState` inclui `gravacao: true` por defeito (ja que e a razao de estar nesta pagina)
-
-**Logica de pagamento:**
-- Se so gravacao: plan = "gravacao", total = 33.21 euros
-- Se gravacao + masterclass: plan = "gravacao-masterclass" (novo bundle), total = 33.21 + 57.81 = 91.02 euros
-- O `create-payment` precisa de suportar o novo plan "gravacao-masterclass"
-
-**Rota no `src/App.tsx`:**
-- Adicionar `<Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />`
+**Nota**: Como não posso criar utilizadores diretamente na base de dados `auth` com passwords em texto limpo via migração por motivos de segurança (a Supabase usa hashes complexos), o utilizador `fredericodigital@gmail.com` será automaticamente promovido a administrador assim que fizer o login/signup no sistema.
 
 ---
 
-### 3. Backend: campo registration_source
+```mermaid
+sequenceDiagram
+    participant User as Frederico
+    participant Frontend as CRMLogin Component
+    participant Auth as Supabase Auth
+    participant DB as user_roles table
+    participant RLS as Database Policies
 
-**Migracao SQL:**
-```sql
-ALTER TABLE registrations ADD COLUMN registration_source text NOT NULL DEFAULT 'webinar';
+    User->>Frontend: Introduz Email e Pass
+    Frontend->>Auth: signInWithPassword(...)
+    Auth-->>Frontend: Retorna Sessão (JWT)
+    Frontend->>DB: Verifica Role 'admin'
+    DB-->>Frontend: Confirma Admin
+    Frontend->>RLS: Solicita Dados (registrations)
+    RLS->>DB: has_role(uid, 'admin')?
+    DB-->>RLS: Sim
+    RLS-->>Frontend: Retorna Dados
 ```
-
-Valores possiveis: `'webinar'` (pre-evento, default) e `'gravacao'` (pos-evento).
-
-**Alteracoes no `register-free/index.ts`:**
-- Aceitar campo opcional `registrationSource` no body
-- Passar `registration_source` no insert (default: `'webinar'`)
-
-**Alteracoes no `create-payment/index.ts`:**
-- Adicionar produto `"gravacao-masterclass"` com value 91.02 (74 + 23% IVA), identifier `"WEBINAR-GRAVMC"`, description `"Gravacao + Pack + Masterclass"`
-
----
-
-### 4. CRM: distinguir pre-webinar vs pos-webinar
-
-**Alteracoes no `useInscritos.ts`:**
-- O `mapRegistration` mapeia o novo campo `registration_source` para o objecto `Inscrito`
-
-**Alteracoes no tipo `Inscrito` (`src/pages/crm/mockData.ts`):**
-- Adicionar campo `registration_source: "webinar" | "gravacao"`
-
-**Alteracoes no `CRMSidebar.tsx`:**
-- Nenhuma alteracao na sidebar — a distincao e feita via filtro dentro das vistas existentes
-
-**Alteracoes no `PipelineView.tsx`:**
-- Adicionar um toggle/filtro no topo: "Todos" | "Pre-webinar" | "Pos-webinar (Gravacao)"
-- Quando "Pos-webinar" activo, filtrar `inscritos` por `registration_source === "gravacao"`
-- Badge visual nos cards: pill "POS-WEBINAR" (cinza escuro) quando `registration_source === "gravacao"`
-
-**Alteracoes no `TableView.tsx`:**
-- Adicionar coluna "Origem" que mostra "Webinar" ou "Gravacao"
-- Filtro rapido na barra de filtros
-
-**Alteracoes no `DashboardView.tsx`:**
-- Novo KPI card: "Pos-webinar" com contagem de inscritos com `registration_source === "gravacao"`
-- Receita separada: mostrar receita pre vs pos-webinar
-
----
-
-### Resumo de ficheiros
-
-| Ficheiro | Accao |
-|----------|-------|
-| `src/pages/Gravacao.tsx` | Substituir PurchaseModal por modal de inscricao completo |
-| `src/pages/UpgradeGravacao.tsx` | **Novo** — funil de 3 passos (qualificacao, masterclass, confirmacao) |
-| `src/App.tsx` | Adicionar routes `/upgrade-gravacao` |
-| `src/pages/crm/mockData.ts` | Adicionar `registration_source` ao tipo Inscrito |
-| `src/hooks/useInscritos.ts` | Mapear `registration_source` |
-| `src/components/crm/PipelineView.tsx` | Filtro pre/pos-webinar + badge |
-| `src/components/crm/TableView.tsx` | Coluna "Origem" + filtro |
-| `src/components/crm/DashboardView.tsx` | KPI pos-webinar |
-| `supabase/functions/register-free/index.ts` | Aceitar `registrationSource` |
-| `supabase/functions/create-payment/index.ts` | Novo plan `gravacao-masterclass` |
-| Migracao SQL | Adicionar coluna `registration_source` |
 
