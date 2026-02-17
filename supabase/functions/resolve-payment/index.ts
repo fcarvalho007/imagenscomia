@@ -21,8 +21,15 @@ async function validateLink(url: string): Promise<{ valid: boolean; status: numb
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, { method: "GET", redirect: "manual", signal: controller.signal });
     clearTimeout(timer);
-    const valid = [200, 301, 302, 303, 307, 308].includes(res.status);
-    return { valid, status: res.status };
+    if (res.status === 200) {
+      return { valid: true, status: 200 };
+    }
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
+      const location = res.headers.get("location") || "";
+      const isCheckout = location.includes("/api/extern/paybylink/form/") || location.includes("/paybylink/");
+      return { valid: isCheckout, status: res.status };
+    }
+    return { valid: false, status: res.status };
   } catch {
     return { valid: false, status: 0 };
   }
