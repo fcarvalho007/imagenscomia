@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import CRMLogin from "@/components/crm/CRMLogin";
 import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import DashboardView from "@/components/crm/DashboardView";
@@ -12,30 +13,71 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import type { LastEmailInfo } from "@/components/crm/templateLabels";
 
 export default function CRM() {
-  const [authenticated, setAuthenticated] = useState(
-    () => sessionStorage.getItem("crm_auth") === "1"
-  );
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
+  // Listen to auth state
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          // Check admin role
+          const { data } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin")
+            .maybeSingle();
+          setAuthenticated(!!data);
+        } else {
+          setAuthenticated(false);
+        }
+        setCheckingAuth(false);
+      }
+    );
+
+    // Check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+        setAuthenticated(!!data);
+      }
+      setCheckingAuth(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail } = useInscritos();
 
-  // Fetch last email map for table enrichment
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
   useEffect(() => {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
 
-  const handleLogout = useCallback(() => {
-    sessionStorage.removeItem("crm_auth");
-    sessionStorage.removeItem("crm_data");
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
     setAuthenticated(false);
   }, []);
 
-  // Keep slide-over in sync with latest data
   const currentInscrito = selectedInscrito
     ? inscritos.find((i) => i.id === selectedInscrito.id) || null
     : null;
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0F172A" }}>
+        <p className="text-white/40 text-sm">A verificar sessão...</p>
+      </div>
+    );
+  }
 
   if (!authenticated) {
     return <CRMLogin onLogin={() => setAuthenticated(true)} />;
@@ -49,7 +91,6 @@ export default function CRM() {
         onLogout={handleLogout}
       />
 
-      {/* Main content with sidebar offset */}
       <div className="flex-1 md:ml-[240px] overflow-y-auto">
         {activeView === "dashboard" && (
           <DashboardView inscritos={inscritos} onSelectInscrito={setSelectedInscrito} onRefresh={refresh} />
@@ -80,7 +121,6 @@ export default function CRM() {
         )}
       </div>
 
-      {/* Modal */}
       {currentInscrito && (
         <InscritoModal
           inscrito={currentInscrito}

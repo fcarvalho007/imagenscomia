@@ -128,15 +128,16 @@ export function useInscritos() {
   }, []);
 
   const deleteInscrito = useCallback(async (inscritoId: string) => {
-    const crmSecret = localStorage.getItem("crm_admin_secret") || "";
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-registration`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-crm-secret": crmSecret,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ registration_id: inscritoId }),
         }
