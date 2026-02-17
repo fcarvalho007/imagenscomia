@@ -1,57 +1,50 @@
 
-Implementarei um sistema de autenticação real para o CRM, abandonando o sistema baseado em mock e `sessionStorage`. Seguirei as melhores práticas de segurança da Supabase, utilizando o sistema de Roles (Funções) com RLS (Row-Level Security).
 
-### Detalhes Técnicos do Plano:
+## Atualizar /live com embed YouTube e fallback UX
 
-1.  **Infraestrutura de Banco de Dados (Migração SQL)**:
-    *   **Roles**: Criação do enum `public.app_role` com o valor `'admin'`.
-    *   **Tabela de Roles**: Criação da tabela `public.user_roles` vinculada ao `auth.users`.
-    *   **Função de Segurança**: Implementação da função `has_role(uuid, role)` com `SECURITY DEFINER` para permitir verificações de permissão rápidas e seguras em políticas RLS.
-    *   **Políticas de RLS**: Configuração das tabelas sensíveis (`registrations`, `message_logs`, `payment_events`, `invoice_details`, `email_templates`) para que apenas usuários com a role `'admin'` possam visualizar e gerenciar os dados.
-    *   **Atribuição Automática**: Criação de um trigger que atribui automaticamente a role `'admin'` a qualquer usuário que se registe com o email `fredericodigital@gmail.com`.
-
-2.  **Componente de Login (`CRMLogin.tsx`)**:
-    *   Substituição da lógica manual por `supabase.auth.signInWithPassword`.
-    *   Alteração do campo "Chave CRM" para "Palavra-passe".
-    *   Tratamento de erros de autenticação (ex: credenciais inválidas).
-
-3.  **Página Principal do CRM (`CRM.tsx`)**:
-    *   Mudança da gestão de estado de `sessionStorage` para `supabase.auth.onAuthStateChange`.
-    *   Adição de uma verificação de role após o login para garantir que apenas administradores acedam à interface.
-
-4.  **Hook de Dados (`useInscritos.ts`)**:
-    *   Remoção da dependência da "CRM Key" (secret) no `localStorage`.
-    *   Atualização da função `deleteInscrito` para enviar o token de autenticação (JWT) no cabeçalho `Authorization` em vez do segredo estático.
-
-5.  **Backend Function (`delete-registration`)**:
-    *   Atualização da Edge Function para validar o JWT do utilizador.
-    *   Verificação direta na tabela `user_roles` para confirmar se o utilizador que solicita a eliminação tem permissões de administrador.
-
-### Fluxo de Trabalho:
-- Primeiro, executarei a migração do banco de dados para garantir que o sistema de permissões esteja pronto.
-- Em seguida, atualizarei as Edge Functions.
-- Por fim, farei as alterações no Frontend para integrar com o sistema de autenticação real.
-
-**Nota**: Como não posso criar utilizadores diretamente na base de dados `auth` com passwords em texto limpo via migração por motivos de segurança (a Supabase usa hashes complexos), o utilizador `fredericodigital@gmail.com` será automaticamente promovido a administrador assim que fizer o login/signup no sistema.
+Duas alteracoes simples: config e componente de video.
 
 ---
 
-```mermaid
-sequenceDiagram
-    participant User as Frederico
-    participant Frontend as CRMLogin Component
-    participant Auth as Supabase Auth
-    participant DB as user_roles table
-    participant RLS as Database Policies
+### Ficheiros a alterar
 
-    User->>Frontend: Introduz Email e Pass
-    Frontend->>Auth: signInWithPassword(...)
-    Auth-->>Frontend: Retorna Sessão (JWT)
-    Frontend->>DB: Verifica Role 'admin'
-    DB-->>Frontend: Confirma Admin
-    Frontend->>RLS: Solicita Dados (registrations)
-    RLS->>DB: has_role(uid, 'admin')?
-    DB-->>RLS: Sim
-    RLS-->>Frontend: Retorna Dados
-```
+| Ficheiro | Alteracao |
+|----------|-----------|
+| `src/components/webinar/webinarConfig.ts` | Colocar `isLive: true` e preencher `EMBED_IFRAME_HTML` com o iframe do YouTube |
+| `src/components/webinar/WebinarVideoArea.tsx` | Redesenhar o estado "live": adicionar titulo/subtitulo/nota acima do player, botao fallback + texto abaixo |
 
+---
+
+### Detalhes
+
+**1. webinarConfig.ts**
+
+- `isLive: true` — forca o estado live independentemente da hora
+- `EMBED_IFRAME_HTML`: iframe embed do YouTube com o video `hYsTZA9bcPA`:
+  ```
+  <iframe src="https://www.youtube.com/embed/hYsTZA9bcPA" ... />
+  ```
+
+**2. WebinarVideoArea.tsx — estado live redesenhado**
+
+Estrutura do bloco live (de cima para baixo):
+
+- **Acima do player:**
+  - Titulo: "Transmissao ao vivo" (h2, font-heading, bold)
+  - Subtitulo: "Quarta-feira, 18 de Fevereiro . 10h00 (Portugal)" (texto ink-500)
+  - Nota: "Se aparecer 'offline', e normal — a transmissao abre alguns minutos antes." (texto pequeno ink-400)
+
+- **Player:**
+  - Container com `width: 100%`, `aspect-ratio: 16 / 9`, `border-radius`, overflow hidden
+  - iframe YouTube embed com `allow="autoplay; encrypted-media; picture-in-picture"` e `allowFullScreen`
+  - Nao usar `dangerouslySetInnerHTML` — renderizar o iframe directamente em JSX para controlo total dos atributos
+
+- **Abaixo do player:**
+  - Botao secundario (variant="outline", tamanho normal): "Abrir no YouTube" — link para `https://youtube.com/live/hYsTZA9bcPA`, target `_blank`, rel `noopener noreferrer`
+  - Texto pequeno (13px, ink-400): "Se o player nao carregar, abrir no YouTube resolve quase sempre."
+
+**Mobile:** O player fica full-width naturalmente com `w-full` + `aspect-ratio: 16/9`. O botao e texto de fallback ficam centrados e visiveis sem scroll.
+
+### Sem alteracoes noutros ficheiros
+
+A pagina `WebinarLive.tsx` ja consome o `WebinarVideoArea` e passa `isLive` — nao precisa de ser tocada.
