@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.invoice-upsert]
 verify_jwt = false
+
+[functions.resolve-payment]
+verify_jwt = false

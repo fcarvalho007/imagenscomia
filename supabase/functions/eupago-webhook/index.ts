@@ -97,8 +97,31 @@ async function processPayment(data: PaymentData) {
     }
   }
 
-  // Strategy 2: Extract email from identifier (fallback)
-  if (!matched && identifier) {
+  // Strategy 2: Match by order_id from identifier (ORDER-{order_id})
+  if (!matched && identifier && identifier.startsWith("ORDER-")) {
+    const oid = identifier.replace("ORDER-", "");
+    if (oid) {
+      const { data: updatedRows, error } = await supabase
+        .from("registrations")
+        .update({
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || identifier,
+        })
+        .eq("order_id", oid)
+        .select("id");
+
+      if (!error && updatedRows && updatedRows.length > 0) {
+        console.log(`✅ Matched by order_id: ${oid}`);
+        matched = true;
+        matchedRegId = updatedRows[0].id;
+      } else {
+        console.log(`⚠️ No match by order_id=${oid}`);
+      }
+    }
+  }
+
+  // Strategy 3: Extract email from identifier (legacy fallback)
+  if (!matched && identifier && !identifier.startsWith("ORDER-")) {
     const parts = identifier.split("-");
     let email = "";
     if (parts.length >= 4) {
