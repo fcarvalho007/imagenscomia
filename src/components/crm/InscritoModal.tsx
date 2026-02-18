@@ -434,6 +434,7 @@ export default function InscritoModal({
               messageLogs={messageLogs}
               regenerateLink={regenerateLink}
               resendPaymentEmail={resendPaymentEmail}
+              sendBacklogCheckin={sendBacklogCheckin}
               onRefresh={onRefresh}
               onOpenResendModal={() => setResendModalOpen(true)}
               onGenerateReminder={handleGenerateReminder}
