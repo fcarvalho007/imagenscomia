@@ -30,7 +30,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
 
   if (compact) {
     return (
-      <div className="bg-white/96 rounded-[16px] border border-white/15 shadow-lg p-4">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
             Próximo passo
