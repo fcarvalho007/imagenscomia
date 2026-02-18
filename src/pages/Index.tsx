@@ -20,7 +20,7 @@ import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButto
 
 const Index = () => {
   usePageMeta({ title: "Criar Imagens com IA para Empresas — Webinar Gratuito 18 Fev 10h", description: "Aprende a criar imagens profissionais com IA para a tua empresa. Sem designer. Webinar gratuito, 18 Fevereiro, 10h. Método testado. Demo ao vivo." });
-  return <Navigate to="/live" replace />;
+  return <Navigate to="/gravacao" replace />;
 };
 
 const _IndexLanding = () => {
