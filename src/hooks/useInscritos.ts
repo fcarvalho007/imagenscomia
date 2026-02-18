@@ -59,6 +59,7 @@ function mapRegistration(r: any): Inscrito {
     do_not_contact: r.do_not_contact ?? false,
     last_payment_link_sent_at: r.last_payment_link_sent_at || null,
     registration_source: (r.registration_source as "webinar" | "gravacao") || "webinar",
+    invoice_sent: (r as any).invoice_sent ?? false,
   };
 }
 
@@ -318,5 +319,19 @@ export function useInscritos() {
     );
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached };
+  const toggleInvoiceSent = useCallback(async (inscritoId: string) => {
+    const current = inscritos.find((i) => i.id === inscritoId);
+    if (!current) return;
+    const newVal = !current.invoice_sent;
+    const { error } = await supabase
+      .from("registrations")
+      .update({ invoice_sent: newVal } as any)
+      .eq("id", inscritoId);
+    if (error) { console.error("Error toggling invoice_sent:", error); return; }
+    setInscritos((prev) =>
+      prev.map((i) => (i.id === inscritoId ? { ...i, invoice_sent: newVal } : i))
+    );
+  }, [inscritos]);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent };
 }

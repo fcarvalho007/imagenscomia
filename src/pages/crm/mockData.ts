@@ -37,6 +37,7 @@ export type Inscrito = {
   do_not_contact: boolean;
   last_payment_link_sent_at: string | null;
   registration_source: "webinar" | "gravacao";
+  invoice_sent: boolean;
 };
 
 export const MOCK_DATA: Inscrito[] = [];

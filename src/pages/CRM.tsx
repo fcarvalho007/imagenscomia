@@ -68,7 +68,7 @@ export default function CRM() {
     };
   }, []);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent } = useInscritos();
 
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
   useEffect(() => {
@@ -162,6 +162,7 @@ export default function CRM() {
           resendPaymentEmail={resendPaymentEmail}
           onRefresh={refresh}
           onUpdateStepReached={updateStepReached}
+          onToggleInvoiceSent={toggleInvoiceSent}
         />
       )}
     </div>
