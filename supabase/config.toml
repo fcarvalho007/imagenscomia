@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.delete-registration]
 verify_jwt = false
+
+[functions.get-analytics-visitors]
+verify_jwt = false
