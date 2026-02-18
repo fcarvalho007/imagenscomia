@@ -202,13 +202,13 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
   const funnelSteps = [
-    { label: "Submeteu inscrição",               value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           separator: false },
-    { label: "Chegou ao Passo 1 — Origem",       value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           separator: false },
-    { label: "Chegou ao Passo 2 — Dúvida",       value: stats.step3,          color: "#0891B2",               note: null,                           separator: false },
-    { label: "Viu oferta Premium (Passo 3)",     value: stats.step4,          color: "hsl(var(--amber-500))", note: null,                           separator: false },
-    { label: "Viu oferta Masterclass (Passo 4)", value: stats.step5,          color: "#7C3AED",               note: null,                           separator: true  },
-    { label: "Clicou para pagar",                value: stats.clickedToPay,   color: "hsl(var(--amber-500))", note: "preenche dados de faturação",   separator: false },
-    { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           separator: false },
+    { label: "Submeteu inscrição",               value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                    separator: false, isConversion: false },
+    { label: "Chegou ao Passo 1 — Origem",       value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                    separator: false, isConversion: false },
+    { label: "Chegou ao Passo 2 — Dúvida",       value: stats.step3,          color: "#0891B2",               note: null,                           sublabel: null,                    separator: false, isConversion: false },
+    { label: "Viu oferta Premium (Passo 3)",     value: stats.step4,          color: "hsl(var(--amber-500))", note: null,                           sublabel: "Viu a oferta de €15",   separator: true,  isConversion: true  },
+    { label: "Viu oferta Masterclass (Passo 4)", value: stats.step5,          color: "#7C3AED",               note: null,                           sublabel: "Viu a oferta de €57,81",separator: false, isConversion: true  },
+    { label: "Clicou para pagar",                value: stats.clickedToPay,   color: "hsl(var(--amber-500))", note: "preenche dados de faturação",   sublabel: null,                    separator: false, isConversion: true  },
+    { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
   ];
 
   const visitorDropLost = visitantes > 0 ? visitantes - stats.step1 : 0;
@@ -279,42 +279,73 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             const pct = base ? (step.value / base) * 100 : 0;
             const drop = idx < stats.dropOffs.length ? stats.dropOffs[idx] : null;
             const isMaxDrop = idx === stats.maxDropIdx && drop && drop.lost > 0;
+            const isLast = idx === funnelSteps.length - 1;
+            const barH = step.isConversion ? (isLast ? "h-3.5" : "h-3") : "h-2.5";
+            const valueSize = step.isConversion ? "text-[15px]" : "text-[13px]";
             return (
               <div key={idx}>
-                {/* Separator before "Intenção de compra" steps */}
+                {/* Separator before "Intenção de compra" zone */}
                 {step.separator && (
-                  <div className="flex items-center gap-2 my-2">
-                    <div className="flex-1 h-px bg-border" />
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-400 px-2">— Intenção de compra →</span>
-                    <div className="flex-1 h-px bg-border" />
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
-                    {idx + 1}. {step.label}
-                  </span>
-                  <div className="flex-1 h-2.5 rounded-full bg-surface overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${pct}%`, background: step.color }}
-                    />
-                  </div>
-                  <span className="text-[13px] font-heading font-bold text-ink-700 w-28 text-right shrink-0">
-                    {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(1)}%)</span>
-                  </span>
-                </div>
-                {step.note && (
-                  <p className="text-[10px] text-ink-400 ml-[200px] max-sm:ml-[140px] pl-1 -mt-0.5">· {step.note} ·</p>
-                )}
-                {drop && drop.lost > 0 && (
-                  <div className={`flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 ${isMaxDrop ? "text-red-500 font-semibold" : "text-ink-400"}`}>
-                    <ArrowDown size={10} />
-                    <span className="text-[11px]">
-                      −{drop.lost} pessoa{drop.lost !== 1 ? "s" : ""} ({drop.pct.toFixed(0)}% drop)
+                  <div className="flex items-center gap-2 my-4">
+                    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500) / 0.35)" }} />
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+                      style={{
+                        color: "hsl(var(--amber-500))",
+                        background: "hsl(var(--amber-500) / 0.08)",
+                        border: "1px solid hsl(var(--amber-500) / 0.25)",
+                      }}
+                    >
+                      Intenção de compra
                     </span>
-                    {isMaxDrop && <AlertTriangle size={10} className="text-red-500" />}
+                    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500) / 0.35)" }} />
                   </div>
                 )}
+                {/* Wrap conversion steps in amber-tinted zone */}
+                <div
+                  className="rounded-lg py-0.5"
+                  style={
+                    step.isConversion
+                      ? {
+                          background: "hsl(var(--amber-500) / 0.03)",
+                          borderLeft: "2px solid hsl(var(--amber-500) / 0.2)",
+                          paddingLeft: "8px",
+                          marginLeft: "2px",
+                        }
+                      : {}
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-[200px] max-sm:w-[140px] shrink-0">
+                      <span className="text-[12px] text-ink-500 truncate block">{idx + 1}. {step.label}</span>
+                      {step.sublabel && (
+                        <span className="text-[11px] text-ink-400 block">{step.sublabel}</span>
+                      )}
+                    </div>
+                    <div className={`flex-1 ${barH} rounded-full bg-surface overflow-hidden`}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%`, background: step.color }}
+                      />
+                    </div>
+                    <span className={`${valueSize} font-heading font-bold text-ink-700 w-28 text-right shrink-0`}>
+                      {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(1)}%)</span>
+                    </span>
+                  </div>
+                  {step.note && (
+                    <p className="text-[10px] text-ink-400 ml-[200px] max-sm:ml-[140px] pl-1 -mt-0.5">· {step.note} ·</p>
+                  )}
+                  {drop && drop.lost > 0 && (
+                    <div className={`flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 ${isMaxDrop ? "font-semibold" : "text-ink-400"}`}
+                      style={isMaxDrop ? { color: "hsl(var(--destructive))" } : {}}>
+                      <ArrowDown size={10} />
+                      <span className="text-[11px]">
+                        −{drop.lost} pessoa{drop.lost !== 1 ? "s" : ""} ({drop.pct.toFixed(0)}% drop)
+                      </span>
+                      {isMaxDrop && <AlertTriangle size={10} />}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
