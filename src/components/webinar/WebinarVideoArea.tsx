@@ -1,4 +1,4 @@
-import { Clock, ExternalLink } from "lucide-react";
+import { Clock, ExternalLink, CheckCircle2 } from "lucide-react";
 import { WEBINAR_CONFIG } from "./webinarConfig";
 import { Button } from "@/components/ui/button";
 
@@ -32,14 +32,32 @@ export const WebinarVideoArea = ({ isLive, isEnded, countdown }: Props) => {
   // Ended state
   if (isEnded) {
     return (
-      <div className="aspect-video rounded-xl bg-ink-900 flex items-center justify-center mb-6">
-        <div className="text-center px-6">
-          <h2 className="font-heading font-bold text-[20px] sm:text-[24px] text-white mb-2">
-            Obrigado por participar!
+      <div className="aspect-video rounded-xl bg-gradient-to-br from-[#0a0f1e] via-[#0f1b33] to-[#0a1628] border border-white/[0.06] flex items-center justify-center mb-6 relative overflow-hidden shadow-2xl">
+        {/* Subtle grid pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+        <div className="relative z-10 text-center px-6 max-w-md">
+          <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-[13px] font-medium px-3 py-1 rounded-full mb-5">
+            <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+            Transmissão concluída
+          </div>
+          <h2 className="font-heading font-bold text-[22px] sm:text-[28px] text-white mb-3 leading-tight">
+            Obrigado por participares!
           </h2>
-          <p className="text-[15px] text-white/60 max-w-md">
-            A gravação está disponível para quem tem o Premium Pass.
+          <p className="text-[14px] sm:text-[15px] text-white/60 mb-6 leading-relaxed">
+            A gravação HD + documentos de apoio (resumos, checklists e prompts) estão disponíveis por <span className="text-white font-semibold">27 €</span>.
           </p>
+          <a
+            href="/gravacao"
+            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold text-[15px] px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Aceder à gravação →
+          </a>
         </div>
       </div>
     );
