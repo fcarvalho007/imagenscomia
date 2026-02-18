@@ -1,128 +1,134 @@
 
-## Reorganização da Página /recursos — Sem Duplicação + Clareza de Conteúdo
+## Bulk Tagging E-Goi — Compradores Existentes
 
-### Problema actual
+### Contexto
 
-Os recursos (Resumo PDF, Áudio, SOP, WHISK) estão **duplicados** — aparecem tanto na tab "Gravação" quanto na sidebar. O utilizador vê a mesma informação duas vezes sem propósito claro.
+O webhook de pagamento já tem a lógica de tagging implementada para novos pagamentos, mas **os compradores anteriores** nunca receberam as tags porque a lógica ainda não existia quando pagaram. São ao total:
 
-### Decisão de arquitectura
+| Plano | Nº compradores | Tags a atribuir |
+|---|---|---|
+| premium | 11 | Tag 32 |
+| bundle | 2 | Tags 32 + 33 |
+| premium_granted_at (gravação) | 1 | Tag 32 (acesso premium) |
 
-Os recursos ficam **apenas na sidebar** (coluna da direita), que é sempre visível e funciona como painel de acesso rápido. A tab "Gravação" fica exclusivamente com o índice de capítulos — sem mistura de conteúdo.
-
----
-
-### Alterações por ficheiro
-
-#### `src/components/recursos/RecursosConteudo.tsx`
-
-**1. Tab "Gravação" — remover bloco de recursos duplicado**
-
-Apagar o bloco completo `{/* Resources */}` (linhas 248–313) que contém os 4 botões (Resumo, Áudio, SOP, WHISK). A tab fica limpa com apenas o índice de capítulos.
-
-**2. Tab "Guia" — remover secção "Guia de Prompts" com bullets**
-
-Apagar o bloco "Guia de Prompts — teaser" (linhas 367–392) que contém:
-- Título "Guia de Prompts"
-- Badge "Disponível a 25 Fev"
-- 3 bullets (50+ prompts, Templates, Exemplos)
-- Texto "Receberás um email..."
-
-Em substituição, adicionar dois itens na tab Guia — abaixo do accordion existente:
-
-```
-┌─ Guia de Apoio Nano Banana Pro (32 páginas) ─────────────────┐
-│  [ícone livro]  Guia de Apoio Nano Banana Pro                 │
-│                 32 páginas · Brevemente                       │
-│                 [badge cinza: "Em breve"]                     │
-└───────────────────────────────────────────────────────────────┘
-
-┌─ Guia de Prompts ────────────────────────────────────────────┐
-│  [ícone ficheiro]  Guia de Prompts                            │
-│                    Disponível a 25 de Fevereiro               │
-│                    [badge âmbar: "25 Fev"]                    │
-└───────────────────────────────────────────────────────────────┘
-```
-
-Estes itens ficam **desactivados visualmente** (sem link clicável, opacidade reduzida, cursor não-pointer) — deixando claro que não estão disponíveis.
-
-**3. Sidebar — reorganizar e clarificar recursos**
-
-A sidebar "Recursos" fica com todos os links, organizados por disponibilidade:
-
-**Disponíveis (com link):**
-- Resumo do Webinar — PDF
-- Áudio em Bruto — MP3
-- SOP de Prompts — Criação de Projecto
-- Exercício Google WHISK
-
-**Indisponíveis (com aviso claro, sem link):**
-Nenhum nesta lista — os guias indisponíveis ficam na tab Guia.
-
-O "Guia PDF" (guia-essencial-seo.png) mantém-se na sidebar.
-
-**4. Botão Masterclass — novo texto**
-
-Em `RecursosUpsell.tsx`, trocar em ambas as variantes (`compact` e normal):
-
-```
-"Ver Masterclass"  →  "Inscrição na Masterclass (3h)"
-```
-
-E actualizar o subtítulo/badge para incluir:
-```
-"5 de Março, quinta-feira · 10h00"
-```
+**Total: 14 contactos** a sincronizar no E-Goi.
 
 ---
 
-### Resultado visual final
+### Solução: nova Edge Function `bulk-tag-egoi`
 
-**Tab "Gravação":**
-```
-Índice da sessão
-  ○ 00:00  Introdução e estado da arte
-  ○ 08:30  Método: do briefing à imagem
-  ○ 24:00  Demos ao vivo com ferramentas
-  ○ 48:00  Q&A e casos práticos
-```
-(só isto — sem recursos abaixo)
+Criar uma função dedicada para este bulk update, separada do `bulk-sync-egoi` existente (que só trata registos/contactos, não tags). A função:
 
-**Tab "Guia":**
-```
-[Banner] Guia de Apoio — PDF  [Descarregar]
+1. Busca na base de dados todos os registos com `paid_at IS NOT NULL OR premium_granted_at IS NOT NULL`
+2. Para cada registo, procura o `contactId` no E-Goi pelo email
+3. Atribui as tags conforme o plano:
+   - `premium` → tag 32
+   - `masterclass` → tag 33
+   - `bundle` → tags 32 + 33
+   - `premium_granted_at` (sem `plan_selected` de produto) → tag 32
+4. Regista resultado por email (ok / contact_not_found / error)
+5. Retorna um relatório JSON com os resultados
 
-Checklist rápida
-  › Setup inicial...
-  › Erros comuns...
-  › Boas práticas...
+A função tem um **delay de 300ms entre chamadas** para não ser banida pela API do E-Goi.
 
-────────────────────────────────
-[desactivado] 📖 Guia de Apoio Nano Banana Pro (32 páginas)
-              Em breve
-[desactivado] 📋 Guia de Prompts
-              Disponível a 25 de Fevereiro
+---
+
+### Implementação técnica
+
+**Ficheiro novo:** `supabase/functions/bulk-tag-egoi/index.ts`
+
+```ts
+// Lógica principal:
+
+// 1. Buscar compradores
+const { data: buyers } = await supabase
+  .from("registrations")
+  .select("email, plan_selected, paid_at, premium_granted_at")
+  .or("paid_at.not.is.null,premium_granted_at.not.is.null");
+
+// 2. Para cada comprador:
+for (const buyer of buyers) {
+  // a) Encontrar contact_id por email
+  const contactRes = await fetch(
+    `https://api.egoiapp.com/lists/5/contacts?email=${encodeURIComponent(buyer.email)}`,
+    { headers: { "Apikey": EGOI_API_KEY } }
+  );
+  const contactId = contactData?.items?.[0]?.contact || null;
+  
+  if (!contactId) {
+    results.push({ email: buyer.email, status: "contact_not_found" });
+    continue;
+  }
+
+  // b) Determinar tags a aplicar
+  const plan = buyer.plan_selected;
+  const tagsToApply: number[] = [];
+  
+  if (["premium", "bundle"].includes(plan) || buyer.premium_granted_at) {
+    tagsToApply.push(32); // TAG_PREMIUM
+  }
+  if (["masterclass", "bundle"].includes(plan)) {
+    tagsToApply.push(33); // TAG_MASTERCLASS
+  }
+
+  // c) Aplicar cada tag via attach-tag
+  for (const tagId of tagsToApply) {
+    await fetch("https://api.egoiapp.com/lists/5/contacts/actions/attach-tag", {
+      method: "POST",
+      headers: { "Apikey": EGOI_API_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ tag_id: tagId, contacts: [contactId] }),
+    });
+  }
+
+  // d) Delay anti-rate-limit
+  await new Promise(r => setTimeout(r, 300));
+}
 ```
 
-**Sidebar "Recursos":**
-```
-[azul]    📄 Resumo do Webinar          → Drive
-[cinza]   🎧 Áudio em Bruto             → Drive
-[violeta] 📋 SOP de Prompts             → Drive
-[verde]   🔢 Exercício Google WHISK     → Drive
-[azul]    📥 Guia PDF                   → Download
-```
-
-**Sidebar "Masterclass" (para não-bundle):**
-```
-[CTA azul] Inscrição na Masterclass (3h)
-           5 de Março, quinta-feira · 10h00
+**`supabase/config.toml`** — adicionar:
+```toml
+[functions.bulk-tag-egoi]
+verify_jwt = false
 ```
 
 ---
 
-### Ficheiros a alterar
+### Como invocar
 
-| Ficheiro | Mudança |
+Após deploy, invocar via curl na consola (ou ferramenta de testes):
+
+```bash
+curl -X POST https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/bulk-tag-egoi \
+  -H "Authorization: Bearer eyJ..."
+```
+
+Retorna um relatório como:
+```json
+{
+  "total": 14,
+  "tagged": 12,
+  "contact_not_found": 2,
+  "errors": 0,
+  "details": [
+    { "email": "joana@e-accelerator.pt", "plan": "premium", "tags": [32], "status": "ok" },
+    { "email": "mariahelena@...", "plan": "bundle", "tags": [32, 33], "status": "ok" },
+    ...
+  ]
+}
+```
+
+---
+
+### Ficheiros a criar/modificar
+
+| Ficheiro | Acção |
 |---|---|
-| `src/components/recursos/RecursosConteudo.tsx` | Remover duplicação na tab Gravação, remover bullets Prompts, adicionar 2 items "em breve" na tab Guia, reorganizar sidebar |
-| `src/components/recursos/RecursosUpsell.tsx` | Novo texto do botão e data da Masterclass |
+| `supabase/functions/bulk-tag-egoi/index.ts` | Criar — nova edge function |
+| `supabase/config.toml` | Adicionar `[functions.bulk-tag-egoi]` com `verify_jwt = false` |
+
+### O que NÃO muda
+- `bulk-sync-egoi` (function existente para sincronizar contactos — mantém-se)
+- `eupago-webhook` (já tem a lógica para novos pagamentos)
+- Base de dados / registrations
+
+Depois de executar, posso confirmar os resultados nos logs da edge function para ver quais os emails que foram marcados com sucesso e quais não foram encontrados no E-Goi.
