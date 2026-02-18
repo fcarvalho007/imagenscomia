@@ -245,72 +245,6 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                     ))}
                   </ul>
 
-                  {/* Resources */}
-                  <div className="mt-5 pt-5 border-t border-gray-100 space-y-2.5">
-                    {/* Resumo PDF */}
-                    <a
-                      href={RECURSOS_CONFIG.resumoPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Download size={14} className="text-blue-600" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Resumo do webinar</span>
-                        <span className="text-[11px] text-gray-500">PDF · Abrir</span>
-                      </div>
-                    </a>
-
-                    {/* Áudio */}
-                    <a
-                      href={RECURSOS_CONFIG.audioUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Headphones size={14} className="text-gray-500" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Áudio em Bruto do Webinar</span>
-                        <span className="text-[11px] text-gray-500">imagensIA c/ fredericocarvalho.pt · MP3 · Abrir</span>
-                      </div>
-                    </a>
-
-                    {/* SOP de Prompts */}
-                    <a
-                      href={RECURSOS_CONFIG.sopPromptsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
-                        <FileText size={14} className="text-violet-600" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Criação de Projecto — SOP de Prompts</span>
-                        <span className="text-[11px] text-gray-500">Standard Operacional · Abrir</span>
-                      </div>
-                    </a>
-
-                    {/* WHISK */}
-                    <a
-                      href={RECURSOS_CONFIG.whiskUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Layers size={14} className="text-green-600" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Exercício Prático Google WHISK</span>
-                        <span className="text-[11px] text-gray-500">1 Prompt, Vários Resultados · Abrir</span>
-                      </div>
-                    </a>
-                  </div>
                 </div>
               )}
 
@@ -364,31 +298,39 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                     </AccordionItem>
                   </Accordion>
 
-                  {/* Guia de Prompts — teaser */}
-                  <div className="mt-6 pt-5 border-t border-gray-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-                        Guia de Prompts
-                      </p>
-                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-                        Disponível a 25 Fev
+                  {/* Coming soon items */}
+                  <div className="mt-6 pt-5 border-t border-gray-100 space-y-2.5">
+                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                      Em breve
+                    </p>
+
+                    {/* Guia de Apoio Nano Banana Pro */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText size={14} className="text-gray-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-gray-600 block">Guia de Apoio Nano Banana Pro</span>
+                        <span className="text-[11px] text-gray-400">32 páginas</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full shrink-0">
+                        Em breve
                       </span>
                     </div>
-                    <ul className="space-y-2.5">
-                      {[
-                        "50+ prompts por categoria (fotografia, produto, editorial, vídeo)",
-                        "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
-                        "Exemplos com resultado esperado e variações de estilo",
-                      ].map((b, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-                          <Check size={13} className="text-blue-500 mt-0.5 shrink-0" />
-                          {b}
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="text-xs text-gray-400 mt-4">
-                      📧 Receberás um email assim que estiver disponível.
-                    </p>
+
+                    {/* Guia de Prompts */}
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100 opacity-60 cursor-not-allowed">
+                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText size={14} className="text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-gray-600 block">Guia de Prompts</span>
+                        <span className="text-[11px] text-gray-400">Disponível a 25 de Fevereiro</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                        25 Fev
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
