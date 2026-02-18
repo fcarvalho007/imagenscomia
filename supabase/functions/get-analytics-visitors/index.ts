@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const projectId = Deno.env.get("SUPABASE_PROJECT_ID") ?? "bacfa751-bc77-4ced-ab7c-bb62e7ceb144";
+    const projectId = "bacfa751-bc77-4ced-ab7c-bb62e7ceb144";
     const startDate = "2026-02-08";
     const endDate = new Date().toISOString().split("T")[0];
 
