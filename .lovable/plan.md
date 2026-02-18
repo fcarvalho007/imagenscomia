@@ -1,79 +1,123 @@
 
-## Diagnóstico definitivo e correção robusta
+## Alterações no CRM — Pipeline, Dashboard (Planos + Funil + Emails)
 
-### Raiz do problema confirmada com dados reais
+### 1. Pipeline — remover colunas "Inscrito" e "Flow Completo" no filtro Pós-webinar
 
-Há uma confusão entre dois IDs completamente diferentes da EuPago:
+**Ficheiro:** `src/components/crm/PipelineView.tsx`
 
-**ID de criação** (guardado na BD quando se cria o link):
-`eupago_ref = "09acb60ac5d4433598b3176e1d76fb80"` — UUID longo de 32 caracteres
+Actualmente as 6 colunas do Kanban incluem "Inscrito" e "Flow Completo" (ambas para `plan === "free"`). No contexto Pós-webinar (filtro `gravacao`), estas colunas são irrelevantes — os inscritos pós-webinar têm já um contexto diferente.
 
-**ID de pagamento** (enviado pelo webhook quando o pagamento acontece):
-`transactionID = "61611445"` — ID numérico curto
+A solução mais limpa: quando o `sourceFilter === "gravacao"`, excluir as colunas com `title === "Inscrito"` e `title === "Flow Completo"` antes de renderizar. O filtro já existe — basta filtrar também as colunas:
 
-São dois sistemas de referência completamente distintos. A Strategy 1 nunca vai funcionar porque compara o UUID da criação com o numérico do pagamento — são sempre diferentes.
-
-Rita Pinto foi a única que funcionou por Strategy 1 porque a sua versão anterior do código guardava um valor numérico compatível por acaso.
-
-### Estado atual após a correção
-
-A **Strategy 2** (por `order_id`) está correta e robusta:
-
-```
-Webhook recebe: identifier = "ORDER-02772a5aa74c-Drio Ramos"
-Código faz:     .replace("ORDER-", "").split("-")[0]  →  "02772a5aa74c"
-BD tem:         order_id = "02772a5aa74c"
-Resultado:      ✅ Match garantido
-```
-
-Esta estratégia é à prova de falha porque:
-- O `order_id` é gerado pela base de dados e nunca muda
-- É sempre os primeiros 12 caracteres após "ORDER-"
-- O nome que se segue pode ter hífens, acentos, qualquer coisa — o `.split("-")[0]` isola sempre apenas o `order_id`
-
-**Para todos os pagamentos futuros onde o `identifier` comece com "ORDER-", o sistema funciona corretamente.**
-
-### O que ainda está frágil — Strategy 1
-
-A Strategy 1 fica no código mas nunca vai disparar utilmente. É ruído que pode criar confusão futura. Proposta: transformá-la numa ferramenta de diagnóstico (apenas LOG) em vez de tentar um UPDATE cego que nunca vai casar.
-
-### O que vamos fazer
-
-**1. Limpeza da Strategy 1** — em vez de tentar um UPDATE por `eupago_ref = transactionID` (que nunca casa), fazer apenas um SELECT para log de diagnóstico e registar o `transactionID` numérico num campo separado para auditoria.
-
-**2. Adicionar coluna `eupago_transaction_id`** na tabela `registrations` — guarda o ID numérico do pagamento quando o webhook chega. Assim temos ambos os IDs para auditoria: o UUID da criação e o numérico do pagamento.
-
-**3. Guardar `eupago_transaction_id` em `create-payment` também** — quando a EuPago devolve o link, já devolve um `transactionID`. Guardá-lo num campo dedicado elimina a confusão futura.
-
-**4. Reforçar os logs** — em caso de falha de match, registar o `identifier` e `transactionID` completos num `payment_events` com `event_type = "unmatched_payment"` para que nunca passe despercebido.
-
-### Ficheiros e alterações
-
-**Migration SQL** — adicionar coluna `eupago_transaction_id` na tabela `registrations`:
-```sql
-ALTER TABLE registrations ADD COLUMN IF NOT EXISTS eupago_transaction_id text;
-```
-
-**`supabase/functions/create-payment/index.ts`** — guardar `transactionID` numérico no novo campo ao criar o link:
 ```ts
-eupago_ref: transactionID,          // UUID longo (como agora)
-eupago_transaction_id: transactionID, // também aqui — depois o webhook atualiza com o numérico real
+const visibleColumns = useMemo(() => {
+  if (sourceFilter === "gravacao") {
+    return COLUMNS.filter(c => c.title !== "Inscrito" && c.title !== "Flow Completo");
+  }
+  return COLUMNS;
+}, [sourceFilter]);
 ```
 
-**`supabase/functions/eupago-webhook/index.ts`** — reestruturar as strategies:
-- **Strategy 1 (NOVA)**: só SELECT + LOG + update do campo `eupago_transaction_id` (não tenta UPDATE de `paid_at` por transactionID)
-- **Strategy 2 (PRINCIPAL)**: match por `order_id` — como está, mas também atualiza `eupago_transaction_id` com o valor numérico que chegou no webhook
-- **Strategy 3 (legacy)**: mantém-se como fallback para identifiers antigos sem "ORDER-"
-- **Fallback de alerta**: se nenhuma strategy casou, inserir `payment_events` com `event_type = "unmatched_payment"` para que apareça no audit log e nunca passe em silêncio
+E usar `visibleColumns` em vez de `COLUMNS` no render.
 
-### Resultado garantido
+**Preço Pós-webinar:** Mudar a coluna `"Premium Pass — €15"` para `"Premium Pass — €27"` **apenas quando está em modo Pós-webinar**. Isto implica que o título da coluna seja dinâmico consoante o filtro:
 
-Para todos os pagamentos futuros com identifier no formato `ORDER-{12chars}-{nome}`:
-- Strategy 2 casa sempre de forma determinística
-- `eupago_transaction_id` fica preenchido com o ID numérico do pagamento para auditoria
-- Se algum caso extremo falhar, o `unmatched_payment` event alerta de imediato nos logs
+```ts
+const visibleColumns = useMemo(() => {
+  let cols = COLUMNS;
+  if (sourceFilter === "gravacao") {
+    cols = cols
+      .filter(c => c.title !== "Inscrito" && c.title !== "Flow Completo")
+      .map(c => c.title === "Premium Pass — €15"
+        ? { ...c, title: "Premium Pass — €27" }
+        : c
+      );
+  }
+  return cols;
+}, [sourceFilter]);
+```
+
+Nota: o preço exibido no cabeçalho da coluna muda visualmente, mas a coluna continua a filtrar por `plan === "premium"` — os dados não mudam.
+
+---
+
+### 2. Dashboard — "Distribuição por Plano" — melhorar UI
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 496–533)
+
+Actualmente é uma lista de barras simples sem contexto de pagamentos. Proposta de redesign mais claro:
+
+Para cada plano, mostrar 3 sub-métricas em linha:
+- **Total** de inscritos com aquele plano seleccionado
+- **Pagos** (com `paid_at`)
+- **Pendentes** (com referência mas sem `paid_at`)
+- Barra de progresso com dois segmentos: pago (verde) + pendente (âmbar)
+
+Adicionar também ao `stats` o cálculo de `paidCounts` por plano:
+```ts
+const paidCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0, free: 0 };
+pagantes.forEach((i) => { paidCounts[i.plan] = (paidCounts[i.plan] || 0) + 1; });
+```
+
+O novo card fica assim (exemplo para Premium):
+```
+● Premium €15    15 inscritos
+  ████████░░░░  9 pagos · 3 pendentes · 3 free
+```
+
+Layout em duas colunas para ter espaço: mantém-se no `grid-cols-2`.
+
+---
+
+### 3. Dashboard — Funil de Inscrição — sincronizar visitantes
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
+
+O visitante "2.5k" mencionado é o valor real de analytics que o utilizador viu. O campo de visitantes é actualmente um `<input>` editável com default `1034`. Basta mudar o valor inicial para `2500`:
+
+```ts
+const [visitantes, setVisitantes] = useState(2500);
+```
+
+O campo continua editável, por isso o utilizador pode ajustar se o valor mudar.
+
+---
+
+### 4. Dashboard — Remover secção de "Logs internos" e "Falhas por etapa" — simplificar email UX
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 342–383)
+
+Remover completamente os 3 cards:
+- "Logs internos" (card opaco, provider=internal)
+- "Falhas" (AlertCircle, emailFailed)
+- "Por etapa (Resend)" (BarChart2, stageCounts)
+
+**Substituir** a grelha de 4 colunas por **um único card limpo** de estado do Resend, com informação que realmente importa:
+
+```
+✉️  Emails de Follow-up Resend
+    
+    [24h]  12 enviados   0 falhas
+    [7d]   47 enviados   3 falhas
+    
+    Estado: ✅ A funcionar normalmente
+    (ou ⚠️ X falhas nas últimas 24h se houver)
+```
+
+Remover dos `useState` e `useEffect` as variáveis desnecessárias: `internalSent24h`, `internalSent7d`, `stageCounts`. Manter apenas `resendSent24h`, `resendSent7d`, `emailFailed24h`, `emailFailed7d`.
+
+O novo card ocupa toda a largura (ou metade ao lado do Pipeline Pendente se já existe) e comunica o estado operacional de forma imediata.
+
+---
 
 ### Ficheiros alterados
-- Migration SQL — adicionar `eupago_transaction_id` à tabela `registrations`
-- `supabase/functions/eupago-webhook/index.ts` — reestruturar strategies + alerta de unmatched
-- `supabase/functions/create-payment/index.ts` — guardar também no novo campo
+
+| Ficheiro | Alteração |
+|---|---|
+| `src/components/crm/PipelineView.tsx` | Remover colunas "Inscrito"/"Flow Completo" em pós-webinar + título "€27" |
+| `src/components/crm/DashboardView.tsx` | Planos: novo UI com pagos/pendentes por plano; Funil: visitantes=2500; Emails: substituir 4 cards por 1 card limpo |
+
+### O que NÃO muda
+- Lógica de filtros, dados reais, queries à BD
+- Todas as outras secções do Dashboard (KPIs, Pipeline Pendente, Fontes, Género, Dificuldades, Dúvidas, Leaderboard, Para Fazer Hoje)
+- PipelineView no modo "Todos" e "Pré-webinar" — ficam iguais
