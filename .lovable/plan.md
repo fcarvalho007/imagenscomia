@@ -1,73 +1,79 @@
 
-## Diagnóstico: Porquê é que pagamentos ficaram sem registo
+## Diagnóstico definitivo e correção robusta
 
-### O problema raiz — discrepância de identificadores
+### Raiz do problema confirmada com dados reais
 
-O webhook da EuPago chega com um `transactionID` numérico curto (ex: `106016430`), mas a base de dados guarda um UUID longo gerado pela EuPago no momento da criação do link (ex: `09acb60ac5d4433598b3176e1d76fb80`).
+Há uma confusão entre dois IDs completamente diferentes da EuPago:
 
-O webhook tenta fazer o match **Strategy 1** por `eupago_ref = transactionID`, e falha sempre — porque o `eupago_ref` guardado na BD é o UUID longo, mas o `transactionID` que vem no webhook é o ID numérico curto.
+**ID de criação** (guardado na BD quando se cria o link):
+`eupago_ref = "09acb60ac5d4433598b3176e1d76fb80"` — UUID longo de 32 caracteres
+
+**ID de pagamento** (enviado pelo webhook quando o pagamento acontece):
+`transactionID = "61611445"` — ID numérico curto
+
+São dois sistemas de referência completamente distintos. A Strategy 1 nunca vai funcionar porque compara o UUID da criação com o numérico do pagamento — são sempre diferentes.
+
+Rita Pinto foi a única que funcionou por Strategy 1 porque a sua versão anterior do código guardava um valor numérico compatível por acaso.
+
+### Estado atual após a correção
+
+A **Strategy 2** (por `order_id`) está correta e robusta:
 
 ```
-BD guarda:    eupago_ref = "09acb60ac5d4433598b3176e1d76fb80"  (UUID longo)
-Webhook traz: transactionID = "106016430"                       (ID numérico — diferente!)
+Webhook recebe: identifier = "ORDER-02772a5aa74c-Drio Ramos"
+Código faz:     .replace("ORDER-", "").split("-")[0]  →  "02772a5aa74c"
+BD tem:         order_id = "02772a5aa74c"
+Resultado:      ✅ Match garantido
 ```
 
-**Strategy 2** deveria recuperar a situação: extrai o `order_id` do `identifier` e faz match na BD. Mas aqui há um segundo problema: o `identifier` que vem no webhook da EuPago tem formato `ORDER-{order_id}-{nome}` (ex: `ORDER-02772a5aa74c-Drio Ramos`), e o código faz apenas `identifier.replace("ORDER-", "")`, ficando com `02772a5aa74c-Drio Ramos` — que não casa com `order_id = "02772a5aa74c"`.
+Esta estratégia é à prova de falha porque:
+- O `order_id` é gerado pela base de dados e nunca muda
+- É sempre os primeiros 12 caracteres após "ORDER-"
+- O nome que se segue pode ter hífens, acentos, qualquer coisa — o `.split("-")[0]` isola sempre apenas o `order_id`
 
-### Prova no CSV vs. Base de Dados
+**Para todos os pagamentos futuros onde o `identifier` comece com "ORDER-", o sistema funciona corretamente.**
 
-| Pessoa | order_id (CSV identifier) | paid_at BD | Situação |
-|---|---|---|---|
-| Dário Ramos | `02772a5aa74c` | `null` | ❌ Não registado |
-| Ana Pinto | `e0e048fd5cd2` | `null` | ❌ Não registado |
-| Margarida Pregueiro | `0f8f365dd5b1` | `null` | ❌ Não registado |
-| Graça Sá da Bandeira | `b66129554aae` | `null` | ❌ Não registado |
-| Ana Olívia | `d65ce09eabb3` | `null` | ❌ Não registado |
-| Hericka Santos | `6854dd2bb70a` | `null` | ❌ Não registado |
-| Sofia Albinski | `e1228db9dc79` | `null` | ❌ Não registado |
-| Rita Pinto | `cea36416128f` | ✅ 2026-02-17 | ✅ OK (match direto) |
-| pcsantos@learninghubz.com | formato antigo | ✅ 2026-02-16 | ✅ OK (strategy 3 email) |
+### O que ainda está frágil — Strategy 1
 
-Os 7 pagamentos em falta estão confirmados no CSV como "paga" mas sem `paid_at` na BD.
+A Strategy 1 fica no código mas nunca vai disparar utilmente. É ruído que pode criar confusão futura. Proposta: transformá-la numa ferramenta de diagnóstico (apenas LOG) em vez de tentar um UPDATE cego que nunca vai casar.
 
-### O que vai ser corrigido
+### O que vamos fazer
 
-**1. Correção no webhook `eupago-webhook/index.ts` — Strategy 2**
+**1. Limpeza da Strategy 1** — em vez de tentar um UPDATE por `eupago_ref = transactionID` (que nunca casa), fazer apenas um SELECT para log de diagnóstico e registar o `transactionID` numérico num campo separado para auditoria.
 
-Extrair corretamente o `order_id` do identifier `ORDER-{order_id}-{nome}`:
+**2. Adicionar coluna `eupago_transaction_id`** na tabela `registrations` — guarda o ID numérico do pagamento quando o webhook chega. Assim temos ambos os IDs para auditoria: o UUID da criação e o numérico do pagamento.
 
+**3. Guardar `eupago_transaction_id` em `create-payment` também** — quando a EuPago devolve o link, já devolve um `transactionID`. Guardá-lo num campo dedicado elimina a confusão futura.
+
+**4. Reforçar os logs** — em caso de falha de match, registar o `identifier` e `transactionID` completos num `payment_events` com `event_type = "unmatched_payment"` para que nunca passe despercebido.
+
+### Ficheiros e alterações
+
+**Migration SQL** — adicionar coluna `eupago_transaction_id` na tabela `registrations`:
+```sql
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS eupago_transaction_id text;
+```
+
+**`supabase/functions/create-payment/index.ts`** — guardar `transactionID` numérico no novo campo ao criar o link:
 ```ts
-// Antes (errado):
-const oid = identifier.replace("ORDER-", "");
-// Resultado: "02772a5aa74c-Drio Ramos" — não casa com order_id
-
-// Depois (correto):
-const parts = identifier.replace("ORDER-", "").split("-");
-const oid = parts[0]; // "02772a5aa74c" — casa!
+eupago_ref: transactionID,          // UUID longo (como agora)
+eupago_transaction_id: transactionID, // também aqui — depois o webhook atualiza com o numérico real
 ```
 
-Nota: o `order_id` tem sempre 12 caracteres hexadecimais, por isso `parts[0]` é suficiente e seguro.
+**`supabase/functions/eupago-webhook/index.ts`** — reestruturar as strategies:
+- **Strategy 1 (NOVA)**: só SELECT + LOG + update do campo `eupago_transaction_id` (não tenta UPDATE de `paid_at` por transactionID)
+- **Strategy 2 (PRINCIPAL)**: match por `order_id` — como está, mas também atualiza `eupago_transaction_id` com o valor numérico que chegou no webhook
+- **Strategy 3 (legacy)**: mantém-se como fallback para identifiers antigos sem "ORDER-"
+- **Fallback de alerta**: se nenhuma strategy casou, inserir `payment_events` com `event_type = "unmatched_payment"` para que apareça no audit log e nunca passe em silêncio
 
-**2. Atualização manual dos 7 registos em falta**
+### Resultado garantido
 
-Marcar manualmente os 7 pagamentos confirmados pela EuPago como `paid_at`:
-
-| Email | order_id | paid_at a aplicar |
-|---|---|---|
-| darioramos@drkasas.pt | 02772a5aa74c | 2026-02-18 11:24 |
-| anaritajfp@gmail.com | e0e048fd5cd2 | 2026-02-18 11:23 |
-| amargaridapregueiro@gmail.com | 0f8f365dd5b1 | 2026-02-18 11:23 |
-| gracasabandeira@gmail.com | b66129554aae | 2026-02-18 11:17 |
-| ana.isabel.ao@gmail.com | d65ce09eabb3 | 2026-02-18 10:04 |
-| herickasantospro@gmail.com | 6854dd2bb70a | 2026-02-18 08:54 |
-| sofiaalbinski@gmail.com | e1228db9dc79 | 2026-02-18 02:37 |
-
-O `plan_selected` já está correto em todos os casos (`premium`).
+Para todos os pagamentos futuros com identifier no formato `ORDER-{12chars}-{nome}`:
+- Strategy 2 casa sempre de forma determinística
+- `eupago_transaction_id` fica preenchido com o ID numérico do pagamento para auditoria
+- Se algum caso extremo falhar, o `unmatched_payment` event alerta de imediato nos logs
 
 ### Ficheiros alterados
-- `supabase/functions/eupago-webhook/index.ts` — corrigir extração do `order_id` na Strategy 2
-- Base de dados — UPDATE manual nos 7 registos com `paid_at` correto (via SQL direto, não migração de schema)
-
-### O que NÃO muda
-- Registos "pendente" e "expirada" do CSV (e os da SMSonline.pt) não são do sistema de webinar — não são alterados
-- A lógica do resto do webhook permanece intacta
+- Migration SQL — adicionar `eupago_transaction_id` à tabela `registrations`
+- `supabase/functions/eupago-webhook/index.ts` — reestruturar strategies + alerta de unmatched
+- `supabase/functions/create-payment/index.ts` — guardar também no novo campo
