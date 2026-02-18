@@ -211,7 +211,7 @@ export function useInscritos() {
       .select("*")
       .eq("registration_id", registrationId)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(50);
     if (error) {
       console.error("Error fetching message_logs:", error);
       return [];
