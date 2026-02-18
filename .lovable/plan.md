@@ -1,112 +1,133 @@
 
-## Alterações no CRM — Pipeline, Dashboard (Planos + Funil + Emails)
+## Alterações: Proteção de pagantes + Template Masterclass para Premium
 
-### 1. Pipeline — remover colunas "Inscrito" e "Flow Completo" no filtro Pós-webinar
+### Contexto e diagnóstico
 
-**Ficheiro:** `src/components/crm/PipelineView.tsx`
+**Fluxo automático (cron):** Já está protegido. A query que busca candidatos na linha 463 inclui `.is("paid_at", null)` — quem tem `paid_at` preenchido nunca entra no fluxo de upsell automático. Correto.
 
-Actualmente as 6 colunas do Kanban incluem "Inscrito" e "Flow Completo" (ambas para `plan === "free"`). No contexto Pós-webinar (filtro `gravacao`), estas colunas são irrelevantes — os inscritos pós-webinar têm já um contexto diferente.
+**Modo manual (CRM):** Vulnerável. Quando um admin usa o botão "Reenviar email" no modal de um inscrito, o código do `manual_send` apenas verifica `do_not_contact` — não verifica se a pessoa já pagou. Um admin pode enviar inadvertidamente um email de upsell a um cliente que já pagou.
 
-A solução mais limpa: quando o `sourceFilter === "gravacao"`, excluir as colunas com `title === "Inscrito"` e `title === "Flow Completo"` antes de renderizar. O filtro já existe — basta filtrar também as colunas:
-
-```ts
-const visibleColumns = useMemo(() => {
-  if (sourceFilter === "gravacao") {
-    return COLUMNS.filter(c => c.title !== "Inscrito" && c.title !== "Flow Completo");
-  }
-  return COLUMNS;
-}, [sourceFilter]);
-```
-
-E usar `visibleColumns` em vez de `COLUMNS` no render.
-
-**Preço Pós-webinar:** Mudar a coluna `"Premium Pass — €15"` para `"Premium Pass — €27"` **apenas quando está em modo Pós-webinar**. Isto implica que o título da coluna seja dinâmico consoante o filtro:
-
-```ts
-const visibleColumns = useMemo(() => {
-  let cols = COLUMNS;
-  if (sourceFilter === "gravacao") {
-    cols = cols
-      .filter(c => c.title !== "Inscrito" && c.title !== "Flow Completo")
-      .map(c => c.title === "Premium Pass — €15"
-        ? { ...c, title: "Premium Pass — €27" }
-        : c
-      );
-  }
-  return cols;
-}, [sourceFilter]);
-```
-
-Nota: o preço exibido no cabeçalho da coluna muda visualmente, mas a coluna continua a filtrar por `plan === "premium"` — os dados não mudam.
+**Estado actual dos pagantes:**
+- 12 pagaram no total (9 Premium, 0 Masterclass, 3 Bundle)
+- 16 têm plano seleccionado mas ainda não pagaram (candidatos activos ao follow-up)
 
 ---
 
-### 2. Dashboard — "Distribuição por Plano" — melhorar UI
+### Alteração 1 — Guard-rail no modo manual: bloquear envio a pagantes
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 496–533)
+**Ficheiro:** `supabase/functions/followup-abandoned/index.ts`
 
-Actualmente é uma lista de barras simples sem contexto de pagamentos. Proposta de redesign mais claro:
+Após carregar o registo no modo `manual_send` (linha ~384), adicionar verificação:
 
-Para cada plano, mostrar 3 sub-métricas em linha:
-- **Total** de inscritos com aquele plano seleccionado
-- **Pagos** (com `paid_at`)
-- **Pendentes** (com referência mas sem `paid_at`)
-- Barra de progresso com dois segmentos: pago (verde) + pendente (âmbar)
-
-Adicionar também ao `stats` o cálculo de `paidCounts` por plano:
 ```ts
-const paidCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0, free: 0 };
-pagantes.forEach((i) => { paidCounts[i.plan] = (paidCounts[i.plan] || 0) + 1; });
+// Já existe:
+if (reg.do_not_contact) {
+  return new Response(JSON.stringify({ error: "do_not_contact is true" }), ...)
+}
+
+// ADICIONAR a seguir:
+if (reg.paid_at) {
+  return new Response(JSON.stringify({ error: "already_paid", paid_at: reg.paid_at }), {
+    status: 400,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 ```
 
-O novo card fica assim (exemplo para Premium):
-```
-● Premium €15    15 inscritos
-  ████████░░░░  9 pagos · 3 pendentes · 3 free
-```
+O campo `paid_at` já é selectado na query do modo manual (`.select("*")`), por isso não requer alteração de schema.
 
-Layout em duas colunas para ter espaço: mantém-se no `grid-cols-2`.
+Adicionalmente, na query do modo manual, garantir que o select inclui explicitamente `paid_at` (já está no `select("*")` — sem alteração necessária).
 
 ---
 
-### 3. Dashboard — Funil de Inscrição — sincronizar visitantes
+### Alteração 2 — Feedback visual no CRM quando tentativa de envio a pagante
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx`
+**Ficheiro:** `src/components/crm/modal/ActionsSection.tsx`
 
-O visitante "2.5k" mencionado é o valor real de analytics que o utilizador viu. O campo de visitantes é actualmente um `<input>` editável com default `1034`. Basta mudar o valor inicial para `2500`:
+Quando a API devolve `{ error: "already_paid" }`, mostrar uma mensagem clara em vez de um erro genérico:
 
-```ts
-const [visitantes, setVisitantes] = useState(2500);
+```
+⚠️  Este inscrito já efectuou o pagamento. Não é possível enviar emails de upsell.
 ```
 
-O campo continua editável, por isso o utilizador pode ajustar se o valor mudar.
+Verificar como o componente trata actualmente os erros da chamada `sendBacklogCheckin` / `resendPaymentEmail` e adicionar o caso `already_paid`.
 
 ---
 
-### 4. Dashboard — Remover secção de "Logs internos" e "Falhas por etapa" — simplificar email UX
+### Alteração 3 — Novo template "Masterclass para Premium" na base de dados
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 342–383)
+Criar um novo template de email com `template_key = "masterclass_upsell_premium"` directamente na tabela `email_templates`.
 
-Remover completamente os 3 cards:
-- "Logs internos" (card opaco, provider=internal)
-- "Falhas" (AlertCircle, emailFailed)
-- "Por etapa (Resend)" (BarChart2, stageCounts)
+**Conteúdo proposto:**
 
-**Substituir** a grelha de 4 colunas por **um único card limpo** de estado do Resend, com informação que realmente importa:
+- **Subject:** `{{name}}, tens interesse em reservar a Masterclass de Imagem para Vídeo?`
+- **Corpo (texto curto e não-agressivo):**
 
 ```
-✉️  Emails de Follow-up Resend
-    
-    [24h]  12 enviados   0 falhas
-    [7d]   47 enviados   3 falhas
-    
-    Estado: ✅ A funcionar normalmente
-    (ou ⚠️ X falhas nas últimas 24h se houver)
+Olá {{name}},
+
+Já tens o teu Premium Pass assegurado — óptimo.
+
+Só queria perguntar se tens interesse em reservar também a Masterclass de Imagem para Vídeo com IA, que vai acontecer em Março.
+
+É uma formação prática e intensiva — não é um webinar. Fica a saber mais aqui:
+{{masterclass_link}}
+
+Se não tiveres interesse, não há problema — não voltarei a perguntar.
+
+Frederico Carvalho
 ```
 
-Remover dos `useState` e `useEffect` as variáveis desnecessárias: `internalSent24h`, `internalSent7d`, `stageCounts`. Manter apenas `resendSent24h`, `resendSent7d`, `emailFailed24h`, `emailFailed7d`.
+- **Variables:** `["name", "masterclass_link"]`
+- **Channel:** `email`
+- **is_active:** `true`
 
-O novo card ocupa toda a largura (ou metade ao lado do Pipeline Pendente se já existe) e comunica o estado operacional de forma imediata.
+O `{{masterclass_link}}` pode ser uma página de informação (landing page da Masterclass ou uma página simples de interesse/reserva). Por agora pode ser um URL estático definido no momento do envio manual.
+
+---
+
+### Alteração 4 — Botão no CRM para enviar o template Masterclass a inscritos Premium pagantes
+
+**Ficheiro:** `src/components/crm/modal/ActionsSection.tsx`
+
+Adicionar uma secção condicional que só aparece quando `inscrito.payment_status === "paid"` e `inscrito.plan === "premium"`:
+
+```
+[ Convidar para Masterclass ]
+```
+
+Este botão:
+1. Chama `sendBacklogCheckin(inscrito.id, "masterclass_upsell_premium")`
+2. Tem o seu próprio cooldown visual (verificar `lastEmailMap` para este template)
+3. Não é afectado pelo guard-rail `already_paid` porque o template key é diferente do `reminder_manual` — **mas precisamos garantir que o guard-rail só bloqueia templates de upsell de pagamento**, não todos os templates
+
+**Refinamento do guard-rail (ponto 1):** Em vez de bloquear todo o `manual_send` para pagantes, bloquear apenas os templates de upsell de pagamento. A lista de templates bloqueados para pagantes:
+
+```ts
+const PAYMENT_UPSELL_TEMPLATES = [
+  "followup_stage_0",
+  "followup_stage_1",
+  "followup_stage_2",
+  "followup_backlog_checkin",
+  "followup_backlog_weak",
+  "followup_final_before_event",
+  "reminder_manual",
+];
+
+if (reg.paid_at && PAYMENT_UPSELL_TEMPLATES.includes(manualMode.templateKey)) {
+  return new Response(JSON.stringify({ error: "already_paid" }), { status: 400, ... });
+}
+```
+
+Assim o template `masterclass_upsell_premium` pode ser enviado a pagantes de Premium, mas os templates de recuperação de pagamento continuam protegidos.
+
+---
+
+### O que NÃO muda
+
+- O fluxo automático (cron) já está correcto — nenhuma alteração necessária
+- Todos os outros templates existentes ficam intactos
+- A lógica de cooldown do `reminder_manual` mantém-se
 
 ---
 
@@ -114,10 +135,13 @@ O novo card ocupa toda a largura (ou metade ao lado do Pipeline Pendente se já 
 
 | Ficheiro | Alteração |
 |---|---|
-| `src/components/crm/PipelineView.tsx` | Remover colunas "Inscrito"/"Flow Completo" em pós-webinar + título "€27" |
-| `src/components/crm/DashboardView.tsx` | Planos: novo UI com pagos/pendentes por plano; Funil: visitantes=2500; Emails: substituir 4 cards por 1 card limpo |
+| `supabase/functions/followup-abandoned/index.ts` | Guard-rail: bloquear templates de upsell de pagamento para registos com `paid_at` |
+| `src/components/crm/modal/ActionsSection.tsx` | Feedback visual para `already_paid` + botão "Convidar para Masterclass" condicional para Premium pagantes |
+| Base de dados (`email_templates`) | Inserir novo template `masterclass_upsell_premium` via SQL directo |
 
-### O que NÃO muda
-- Lógica de filtros, dados reais, queries à BD
-- Todas as outras secções do Dashboard (KPIs, Pipeline Pendente, Fontes, Género, Dificuldades, Dúvidas, Leaderboard, Para Fazer Hoje)
-- PipelineView no modo "Todos" e "Pré-webinar" — ficam iguais
+### Sequência de implementação
+
+1. Inserir template na BD (SQL)
+2. Actualizar `followup-abandoned` com o guard-rail selectivo
+3. Actualizar `ActionsSection.tsx` com feedback + botão Masterclass
+4. Fazer deploy da edge function actualizada
