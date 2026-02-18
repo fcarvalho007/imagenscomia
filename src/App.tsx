@@ -16,6 +16,7 @@ import Pagar from "./pages/Pagar";
 import Gravacao from "./pages/Gravacao";
 import UpgradeGravacao from "./pages/UpgradeGravacao";
 import Inicial from "./pages/Inicial";
+import Recursos from "./pages/Recursos";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/gravacao" element={<Gravacao />} />
           <Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />
           <Route path="/inicial" element={<Inicial />} />
+          <Route path="/recursos" element={<Recursos />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
