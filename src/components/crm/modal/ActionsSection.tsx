@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  ExternalLink, Copy, Send, RefreshCw, Loader2, MoreHorizontal, Bell, Check, CheckCircle, GraduationCap,
+  ExternalLink, Copy, Send, RefreshCw, Loader2, MoreHorizontal, Bell, Check, CheckCircle, GraduationCap, Mail,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -24,11 +24,13 @@ interface ActionsSectionProps {
   onGenerateReminder: () => void;
   reminderLoading: boolean;
   reminderData: any;
+  onOpenSendPayment?: () => void;
 }
+
 
 export default function ActionsSection({
   inscrito, messageLogs, regenerateLink, resendPaymentEmail, sendBacklogCheckin,
-  onRefresh, onOpenResendModal, onGenerateReminder, reminderLoading, reminderData,
+  onRefresh, onOpenResendModal, onGenerateReminder, reminderLoading, reminderData, onOpenSendPayment,
 }: ActionsSectionProps) {
   const [copiedPayLink, setCopiedPayLink] = useState(false);
   const [copiedEupagoRef, setCopiedEupagoRef] = useState(false);
@@ -62,6 +64,11 @@ export default function ActionsSection({
   const manualCooldownMs = lastManualLog ? Date.now() - new Date(lastManualLog.created_at).getTime() : Infinity;
   const isManualCoolingDown = manualCooldownMs < 6 * 60 * 60 * 1000;
   const cooldownLabel = lastManualLog ? fmtTimeAgo(lastManualLog.created_at) : "";
+
+  const lastSendPayLog = messageLogs.find((l: any) => l.template_key === "manual_payment_link_sent");
+  const sendPayCooldownMs = lastSendPayLog ? Date.now() - new Date(lastSendPayLog.created_at).getTime() : Infinity;
+  const isSendPayCoolingDown = sendPayCooldownMs < 6 * 60 * 60 * 1000;
+  const sendPayCooldownLabel = lastSendPayLog ? fmtTimeAgo(lastSendPayLog.created_at) : "";
 
   const lastMasterclassLog = messageLogs.find((l: any) => l.template_key === "masterclass_upsell_premium");
   const masterclassCooldownMs = lastMasterclassLog ? Date.now() - new Date(lastMasterclassLog.created_at).getTime() : Infinity;
@@ -136,6 +143,18 @@ export default function ActionsSection({
             >
               <Send size={12} />
               {isManualCoolingDown ? `Reenviar (${cooldownLabel})` : "Reenviar email"}
+            </button>
+          )}
+
+          {onOpenSendPayment && (
+            <button
+              onClick={onOpenSendPayment}
+              disabled={isSendPayCoolingDown}
+              title={isSendPayCoolingDown ? `Enviado ${sendPayCooldownLabel} · Cooldown 6h activo` : "Gerar link EuPago e enviar email ao cliente"}
+              className="h-8 flex items-center gap-1.5 px-3 rounded-lg text-[12px] font-medium border border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 transition-colors disabled:opacity-50"
+            >
+              <Mail size={12} />
+              {isSendPayCoolingDown ? `Enviar pagamento (${sendPayCooldownLabel})` : "Enviar dados de pagamento"}
             </button>
           )}
 
