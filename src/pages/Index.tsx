@@ -19,10 +19,11 @@ import { LogoMarquee } from "@/components/landing/LogoMarquee";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 const Index = () => {
-  const switchTime = new Date("2026-02-18T09:30:00+00:00");
-  if (new Date() >= switchTime) return <Navigate to="/live" replace />;
-
   usePageMeta({ title: "Criar Imagens com IA para Empresas — Webinar Gratuito 18 Fev 10h", description: "Aprende a criar imagens profissionais com IA para a tua empresa. Sem designer. Webinar gratuito, 18 Fevereiro, 10h. Método testado. Demo ao vivo." });
+  return <Navigate to="/live" replace />;
+};
+
+const _IndexLanding = () => {
   return (
     <RegistrationModalProvider>
       <main className="overflow-x-hidden pt-[52px]">
