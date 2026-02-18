@@ -11,7 +11,7 @@ interface RecursosUpsellProps {
 export default function RecursosUpsell({ hasMasterclass, compact = false }: RecursosUpsellProps) {
   if (hasMasterclass) {
     return (
-      <div className={`bg-green-50 border border-green-100 rounded-2xl text-center ${compact ? "p-4" : "p-6"}`}>
+      <div className={`bg-green-50 border-2 border-green-200 rounded-2xl text-center shadow-sm ${compact ? "p-4" : "p-6"}`}>
         <div className={`bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 ${compact ? "w-8 h-8" : "w-10 h-10"}`}>
           <Check size={compact ? 16 : 20} className="text-green-600" />
         </div>
@@ -30,14 +30,14 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
 
   if (compact) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+      <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-md p-4 text-white">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-white bg-white/20 border border-white/30 px-2 py-0.5 rounded-full">
             Próximo passo
           </span>
         </div>
-        <p className="text-sm font-bold text-gray-900 mb-0.5">Quer ir mais longe?</p>
-        <p className="text-xs text-gray-500 mb-3">Masterclass — Imagem para Vídeo com IA</p>
+        <p className="text-sm font-bold text-white mb-0.5">Quer ir mais longe?</p>
+        <p className="text-xs text-blue-100 mb-3">Masterclass — Imagem para Vídeo com IA</p>
 
         <ul className="space-y-2 mb-4">
           {[
@@ -45,19 +45,19 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
             { Icon: Zap, text: "Prompts e exemplos prontos a usar" },
             { Icon: Users, text: "Sessão ao vivo + gravação incluída" },
           ].map(({ Icon, text }, i) => (
-            <li key={i} className="flex items-center gap-2 text-xs text-gray-700">
-              <Icon size={12} className="text-blue-600 shrink-0" />
+            <li key={i} className="flex items-center gap-2 text-xs text-blue-100">
+              <Icon size={12} className="text-white shrink-0" />
               {text}
             </li>
           ))}
         </ul>
 
-        <span className="inline-block text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium mb-3">
+        <span className="inline-block text-[10px] bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full font-medium mb-3">
           5 de Março, quinta-feira · 10h00
         </span>
 
         <Button
-          className="w-full gap-2 text-sm h-9"
+          className="w-full gap-2 text-sm h-9 bg-white text-blue-700 hover:bg-blue-50"
           onClick={() => window.open(MASTERCLASS_URL, "_blank")}
         >
           Inscrição na Masterclass (3h)
