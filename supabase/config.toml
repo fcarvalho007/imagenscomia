@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.get-analytics-visitors]
 verify_jwt = false
+
+[functions.send-payment-link]
+verify_jwt = false

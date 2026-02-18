@@ -304,5 +304,19 @@ export function useInscritos() {
     return data;
   }, []);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail };
+  const updateStepReached = useCallback(async (inscritoId: string, step: 1 | 2 | 3 | 4 | 5) => {
+    const { error } = await supabase
+      .from("registrations")
+      .update({ step_reached: step })
+      .eq("id", inscritoId);
+    if (error) {
+      console.error("Error updating step_reached:", error);
+      return;
+    }
+    setInscritos((prev) =>
+      prev.map((i) => (i.id === inscritoId ? { ...i, step_reached: step } : i))
+    );
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached };
 }

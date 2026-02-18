@@ -68,7 +68,7 @@ export default function CRM() {
     };
   }, []);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached } = useInscritos();
 
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
   useEffect(() => {
@@ -120,6 +120,7 @@ export default function CRM() {
             onDelete={deleteInscrito}
             fetchFailedEmailIds={fetchFailedEmailIds}
             lastEmailMap={lastEmailMap}
+            onUpdateStepReached={updateStepReached}
           />
         )}
         {activeView === "templates" && (
@@ -160,6 +161,7 @@ export default function CRM() {
           regenerateLink={regenerateLink}
           resendPaymentEmail={resendPaymentEmail}
           onRefresh={refresh}
+          onUpdateStepReached={updateStepReached}
         />
       )}
     </div>
