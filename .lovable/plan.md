@@ -1,354 +1,350 @@
 
-## 3 Melhorias: Suporte na Página de Recursos, Acesso Premium no CRM e Voucher no Checkout
+## Redesenho da Página /recursos — Layout "Video-First"
+
+### Objectivo e Abordagem
+
+Substituir o layout de coluna única com scroll longo por uma página de 2 colunas (desktop) com fundo navy, estilo premium alinhado com `/live`. O componente principal a reescrever é `RecursosConteudo.tsx`, tornando-o auto-suficiente com tabs internas. O `RecursosUpsell.tsx` é mantido mas adaptado para caber na sidebar.
 
 ---
 
-### A) PÁGINA DE RECURSOS — Secção de Suporte
+### Arquitectura do Novo Layout
 
-**Situação actual:** A página `/recursos` tem FAQ mas nenhum canal de contacto directo.
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  HEADER (sticky) — "Recursos · Imagens com IA"    [Sair]   │
+├───────────────────────────────────┬─────────────────────────┤
+│  HERO — COLUNA ESQUERDA (70%)     │  SIDEBAR (30%)          │
+│                                   │                         │
+│  [Player Vimeo — 16:9]            │  📚 Guia PDF (botão)    │
+│                                   │  🔖 Prompts (badge)     │
+│  [Abrir no Vimeo ↗]              │  💬 Suporte compacto    │
+│                                   │  ── divider ──          │
+│  ─── TABS ─────────────────────── │  🎓 Upsell Masterclass │
+│  Gravação | Guia | Prompts | FAQ  │    (sticky)             │
+│                                   │  (ou "Incluído ✓")      │
+│  [Tab content — capítulos /       │                         │
+│   guia accordion / prompts /      │                         │
+│   FAQ accordion]                  │                         │
+└───────────────────────────────────┴─────────────────────────┘
+```
 
-**O que fazer:** Adicionar uma secção "Suporte" no final de `RecursosConteudo.tsx`, antes do "Sair", com:
-- Texto: "Se tiveres dificuldades no acesso ou nos links, contacta o suporte."
-- Botão WhatsApp: abre `https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20área%20de%20recursos` — ícone SVG verde, mesmo estilo do `WhatsAppSupportButton`
-- Botão Email: `mailto:frederico@digitalfc.pt?subject=Ajuda%20Recursos%20Imagens%20com%20IA` — ícone `Mail`
-
-**Ficheiro alterado:** `src/components/recursos/RecursosConteudo.tsx` — nova `<section>` entre o Upsell e o botão "Sair".
+Mobile: player full-width → tabs abaixo → sidebar colapsada em chips no topo.
 
 ---
 
-### B) CRM — OFERECER ACESSO PREMIUM (OFERTA)
+### Ficheiros a alterar
 
-#### B1. Migration SQL — 2 novas colunas em `registrations`
+| Ficheiro | Acção |
+|---|---|
+| `src/components/recursos/RecursosConteudo.tsx` | Reescrever — novo layout + tabs |
+| `src/components/recursos/RecursosUpsell.tsx` | Adaptar para sidebar compacta |
 
-```sql
-ALTER TABLE public.registrations
-  ADD COLUMN IF NOT EXISTS premium_granted_at TIMESTAMPTZ DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS premium_granted_by TEXT DEFAULT NULL;
+**Nenhuma alteração a lógica de autenticação, rotas, ou base de dados.**
+
+---
+
+### Detalhe Técnico
+
+#### 1. Fundo e estilo visual (alinhado com `/live`)
+
+Fundo navy igual ao da página `/live`:
+```css
+background: linear-gradient(to bottom, #050816, #0B1026)
 ```
-
-Sem `premium_grant_reason` por enquanto (simplificado). Se necessário no futuro, é uma coluna adicional trivial.
-
-Sem novas tabelas. O acesso premium de oferta é considerado válido sempre que `premium_granted_at IS NOT NULL`.
-
-#### B2. Tipo `Inscrito` — `mockData.ts`
-
-Adicionar:
-```ts
-premium_granted_at: string | null;
-premium_granted_by: string | null;
+Cards em vidro branco translúcido com `backdrop-blur`:
+```css
+background: rgba(255,255,255,0.96)
 ```
+Header sticky com `bg-white/10 backdrop-blur-md border-b border-white/10` para se fundir com o fundo navy.
 
-#### B3. `mapRegistration` — `useInscritos.ts`
+Tipografia:
+- H1 (título "Olá, {nome}"): `font-heading font-bold text-[28px] sm:text-[32px] text-white`
+- H2 (tabs/secções): `text-[18px] font-bold`
+- Body: `text-[14px]–text-[15px]`
 
-```ts
-premium_granted_at: r.premium_granted_at || null,
-premium_granted_by: r.premium_granted_by || null,
-```
+---
 
-#### B4. Nova função `grantPremium` — `useInscritos.ts`
-
-```ts
-const grantPremium = useCallback(async (inscritoId: string, adminEmail: string) => {
-  const current = inscritos.find((i) => i.id === inscritoId);
-  if (!current) return;
-
-  const isGranted = !!current.premium_granted_at;
-  const now = new Date().toISOString();
-  
-  if (isGranted) {
-    // Revogar: limpar os campos
-    await supabase.from("registrations")
-      .update({ premium_granted_at: null, premium_granted_by: null })
-      .eq("id", inscritoId);
-    
-    // Log
-    await supabase.from("message_logs").insert({
-      registration_id: inscritoId,
-      template_key: "crm_premium_granted",
-      status: "sent",
-      provider: "internal",
-      channel: "email",
-    });
-    
-    setInscritos(prev => prev.map(i =>
-      i.id === inscritoId
-        ? { ...i, premium_granted_at: null, premium_granted_by: null }
-        : i
-    ));
-  } else {
-    // Conceder
-    await supabase.from("registrations")
-      .update({ premium_granted_at: now, premium_granted_by: adminEmail })
-      .eq("id", inscritoId);
-    
-    // Log
-    await supabase.from("message_logs").insert({
-      registration_id: inscritoId,
-      template_key: "crm_premium_granted",
-      status: "sent",
-      provider: "internal",
-      channel: "email",
-    });
-    
-    setInscritos(prev => prev.map(i =>
-      i.id === inscritoId
-        ? { ...i, premium_granted_at: now, premium_granted_by: adminEmail }
-        : i
-    ));
-  }
-}, [inscritos]);
-```
-
-#### B5. UI — InscritoModal: novo bloco "Acesso Premium (Oferta)"
-
-Localização: no painel esquerdo escuro do `InscritoModal`, após o separador "Acções" e antes dos botões existentes — ou em alternativa, no painel direito após `InvoiceSection`. Escolho o **painel direito** para não sobrecarregar o painel escuro.
-
-O bloco é colocado após `<InvoiceSection>` e antes de `<ActivityTimeline>`:
+#### 2. Layout de 2 colunas
 
 ```tsx
-{/* Premium Grant Control */}
-<div className="my-4 p-4 rounded-xl border border-border bg-card">
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-2">
-      <Gift size={14} className="text-purple-600" />
-      <span className="text-[13px] font-semibold text-foreground">Acesso Premium (Oferta)</span>
-      {inscrito.premium_granted_at && (
-        <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-          Activo
-        </span>
-      )}
-    </div>
-    <button
-      onClick={() => onGrantPremium?.(inscrito.id)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-        inscrito.premium_granted_at
-          ? "bg-purple-600"
-          : "bg-input"
-      }`}
-    >
-      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-        inscrito.premium_granted_at ? "translate-x-6" : "translate-x-1"
-      }`} />
-    </button>
+<main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 md:py-10">
+  {/* Title row */}
+  <div className="mb-6">
+    <p className="text-white/50 text-[13px] uppercase tracking-widest mb-1">Área Reservada</p>
+    <h1 className="font-heading font-bold text-[28px] sm:text-[32px] text-white">
+      Olá, {firstName}! 👋
+    </h1>
+    <p className="text-white/60 text-[15px] mt-1">Aqui estão os teus recursos do webinar.</p>
   </div>
-  {inscrito.premium_granted_at && (
-    <p className="text-[11px] text-muted-foreground mt-1.5">
-      Concedido por {inscrito.premium_granted_by || "—"} • {fmtDate(inscrito.premium_granted_at)}
-    </p>
-  )}
+
+  {/* 2-col grid */}
+  <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+    
+    {/* Main column — 70% */}
+    <div className="flex-1 min-w-0">
+      {/* Player card */}
+      <div className="rounded-[20px] overflow-hidden bg-black shadow-2xl mb-4" style={{ aspectRatio: "16/9" }}>
+        {/* Vimeo iframe */}
+      </div>
+      
+      {/* Vimeo fallback link */}
+      <div className="flex justify-end mb-4">
+        <a href={vimeoUrl} target="_blank" ...>
+          <ExternalLink size={12} /> Abrir no Vimeo
+        </a>
+      </div>
+      
+      {/* Tabs */}
+      <div className="bg-white/96 rounded-[16px] border border-white/20 shadow-lg overflow-hidden">
+        {/* Tab headers */}
+        <div className="flex border-b border-border">
+          {["Gravação", "Guia", "Prompts", "FAQ"].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} ...>
+              {tab}
+            </button>
+          ))}
+        </div>
+        {/* Tab content */}
+        {activeTab === "Gravação" && <ChaptersTab />}
+        {activeTab === "Guia"    && <GuiaTab />}
+        {activeTab === "Prompts" && <PromptsTab />}
+        {activeTab === "FAQ"     && <FAQTab />}
+      </div>
+    </div>
+
+    {/* Sidebar — 30% */}
+    <aside className="w-full lg:w-[320px] flex-shrink-0">
+      <div className="lg:sticky lg:top-[72px] space-y-4">
+        <QuickActionsCard />
+        <SuporteCard />
+        <RecursosUpsellCompact hasMasterclass={hasMasterclass} />
+      </div>
+    </aside>
+
+  </div>
+</main>
+```
+
+---
+
+#### 3. Tab: Gravação (capítulos clicáveis)
+
+Estado local `activeChapter: number` para destaque visual.
+
+```tsx
+{RECURSOS_CONFIG.chapters.map((ch, i) => (
+  <li
+    key={i}
+    onClick={() => setActiveChapter(i)}
+    className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
+      activeChapter === i
+        ? "bg-blue-50 text-blue-700"
+        : "hover:bg-gray-50 text-ink-700"
+    }`}
+  >
+    <span className="font-mono text-xs text-ink-400 w-12">{ch.time}</span>
+    <span className="text-sm">{ch.label}</span>
+    {activeChapter === i && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-600" />}
+  </li>
+))}
+```
+
+Nota: Os timestamps são "accionáveis" visualmente — o click destaca o capítulo activo e seria possível passar o `startTime` ao iframe Vimeo via URL com `#t=XXm`, mas como o embed actual usa `dangerouslySetInnerHTML` sem estado dinâmico, o destaque visual é suficiente por agora.
+
+---
+
+#### 4. Tab: Guia
+
+Botão de download em destaque + accordion de checklist (mantido da versão actual).
+
+```tsx
+<div className="p-5">
+  <div className="flex items-center gap-3 mb-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
+    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+      <Download size={18} className="text-blue-600" />
+    </div>
+    <div className="flex-1">
+      <p className="font-semibold text-ink-900 text-sm">Guia de Apoio — PDF</p>
+      <p className="text-xs text-ink-400">Conceitos, ferramentas e boas práticas</p>
+    </div>
+    <a href={guiaPdfUrl} download>
+      <Button size="sm" className="gap-1.5">
+        <Download size={13} /> Descarregar
+      </Button>
+    </a>
+  </div>
+  {/* accordion checklist */}
 </div>
 ```
 
-#### B6. Log na Timeline
+---
 
-Adicionar `"crm_premium_granted"` ao array `MANUAL_KEYS` na `ActivityTimeline.tsx` e ao `TEMPLATE_LABELS` em `templateLabels.ts`:
+#### 5. Tab: Prompts — Teaser em vez de Lock
 
-```ts
-crm_premium_granted: "Acesso Premium concedido (Oferta)",
+Substituir o ecrã de cadeado simples por conteúdo de teaser:
+
+```tsx
+{/* Quando não disponível */}
+<div className="p-5 space-y-5">
+  <div className="flex items-center gap-2">
+    <span className="text-[11px] font-bold tracking-widest uppercase text-amber-700
+                     bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+      Disponível a partir de 25 de Fevereiro
+    </span>
+  </div>
+  <p className="text-sm text-ink-500">
+    A biblioteca de prompts está a ser finalizada. O que inclui:
+  </p>
+  <ul className="space-y-3">
+    {[
+      "50+ prompts organizados por categoria (fotografia, produto, editorial, vídeo)",
+      "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
+      "Exemplos com resultado esperado e variações de estilo",
+    ].map((bullet, i) => (
+      <li key={i} className="flex items-start gap-2.5 text-sm text-ink-700">
+        <Check size={14} className="text-green-600 mt-0.5 shrink-0" />
+        {bullet}
+      </li>
+    ))}
+  </ul>
+  <div className="pt-2">
+    <p className="text-xs text-ink-400">
+      Receberás um email assim que estiver disponível.
+    </p>
+  </div>
+</div>
 ```
-
-#### B7. Efeito do grant nas páginas protegidas
-
-A página `/recursos` já valida `paid_at IS NOT NULL`. Para respeitar o `premium_granted_at`, a query de validação em `RecursosLogin.tsx` precisa de ser expandida:
-
-```ts
-// Antes:
-.select("edit_token, first_name, plan_selected, paid_at")
-// check: data?.paid_at
-
-// Depois:
-.select("edit_token, first_name, plan_selected, paid_at, premium_granted_at")
-// check: data?.paid_at || data?.premium_granted_at
-```
-
-A mesma lógica aplica-se à revalidação silenciosa em `Recursos.tsx`.
-
-#### B8. Prop chain
-
-- `CRM.tsx`: `onGrantPremium={grantPremium}` → `InscritoModal`
-- `InscritoModal`: aceita `onGrantPremium?: (id: string) => void` + passa o email do admin (via `supabase.auth.getUser()`)
-- Para obter o email do admin dentro do modal, fazer `supabase.auth.getUser()` no momento do clique — sem estado extra no componente pai
 
 ---
 
-### C) VOUCHER "fredgratis" — `/upgrade-gravacao` (último passo)
+#### 6. Tab: FAQ com "Ver todas"
 
-#### Arquitectura de segurança
-
-A validação do voucher é feita **server-side** via nova Edge Function `redeem-voucher`:
-
-```
-Cliente clica "Tenho um voucher"
-  → input de código aparece
-  → submit → POST /redeem-voucher { code, email, plan }
-  → Edge Function valida o código (não está em código JS do browser)
-  → Se válido: actualiza registrations (is_gift=true, gift_code, gifted_at, paid_at=now)
-                insere message_logs (voucher_redeemed)
-                retorna { success: true }
-  → Frontend: redireciona para página de sucesso (sem EuPago)
-```
-
-O código `"fredgratis"` **nunca é enviado para o browser** — está apenas no servidor.
-
-#### C1. Migration SQL — novas colunas em `registrations`
-
-```sql
-ALTER TABLE public.registrations
-  ADD COLUMN IF NOT EXISTS is_gift BOOLEAN NOT NULL DEFAULT false,
-  ADD COLUMN IF NOT EXISTS gift_code TEXT DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS gifted_at TIMESTAMPTZ DEFAULT NULL;
-```
-
-#### C2. Nova Edge Function `redeem-voucher`
-
-Ficheiro: `supabase/functions/redeem-voucher/index.ts`
-
-```ts
-const VALID_CODES: Record<string, { product: string; description: string }> = {
-  "fredgratis": { product: "gravacao", description: "Gravação + Pack de Apoio — Oferta" },
-};
-
-// Validações:
-// 1. code existe em VALID_CODES (case-insensitive)
-// 2. email existe em registrations
-// 3. registration.paid_at IS NULL (não pagou ainda) e is_gift IS NOT true (não usou voucher)
-// 4. Se válido:
-//    UPDATE registrations SET
-//      paid_at = NOW(),
-//      is_gift = true,
-//      gift_code = code,
-//      gifted_at = NOW(),
-//      plan_selected = 'gravacao'  -- ou o plan do código
-//    INSERT message_logs (template_key: 'voucher_redeemed', status: 'sent', provider: 'internal')
-```
-
-Config (`supabase/config.toml`):
-```toml
-[functions.redeem-voucher]
-verify_jwt = false
-```
-
-Resposta de sucesso:
-```json
-{ "success": true, "redirectUrl": "/upgrade/sucesso?rid=...&t=..." }
-```
-
-Resposta de erro:
-```json
-{ "error": "Código inválido." }
-// ou: "Este voucher já foi utilizado."
-// ou: "Esta conta já tem acesso pago."
-```
-
-#### C3. `GravacaoConfirmation.tsx` — UI do voucher
-
-**Localização:** Abaixo do botão verde "Confirmar e pagar", antes do "🔒 Pagamento seguro EuPago". Um link discreto e pequeno:
+Estado `showAllFaqs: boolean` (default `false`). Mostrar primeiras 5 por defeito.
 
 ```tsx
-// Estado
-const [showVoucher, setShowVoucher] = useState(false);
-const [voucherCode, setVoucherCode] = useState("");
-const [voucherLoading, setVoucherLoading] = useState(false);
-const [voucherError, setVoucherError] = useState<string | null>(null);
+const visibleFaqs = showAllFaqs ? RECURSOS_CONFIG.faqs : RECURSOS_CONFIG.faqs.slice(0, 5);
+// ... render accordion
+// botão "Ver todas (8)" apenas se !showAllFaqs e faqs.length > 5
+```
 
-// UI
-{!showVoucher ? (
-  <p
-    onClick={() => setShowVoucher(true)}
-    className="text-center text-[12px] text-ink-300 mt-3 cursor-pointer hover:text-ink-500 transition-colors"
-  >
-    Tenho um voucher
+---
+
+#### 7. Sidebar — Card "Ações rápidas"
+
+Card branco com as 2–3 acções mais importantes:
+
+```tsx
+<div className="bg-white/96 rounded-[16px] border border-white/20 shadow-lg p-4">
+  <p className="text-[11px] font-bold uppercase tracking-widest text-ink-400 mb-3">
+    Acções rápidas
   </p>
-) : (
-  <div className="mt-3 flex gap-2">
-    <input
-      type="text"
-      placeholder="Código de voucher"
-      value={voucherCode}
-      onChange={(e) => setVoucherCode(e.target.value)}
-      className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] ..."
-    />
+  <div className="space-y-2">
+    <a href={guiaPdfUrl} download className="flex items-center gap-3 p-3 rounded-xl
+       bg-blue-50 hover:bg-blue-100 transition-colors">
+      <Download size={16} className="text-blue-600" />
+      <span className="text-sm font-medium text-ink-900">Descarregar Guia PDF</span>
+    </a>
     <button
-      onClick={handleRedeemVoucher}
-      disabled={voucherLoading || !voucherCode.trim()}
-      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-[13px] font-medium ..."
+      onClick={() => setActiveTab("Prompts")}
+      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors
+        ${promptsAvailable ? "bg-green-50 hover:bg-green-100" : "bg-gray-50 cursor-default"}`}
     >
-      {voucherLoading ? <Loader2 className="animate-spin" size={14} /> : "Aplicar"}
+      <BookOpen size={16} className={promptsAvailable ? "text-green-600" : "text-ink-300"} />
+      <div className="text-left">
+        <span className="text-sm font-medium text-ink-900 block">Prompts</span>
+        {!promptsAvailable && (
+          <span className="text-[10px] text-ink-400">A partir de 25 Fev</span>
+        )}
+      </div>
     </button>
   </div>
-)}
-{voucherError && <p className="text-center text-[12px] text-red-500 mt-1">{voucherError}</p>}
+</div>
 ```
 
-#### C4. `handleRedeemVoucher` em `GravacaoConfirmation.tsx`
+---
+
+#### 8. Sidebar — Card "Suporte" compacto
 
 ```tsx
-const handleRedeemVoucher = async () => {
-  if (!userEmail || !voucherCode.trim()) return;
-  setVoucherLoading(true);
-  setVoucherError(null);
-  try {
-    const { data, error } = await supabase.functions.invoke("redeem-voucher", {
-      body: {
-        code: voucherCode.trim(),
-        email: userEmail,
-        plan: plan,
-      },
-    });
-    if (error || !data?.success) {
-      setVoucherError(data?.error || "Código inválido. Tenta novamente.");
-      return;
-    }
-    // Sucesso: redirecionar para a página de sucesso
-    if (data.redirectUrl) {
-      window.location.href = data.redirectUrl;
-    }
-  } catch {
-    setVoucherError("Erro de ligação. Tenta novamente.");
-  } finally {
-    setVoucherLoading(false);
-  }
-};
+<div className="bg-white/96 rounded-[16px] border border-white/20 shadow-lg p-4">
+  <p className="text-[11px] font-bold uppercase tracking-widest text-ink-400 mb-1">
+    Suporte
+  </p>
+  <p className="text-[12px] text-ink-400 mb-3">Resposta em 24–48h úteis.</p>
+  <div className="flex flex-col gap-2">
+    <a href="https://wa.me/351915015508?text=..." target="_blank"
+       className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium
+                  text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 transition-colors">
+      <MessageCircle size={14} style={{ color: "#25D366" }} /> WhatsApp
+    </a>
+    <a href="mailto:frederico@digitalfc.pt?..."
+       className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium
+                  text-ink-700 bg-gray-50 border border-border hover:bg-gray-100 transition-colors">
+      <Mail size={14} className="text-ink-400" /> Email
+    </a>
+  </div>
+</div>
 ```
-
-#### C5. `templateLabels.ts` — novo label
-
-```ts
-voucher_redeemed: "Voucher aplicado (Acesso gratuito)",
-```
-
-E adicionar `"voucher_redeemed"` ao `MANUAL_KEYS` da `ActivityTimeline` para aparecer no filtro "Manual".
-
-#### C6. Página de sucesso após voucher
-
-A Edge Function `redeem-voucher` retorna `redirectUrl` no formato `/upgrade/sucesso?rid={id}&t={token}`. A `UpgradeSucesso.tsx` já verifica `paid_at` na DB — como o voucher define `paid_at = NOW()`, a página de sucesso mostra automaticamente o estado "Pagamento confirmado" sem alterações.
 
 ---
 
-### Ficheiros a criar/editar
+#### 9. Sidebar — Upsell Masterclass
 
-| Ficheiro | Acção | Resumo |
-|---|---|---|
-| Migration SQL | Criar | `premium_granted_at`, `premium_granted_by`, `is_gift`, `gift_code`, `gifted_at` |
-| `src/components/recursos/RecursosConteudo.tsx` | Editar | Adicionar secção Suporte (WhatsApp + Email) |
-| `src/components/recursos/RecursosLogin.tsx` | Editar | Validar também `premium_granted_at` no check de acesso |
-| `src/pages/Recursos.tsx` | Editar | Validar `premium_granted_at` na revalidação silenciosa |
-| `src/pages/crm/mockData.ts` | Editar | Adicionar campos `premium_granted_at`, `premium_granted_by` |
-| `src/hooks/useInscritos.ts` | Editar | `mapRegistration` + nova função `grantPremium` + exportar |
-| `src/components/crm/InscritoModal.tsx` | Editar | Nova prop `onGrantPremium`, UI do toggle Premium |
-| `src/pages/CRM.tsx` | Editar | Passar `grantPremium` ao `InscritoModal` |
-| `src/components/crm/templateLabels.ts` | Editar | Adicionar `crm_premium_granted`, `voucher_redeemed` |
-| `src/components/crm/modal/ActivityTimeline.tsx` | Editar | `MANUAL_KEYS` + novos template keys |
-| `supabase/functions/redeem-voucher/index.ts` | Criar | Edge Function de validação server-side do voucher |
-| `supabase/config.toml` | Editar | `[functions.redeem-voucher] verify_jwt = false` |
-| `src/components/upgrade/GravacaoConfirmation.tsx` | Editar | UI "Tenho um voucher" + `handleRedeemVoucher` |
+Para não-bundle: card premium com badges, bullets e botão CTA — versão compacta do `RecursosUpsell`.
+Para bundle: card verde "Masterclass incluída ✓".
+
+O `RecursosUpsell.tsx` é adaptado para receber uma prop `compact?: boolean` que remove espaçamentos e texto secundário.
 
 ---
 
-### Notas importantes
+#### 10. Header adaptado ao fundo navy
 
-- O código `"fredgratis"` **nunca aparece no JavaScript do browser** — está apenas na Edge Function server-side
-- O toggle de Premium no CRM usa o email do admin autenticado (`supabase.auth.getUser()`) para preencher `premium_granted_by`
-- A página `/recursos` passa a aceitar acesso se `paid_at OR premium_granted_at` existir
-- O voucher define `paid_at = NOW()`, logo o utilizador passa a ter acesso a `/recursos` automaticamente
-- Nenhuma alteração às Edge Functions existentes (create-payment, eupago-webhook)
+```tsx
+<header className="bg-white/5 backdrop-blur-md border-b border-white/10 sticky top-0 z-10">
+  <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+    <p className="text-sm font-semibold text-white">Imagens com IA — Recursos</p>
+    <button onClick={onLogout} className="text-xs text-white/50 hover:text-white/80 ...">
+      <LogOut size={13} /> Sair
+    </button>
+  </div>
+</header>
+```
+
+---
+
+#### 11. Mobile
+
+- Player full-width, sem height mínima forçada no mobile (aspecto ratio 16:9 responsivo)
+- Tabs scrolláveis horizontalmente com `overflow-x-auto`
+- Sidebar aparece abaixo do conteúdo das tabs em mobile
+- Card "Ações rápidas" condensa em grid 2x1
+
+---
+
+### Componentes com estado interno (React hooks necessários)
+
+```tsx
+const [activeTab, setActiveTab] = useState<"Gravação" | "Guia" | "Prompts" | "FAQ">("Gravação");
+const [activeChapter, setActiveChapter] = useState<number>(0);
+const [showAllFaqs, setShowAllFaqs] = useState(false);
+```
+
+---
+
+### O que NÃO muda
+
+- Lógica de autenticação (`Recursos.tsx`, `RecursosLogin.tsx`) — intacta
+- `RECURSOS_CONFIG` — movido para o topo do ficheiro (igual ao actual)
+- Dados (FAQ, chapters, URLs) — idênticos
+- `RecursosUpsell.tsx` — adapta-se para sidebar com uma nova prop `compact`
+- Sem novas dependências de pacotes
+
+---
+
+### Resumo das mudanças por ficheiro
+
+| Ficheiro | Mudança |
+|---|---|
+| `RecursosConteudo.tsx` | Reescrito — novo fundo navy, layout 2 colunas, tabs, sidebar sticky |
+| `RecursosUpsell.tsx` | Adicionar prop `compact?: boolean` para versão sidebar |
+
