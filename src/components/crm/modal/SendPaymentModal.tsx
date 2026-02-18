@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { X, Send, CheckCircle, Loader2, Copy, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { fmtTimeAgo } from "../templateLabels";
 
 interface SendPaymentModalProps {
   inscrito: Inscrito;
+  messageLogs?: any[];
   onClose: () => void;
   onSuccess?: () => void;
 }
@@ -34,26 +36,59 @@ const PRICE_OPTIONS: Record<Plan, { variant: PriceVariant; label: string; value:
   ],
 };
 
-export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendPaymentModalProps) {
+const COOLDOWN_MS = 6 * 60 * 60 * 1000;
+
+export default function SendPaymentModal({ inscrito, messageLogs = [], onClose, onSuccess }: SendPaymentModalProps) {
   const [selectedPlan, setSelectedPlan] = useState<Plan>("premium");
   const [selectedVariant, setSelectedVariant] = useState<PriceVariant>("earlybird");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ paymentLink: string; email: string } | null>(null);
+  const [result, setResult] = useState<{ paymentPageUrl: string; email: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Cooldown check
+  const { isCooling, cooldownLabel } = useMemo(() => {
+    const lastLog = messageLogs.find((l: any) => l.template_key === "manual_payment_link_sent");
+    if (!lastLog) return { isCooling: false, cooldownLabel: "" };
+    const msSince = Date.now() - new Date(lastLog.created_at).getTime();
+    return {
+      isCooling: msSince < COOLDOWN_MS,
+      cooldownLabel: fmtTimeAgo(lastLog.created_at),
+    };
+  }, [messageLogs]);
 
   const handleSend = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-payment-link", {
-        body: {
-          registrationId: inscrito.id,
-          plan: selectedPlan,
-          priceVariant: selectedVariant,
-        },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setResult({ paymentLink: data.paymentLink, email: data.email });
+      const { data: { session } } = await supabase.auth.getSession();
+      const crmSecret = import.meta.env.VITE_CRM_ADMIN_SECRET || "";
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-payment-link`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token || ""}`,
+            "x-crm-secret": crmSecret,
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            registrationId: inscrito.id,
+            plan: selectedPlan,
+            priceVariant: selectedVariant,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao enviar");
+      if (data.status === "already_paid") {
+        toast({ title: "Cliente já pagou", description: "Este inscrito já efectuou o pagamento.", variant: "destructive" });
+        onClose();
+        return;
+      }
+
+      setResult({ paymentPageUrl: data.paymentPageUrl, email: data.email });
       toast({ title: "Email enviado!", description: `Link de pagamento enviado para ${data.email}` });
       onSuccess?.();
     } catch (e: any) {
@@ -64,8 +99,8 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
   };
 
   const copyLink = () => {
-    if (!result?.paymentLink) return;
-    navigator.clipboard.writeText(result.paymentLink);
+    if (!result?.paymentPageUrl) return;
+    navigator.clipboard.writeText(result.paymentPageUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -75,10 +110,7 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
   return (
     <>
       {/* Overlay */}
-      <div
-        className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm" onClick={onClose} />
       {/* Modal */}
       <div className="fixed z-[201] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[440px] bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
@@ -103,7 +135,7 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
               Link de pagamento enviado para <strong>{result.email}</strong>
             </p>
             <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border border-border mb-4">
-              <span className="text-[12px] text-foreground flex-1 truncate">{result.paymentLink}</span>
+              <span className="text-[12px] text-foreground flex-1 truncate">{result.paymentPageUrl}</span>
               <button onClick={copyLink} className="shrink-0 p-1.5 rounded hover:bg-background transition-colors text-muted-foreground">
                 {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
               </button>
@@ -115,6 +147,15 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
         ) : (
           /* Form state */
           <div className="p-5 space-y-5">
+            {/* Cooldown warning */}
+            {isCooling && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+                <p className="text-[12px] text-amber-700 font-medium">
+                  ⚠️ Último envio <strong>{cooldownLabel}</strong>. O botão está bloqueado por 6h para evitar spam.
+                </p>
+              </div>
+            )}
+
             {/* Step 1: Plan */}
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">1. Produto</p>
@@ -167,7 +208,7 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
             </div>
 
             <p className="text-[12px] text-muted-foreground">
-              Um link EuPago será gerado e o email enviado directamente para o cliente.
+              O cliente receberá o link <strong>imagenscomia.com/pagar</strong> por email.
             </p>
 
             {/* Actions */}
@@ -180,11 +221,14 @@ export default function SendPaymentModal({ inscrito, onClose, onSuccess }: SendP
               </button>
               <button
                 onClick={handleSend}
-                disabled={loading}
+                disabled={loading || isCooling}
+                title={isCooling ? `Cooldown activo (enviado ${cooldownLabel})` : undefined}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
               >
                 {loading ? (
                   <><Loader2 size={15} className="animate-spin" /> A enviar...</>
+                ) : isCooling ? (
+                  `Cooldown (${cooldownLabel})`
                 ) : (
                   <><Send size={15} /> Gerar e enviar</>
                 )}

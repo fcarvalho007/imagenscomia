@@ -34,6 +34,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Validate CRM secret
+  const CRM_ADMIN_SECRET = Deno.env.get("CRM_ADMIN_SECRET");
+  const incomingSecret = req.headers.get("x-crm-secret");
+  if (!CRM_ADMIN_SECRET || incomingSecret !== CRM_ADMIN_SECRET) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   try {
     const EUPAGO_API_KEY = Deno.env.get("EUPAGO_API_KEY");
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -81,6 +91,14 @@ serve(async (req) => {
       );
     }
 
+    // Guard-rail: already paid
+    if (reg.paid_at) {
+      return new Response(
+        JSON.stringify({ status: "already_paid", message: "Este inscrito já efectuou o pagamento." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
     const firstName = reg.first_name || (reg.name || "").split(" ")[0] || "Olá";
     const orderId = reg.order_id || reg.id.replace(/-/g, "").slice(0, 12);
@@ -121,29 +139,32 @@ serve(async (req) => {
       );
     }
 
-    const paymentLink = eupagoData.url || eupagoData.redirectUrl || eupagoData.paymentLink || eupagoData.payment_url;
+    const rawPaymentLink = eupagoData.url || eupagoData.redirectUrl || eupagoData.paymentLink || eupagoData.payment_url;
     const transactionID = eupagoData.transactionID || eupagoData.transaction_id || eupagoData.id;
 
-    // Persist to registrations
+    // Stable URL always exposed to the client (resolve-payment handles EuPago redirect internally)
+    const paymentPageUrl = `${origin}/pagar?o=${orderId}`;
+
+    // Persist to registrations — keep raw EuPago link for internal resolution by resolve-payment
     await supabase
       .from("registrations")
       .update({
         eupago_ref: transactionID,
-        last_payment_link: paymentLink || null,
+        last_payment_link: rawPaymentLink || null,
         payment_link_created_at: new Date().toISOString(),
         last_payment_link_sent_at: new Date().toISOString(),
         plan_selected: plan,
       })
       .eq("id", registrationId);
 
-    // Log to message_logs
+    // Log to message_logs — record the stable URL shown to the client
     await supabase.from("message_logs").insert({
       registration_id: registrationId,
       channel: "email",
       provider: "resend",
       template_key: "manual_payment_link_sent",
       status: "queued",
-      payment_url: paymentLink || null,
+      payment_url: paymentPageUrl,
     });
 
     // Fetch the log id for updating status later
@@ -173,9 +194,9 @@ serve(async (req) => {
           <!-- CTA -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
             <tr><td align="center">
-              <a href="${paymentLink}" style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;">
-                Concluir inscrição →
-              </a>
+              <a href="${paymentPageUrl}" style="display:inline-block;background:#2563EB;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;">
+                 Concluir inscrição →
+               </a>
             </td></tr>
           </table>
           <!-- Price box -->
@@ -232,7 +253,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        paymentLink,
+        paymentPageUrl,
         emailSent: !!emailSent,
         email: reg.email,
       }),

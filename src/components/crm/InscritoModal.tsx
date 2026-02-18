@@ -537,6 +537,7 @@ export default function InscritoModal({
               onGenerateReminder={handleGenerateReminder}
               reminderLoading={reminderLoading}
               reminderData={reminderData}
+              onOpenSendPayment={!inscrito.paid_at ? () => setSendPaymentOpen(true) : undefined}
             />
 
             {/* Gmail reminder card (when generated) */}
@@ -703,6 +704,7 @@ export default function InscritoModal({
       {sendPaymentOpen && (
         <SendPaymentModal
           inscrito={inscrito}
+          messageLogs={messageLogs}
           onClose={() => setSendPaymentOpen(false)}
           onSuccess={refreshLogs}
         />
