@@ -1,91 +1,121 @@
 
-## Refinamento do Funil de Inscrição — Separador + Design
-
-### Diagnóstico
-
-**Problema 1 — Separador mal posicionado:**
-O separador "— Intenção de compra →" está actualmente definido com `separator: true` no passo "Viu oferta Masterclass (Passo 4)" (índice 4 do array). O utilizador correctamente identifica que a intenção de compra começa quando a pessoa **vê a oferta Premium** (Passo 3 do funil, índice 3 do array). Basta mover o `separator: true` do índice 4 para o índice 3.
-
-**Problema 2 — Design plano e sem hierarquia visual:**
-A secção actual usa barras horizontais idênticas para todos os passos, sem distinguir visualmente as duas fases do funil (qualificação vs. intenção de compra). A zona de "intenção de compra" merece destaque visual diferenciado.
+## Dois problemas a resolver no Dashboard
 
 ---
 
-### Alteração 1 — Mover o separador para antes de "Viu oferta Premium"
+### Problema 1 — "Visitaram a landing page" passar a dados reais do analytics
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx` (linha 204–212)
+**Situação actual:** O campo de visitantes é um input manual (valor padrão: 2500). O utilizador tem de actualizar manualmente.
 
-Mudar `separator: false` → `separator: true` no passo "Viu oferta Premium (Passo 3)" e `separator: true` → `separator: false` no passo "Viu oferta Masterclass (Passo 4)":
+**Solução:** Chamar a API de analytics do Lovable Cloud directamente no `useEffect` do `DashboardView`. A API já está disponível internamente e retorna o total de visitantes únicos da rota `/` (landing page).
 
-```ts
-const funnelSteps = [
-  { label: "Submeteu inscrição",               ..., separator: false },
-  { label: "Chegou ao Passo 1 — Origem",       ..., separator: false },
-  { label: "Chegou ao Passo 2 — Dúvida",       ..., separator: false },
-  { label: "Viu oferta Premium (Passo 3)",     ..., separator: true  }, // ← AQUI
-  { label: "Viu oferta Masterclass (Passo 4)", ..., separator: false }, // ← e aqui
-  { label: "Clicou para pagar",                ..., separator: false },
-  { label: "Pagamento confirmado",             ..., separator: false },
-];
+**Dados reais disponíveis agora (últimos 7 dias):**
+```
+Total visitantes únicos:  2.555
+  11 Fev →   30
+  12 Fev →  229
+  13 Fev →  637
+  14 Fev →  462
+  15 Fev →  246
+  16 Fev →  576
+  17 Fev →   84
+  18 Fev →  291
 ```
 
+**Implementação:**
+
+O analytics é exposto via edge function que usa o mesmo projeto Lovable Cloud. A chamada usa a `VITE_SUPABASE_URL` e um endpoint interno de analytics.
+
+Alternativa mais simples e robusta: criar uma **nova edge function** `get-analytics-visitors` que:
+1. Chama a API de analytics da Lovable Cloud com as datas desde o início da campanha (8 Fev 2026) até hoje
+2. Filtra apenas a rota `/` (landing page)
+3. Devolve o total de visitantes únicos
+
+No `DashboardView`, trocar o `useState(2500)` editável por um `useState(null)` com loading, preenchido automaticamente pelo resultado da edge function. O campo deixa de ser editável.
+
+**UI:** O campo passa a mostrar o número com um pequeno badge "via Analytics" em vez da caixa de input editável, com um ícone de sincronização que indica que o valor é automático.
+
 ---
 
-### Alteração 2 — Redesign visual da secção de "Intenção de compra"
+### Problema 2 — "5.2% Conversão" vs "0.5%" no funil — inconsistência e confusão
 
-**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 276–320)
+**Diagnóstico:**
 
-Actualmente os passos de intenção de compra (4–7) têm exactamente o mesmo visual dos passos de qualificação (1–3). Proposta de melhoria visual:
+As duas métricas medem coisas diferentes:
 
-**A. Separador mais expressivo:**
-Substituir o separador actual (linha fina + texto cinzento) por um separador com background tinted âmbar suave, tornando a transição mais clara:
+| Onde aparece | Cálculo | Valor actual |
+|---|---|---|
+| KPI card "Conversão para pago" | `pagantes / inscritos_activos` = 12 / 234 | **5.2%** |
+| Passo 7 do funil "(0.5%)" | `pagantes / visitantes` = 12 / 2500 | **0.5%** |
 
-```jsx
-{step.separator && (
-  <div className="flex items-center gap-2 my-3">
-    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500)/0.3)" }} />
-    <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
-          style={{ color: "hsl(var(--amber-500))", background: "hsl(var(--amber-500)/0.08)", border: "1px solid hsl(var(--amber-500)/0.2)" }}>
-      Intenção de compra
-    </span>
-    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500)/0.3)" }} />
-  </div>
-)}
+A confusão é válida: ambas mostram "conversão" mas com denominadores completamente diferentes. A solução não é torná-las iguais (são métricas distintas e ambas úteis), mas sim **torná-las claramente distinguíveis**.
+
+**Alterações:**
+
+**A. KPI card — melhorar label e sub-label:**
+
+Actualmente:
+```
+5.2%
+Conversão para pago
+inscritos que realmente pagaram
 ```
 
-**B. Fundo subtil para a zona de intenção de compra:**
-Os passos com índice ≥ 3 (após o separador) ficam envoltos num wrapper com `background: hsl(var(--amber-500)/0.03)` e `border-left: 2px solid hsl(var(--amber-500)/0.2)` e `padding-left: 8px`, criando uma zona visualmente distinta.
+Passar para:
+```
+5.2%
+Taxa de conversão (inscritos → pago)
+12 de 234 inscritos activos pagaram
+```
 
-Para implementar isto, adicionar ao array `funnelSteps` uma propriedade `isConversion: boolean` — `true` para os passos 4–7. O render envolve esses passos num `div` com classe de fundo âmbar subtil.
+A sub-label passa a mostrar o numerador e denominador concretos, eliminando qualquer ambiguidade.
 
-**C. Labels mais descritivas (sub-labels):**
+**B. Passo 7 do funil — adicionar label contextual:**
 
-Adicionar ao array `funnelSteps` uma propriedade `sublabel` opcional para contextualizar:
-- "Viu oferta Premium (Passo 3)" → sublabel: `"Viu a oferta de €27"`
-- "Viu oferta Masterclass (Passo 4)" → sublabel: `"Viu a oferta de €57,81"`
-- "Clicou para pagar" → já tem `note: "preenche dados de faturação"` — manter
-- "Pagamento confirmado" → sublabel: `"Receita confirmada"`
+O passo 7 "Pagamento confirmado" actualmente mostra `12 (0.5%)`. O `0.5%` é calculado relativamente ao Passo 0 (visitantes da landing page). Esta é a taxa de conversão da landing page para pagamento confirmado — um KPI de marketing muito valioso.
 
-As sub-labels aparecem em `text-[11px] text-ink-400` sob o label principal, alinhadas com a barra.
+Adicionar uma sub-label pequena junto ao valor percentual do Passo 7:
+```
+12  (0.5% dos visitantes)
+```
 
-**D. Barra de progresso mais grossa na zona de conversão:**
-Os passos de intenção de compra usam `h-3` em vez de `h-2.5` para as barras, e a barra do passo "Pagamento confirmado" usa `h-3.5` com fundo verde — reforçando que é o destino final do funil.
+Assim fica explícito que este percentual é relativo ao total de visitantes, não aos inscritos.
 
-**E. Número de pessoas em destaque na zona de conversão:**
-Para os passos 4–7, o número de pessoas (ex: "18") aparece em `text-[15px]` bold em vez de `text-[13px]`, para melhor leitura da progressão de conversão.
+**C. Adicionar um terceiro dado no KPI de conversão — taxa sobre visitantes:**
+
+Junto ao KPI card existente (5.2%), adicionar uma linha `sub` mais informativa:
+```
+12 de 234 inscritos · 0.5% da landing page
+```
+
+Isto resolve a confusão sem eliminar nenhuma das métricas.
 
 ---
 
-### Ficheiro alterado
+### Ficheiros a alterar
 
 | Ficheiro | Alteração |
 |---|---|
-| `src/components/crm/DashboardView.tsx` | Mover `separator: true` para o passo Premium; redesign visual da zona de intenção de compra (separador âmbar, fundo subtil, sub-labels, barras mais espessas, números em destaque) |
+| `supabase/functions/get-analytics-visitors/index.ts` | Nova edge function: chama API de analytics, filtra rota `/`, devolve visitantes únicos desde 8 Fev |
+| `src/components/crm/DashboardView.tsx` | 1. Remover input manual; chamar edge function e preencher visitantes automaticamente; 2. Melhorar labels do KPI de conversão; 3. Adicionar sub-label contextual no Passo 7 do funil |
+
+---
 
 ### O que NÃO muda
 
-- Os dados são todos reais — sem alterações na lógica de cálculo
-- Os 7 passos mantêm-se, apenas a apresentação visual muda
-- O highlight do maior drop-off (vermelho/âmbar) mantém-se
-- O campo editável de visitantes mantém-se
-- Todas as outras secções do dashboard ficam intactas
+- Os dados do funil (passos 1–7) — todos reais, sem alteração
+- A lógica de cálculo dos drop-offs e `maxDropIdx`
+- O separador "Intenção de compra" e o design da zona de conversão
+- Todas as outras secções do dashboard
+
+---
+
+### Nota técnica — âmbito dos dados de analytics
+
+A API de analytics retorna visitas ao **site completo** (todas as rotas). Para filtrar apenas a landing page (`/`), a edge function usa o `page breakdown` que já detalha por rota. O valor correcto a usar é o da rota `/` — não o total de visitantes do site, que inclui `/upgrade`, `/live`, `/crm`, etc.
+
+Dados actuais:
+- Visitantes rota `/` nos últimos 7 dias: **2.222 visitantes únicos**
+- Total do site (todas as rotas): 2.555
+
+O campo "Visitaram a landing page" deve mostrar **2.222** (apenas `/`), não 2.555. Isto é factualmente mais correcto.
