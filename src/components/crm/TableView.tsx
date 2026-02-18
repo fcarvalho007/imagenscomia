@@ -1,9 +1,10 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock } from "lucide-react";
+import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabels";
+import SendPaymentModal from "./modal/SendPaymentModal";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -13,6 +14,7 @@ interface TableViewProps {
   onDelete?: (id: string) => void;
   fetchFailedEmailIds?: () => Promise<Set<string>>;
   lastEmailMap?: Map<string, LastEmailInfo>;
+  onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -61,7 +63,7 @@ function fmtRelativeShort(iso: string): string | null {
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend" | "em_atraso";
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached }: TableViewProps) {
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -72,6 +74,9 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const [stepDropdownId, setStepDropdownId] = useState<string | null>(null);
+  const [sendPaymentInscrito, setSendPaymentInscrito] = useState<Inscrito | null>(null);
+  const stepDropdownRef = useRef<HTMLDivElement>(null);
   const PER_PAGE = 100;
 
   // Fetch failed email IDs once on mount
@@ -456,11 +461,44 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-12 h-1 rounded-full bg-surface overflow-hidden">
-                          <div className="h-full rounded-full bg-blue-600" style={{ width: `${(i.step_reached / 5) * 100}%` }} />
-                        </div>
-                        <span className="text-xs text-ink-500">{i.step_reached}/5</span>
+                      <div className="relative" ref={stepDropdownId === i.id ? stepDropdownRef : undefined}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!onUpdateStepReached) return;
+                            setStepDropdownId(stepDropdownId === i.id ? null : i.id);
+                          }}
+                          className={`flex items-center gap-1.5 ${onUpdateStepReached ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
+                          title={onUpdateStepReached ? "Clique para alterar estágio" : undefined}
+                        >
+                          <div className="w-12 h-1 rounded-full bg-surface overflow-hidden">
+                            <div className="h-full rounded-full bg-blue-600" style={{ width: `${(i.step_reached / 5) * 100}%` }} />
+                          </div>
+                          <span className="text-xs text-ink-500">{i.step_reached}/5</span>
+                        </button>
+                        {stepDropdownId === i.id && onUpdateStepReached && (
+                          <div
+                            className="absolute z-50 top-full left-0 mt-1 bg-white border border-border rounded-xl shadow-lg overflow-hidden"
+                            style={{ minWidth: 120 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {([1, 2, 3, 4, 5] as const).map((step) => (
+                              <button
+                                key={step}
+                                onClick={async () => {
+                                  setStepDropdownId(null);
+                                  await onUpdateStepReached(i.id, step);
+                                }}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-off-white transition-colors ${i.step_reached === step ? "font-semibold text-blue-600" : "text-ink-700"}`}
+                              >
+                                <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center" style={{ borderColor: i.step_reached === step ? "#2563EB" : "#CBD5E1" }}>
+                                  {i.step_reached === step && <div className="w-2 h-2 rounded-full bg-blue-600" />}
+                                </div>
+                                Passo {step}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
@@ -488,14 +526,26 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onSelectInscrito(i); }}
-                        className="text-ink-400 hover:text-blue-600 transition-colors"
-                        title="Ver ficha"
-                        aria-label="Ver ficha"
-                      >
-                        <ExternalLink size={16} />
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {!i.paid_at && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSendPaymentInscrito(i); }}
+                            className="text-ink-400 hover:text-blue-600 transition-colors"
+                            title="Enviar link de pagamento"
+                            aria-label="Enviar link de pagamento"
+                          >
+                            <Send size={15} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelectInscrito(i); }}
+                          className="text-ink-400 hover:text-blue-600 transition-colors"
+                          title="Ver ficha"
+                          aria-label="Ver ficha"
+                        >
+                          <ExternalLink size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -564,6 +614,15 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           </button>
         </div>
       )}
+
+      {/* SendPaymentModal */}
+      {sendPaymentInscrito && (
+        <SendPaymentModal
+          inscrito={sendPaymentInscrito}
+          onClose={() => setSendPaymentInscrito(null)}
+        />
+      )}
     </div>
   );
 }
+

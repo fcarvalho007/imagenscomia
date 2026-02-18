@@ -17,6 +17,7 @@ import LinkFollowUpSection from "./modal/LinkFollowUpSection";
 import ResendModal from "./modal/ResendModal";
 import ActivityTimeline from "./modal/ActivityTimeline";
 import InvoiceSection from "./modal/InvoiceSection";
+import SendPaymentModal from "./modal/SendPaymentModal";
 
 interface InscritoModalProps {
   inscrito: Inscrito;
@@ -37,6 +38,7 @@ interface InscritoModalProps {
   regenerateLink?: (id: string) => Promise<any>;
   resendPaymentEmail?: (id: string) => Promise<any>;
   onRefresh?: () => void;
+  onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
 }
 
 function fmtDate(iso: string) {
@@ -54,7 +56,7 @@ function abbreviateSource(s: string) {
 }
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -78,6 +80,13 @@ export default function InscritoModal({
 
   // Resend modal
   const [resendModalOpen, setResendModalOpen] = useState(false);
+
+  // Send payment modal
+  const [sendPaymentOpen, setSendPaymentOpen] = useState(false);
+
+  // Step reached — pending confirm
+  const [pendingStep, setPendingStep] = useState<number | null>(null);
+  const [stepSaving, setStepSaving] = useState(false);
 
   // Fetch logs
   useEffect(() => {
@@ -144,6 +153,20 @@ export default function InscritoModal({
     const su = encodeURIComponent(reminderData.emailSubject);
     const body = encodeURIComponent(reminderData.emailBody);
     return `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${body}`;
+  };
+
+  const handleConfirmStep = async (step: 1 | 2 | 3 | 4 | 5) => {
+    if (!onUpdateStepReached) return;
+    setStepSaving(true);
+    try {
+      await onUpdateStepReached(inscrito.id, step);
+      toast({ title: `Estágio actualizado para Passo ${step}` });
+    } catch {
+      toast({ title: "Erro ao actualizar estágio", variant: "destructive" });
+    } finally {
+      setStepSaving(false);
+      setPendingStep(null);
+    }
   };
 
   const refreshLogs = async () => {
@@ -418,7 +441,81 @@ export default function InscritoModal({
                   {backlogError && (
                     <p className="text-[11px] px-3 mt-0.5" style={{ color: "#f87171" }}>{backlogError}</p>
                   )}
+
+                  {/* Send payment link */}
+                  {!inscrito.paid_at && (
+                    <button
+                      onClick={() => setSendPaymentOpen(true)}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors"
+                      style={{ background: "rgba(37,99,235,0.12)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(37,99,235,0.22)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(37,99,235,0.12)"; }}
+                    >
+                      <Mail size={13} style={{ color: "#60A5FA" }} />
+                      <span className="text-[12px] font-medium" style={{ color: "#93C5FD" }}>Enviar link de pagamento</span>
+                    </button>
+                  )}
                 </div>
+
+                {/* Step reached selector */}
+                {onUpdateStepReached && (
+                  <div className="mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+                      Estágio do funil
+                    </p>
+                    <div className="flex gap-1.5">
+                      {([1, 2, 3, 4, 5] as const).map((step) => {
+                        const isActive = inscrito.step_reached === step;
+                        const isPending = pendingStep === step;
+                        return (
+                          <button
+                            key={step}
+                            onClick={() => {
+                              if (isActive) return;
+                              if (pendingStep === step) {
+                                handleConfirmStep(step);
+                              } else {
+                                setPendingStep(step);
+                              }
+                            }}
+                            disabled={stepSaving}
+                            className="flex-1 h-8 rounded-lg text-[12px] font-bold transition-all"
+                            style={{
+                              background: isActive
+                                ? "rgba(96,165,250,0.25)"
+                                : isPending
+                                ? "rgba(245,158,11,0.25)"
+                                : "rgba(255,255,255,0.06)",
+                              color: isActive ? "#93C5FD" : isPending ? "#FCD34D" : "rgba(255,255,255,0.40)",
+                              border: isActive
+                                ? "1px solid rgba(96,165,250,0.40)"
+                                : isPending
+                                ? "1px solid rgba(245,158,11,0.40)"
+                                : "1px solid transparent",
+                            }}
+                            title={isPending ? `Confirmar: mover para Passo ${step}` : `Passo ${step}`}
+                          >
+                            {stepSaving && isPending ? "…" : step}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {pendingStep && (
+                      <div className="flex items-center justify-between mt-1.5">
+                        <p className="text-[10px]" style={{ color: "rgba(245,158,11,0.8)" }}>
+                          Mover para Passo {pendingStep}?
+                        </p>
+                        <button
+                          onClick={() => setPendingStep(null)}
+                          className="text-[10px]"
+                          style={{ color: "rgba(255,255,255,0.30)" }}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -599,6 +696,15 @@ export default function InscritoModal({
           regenerateLink={regenerateLink}
           onRefresh={onRefresh}
           onLogsRefresh={refreshLogs}
+        />
+      )}
+
+      {/* Send Payment Modal */}
+      {sendPaymentOpen && (
+        <SendPaymentModal
+          inscrito={inscrito}
+          onClose={() => setSendPaymentOpen(false)}
+          onSuccess={refreshLogs}
         />
       )}
     </>
