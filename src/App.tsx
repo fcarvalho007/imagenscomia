@@ -15,6 +15,7 @@ import UpgradeSucesso from "./pages/UpgradeSucesso";
 import Pagar from "./pages/Pagar";
 import Gravacao from "./pages/Gravacao";
 import UpgradeGravacao from "./pages/UpgradeGravacao";
+import Inicial from "./pages/Inicial";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/pagar" element={<Pagar />} />
           <Route path="/gravacao" element={<Gravacao />} />
           <Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />
+          <Route path="/inicial" element={<Inicial />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
