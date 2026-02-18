@@ -200,6 +200,7 @@ export type Database = {
           edit_token_created_at: string | null
           email: string
           eupago_ref: string | null
+          eupago_transaction_id: string | null
           first_name: string | null
           followup_stage: number
           gender_override: string | null
@@ -231,6 +232,7 @@ export type Database = {
           edit_token_created_at?: string | null
           email: string
           eupago_ref?: string | null
+          eupago_transaction_id?: string | null
           first_name?: string | null
           followup_stage?: number
           gender_override?: string | null
@@ -262,6 +264,7 @@ export type Database = {
           edit_token_created_at?: string | null
           email?: string
           eupago_ref?: string | null
+          eupago_transaction_id?: string | null
           first_name?: string | null
           followup_stage?: number
           gender_override?: string | null

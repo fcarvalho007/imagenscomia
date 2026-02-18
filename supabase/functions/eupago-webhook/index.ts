@@ -77,57 +77,68 @@ async function processPayment(data: PaymentData) {
   let matched = false;
   let matchedRegId: string | null = null;
 
-  // Strategy 1: Match by transactionID
+  // ── Strategy 1 (DIAGNOSTIC ONLY) ──────────────────────────────────────────
+  // NOTE: The EuPago `transactionID` in the webhook is a short numeric ID
+  // (e.g. "61611445"), while `eupago_ref` stored at link-creation time is a
+  // 32-char UUID (e.g. "09acb60ac5d4433598b3176e1d76fb80"). They are DIFFERENT
+  // fields from EuPago and will NEVER match each other. This strategy only
+  // records the numeric transactionID in the dedicated audit column and logs
+  // the mismatch for visibility. The actual paid_at update is Strategy 2.
   if (transactionID) {
-    const { data: rows, error } = await supabase
+    const { data: diagRows } = await supabase
       .from("registrations")
-      .update({
-        paid_at: new Date().toISOString(),
-        eupago_ref: reference || transactionID,
-      })
+      .select("id, email, eupago_ref")
       .eq("eupago_ref", transactionID)
-      .select("id, email");
+      .maybeSingle();
 
-    if (!error && rows && rows.length > 0) {
-      console.log(`✅ Matched by transactionID: ${rows[0].email}`);
-      matched = true;
-      matchedRegId = rows[0].id;
+    if (diagRows) {
+      // Rare case: a previous run stored the numeric ID in eupago_ref
+      console.log(`ℹ️ Strategy 1 (diag): found row by eupago_ref match — email=${diagRows.email}`);
     } else {
-      console.log(`⚠️ No match by transactionID=${transactionID}, trying email extraction...`);
+      console.log(`ℹ️ Strategy 1 (diag): no eupago_ref match for txID=${transactionID} (expected — UUID vs numeric ID difference)`);
     }
   }
 
-  // Strategy 2: Match by order_id from identifier (ORDER-{order_id}-{name})
-  // The order_id is always the first 12-char hex segment after "ORDER-"
+  // ── Strategy 2 (PRIMARY) — match by order_id in identifier ────────────────
+  // Identifier format: "ORDER-{12-char-order_id}-{name}"
+  // The order_id is always the first segment after "ORDER-" (12 hex chars).
+  // The name can contain hyphens, spaces, accents — .split("-")[0] is safe.
   if (!matched && identifier && identifier.startsWith("ORDER-")) {
     const oid = identifier.replace("ORDER-", "").split("-")[0];
-    if (oid) {
+    console.log(`🔎 Strategy 2: extracted order_id="${oid}" from identifier="${identifier}"`);
+
+    if (oid && oid.length === 12) {
       const { data: updatedRows, error } = await supabase
         .from("registrations")
         .update({
           paid_at: new Date().toISOString(),
-          eupago_ref: reference || identifier,
+          eupago_ref: reference || transactionID,
+          eupago_transaction_id: transactionID || null,
         })
         .eq("order_id", oid)
-        .select("id");
+        .select("id, email");
 
       if (!error && updatedRows && updatedRows.length > 0) {
-        console.log(`✅ Matched by order_id: ${oid}`);
+        console.log(`✅ Strategy 2: matched by order_id="${oid}" — email=${updatedRows[0].email}`);
         matched = true;
         matchedRegId = updatedRows[0].id;
       } else {
-        console.log(`⚠️ No match by order_id=${oid}`);
+        console.warn(`⚠️ Strategy 2: no match for order_id="${oid}"`, error?.message || "");
       }
+    } else {
+      console.warn(`⚠️ Strategy 2: extracted order_id="${oid}" has unexpected length — skipping`);
     }
   }
 
-  // Strategy 3: Extract email from identifier (legacy fallback)
+  // ── Strategy 3 (LEGACY FALLBACK) — extract email from identifier ──────────
+  // Handles identifiers from before the ORDER-{order_id}-{name} format.
   if (!matched && identifier && !identifier.startsWith("ORDER-")) {
     const parts = identifier.split("-");
     let email = "";
     if (parts.length >= 4) {
       email = parts.slice(2, -1).join("-");
     }
+    console.log(`🔎 Strategy 3 (legacy): extracted email="${email}" from identifier="${identifier}"`);
 
     if (email) {
       const { data: updatedRows, error } = await supabase
@@ -135,26 +146,43 @@ async function processPayment(data: PaymentData) {
         .update({
           paid_at: new Date().toISOString(),
           eupago_ref: reference || identifier,
+          eupago_transaction_id: transactionID || null,
         })
         .eq("email", email)
-        .select("id");
+        .select("id, email");
 
       if (error) {
-        console.error("DB update error (email fallback):", error);
+        console.error("Strategy 3 DB error:", error);
       } else if (updatedRows && updatedRows.length > 0) {
-        console.log(`✅ Updated registration for ${email} via email fallback`);
+        console.log(`✅ Strategy 3: matched by email=${email}`);
         matched = true;
         matchedRegId = updatedRows[0].id;
       }
     }
   }
 
+  // ── Fallback alert: unmatched payment ─────────────────────────────────────
+  // If no strategy succeeded, log an unmatched_payment event so it's visible
+  // in the audit log and never silently lost.
   if (!matched) {
-    console.warn("⚠️ Could not match payment to any registration. identifier:", identifier, "txID:", transactionID);
+    console.error(`🚨 UNMATCHED PAYMENT: identifier="${identifier}", txID=${transactionID}, ref=${reference}, amount=${amount}`);
+    await supabase.from("payment_events").insert({
+      event_type: "unmatched_payment",
+      eupago_ref: transactionID || reference || null,
+      idempotency_key: `unmatched-${transactionID || reference || Date.now()}`,
+      payload: { ...data, alert: "No registration matched — manual review required" },
+    }).then(({ error }) => {
+      if (error && error.code !== "23505") {
+        console.warn("unmatched_payment event insert:", error.message);
+      }
+    });
+    return;
   }
 
+  // ── Post-match processing ─────────────────────────────────────────────────
+
   // Log payment_confirmed event
-  if (matched && matchedRegId) {
+  if (matchedRegId) {
     await supabase.from("payment_events").insert({
       registration_id: matchedRegId,
       event_type: "payment_confirmed",
@@ -209,7 +237,6 @@ async function processPayment(data: PaymentData) {
           let templateKey: string;
 
           if (invoice) {
-            // Full invoice email
             templateKey = "invoice_notification";
             subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${totalVal}EUR`;
             htmlBody = `<h2>Novo pagamento confirmado</h2>
@@ -226,7 +253,6 @@ async function processPayment(data: PaymentData) {
               <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
               <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
           } else {
-            // Missing details fallback
             templateKey = "invoice_notification_missing_details";
             subject = `FATURA -- DADOS EM FALTA -- ${reg.email} -- ${planLabel}`;
             htmlBody = `<h2>Pagamento confirmado — dados de faturação em falta</h2>

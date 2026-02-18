@@ -1,0 +1,1 @@
+ALTER TABLE public.registrations ADD COLUMN IF NOT EXISTS eupago_transaction_id text;

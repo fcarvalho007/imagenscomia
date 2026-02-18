@@ -173,6 +173,7 @@ serve(async (req) => {
           .from("registrations")
           .update({
             eupago_ref: transactionID,
+            eupago_transaction_id: transactionID || null,
             plan_selected: plan === "premium-masterclass" ? "bundle" : plan,
             upgrade_clicked_at: new Date().toISOString(),
             last_payment_link: paymentLink || null,
