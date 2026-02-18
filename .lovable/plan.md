@@ -1,25 +1,42 @@
 
-## Publicar a App para Atualizar a Produção
+## O que vai mudar
 
-### Problema
-O código está correto — `isLive: true` e a lógica de `isDuringWebinar` já estão implementados. Confirmei nos ficheiros atuais:
+Duas alterações simples e cirúrgicas:
 
-- `webinarConfig.ts`: `isLive: true` ✓  
-- `WebinarLive.tsx`: `const isLive = WEBINAR_CONFIG.isLive || isNearStart || isDuringWebinar;` ✓
+### 1. `/live` — Retirar o player e mostrar aviso de fim de transmissão
 
-O que está a acontecer é que `imagenscomia.com/live` está a servir a versão antiga, antes destas correções. **O site de produção não foi republicado** após as últimas alterações.
+Em `src/components/webinar/webinarConfig.ts`:
+- Mudar `isLive: true` → `isLive: false`
 
-### Solução
+Isto faz com que a lógica existente em `WebinarLive.tsx` entre no estado `isEnded`, que já tem um bloco de UI preparado.
 
-**Não é necessário alterar nenhum ficheiro.** A única ação necessária é publicar a app para que o deploy de produção incorpore as mudanças já feitas:
+Em `src/components/webinar/WebinarVideoArea.tsx`, melhorar o bloco `isEnded` para ficar mais informativo e incluir um botão de CTA para `/gravacao`:
 
-1. Clicar no botão **"Publish"** (canto superior direito da interface do Lovable).
-2. Aguardar o deploy (normalmente 1–2 minutos).
-3. Abrir `imagenscomia.com/live` — o player do YouTube estará visível.
+```
+┌─────────────────────────────────────────────┐
+│  ✅  Transmissão concluída                   │
+│                                             │
+│  Obrigado por participar!                   │
+│  A gravação HD + documentos de apoio        │
+│  estão disponíveis por 27 €.               │
+│                                             │
+│  [Aceder à gravação →]  (link /gravacao)   │
+└─────────────────────────────────────────────┘
+```
 
-### Por que acontece isto?
-O Lovable tem dois ambientes separados:
-- **Preview** (o que vês na janela de pré-visualização do Lovable): atualiza automaticamente com cada mudança de código.
-- **Produção** (`imagenscomia.com`): só atualiza quando clicas em "Publish" manualmente.
+O badge "EM DIRETO" no header também desaparece automaticamente quando `isLive` é falso.
 
-As últimas três rondas de alterações (redirect de `/` para `/live`, fix do CRM, e `isLive: true`) foram todas feitas no ambiente de preview mas **nunca foram publicadas para produção**.
+### 2. `/gravacao` — A página já existe e está pronta
+
+A página `/gravacao` já está implementada (`src/pages/Gravacao.tsx`) e já está no router (`src/App.tsx`). Não é necessário criar nada — apenas garantir que o aviso na `/live` aponta para ela.
+
+### Ficheiros alterados
+- `src/components/webinar/webinarConfig.ts` — `isLive: false`
+- `src/components/webinar/WebinarVideoArea.tsx` — melhorar o bloco `isEnded` com CTA para `/gravacao`
+
+### Técnico
+A condição `isEnded` em `WebinarLive.tsx` é:
+```ts
+const isEnded = now > endTime && !WEBINAR_CONFIG.isLive;
+```
+Com `isLive: false` e sendo agora passado o horário de fim (10h + 60min = 11h00), `isEnded` será `true` e o componente renderiza o estado de "transmissão terminada".
