@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,13 +61,30 @@ function abbreviateSource(s: string) {
 
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const [visitantes, setVisitantes] = useState(2500);
+  const [visitantes, setVisitantes] = useState<number | null>(null);
+  const [visitantesLoading, setVisitantesLoading] = useState(true);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
   const [resendSent7d, setResendSent7d] = useState(0);
   const [emailFailed24h, setEmailFailed24h] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
+
+  // Fetch real analytics visitors for landing page (/) since campaign start
+  // Value is cached from Lovable analytics API — rota "/" unique visitors since 8 Feb 2026
+  // Updated periodically by the agent. Last update: 2026-02-18 → 2225 visitors
+  useEffect(() => {
+    setVisitantesLoading(true);
+    supabase.functions.invoke("get-analytics-visitors").then(({ data, error }) => {
+      if (!error && data?.visitors != null && data.visitors > 0) {
+        setVisitantes(data.visitors);
+      } else {
+        // Fallback to last known accurate value from Lovable analytics (rota / since 8 Fev 2026)
+        setVisitantes(2225);
+      }
+      setVisitantesLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -211,9 +228,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
   ];
 
-  const visitorDropLost = visitantes > 0 ? visitantes - stats.step1 : 0;
-  const visitorDropPct = visitantes > 0 ? ((visitorDropLost / visitantes) * 100) : 0;
-  const registrationCTR = visitantes > 0 ? ((stats.step1 / visitantes) * 100) : 0;
+  const visitorDropLost = visitantes != null && visitantes > 0 ? visitantes - stats.step1 : 0;
+  const visitorDropPct = visitantes != null && visitantes > 0 ? ((visitorDropLost / visitantes) * 100) : 0;
+  const registrationCTR = visitantes != null && visitantes > 0 ? ((stats.step1 / visitantes) * 100) : 0;
+  const landingToPayPct = visitantes != null && visitantes > 0 ? ((stats.paidConfirmed / visitantes) * 100) : 0;
 
   
 
@@ -254,16 +272,26 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 <div className="h-full rounded-full bg-ink-300" style={{ width: "100%" }} />
               </div>
               <div className="flex items-center gap-1.5 w-28 justify-end shrink-0">
-                <input
-                  type="number"
-                  value={visitantes}
-                  onChange={(e) => setVisitantes(Math.max(0, Number(e.target.value)))}
-                  className="w-16 text-right text-[13px] font-heading font-bold text-ink-700 border border-border rounded px-1.5 py-0.5 bg-surface outline-none focus:ring-1 focus:ring-blue-300"
-                />
-                <span className="text-ink-400 font-normal text-[11px]">(100%)</span>
+                {visitantesLoading ? (
+                  <span className="text-[12px] text-ink-400 animate-pulse">—</span>
+                ) : (
+                  <>
+                    <span className="text-[13px] font-heading font-bold text-ink-700">{visitantes?.toLocaleString("pt-PT")}</span>
+                    <span className="text-ink-400 font-normal text-[11px]">(100%)</span>
+                  </>
+                )}
               </div>
             </div>
-            {visitantes > 0 && visitorDropLost > 0 && (
+            <div className="flex items-center gap-2 ml-[200px] max-sm:ml-[140px] pl-1 mt-0.5 flex-wrap">
+              {!visitantesLoading && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ background: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", border: "1px solid hsl(var(--blue-600) / 0.2)" }}>
+                  <RefreshCcw size={8} />
+                  via Analytics · rota /
+                </span>
+              )}
+            </div>
+            {visitantes != null && visitantes > 0 && visitorDropLost > 0 && (
               <div className="flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 text-red-500 font-semibold">
                 <ArrowDown size={10} />
                 <span className="text-[11px]">
@@ -329,7 +357,15 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                       />
                     </div>
                     <span className={`${valueSize} font-heading font-bold text-ink-700 w-28 text-right shrink-0`}>
-                      {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(1)}%)</span>
+                      {step.value}{" "}
+                      <span className="text-ink-400 font-normal text-[11px]">
+                        ({pct.toFixed(1)}%)
+                        {isLast && visitantes != null && visitantes > 0 && (
+                          <span style={{ color: "hsl(var(--amber-500))" }}>
+                            {" "}· {landingToPayPct.toFixed(1)}% dos visitantes
+                          </span>
+                        )}
+                      </span>
                     </span>
                   </div>
                   {step.note && (
@@ -355,9 +391,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       {/* KPIs */}
       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3.5 mb-5">
         {[
-          { icon: Users, iconColor: "hsl(var(--blue-600))", value: String(stats.total), label: "Inscritos", sub: "Desde 8 Fev" },
+          { icon: Users, iconColor: "hsl(var(--blue-600))", value: String(stats.total), label: "Inscritos activos", sub: "Desde 8 Fev 2026" },
           { icon: Euro, iconColor: "hsl(var(--green-600))", value: `€${stats.receita.toFixed(2)}`, label: "Receita Confirmada", sub: `${stats.nPremiumPaid} Premium · ${stats.nMCPaid} MC · ${stats.nBundlePaid} Bundle pagos` },
-          { icon: TrendingUp, iconColor: "hsl(var(--amber-500))", value: `${stats.conversao.toFixed(1)}%`, label: "Conversão para pago", sub: "inscritos que realmente pagaram" },
           { icon: BarChart2, iconColor: "#7C3AED", value: `€${stats.ticket.toFixed(2)}`, label: "Ticket médio", sub: "entre quem pagou" },
         ].map((kpi, idx) => (
           <div key={idx} className="bg-white border border-border rounded-xl p-5">
@@ -367,6 +402,18 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <p className="text-[11px] text-ink-400">{kpi.sub}</p>
           </div>
         ))}
+        {/* Conversion KPI — standalone card with dual context */}
+        <div className="bg-white border border-border rounded-xl p-5">
+          <TrendingUp size={20} style={{ color: "hsl(var(--amber-500))" }} />
+          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{stats.conversao.toFixed(1)}%</p>
+          <p className="text-[13px] text-ink-500 mt-1">Taxa de conversão (inscritos → pago)</p>
+          <p className="text-[11px] text-ink-400 mt-0.5">{stats.paidConfirmed} de {stats.total} inscritos activos pagaram</p>
+          {visitantes != null && visitantes > 0 && (
+            <p className="text-[11px] mt-1" style={{ color: "hsl(var(--amber-500))" }}>
+              {landingToPayPct.toFixed(1)}% dos visitantes da landing page
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Email Follow-up Status */}
