@@ -97,9 +97,10 @@ async function processPayment(data: PaymentData) {
     }
   }
 
-  // Strategy 2: Match by order_id from identifier (ORDER-{order_id})
+  // Strategy 2: Match by order_id from identifier (ORDER-{order_id}-{name})
+  // The order_id is always the first 12-char hex segment after "ORDER-"
   if (!matched && identifier && identifier.startsWith("ORDER-")) {
-    const oid = identifier.replace("ORDER-", "");
+    const oid = identifier.replace("ORDER-", "").split("-")[0];
     if (oid) {
       const { data: updatedRows, error } = await supabase
         .from("registrations")
