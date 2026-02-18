@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
-  Download, ExternalLink, BookOpen, Clock, LogOut,
-  Mail, MessageCircle, Check, ChevronDown, Play,
-  Copy, Youtube, Link2,
+  Download, Clock, LogOut,
+  Mail, MessageCircle, Check, ChevronDown, Play, Headphones,
 } from "lucide-react";
 import {
   Accordion,
@@ -21,6 +20,8 @@ const RECURSOS_CONFIG = {
   guiaPdfUrl: "/guia-essencial-seo.png",
   promptsUrl: "",
   promptsAvailableDate: new Date("2026-02-25"),
+  resumoPdfUrl: "/resumo-sessao.pdf",
+  audioUrl: "/audio-sessao.mp3",
   masterclassUrl: "https://imagenscomia.com/masterclass",
   chapters: [
     { time: "00:00", label: "Introdução e estado da arte" },
@@ -80,18 +81,16 @@ interface RecursosConteudoProps {
   onLogout: () => void;
 }
 
-type TabType = "Gravação" | "Guia" | "Prompts" | "FAQ";
-const TABS: TabType[] = ["Gravação", "Guia", "Prompts", "FAQ"];
+type TabType = "Gravação" | "Guia" | "FAQ";
+const TABS: TabType[] = ["Gravação", "Guia", "FAQ"];
 
 // ─── Segmented control tabs ───────────────────────────────────────────────────
 function TabBar({
   activeTab,
   setActiveTab,
-  promptsAvailable,
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
-  promptsAvailable: boolean;
 }) {
   return (
     <div className="p-1.5 bg-gray-100 rounded-xl flex gap-1 overflow-x-auto">
@@ -106,68 +105,13 @@ function TabBar({
           }`}
         >
           {tab}
-          {tab === "Prompts" && !promptsAvailable && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
-          )}
         </button>
       ))}
     </div>
   );
 }
 
-// ─── Action bar (below player) ────────────────────────────────────────────────
-function ActionBar({ vimeoUrl, youtubeUrl }: { vimeoUrl: string; youtubeUrl: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(vimeoUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [vimeoUrl]);
-
-  return (
-    <div className="flex flex-wrap items-center gap-2 mb-5">
-      <a
-        href={vimeoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-[12px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
-      >
-        <ExternalLink size={12} className="text-gray-400" />
-        Abrir no Vimeo
-      </a>
-
-      {youtubeUrl && (
-        <a
-          href={youtubeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-[12px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
-        >
-          <Youtube size={12} className="text-red-500" />
-          Abrir no YouTube
-        </a>
-      )}
-
-      <button
-        onClick={handleCopy}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-[12px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
-      >
-        {copied ? (
-          <>
-            <Check size={12} className="text-green-500" />
-            <span className="text-green-600">Copiado!</span>
-          </>
-        ) : (
-          <>
-            <Link2 size={12} className="text-gray-400" />
-            Copiar link
-          </>
-        )}
-      </button>
-    </div>
-  );
-}
+// ─── (ActionBar removida) ─────────────────────────────────────────────────────
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function RecursosConteudo({ userData, onLogout }: RecursosConteudoProps) {
@@ -178,7 +122,6 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
 
   const firstName = userData.name?.split(" ")[0] || "amigo";
   const hasMasterclass = ["masterclass", "bundle"].includes(userData.plan ?? "");
-  const promptsAvailable = new Date() >= RECURSOS_CONFIG.promptsAvailableDate;
   const visibleFaqs = showAllFaqs ? RECURSOS_CONFIG.faqs : RECURSOS_CONFIG.faqs.slice(0, 5);
 
   // Persist active tab
@@ -244,21 +187,14 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
               )}
             </div>
 
-            {/* Action bar */}
-            <ActionBar
-              vimeoUrl={RECURSOS_CONFIG.vimeoUrl}
-              youtubeUrl={RECURSOS_CONFIG.youtubeUrl}
-            />
-
             {/* Tabs card */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mt-3">
 
               {/* Segmented control */}
               <div className="px-4 pt-4 pb-0">
                 <TabBar
                   activeTab={activeTab}
                   setActiveTab={handleTabChange}
-                  promptsAvailable={promptsAvailable}
                 />
               </div>
 
@@ -298,6 +234,40 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                       </li>
                     ))}
                   </ul>
+
+                  {/* Resumo PDF */}
+                  <div className="mt-5 pt-5 border-t border-gray-100">
+                    <a
+                      href={RECURSOS_CONFIG.resumoPdfUrl}
+                      download
+                      className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                        <Download size={14} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
+                        <span className="text-[11px] text-gray-500">PDF · Descarregar</span>
+                      </div>
+                    </a>
+
+                    {/* Áudio da gravação */}
+                    <div className="mt-3">
+                      <a
+                        href={RECURSOS_CONFIG.audioUrl}
+                        download
+                        className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
+                      >
+                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                          <Headphones size={14} className="text-gray-500" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-gray-900 block">Áudio da sessão</span>
+                          <span className="text-[11px] text-gray-500">MP3 · Não editado · Descarregar</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -350,54 +320,33 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                </div>
-              )}
 
-              {/* ── Tab: Prompts ── */}
-              {activeTab === "Prompts" && (
-                <div className="p-5">
-                  {promptsAvailable && RECURSOS_CONFIG.promptsUrl ? (
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-500">
-                        Biblioteca completa de prompts prontos a usar, organizados por categoria.
+                  {/* Guia de Prompts — teaser */}
+                  <div className="mt-6 pt-5 border-t border-gray-100">
+                    <div className="flex items-center gap-2 mb-3">
+                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
+                        Guia de Prompts
                       </p>
-                      <a href={RECURSOS_CONFIG.promptsUrl} target="_blank" rel="noopener noreferrer">
-                        <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                          <Download size={14} /> Descarregar Prompts
-                        </Button>
-                      </a>
+                      <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                        Disponível a 25 Fev
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold tracking-wide uppercase text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
-                          Disponível a partir de 25 de Fevereiro
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500 leading-relaxed">
-                        A biblioteca de prompts está a ser finalizada. O que inclui:
-                      </p>
-                      <ul className="space-y-3">
-                        {[
-                          "50+ prompts organizados por categoria (fotografia, produto, editorial, vídeo)",
-                          "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
-                          "Exemplos com resultado esperado e variações de estilo",
-                        ].map((bullet, i) => (
-                          <li key={i} className="flex items-start gap-3 text-sm text-gray-700">
-                            <div className="w-5 h-5 bg-blue-50 rounded-full flex items-center justify-center shrink-0 mt-0.5">
-                              <Check size={11} className="text-blue-600" />
-                            </div>
-                            {bullet}
-                          </li>
-                        ))}
-                      </ul>
-                      <div className="pt-1 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs text-gray-500">
-                          📧 Receberás um email assim que estiver disponível.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                    <ul className="space-y-2.5">
+                      {[
+                        "50+ prompts por categoria (fotografia, produto, editorial, vídeo)",
+                        "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
+                        "Exemplos com resultado esperado e variações de estilo",
+                      ].map((b, i) => (
+                        <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
+                          <Check size={13} className="text-blue-500 mt-0.5 shrink-0" />
+                          {b}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-gray-400 mt-4">
+                      📧 Receberás um email assim que estiver disponível.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -457,36 +406,35 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                     </div>
                   </a>
 
-                  {/* 2. Prompts */}
-                  {promptsAvailable && RECURSOS_CONFIG.promptsUrl ? (
-                    <a
-                      href={RECURSOS_CONFIG.promptsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                        <BookOpen size={14} className="text-green-600" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Biblioteca de Prompts</span>
-                        <span className="text-[11px] text-gray-500">Descarregar</span>
-                      </div>
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => handleTabChange("Prompts")}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors text-left"
-                    >
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                        <BookOpen size={14} className="text-gray-400" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-700 block">Biblioteca de Prompts</span>
-                        <span className="text-[11px] text-blue-500 font-medium">A partir de 25 Fev →</span>
-                      </div>
-                    </button>
-                  )}
+                  {/* 2. Resumo PDF */}
+                  <a
+                    href={RECURSOS_CONFIG.resumoPdfUrl}
+                    download
+                    className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Download size={14} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
+                      <span className="text-[11px] text-gray-500">PDF</span>
+                    </div>
+                  </a>
+
+                  {/* 3. Áudio */}
+                  <a
+                    href={RECURSOS_CONFIG.audioUrl}
+                    download
+                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Headphones size={14} className="text-gray-500" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Áudio da sessão</span>
+                      <span className="text-[11px] text-gray-500">MP3 · Não editado</span>
+                    </div>
+                  </a>
                 </div>
               </div>
 
