@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_cache: {
+        Row: {
+          key: string
+          source: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          key: string
+          source?: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          key?: string
+          source?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           channel: string
