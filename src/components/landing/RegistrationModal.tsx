@@ -13,7 +13,7 @@ type ConfirmationMode = "referral" | "simple";
 
 export const RegistrationModal = () => {
   const navigate = useNavigate();
-  const { isOpen, close, referredBy } = useRegistrationModal();
+  const { isOpen, close, referredBy, variant } = useRegistrationModal();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -181,6 +181,7 @@ export const RegistrationModal = () => {
                 loading={loading}
                 error={error}
                 onSubmit={handleCapture}
+                variant={variant}
               />
             )}
 
@@ -223,6 +224,7 @@ const CaptureView = ({
   loading,
   error,
   onSubmit,
+  variant = "free",
 }: {
   fullName: string;
   setFullName: (v: string) => void;
@@ -235,15 +237,25 @@ const CaptureView = ({
   loading: boolean;
   error: React.ReactNode | null;
   onSubmit: () => void;
+  variant?: "free" | "premium";
 }) => {
+  const isPremium = variant === "premium";
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
 
   return (
   <>
     <h3 className="font-heading font-bold text-xl text-ink-900 mb-1">
-      Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo
+      {isPremium ? (
+        <>Upgrade para <span className="text-[#22C55E] font-extrabold">Premium</span> & Masterclass</>
+      ) : (
+        <>Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo</>
+      )}
     </h3>
-    <p className="text-[15px] text-ink-500 mb-3">Quarta-feira, 18 de Fevereiro, 10h</p>
+    <p className="text-[15px] text-ink-500 mb-3">
+      {isPremium
+        ? "Indique os seus dados para aceder à gravação e bónus exclusivos."
+        : "Quarta-feira, 18 de Fevereiro, 10h"}
+    </p>
 
     <div className="space-y-3 mb-4">
       <div className="relative">
@@ -307,7 +319,9 @@ const CaptureView = ({
       ) : (
         <Check className="w-5 h-5" />
       )}
-      {loading ? "A registar..." : "Reservar o meu lugar"}
+      {loading
+        ? (isPremium ? "A processar..." : "A registar...")
+        : (isPremium ? "Sim, avançar para o upgrade" : "Reservar o meu lugar")}
     </motion.button>
 
 
