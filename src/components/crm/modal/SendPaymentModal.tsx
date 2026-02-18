@@ -60,7 +60,6 @@ export default function SendPaymentModal({ inscrito, messageLogs = [], onClose, 
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const crmSecret = import.meta.env.VITE_CRM_ADMIN_SECRET || "";
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-payment-link`,
@@ -69,7 +68,6 @@ export default function SendPaymentModal({ inscrito, messageLogs = [], onClose, 
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session?.access_token || ""}`,
-            "x-crm-secret": crmSecret,
             "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
@@ -79,6 +77,13 @@ export default function SendPaymentModal({ inscrito, messageLogs = [], onClose, 
           }),
         }
       );
+
+      if (res.status === 429) {
+        const data = await res.json();
+        const minsLeft = Math.ceil((data.retryAfterMs || 0) / 60000);
+        toast({ title: "Cooldown activo", description: `Aguarda ${minsLeft} minuto(s) antes de reenviar.`, variant: "destructive" });
+        return;
+      }
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao enviar");

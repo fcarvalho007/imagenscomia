@@ -35,6 +35,7 @@ interface TimelineItem {
   isManual?: boolean;
   eupago_ref?: string;
   event_type?: string;
+  paymentUrl?: string | null;
 }
 
 interface ActivityTimelineProps {
@@ -64,6 +65,18 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
 
   // Merge into unified timeline
   const items = useMemo<TimelineItem[]>(() => {
+  const MANUAL_KEYS = [
+      "reminder_manual",
+      "followup_backlog_checkin",
+      "manual_payment_link_sent",
+      "crm_step_changed",
+      "crm_note_saved",
+      "payment_link_regenerated",
+      "crm_archived",
+    ];
+
+    const PAYMENT_KEYS = ["payment", "paid", "eupago", "resolve"];
+
     const emailItems: TimelineItem[] = messageLogs.map((log) => ({
       id: log.id,
       type: "email" as const,
@@ -74,7 +87,8 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       providerId: log.provider_message_id,
       error: log.error,
       isLegacy: log.provider === "internal",
-      isManual: log.template_key === "reminder_manual" || log.template_key === "followup_backlog_checkin",
+      isManual: MANUAL_KEYS.includes(log.template_key),
+      paymentUrl: log.payment_url || null,
     }));
 
     const paymentItems: TimelineItem[] = paymentEvents.map((evt) => ({
@@ -94,8 +108,11 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
 
     // Apply filters
     if (filter === "emails") all = all.filter((i) => i.type === "email");
-    else if (filter === "payments") all = all.filter((i) => i.type === "payment");
-    else if (filter === "errors") all = all.filter((i) => i.status === "failed" || i.error);
+    else if (filter === "payments") all = all.filter((i) =>
+      i.type === "payment" ||
+      PAYMENT_KEYS.some((k) => (i.event_type || "").toLowerCase().includes(k))
+    );
+    else if (filter === "errors") all = all.filter((i) => i.status === "failed" || !!i.error);
     else if (filter === "manual") all = all.filter((i) => i.isManual);
 
     if (onlyFailures) all = all.filter((i) => i.status === "failed" || i.error);
@@ -143,7 +160,12 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
 
       {/* Timeline */}
       {items.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground py-3">Sem registos</p>
+        <div className="py-6 text-center">
+          <p className="text-[13px] text-muted-foreground">Ainda sem actividade registada.</p>
+          <p className="text-[11px] text-muted-foreground/60 mt-1">
+            Os envios de email, eventos de pagamento e acções manuais serão listados aqui.
+          </p>
+        </div>
       ) : (
         <div className="relative pl-5">
           {/* Vertical line */}
@@ -206,7 +228,21 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
                         >
                           {copiedId === item.id ? <Check size={10} /> : <Copy size={10} />}
                         </button>
-                        {copiedId === item.id && <span className="text-green-600">Copiado!</span>}
+                        {copiedId === item.id && <span className="text-primary">Copiado!</span>}
+                      </div>
+                    )}
+
+                    {/* Stable payment URL */}
+                    {item.paymentUrl && (
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                        <span className="truncate max-w-[200px] font-mono" title={item.paymentUrl}>{item.paymentUrl}</span>
+                        <button
+                          onClick={() => copyToClipboard(item.paymentUrl!, `url-${item.id}`)}
+                          className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                          aria-label="Copiar link de pagamento"
+                        >
+                          {copiedId === `url-${item.id}` ? <Check size={10} /> : <Copy size={10} />}
+                        </button>
                       </div>
                     )}
 
@@ -219,7 +255,7 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <pre className={`text-[10px] rounded p-2 mt-1 overflow-x-auto max-h-[120px] border ${
-                            item.error ? "text-red-700 bg-red-50 border-red-200" : "text-foreground bg-muted border-border"
+                            item.error ? "text-destructive bg-destructive/5 border-destructive/20" : "text-foreground bg-muted border-border"
                           }`}>
                             {item.error || JSON.stringify(item.payload, null, 2)}
                           </pre>
