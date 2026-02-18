@@ -1,11 +1,14 @@
-import { Download, ExternalLink, BookOpen, Clock, CheckSquare, HelpCircle, Lock, LogOut, Play, Mail, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import {
+  Download, ExternalLink, BookOpen, Clock, HelpCircle, LogOut,
+  Mail, MessageCircle, Check, ChevronDown,
+} from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import RecursosUpsell from "./RecursosUpsell";
 
@@ -13,8 +16,8 @@ import RecursosUpsell from "./RecursosUpsell";
 const RECURSOS_CONFIG = {
   vimeoUrl: "https://vimeo.com/1065826099",
   vimeoEmbed: `<iframe src="https://player.vimeo.com/video/1065826099?h=0&autoplay=0&title=0&byline=0&portrait=0" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>`,
-  guiaPdfUrl: "/guia-essencial-seo.png", // substituir por URL do PDF real
-  promptsUrl: "", // preencher quando disponível
+  guiaPdfUrl: "/guia-essencial-seo.png",
+  promptsUrl: "",
   promptsAvailableDate: new Date("2026-02-25"),
   masterclassUrl: "https://imagenscomia.com/masterclass",
   chapters: [
@@ -73,22 +76,34 @@ interface RecursosConteudoProps {
   onLogout: () => void;
 }
 
+type TabType = "Gravação" | "Guia" | "Prompts" | "FAQ";
+
 export default function RecursosConteudo({ userData, onLogout }: RecursosConteudoProps) {
+  const [activeTab, setActiveTab] = useState<TabType>("Gravação");
+  const [activeChapter, setActiveChapter] = useState<number>(0);
+  const [showAllFaqs, setShowAllFaqs] = useState(false);
+
   const firstName = userData.name?.split(" ")[0] || "amigo";
   const hasMasterclass = ["masterclass", "bundle"].includes(userData.plan ?? "");
   const promptsAvailable = new Date() >= RECURSOS_CONFIG.promptsAvailableDate;
+  const visibleFaqs = showAllFaqs
+    ? RECURSOS_CONFIG.faqs
+    : RECURSOS_CONFIG.faqs.slice(0, 5);
+
+  const TABS: TabType[] = ["Gravação", "Guia", "Prompts", "FAQ"];
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--off-white))]">
-      {/* Header bar */}
-      <header className="bg-[hsl(var(--white))] border-b border-[hsl(var(--border))] sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <p className="text-sm font-semibold text-[hsl(var(--ink-900))]">
-            Imagens com IA — Recursos
-          </p>
+    <div
+      className="min-h-screen"
+      style={{ background: "linear-gradient(to bottom, #050816, #0B1026)" }}
+    >
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-20 bg-white/5 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <p className="text-sm font-semibold text-white">Imagens com IA — Recursos</p>
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 text-xs text-[hsl(var(--ink-400))] hover:text-[hsl(var(--ink-700))] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-white/50 hover:text-white/80 transition-colors"
           >
             <LogOut size={13} />
             Sair
@@ -96,288 +111,313 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 space-y-12">
+      {/* ── Main ── */}
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 md:py-10">
 
-        {/* ── CAMADA A — Boas-vindas + cartões ── */}
-        <section>
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-[hsl(var(--ink-900))]">
-              Olá, {firstName}! 👋
-            </h1>
-            <p className="text-[hsl(var(--ink-500))] mt-1">
-              Aqui estão os teus recursos do webinar.
-            </p>
-          </div>
+        {/* Title row */}
+        <div className="mb-7">
+          <p className="text-white/50 text-[12px] uppercase tracking-widest mb-1">Área Reservada</p>
+          <h1 className="font-bold text-[28px] sm:text-[32px] text-white leading-tight">
+            Olá, {firstName}! 👋
+          </h1>
+          <p className="text-white/60 text-[15px] mt-1">Aqui estão os teus recursos do webinar.</p>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Gravação */}
-            <div className="bg-[hsl(var(--white))] rounded-xl border border-[hsl(var(--border))] p-4">
-              <div className="w-9 h-9 bg-[hsl(var(--blue-50))] rounded-lg flex items-center justify-center mb-3">
-                <Play size={18} className="text-[hsl(var(--blue-600))]" />
-              </div>
-              <p className="text-sm font-semibold text-[hsl(var(--ink-900))]">Gravação HD</p>
-              <Badge className="mt-2 text-[10px] bg-[hsl(var(--green-50))] text-[hsl(var(--green-700))] border-[hsl(var(--green-100))] hover:bg-[hsl(var(--green-50))]">
-                Disponível
-              </Badge>
-            </div>
+        {/* 2-col grid */}
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
 
-            {/* Guia PDF */}
-            <div className="bg-[hsl(var(--white))] rounded-xl border border-[hsl(var(--border))] p-4">
-              <div className="w-9 h-9 bg-[hsl(var(--green-50))] rounded-lg flex items-center justify-center mb-3">
-                <Download size={18} className="text-[hsl(var(--green-600))]" />
-              </div>
-              <p className="text-sm font-semibold text-[hsl(var(--ink-900))]">Guia PDF</p>
-              <Badge className="mt-2 text-[10px] bg-[hsl(var(--green-50))] text-[hsl(var(--green-700))] border-[hsl(var(--green-100))] hover:bg-[hsl(var(--green-50))]">
-                Disponível
-              </Badge>
-            </div>
+          {/* ── Main column (70%) ── */}
+          <div className="flex-1 min-w-0">
 
-            {/* Prompts */}
-            <div className={`bg-[hsl(var(--white))] rounded-xl border border-[hsl(var(--border))] p-4 ${!promptsAvailable ? "opacity-70" : ""}`}>
-              <div className="w-9 h-9 bg-[hsl(var(--amber-50))] rounded-lg flex items-center justify-center mb-3">
-                {promptsAvailable
-                  ? <BookOpen size={18} className="text-[hsl(var(--amber-600))]" />
-                  : <Lock size={18} className="text-[hsl(var(--amber-600))]" />
-                }
-              </div>
-              <p className="text-sm font-semibold text-[hsl(var(--ink-900))]">Biblioteca de Prompts</p>
-              {promptsAvailable ? (
-                <Badge className="mt-2 text-[10px] bg-[hsl(var(--green-50))] text-[hsl(var(--green-700))] border-[hsl(var(--green-100))] hover:bg-[hsl(var(--green-50))]">
-                  Disponível
-                </Badge>
+            {/* Player */}
+            <div
+              className="rounded-[20px] overflow-hidden bg-black shadow-2xl mb-3"
+              style={{ position: "relative", paddingTop: "56.25%" }}
+            >
+              {RECURSOS_CONFIG.vimeoEmbed ? (
+                <div dangerouslySetInnerHTML={{ __html: RECURSOS_CONFIG.vimeoEmbed }} />
               ) : (
-                <Badge variant="outline" className="mt-2 text-[10px]">
-                  A partir de 25 Fev
-                </Badge>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-white/40 text-sm">Gravação a ser processada…</p>
+                </div>
               )}
             </div>
-          </div>
-        </section>
 
-        {/* ── CAMADA B — Recursos principais ── */}
-
-        {/* Começar aqui */}
-        <section>
-          <h2 className="text-base font-bold text-[hsl(var(--ink-900))] mb-3 flex items-center gap-2">
-            <CheckSquare size={16} className="text-[hsl(var(--blue-600))]" />
-            Começar aqui
-          </h2>
-          <ol className="space-y-2">
-            {[
-              "Ver a gravação",
-              "Descarregar o guia de apoio",
-              "Copiar os prompts e testar",
-            ].map((step, i) => (
-              <li key={i} className="flex items-center gap-3 text-sm text-[hsl(var(--ink-700))]">
-                <span className="w-6 h-6 rounded-full bg-[hsl(var(--blue-50))] border border-[hsl(var(--blue-100))] flex items-center justify-center text-[11px] font-bold text-[hsl(var(--blue-600))] shrink-0">
-                  {i + 1}
-                </span>
-                {step}
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        {/* Gravação */}
-        <section>
-          <h2 className="text-lg font-bold text-[hsl(var(--ink-900))] mb-4">
-            🎬 Gravação do Webinar
-          </h2>
-          {/* Vimeo embed */}
-          <div className="relative w-full rounded-xl overflow-hidden bg-[hsl(var(--ink-900))]" style={{ paddingTop: "56.25%" }}>
-            {RECURSOS_CONFIG.vimeoEmbed ? (
-              <div dangerouslySetInnerHTML={{ __html: RECURSOS_CONFIG.vimeoEmbed }} />
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <Play size={40} className="text-[hsl(var(--white)/0.4)]" />
-                <p className="text-[hsl(var(--white)/0.5)] text-sm">Gravação a ser processada…</p>
-              </div>
-            )}
-          </div>
-          <div className="mt-3 flex justify-end">
-            <a
-              href={RECURSOS_CONFIG.vimeoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-[hsl(var(--ink-400))] hover:text-[hsl(var(--blue-600))] transition-colors"
-            >
-              <ExternalLink size={12} />
-              Abrir no Vimeo
-            </a>
-          </div>
-
-          {/* Capítulos */}
-          <div className="mt-4 bg-[hsl(var(--white))] border border-[hsl(var(--border))] rounded-xl p-4">
-            <p className="text-xs font-semibold text-[hsl(var(--ink-400))] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Clock size={12} />
-              Índice da sessão
-            </p>
-            <ol className="space-y-2">
-              {RECURSOS_CONFIG.chapters.map((ch, i) => (
-                <li key={i} className="flex items-baseline gap-3 text-sm">
-                  <span className="font-mono text-[hsl(var(--ink-400))] text-xs w-12 shrink-0">{ch.time}</span>
-                  <span className="text-[hsl(var(--ink-700))]">{ch.label}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        {/* Guia de apoio */}
-        <section>
-          <h2 className="text-lg font-bold text-[hsl(var(--ink-900))] mb-4">
-            📄 Guia de Apoio
-          </h2>
-          <div className="bg-[hsl(var(--white))] border border-[hsl(var(--border))] rounded-xl p-5">
-            <p className="text-sm text-[hsl(var(--ink-500))] mb-4">
-              Guia completo com os conceitos, ferramentas e boas práticas abordadas no webinar.
-            </p>
-            <a href={RECURSOS_CONFIG.guiaPdfUrl} download>
-              <Button variant="outline" className="gap-2 mb-5">
-                <Download size={14} />
-                Descarregar Guia PDF
-              </Button>
-            </a>
-
-            {/* Checklist accordion */}
-            <div className="border-t border-[hsl(var(--border))] pt-4">
-              <p className="text-xs font-semibold text-[hsl(var(--ink-400))] uppercase tracking-wider mb-3">
-                Checklist rápida
-              </p>
-              <Accordion type="single" collapsible className="space-y-0">
-                <AccordionItem value="setup">
-                  <AccordionTrigger className="text-sm text-[hsl(var(--ink-700))] hover:no-underline py-3">
-                    Setup inicial — criar conta nas ferramentas certas
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-[hsl(var(--ink-500))] pb-3">
-                    Cria conta gratuita em: <strong>Adobe Firefly</strong> (para texto em imagens), <strong>Freepik</strong> (para fotorrealismo), e <strong>ChatGPT/Claude</strong> (para escrever prompts). Começa pelo Freepik — tem o melhor plano gratuito.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="erros">
-                  <AccordionTrigger className="text-sm text-[hsl(var(--ink-700))] hover:no-underline py-3">
-                    Erros comuns e como evitá-los
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-[hsl(var(--ink-500))] pb-3">
-                    1. Prompt demasiado vago → sê específico: estilo, luz, ângulo, mood. 2. Texto com erros → usa Adobe Firefly. 3. Resultados inconsistentes → guarda os prompts que funcionam e itera sobre eles.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="boas-praticas">
-                  <AccordionTrigger className="text-sm text-[hsl(var(--ink-700))] hover:no-underline py-3">
-                    Boas práticas de prompt em português
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-[hsl(var(--ink-500))] pb-3">
-                    Escreve os prompts em inglês para melhores resultados. Usa a estrutura: <em>sujeito + ambiente + estilo + iluminação + câmera</em>. Exemplo: "professional woman in a modern Lisbon café, natural window light, editorial photography, Canon 85mm f/1.4".
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </div>
-          </div>
-        </section>
-
-        {/* Biblioteca de prompts */}
-        <section>
-          <h2 className="text-lg font-bold text-[hsl(var(--ink-900))] mb-4">
-            📚 Biblioteca de Prompts
-          </h2>
-          <div className="bg-[hsl(var(--white))] border border-[hsl(var(--border))] rounded-xl p-5">
-            {promptsAvailable && RECURSOS_CONFIG.promptsUrl ? (
-              <>
-                <p className="text-sm text-[hsl(var(--ink-500))] mb-4">
-                  Biblioteca completa de prompts prontos a usar, organizados por categoria.
-                </p>
-                <a href={RECURSOS_CONFIG.promptsUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="gap-2">
-                    <Download size={14} />
-                    Descarregar Prompts
-                  </Button>
-                </a>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-6 text-center gap-3">
-                <div className="w-10 h-10 bg-[hsl(var(--amber-50))] rounded-full flex items-center justify-center">
-                  <Lock size={18} className="text-[hsl(var(--amber-600))]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[hsl(var(--ink-900))]">Disponível a partir de 25 de Fevereiro</p>
-                  <p className="text-xs text-[hsl(var(--ink-400))] mt-1">
-                    Receberás um email assim que estiver pronto.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section>
-          <h2 className="text-lg font-bold text-[hsl(var(--ink-900))] mb-4 flex items-center gap-2">
-            <HelpCircle size={18} className="text-[hsl(var(--ink-400))]" />
-            Perguntas frequentes
-          </h2>
-          <div className="bg-[hsl(var(--white))] border border-[hsl(var(--border))] rounded-xl px-5">
-            <Accordion type="single" collapsible>
-              {RECURSOS_CONFIG.faqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`}>
-                  <AccordionTrigger className="text-sm font-medium text-[hsl(var(--ink-900))] hover:no-underline text-left">
-                    {faq.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-sm text-[hsl(var(--ink-500))] pb-4">
-                    {faq.a}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </section>
-
-        {/* ── CAMADA C — Upsell ── */}
-        <section>
-          <div className="border-t border-[hsl(var(--border))] pt-10">
-            <p className="text-xs font-semibold tracking-widest uppercase text-[hsl(var(--ink-400))] mb-4 text-center">
-              Quer ir mais longe?
-            </p>
-            <RecursosUpsell hasMasterclass={hasMasterclass} />
-          </div>
-        </section>
-
-        {/* ── Suporte ── */}
-        <section>
-          <div className="border-t border-[hsl(var(--border))] pt-8">
-            <h2 className="text-base font-bold text-[hsl(var(--ink-900))] mb-1">Precisa de ajuda?</h2>
-            <p className="text-sm text-[hsl(var(--ink-400))] mb-5">
-              Se tiveres dificuldades no acesso ou nos links, contacta o suporte.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* Vimeo fallback link */}
+            <div className="flex justify-end mb-4">
               <a
-                href="https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20%C3%A1rea%20de%20recursos"
+                href={RECURSOS_CONFIG.vimeoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-[14px] transition-colors"
-                style={{
-                  background: "rgba(37,211,102,0.10)",
-                  border: "1px solid rgba(37,211,102,0.30)",
-                  color: "#16a34a",
-                }}
+                className="inline-flex items-center gap-1.5 text-[12px] text-white/40 hover:text-white/70 transition-colors"
               >
-                <MessageCircle size={16} style={{ color: "#25D366" }} />
-                WhatsApp
-              </a>
-              <a
-                href="mailto:frederico@digitalfc.pt?subject=Ajuda%20Recursos%20Imagens%20com%20IA"
-                className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-[14px] transition-colors bg-[hsl(var(--white))] border border-[hsl(var(--border))] text-[hsl(var(--ink-700))] hover:bg-[hsl(var(--off-white))]"
-              >
-                <Mail size={16} className="text-[hsl(var(--ink-400))]" />
-                Email
+                <ExternalLink size={12} />
+                Abrir no Vimeo
               </a>
             </div>
-          </div>
-        </section>
 
-        {/* Sair (bottom) */}
-        <div className="flex justify-center pb-4">
+            {/* Tabs container */}
+            <div className="rounded-[16px] border border-white/10 shadow-lg overflow-hidden bg-white/96 backdrop-blur">
+
+              {/* Tab headers */}
+              <div className="flex border-b border-black/8 overflow-x-auto">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-shrink-0 px-5 py-3.5 text-[14px] font-medium transition-colors border-b-2 -mb-px ${
+                      activeTab === tab
+                        ? "border-blue-600 text-blue-700 bg-blue-50/60"
+                        : "border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+                    }`}
+                  >
+                    {tab}
+                    {tab === "Prompts" && !promptsAvailable && (
+                      <span className="ml-1.5 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                        Em breve
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── Tab: Gravação ── */}
+              {activeTab === "Gravação" && (
+                <div className="p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5 mb-3">
+                    <Clock size={11} /> Índice da sessão
+                  </p>
+                  <ul className="space-y-1">
+                    {RECURSOS_CONFIG.chapters.map((ch, i) => (
+                      <li
+                        key={i}
+                        onClick={() => setActiveChapter(i)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors ${
+                          activeChapter === i
+                            ? "bg-blue-50 text-blue-700"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <span className={`font-mono text-xs w-12 shrink-0 ${activeChapter === i ? "text-blue-500" : "text-gray-400"}`}>
+                          {ch.time}
+                        </span>
+                        <span className="text-sm flex-1">{ch.label}</span>
+                        {activeChapter === i && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0" />
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* ── Tab: Guia ── */}
+              {activeTab === "Guia" && (
+                <div className="p-5">
+                  {/* Download banner */}
+                  <div className="flex items-center gap-3 mb-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Download size={18} className="text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 text-sm">Guia de Apoio — PDF</p>
+                      <p className="text-xs text-gray-400">Conceitos, ferramentas e boas práticas</p>
+                    </div>
+                    <a href={RECURSOS_CONFIG.guiaPdfUrl} download>
+                      <Button size="sm" className="gap-1.5 shrink-0">
+                        <Download size={13} /> Descarregar
+                      </Button>
+                    </a>
+                  </div>
+
+                  {/* Checklist accordion */}
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+                    Checklist rápida
+                  </p>
+                  <Accordion type="single" collapsible className="space-y-0">
+                    <AccordionItem value="setup">
+                      <AccordionTrigger className="text-sm text-gray-700 hover:no-underline py-3">
+                        Setup inicial — criar conta nas ferramentas certas
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-gray-500 pb-3">
+                        Cria conta gratuita em: <strong>Adobe Firefly</strong> (para texto em imagens), <strong>Freepik</strong> (para fotorrealismo), e <strong>ChatGPT/Claude</strong> (para escrever prompts). Começa pelo Freepik — tem o melhor plano gratuito.
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="erros">
+                      <AccordionTrigger className="text-sm text-gray-700 hover:no-underline py-3">
+                        Erros comuns e como evitá-los
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-gray-500 pb-3">
+                        1. Prompt demasiado vago → sê específico: estilo, luz, ângulo, mood. 2. Texto com erros → usa Adobe Firefly. 3. Resultados inconsistentes → guarda os prompts que funcionam e itera sobre eles.
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="boas-praticas">
+                      <AccordionTrigger className="text-sm text-gray-700 hover:no-underline py-3">
+                        Boas práticas de prompt em português
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-gray-500 pb-3">
+                        Escreve os prompts em inglês para melhores resultados. Usa a estrutura: <em>sujeito + ambiente + estilo + iluminação + câmera</em>. Exemplo: "professional woman in a modern Lisbon café, natural window light, editorial photography, Canon 85mm f/1.4".
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+              )}
+
+              {/* ── Tab: Prompts ── */}
+              {activeTab === "Prompts" && (
+                <div className="p-5">
+                  {promptsAvailable && RECURSOS_CONFIG.promptsUrl ? (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500">
+                        Biblioteca completa de prompts prontos a usar, organizados por categoria.
+                      </p>
+                      <a href={RECURSOS_CONFIG.promptsUrl} target="_blank" rel="noopener noreferrer">
+                        <Button className="gap-2">
+                          <Download size={14} /> Descarregar Prompts
+                        </Button>
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold tracking-widest uppercase text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                          Disponível a partir de 25 de Fevereiro
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        A biblioteca de prompts está a ser finalizada. O que inclui:
+                      </p>
+                      <ul className="space-y-3">
+                        {[
+                          "50+ prompts organizados por categoria (fotografia, produto, editorial, vídeo)",
+                          "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
+                          "Exemplos com resultado esperado e variações de estilo",
+                        ].map((bullet, i) => (
+                          <li key={i} className="flex items-start gap-2.5 text-sm text-gray-700">
+                            <Check size={14} className="text-green-600 mt-0.5 shrink-0" />
+                            {bullet}
+                          </li>
+                        ))}
+                      </ul>
+                      <p className="text-xs text-gray-400">
+                        Receberás um email assim que estiver disponível.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── Tab: FAQ ── */}
+              {activeTab === "FAQ" && (
+                <div className="px-5 pb-5">
+                  <Accordion type="single" collapsible>
+                    {visibleFaqs.map((faq, i) => (
+                      <AccordionItem key={i} value={`faq-${i}`}>
+                        <AccordionTrigger className="text-sm font-medium text-gray-900 hover:no-underline text-left py-3.5">
+                          {faq.q}
+                        </AccordionTrigger>
+                        <AccordionContent className="text-sm text-gray-500 pb-4">
+                          {faq.a}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+
+                  {!showAllFaqs && RECURSOS_CONFIG.faqs.length > 5 && (
+                    <button
+                      onClick={() => setShowAllFaqs(true)}
+                      className="mt-2 flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+                    >
+                      <ChevronDown size={14} />
+                      Ver todas ({RECURSOS_CONFIG.faqs.length})
+                    </button>
+                  )}
+                </div>
+              )}
+
+            </div>
+            {/* end tabs container */}
+
+          </div>
+          {/* end main column */}
+
+          {/* ── Sidebar (30%) ── */}
+          <aside className="w-full lg:w-[300px] flex-shrink-0">
+            <div className="lg:sticky lg:top-[72px] space-y-4">
+
+              {/* Quick Actions */}
+              <div className="bg-white/96 rounded-[16px] border border-white/15 shadow-lg p-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  Acções rápidas
+                </p>
+                <div className="space-y-2">
+                  <a
+                    href={RECURSOS_CONFIG.guiaPdfUrl}
+                    download
+                    className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors"
+                  >
+                    <Download size={16} className="text-blue-600 shrink-0" />
+                    <span className="text-sm font-medium text-gray-900">Descarregar Guia PDF</span>
+                  </a>
+                  <button
+                    onClick={() => setActiveTab("Prompts")}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
+                      promptsAvailable
+                        ? "bg-green-50 hover:bg-green-100 cursor-pointer"
+                        : "bg-gray-50 cursor-default"
+                    }`}
+                  >
+                    <BookOpen size={16} className={promptsAvailable ? "text-green-600 shrink-0" : "text-gray-300 shrink-0"} />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Biblioteca de Prompts</span>
+                      {!promptsAvailable && (
+                        <span className="text-[11px] text-gray-400">A partir de 25 Fev</span>
+                      )}
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Suporte */}
+              <div className="bg-white/96 rounded-[16px] border border-white/15 shadow-lg p-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">
+                  Suporte
+                </p>
+                <p className="text-[12px] text-gray-400 mb-3">Resposta em 24–48h úteis.</p>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href="https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20%C3%A1rea%20de%20recursos"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 transition-colors"
+                  >
+                    <MessageCircle size={14} style={{ color: "#25D366" }} />
+                    WhatsApp
+                  </a>
+                  <a
+                    href="mailto:frederico@digitalfc.pt?subject=Ajuda%20Recursos%20Imagens%20com%20IA"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium text-gray-700 bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+                  >
+                    <Mail size={14} className="text-gray-400" />
+                    Email
+                  </a>
+                </div>
+              </div>
+
+              {/* Upsell */}
+              <RecursosUpsell hasMasterclass={hasMasterclass} compact />
+
+            </div>
+          </aside>
+
+        </div>
+        {/* end 2-col */}
+
+        {/* Bottom logout */}
+        <div className="flex justify-center pt-10 pb-4">
           <button
             onClick={onLogout}
-            className="flex items-center gap-1.5 text-xs text-[hsl(var(--ink-300))] hover:text-[hsl(var(--ink-500))] transition-colors"
+            className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
           >
             <LogOut size={12} />
             Sair desta área
