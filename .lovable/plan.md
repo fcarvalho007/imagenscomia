@@ -1,142 +1,105 @@
 
-## Duas novas funcionalidades no CRM
+## Diagnóstico — O Que Já Existe vs O Que Falta
 
-### Funcionalidade A — Mover o cliente no estágio do funil
-
-**Problema:** O `step_reached` (1–5) é definido automaticamente pelo flow de upgrade, mas pode ser necessário corrigir manualmente quando um cliente chegou a um passo por outro canal ou quando há erro de dados.
-
-**O que muda:**
-
-**1. `useInscritos.ts` — nova função `updateStepReached`**
-
-```ts
-const updateStepReached = useCallback(async (inscritoId: string, step: 1|2|3|4|5) => {
-  await supabase
-    .from("registrations")
-    .update({ step_reached: step })
-    .eq("id", inscritoId);
-  setInscritos((prev) =>
-    prev.map((i) => i.id === inscritoId ? { ...i, step_reached: step } : i)
-  );
-}, []);
-```
-
-Exposta no return e passada ao `InscritoModal`, `TableView` e `PipelineView` via props.
-
-**2. `InscritoModal.tsx` — controlo de estágio na ficha do cliente**
-
-No painel esquerdo (Acções), abaixo da secção de follow-up, adicionar um selector de estágio:
-
-```
-Estágio do funil
-[● 1] [○ 2] [○ 3] [○ 4] [○ 5]
-```
-
-5 botões numerados (1–5). O passo actual fica destacado. Ao clicar noutro, executa `updateStepReached` com confirmação inline ("Mover para Passo X?").
-
-**3. `TableView.tsx` — selector de estágio inline na linha**
-
-A coluna `step_reached` passa de só-leitura para clicável: ao clicar no badge do passo, abre um mini dropdown com as 5 opções (sem modal separado, rápido e operacional).
-
-**4. `PipelineView.tsx` — já não tem selector** (as colunas são baseadas em `plan`, não em `step_reached`). Mas a ficha de cliente abre o `InscritoModal` onde o controlo já existirá.
+A implementação anterior criou a estrutura base (modal, botões, edge function, hook), mas há **5 problemas críticos** a corrigir e **2 melhorias** de UX a fazer.
 
 ---
 
-### Funcionalidade B — Enviar email de pagamento directamente
+### Problema 1 — Segurança: sem validação de X-CRM-Secret (CRÍTICO)
 
-**Problema actual:** O fluxo existente gera texto para o Gmail (copiar/colar). O utilizador quer clicar num botão no CRM e o cliente recebe o email imediatamente.
+A edge function `send-payment-link` está completamente aberta — qualquer pessoa pode chamar `/functions/v1/send-payment-link` sem autenticação e gerar links de pagamento e enviar emails.
 
-**Análise dos preços:**
-- Premium: €15 + IVA (early bird, €18,45 c/IVA) **ou** €27 + IVA (preço normal, €33,21 c/IVA)  
-- Masterclass: €47 + IVA (early bird, €57,81 c/IVA) **ou** €67 + IVA (preço normal, €82,41 c/IVA)
-
-Para simplificar o fluxo, o CRM pergunta apenas:
-- "Qual o produto?" → Premium / Masterclass / Bundle (premium + masterclass)
-- "Qual o preço?" → Early bird / Normal (para Premium e Masterclass individualmente)
-
-**Componente novo: `SendPaymentModal.tsx`**
-
-Modal simples (2 passos) que aparece ao clicar "Enviar dados de pagamento":
-
-```
-┌─────────────────────────────────────────┐
-│  Enviar link de pagamento               │
-│  Para: joana@e-accelerator.pt           │
-│                                         │
-│  1. Produto                             │
-│  [Premium Pass] [Masterclass] [Bundle]  │
-│                                         │
-│  2. Preço (Premium Pass)                │
-│  [● €15 + IVA — Early bird]             │
-│  [○ €27 + IVA — Preço normal]           │
-│                                         │
-│  Link será gerado e email enviado.      │
-│                                         │
-│  [Cancelar]  [Gerar e enviar →]         │
-└─────────────────────────────────────────┘
-```
-
-**Flow técnico:**
-
-1. O modal chama `supabase.functions.invoke("send-payment-link")` com `{ registrationId, plan, priceVariant: "earlybird" | "normal" }`.
-
-2. **Nova edge function `send-payment-link/index.ts`:**
-   - Recebe `registrationId`, `plan`, `priceVariant`
-   - Resolve email e nome do inscrito via `registrations`
-   - Calcula o valor correcto:
-     ```
-     premium_earlybird: 18.45 (€15+IVA)
-     premium_normal:    33.21 (€27+IVA)
-     masterclass_earlybird: 57.81 (€47+IVA)
-     masterclass_normal:    82.41 (€67+IVA)
-     bundle_earlybird:  76.26 (€15+47+IVA)
-     bundle_normal:    115.62 (€27+67+IVA)
-     ```
-   - Cria link EuPago com o valor correcto (mesmo padrão do `generate-reminder`)
-   - Persiste `last_payment_link` e `eupago_ref` na `registrations`
-   - Envia email via Resend (template similar ao `reminder_manual`) com o link
-   - Regista em `message_logs` com `template_key: "manual_payment_link_sent"` e `provider: "resend"`
-   - Devolve `{ paymentLink, emailSent: true }`
-
-3. No modal, após sucesso: mostra confirmação verde "Email enviado para joana@..." com o link copiável.
-
-**Cooldown:** Mesma lógica de 6h da `ActionsSection` — o botão "Enviar dados de pagamento" fica desabilitado se o `message_logs` tiver um envio `manual_payment_link_sent` nas últimas 6h, mostrando o tempo decorrido.
-
-**Bundle note:** Se `plan === "bundle"`, não há escolha de preço individual — o Bundle tem um preço único por variante (early bird ou normal), mas a pergunta pode ser simplificada para "Early bird" vs "Normal" também.
+**Correcção:** Adicionar validação de `X-CRM-Secret` no início da função, igual ao padrão do `followup-abandoned`. No frontend, passar o header nas chamadas.
 
 ---
 
-### Localização dos botões
+### Problema 2 — URL instável no email e modal (CRÍTICO)
 
-**Ficha do cliente (`InscritoModal` → `ActionsSection`):**
+O email enviado ao cliente contém o link directo EuPago (ex: `https://clientes.eupago.pt/api/...`). O spec exige que o email contenha SEMPRE `https://imagenscomia.com/pagar?o={order_id}`. O `resolve-payment` já faz a resolução estável — basta mudar o que se envia.
 
-Novo botão "Enviar dados de pagamento" aparece para inscritos **sem** `paid_at`. Substitui/complementa o botão "Gerar link (Gmail)" existente. O botão Gmail mantém-se como alternativa.
+O modal de sucesso também mostra o URL EuPago raw. Deve mostrar o URL estável.
 
-**`TableView`:**
-
-Na coluna de acções (ícones à direita da linha), adicionar ícone de envelope com tooltip "Enviar link de pagamento" → abre o mesmo `SendPaymentModal`.
-
-**`PipelineView`:**
-
-Ao clicar num card → abre `InscritoModal` onde o botão já existe. Não adicionar botões directamente nos cards para não sobrecarregar.
+**Correcção:**
+- Na edge function: construir `paymentPageUrl = "${origin}/pagar?o=${orderId}"` e usar este URL no email e na resposta (mantendo o `last_payment_link` com o URL EuPago para uso interno pelo `resolve-payment`).
+- No `SendPaymentModal`: mostrar o `paymentPageUrl` em vez do `paymentLink` raw.
+- A resposta da função passa a retornar `{ paymentPageUrl, emailSent, email }` em vez de `{ paymentLink, emailSent, email }`.
 
 ---
 
-### Ficheiros a criar/editar
+### Problema 3 — Guard-rail "já pago" ausente (CRÍTICO)
 
-| Ficheiro | Operação | Descrição |
-|---|---|---|
-| `supabase/functions/send-payment-link/index.ts` | Criar | Edge function: gera link EuPago + envia email Resend |
-| `src/components/crm/modal/SendPaymentModal.tsx` | Criar | Modal de seleção de produto/preço |
-| `src/hooks/useInscritos.ts` | Editar | Adicionar `updateStepReached` e `sendPaymentLink` |
-| `src/components/crm/modal/ActionsSection.tsx` | Editar | Botão "Enviar dados de pagamento" + controlo de cooldown |
-| `src/components/crm/InscritoModal.tsx` | Editar | Passar `updateStepReached` + selector de estágio no painel esq. |
-| `src/pages/CRM.tsx` | Editar | Expor `updateStepReached` do hook para o modal |
-| `src/components/crm/TableView.tsx` | Editar | Coluna `step_reached` clicável com dropdown |
-| `supabase/config.toml` | Editar | Registar nova edge function |
+A edge function não verifica `paid_at` antes de agir. Se chamada para um inscrito já pago, gera um link e envia email desnecessariamente.
 
-### O que NÃO muda
-- Lógica automática do funil (step_reached via upgrade flow) — a actualização manual é apenas uma sobreposição administrativa
-- Templates de email existentes — a nova edge function cria o seu próprio email simples
-- Estrutura do `InscritoModal` — os sub-componentes mantêm-se, apenas `ActionsSection` recebe novo botão
-- Colunas do Pipeline e Tabela — sem reestruturação visual, apenas adição de controlos
+**Correcção:** Após buscar a `registration`, verificar `if (reg.paid_at) return { status: "already_paid" }` sem fazer mais nada.
+
+---
+
+### Problema 4 — Cooldown não verificado no frontend (UX)
+
+O `SendPaymentModal` não verifica o cooldown de 6h antes de permitir enviar. O utilizador pode carregar "Gerar e enviar" repetidamente.
+
+**Correcção:** O `SendPaymentModal` recebe `messageLogs` como prop e verifica se existe um log `manual_payment_link_sent` nas últimas 6h. Se sim, desactiva o botão e mostra "Enviado há Xh".
+
+Na `InscritoModal`, os `messageLogs` já são carregados — passá-los ao modal.
+
+---
+
+### Problema 5 — Botão "Enviar dados de pagamento" só no painel esquerdo
+
+O botão existe no painel esquerdo escuro da ficha (`InscritoModal`). A `ActionsSection` (painel direito branco) é onde os outros botões de acção de pagamento vivem. O spec pede que o botão esteja também na `ActionsSection`, com cooldown visual.
+
+**Correcção:** Adicionar botão "Enviar dados de pagamento" à `ActionsSection`, com cooldown calculado a partir de `messageLogs.find(l => l.template_key === "manual_payment_link_sent")`. Passa `onOpenSendPayment` como prop ao `ActionsSection`.
+
+---
+
+### Plano de Implementação
+
+#### Ficheiros a editar
+
+| Ficheiro | O que muda |
+|---|---|
+| `supabase/functions/send-payment-link/index.ts` | 1. Validar `X-CRM-Secret`; 2. Guard-rail `paid_at`; 3. Usar URL estável no email e na resposta |
+| `src/components/crm/modal/SendPaymentModal.tsx` | 1. Receber `messageLogs` e verificar cooldown 6h; 2. Mostrar URL estável no sucesso; 3. Passar header `X-CRM-Secret` na chamada |
+| `src/components/crm/modal/ActionsSection.tsx` | Adicionar botão "Enviar dados de pagamento" com cooldown visual (prop `onOpenSendPayment`) |
+| `src/components/crm/InscritoModal.tsx` | Passar `messageLogs` ao `SendPaymentModal`; passar `onOpenSendPayment` à `ActionsSection` |
+
+#### Nada muda em:
+- `useInscritos.ts` — `updateStepReached` já existe e funciona
+- `TableView.tsx` — dropdown e ícone já implementados
+- `PipelineView.tsx` — colunas por plano mantêm-se (coluna por `step_reached` não é prioridade)
+- `CRM.tsx` — já passa `onUpdateStepReached` e `updateStepReached` correctamente
+- `supabase/config.toml` — `send-payment-link` já registado com `verify_jwt = false`
+
+---
+
+### Detalhe técnico: edge function corrigida
+
+```
+Input:  { registrationId, plan, priceVariant }
+Header: X-CRM-Secret: <CRM_ADMIN_SECRET>
+
+Fluxo:
+1. Validar X-CRM-Secret → 401 se inválido
+2. Buscar registration por id
+3. Se paid_at → return { status: "already_paid" }
+4. Calcular valor (tabela fixa de preços com IVA)
+5. Criar link EuPago → guardar last_payment_link + eupago_ref + plan_selected
+6. Construir paymentPageUrl = "https://imagenscomia.com/pagar?o={order_id}"
+7. Enviar email via Resend com link = paymentPageUrl (não o URL EuPago directo)
+8. Inserir + actualizar message_logs (template_key="manual_payment_link_sent")
+9. Return { paymentPageUrl, emailSent, email }
+```
+
+O `last_payment_link` na base de dados continua a ser o URL EuPago directo (usado pelo `resolve-payment` para validar e redirigir). O `paymentPageUrl` é o que se expõe ao cliente.
+
+---
+
+### Detalhe: cooldown no modal
+
+```
+const lastSentLog = messageLogs.find(l => l.template_key === "manual_payment_link_sent");
+const msSince = lastSentLog ? Date.now() - new Date(lastSentLog.created_at).getTime() : Infinity;
+const isCooling = msSince < 6 * 60 * 60 * 1000;
+```
+
+Se `isCooling`, o botão "Gerar e enviar" fica desactivado e mostra "Enviado há Xh · Cooldown activo".
