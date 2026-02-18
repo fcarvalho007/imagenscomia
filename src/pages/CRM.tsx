@@ -68,7 +68,7 @@ export default function CRM() {
     };
   }, []);
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium } = useInscritos();
 
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
   useEffect(() => {
@@ -163,6 +163,10 @@ export default function CRM() {
           onRefresh={refresh}
           onUpdateStepReached={updateStepReached}
           onToggleInvoiceSent={toggleInvoiceSent}
+          onGrantPremium={async (id) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            await grantPremium(id, user?.email || "admin");
+          }}
         />
       )}
     </div>

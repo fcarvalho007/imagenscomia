@@ -1,4 +1,4 @@
-import { Download, ExternalLink, BookOpen, Clock, CheckSquare, HelpCircle, Lock, LogOut, Play } from "lucide-react";
+import { Download, ExternalLink, BookOpen, Clock, CheckSquare, HelpCircle, Lock, LogOut, Play, Mail, MessageCircle } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -337,6 +337,39 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
               Quer ir mais longe?
             </p>
             <RecursosUpsell hasMasterclass={hasMasterclass} />
+          </div>
+        </section>
+
+        {/* ── Suporte ── */}
+        <section>
+          <div className="border-t border-[hsl(var(--border))] pt-8">
+            <h2 className="text-base font-bold text-[hsl(var(--ink-900))] mb-1">Precisa de ajuda?</h2>
+            <p className="text-sm text-[hsl(var(--ink-400))] mb-5">
+              Se tiveres dificuldades no acesso ou nos links, contacta o suporte.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20%C3%A1rea%20de%20recursos"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-[14px] transition-colors"
+                style={{
+                  background: "rgba(37,211,102,0.10)",
+                  border: "1px solid rgba(37,211,102,0.30)",
+                  color: "#16a34a",
+                }}
+              >
+                <MessageCircle size={16} style={{ color: "#25D366" }} />
+                WhatsApp
+              </a>
+              <a
+                href="mailto:frederico@digitalfc.pt?subject=Ajuda%20Recursos%20Imagens%20com%20IA"
+                className="flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl font-semibold text-[14px] transition-colors bg-[hsl(var(--white))] border border-[hsl(var(--border))] text-[hsl(var(--ink-700))] hover:bg-[hsl(var(--off-white))]"
+              >
+                <Mail size={16} className="text-[hsl(var(--ink-400))]" />
+                Email
+              </a>
+            </div>
           </div>
         </section>
 

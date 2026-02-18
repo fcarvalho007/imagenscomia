@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
-import { Check, Loader2, Shield } from "lucide-react";
+import { Check, Loader2, Shield, Tag } from "lucide-react";
 import { motion } from "framer-motion";
 import { InvoiceForm } from "./InvoiceForm";
 import type { GravacaoOrderState } from "@/pages/UpgradeGravacao";
 import { getGravacaoTotal, formatPrice } from "@/pages/UpgradeGravacao";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   orderState: GravacaoOrderState;
@@ -43,6 +44,12 @@ export const GravacaoConfirmation = ({
   const [invoiceValid, setInvoiceValid] = useState(false);
   const [invoiceSaveError, setInvoiceSaveError] = useState(false);
 
+  // Voucher state
+  const [showVoucher, setShowVoucher] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+
   const total = getGravacaoTotal(orderState);
   const subtotalBase = (orderState.gravacao ? 27 : 0) + (orderState.masterclass ? 47 : 0);
   const iva = total - subtotalBase;
@@ -55,6 +62,28 @@ export const GravacaoConfirmation = ({
   const handleClick = () => {
     setShowRedirect(true);
     onPay(plan);
+  };
+
+  const handleRedeemVoucher = async () => {
+    if (!userEmail || !voucherCode.trim()) return;
+    setVoucherLoading(true);
+    setVoucherError(null);
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("redeem-voucher", {
+        body: { code: voucherCode.trim(), email: userEmail },
+      });
+      if (fnErr || !data?.success) {
+        setVoucherError(data?.error || "Código inválido. Tenta novamente.");
+        return;
+      }
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      }
+    } catch {
+      setVoucherError("Erro de ligação. Tenta novamente.");
+    } finally {
+      setVoucherLoading(false);
+    }
   };
 
   const onValidChange = useCallback((valid: boolean) => setInvoiceValid(valid), []);
@@ -130,7 +159,37 @@ export const GravacaoConfirmation = ({
         <p className="text-center text-[13px] text-amber-600 mt-2">Preencha os dados de faturação para continuar</p>
       )}
 
-      <p className="text-center text-[14px] text-ink-400 mt-2">🔒 Pagamento seguro EuPago</p>
+      {/* Voucher */}
+      {!showVoucher ? (
+        <p
+          onClick={() => setShowVoucher(true)}
+          className="text-center text-[12px] text-ink-300 mt-3 cursor-pointer hover:text-ink-500 transition-colors select-none"
+        >
+          <Tag size={11} className="inline mr-1 mb-0.5" />
+          Tenho um voucher
+        </p>
+      ) : (
+        <div className="mt-3 flex gap-2">
+          <input
+            type="text"
+            placeholder="Código de voucher"
+            value={voucherCode}
+            onChange={(e) => setVoucherCode(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleRedeemVoucher()}
+            className="flex-1 border border-border rounded-lg px-3 py-2 text-[13px] bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            onClick={handleRedeemVoucher}
+            disabled={voucherLoading || !voucherCode.trim()}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[13px] font-semibold transition-colors disabled:opacity-50 flex items-center gap-1.5"
+          >
+            {voucherLoading ? <Loader2 size={13} className="animate-spin" /> : "Aplicar"}
+          </button>
+        </div>
+      )}
+      {voucherError && <p className="text-center text-[12px] text-red-500 mt-1.5">{voucherError}</p>}
+
+      <p className="text-center text-[14px] text-ink-400 mt-3">🔒 Pagamento seguro EuPago</p>
 
       {error && <p className="text-center text-[14px] text-red-500 mt-3">{error}</p>}
 

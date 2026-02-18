@@ -38,6 +38,8 @@ export type Inscrito = {
   last_payment_link_sent_at: string | null;
   registration_source: "webinar" | "gravacao";
   invoice_sent: boolean;
+  premium_granted_at: string | null;
+  premium_granted_by: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];

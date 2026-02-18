@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Pencil, Check, Bell, Loader2,
+  X, ChevronLeft, ChevronRight, MessageSquare, Mail, Star, Archive, Trash2, Copy, Pencil, Check, Bell, Loader2, Gift,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import FunnelView from "@/components/crm/FunnelView";
@@ -40,6 +40,7 @@ interface InscritoModalProps {
   onRefresh?: () => void;
   onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
   onToggleInvoiceSent?: (id: string) => void;
+  onGrantPremium?: (id: string) => void;
 }
 
 function fmtDate(iso: string) {
@@ -57,7 +58,7 @@ function abbreviateSource(s: string) {
 }
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent, onGrantPremium,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -595,6 +596,39 @@ export default function InscritoModal({
               invoiceSent={inscrito.invoice_sent}
               onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)}
             />
+
+            {/* Premium Grant Control */}
+            {onGrantPremium && (
+              <div className="my-4 p-4 rounded-xl border border-border bg-card">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Gift size={14} className="text-purple-600" />
+                    <span className="text-[13px] font-semibold text-foreground">Acesso Premium (Oferta)</span>
+                    {inscrito.premium_granted_at && (
+                      <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                        Activo
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onGrantPremium(inscrito.id)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      inscrito.premium_granted_at ? "bg-purple-600" : "bg-input"
+                    }`}
+                    aria-label="Toggle acesso premium"
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      inscrito.premium_granted_at ? "translate-x-6" : "translate-x-1"
+                    }`} />
+                  </button>
+                </div>
+                {inscrito.premium_granted_at && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    Concedido por {inscrito.premium_granted_by || "—"} · {fmtDate(inscrito.premium_granted_at)}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Funnel */}
             <FunnelView inscrito={inscrito} />
