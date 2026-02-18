@@ -1,8 +1,29 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
+
+type Period = "7d" | "14d" | "30d" | "all";
+
+interface VisitantesState {
+  value: number | null;
+  updatedAt: string | null;
+  source: string | null;
+  status: "loading" | "ok" | "unavailable";
+}
+
+function formatUpdatedAt(iso: string): string {
+  const d = new Date(iso);
+  const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+  return `${d.getDate()} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function getPeriodStart(period: Period): Date | null {
+  if (period === "all") return null;
+  const days = period === "7d" ? 7 : period === "14d" ? 14 : 30;
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+}
 
 const PREDEFINED_DUVIDAS = [
   "Não sei descrever o estilo visual que quero",
@@ -61,8 +82,10 @@ function abbreviateSource(s: string) {
 
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const [visitantes, setVisitantes] = useState<number | null>(null);
-  const [visitantesLoading, setVisitantesLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>("all");
+  const [visitantesState, setVisitantesState] = useState<VisitantesState>({
+    value: null, updatedAt: null, source: null, status: "loading",
+  });
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
@@ -70,21 +93,25 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [emailFailed24h, setEmailFailed24h] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
 
-  // Fetch real analytics visitors for landing page (/) since campaign start
-  // Value is cached from Lovable analytics API — rota "/" unique visitors since 8 Feb 2026
-  // Updated periodically by the agent. Last update: 2026-02-18 → 2225 visitors
-  useEffect(() => {
-    setVisitantesLoading(true);
-    supabase.functions.invoke("get-analytics-visitors").then(({ data, error }) => {
-      if (!error && data?.visitors != null && data.visitors > 0) {
-        setVisitantes(data.visitors);
-      } else {
-        // Fallback to last known accurate value from Lovable analytics (rota / since 8 Fev 2026)
-        setVisitantes(2225);
-      }
-      setVisitantesLoading(false);
-    });
+  const fetchVisitantes = useCallback(async () => {
+    setVisitantesState(prev => ({ ...prev, status: "loading" }));
+    const { data, error } = await supabase.functions.invoke("get-analytics-visitors");
+    if (!error && data?.visitors != null && data.visitors > 0) {
+      setVisitantesState({
+        value: data.visitors,
+        updatedAt: data.updated_at ?? null,
+        source: data.source ?? null,
+        status: "ok",
+      });
+    } else {
+      setVisitantesState(prev => ({
+        ...prev,
+        status: "unavailable",
+      }));
+    }
   }, []);
+
+  useEffect(() => { fetchVisitantes(); }, [fetchVisitantes]);
 
   useEffect(() => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -106,8 +133,16 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       setEmailFailed7d(failed7d.count || 0);
     });
   }, []);
-  const stats = useMemo(() => {
+  // Period-filtered inscritos
+  const filteredInscritos = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
+    const periodStart = getPeriodStart(period);
+    if (!periodStart) return active;
+    return active.filter((i) => new Date(i.timestamp) >= periodStart);
+  }, [inscritos, period]);
+
+  const stats = useMemo(() => {
+    const active = filteredInscritos;
     const total = active.length;
     // Only count confirmed revenue (paid_at exists)
     const pagantes = active.filter((i) => i.paid_at !== null);
@@ -228,22 +263,36 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
   ];
 
+  const visitantes = visitantesState.value;
+  const visitantesLoading = visitantesState.status === "loading";
   const visitorDropLost = visitantes != null && visitantes > 0 ? visitantes - stats.step1 : 0;
   const visitorDropPct = visitantes != null && visitantes > 0 ? ((visitorDropLost / visitantes) * 100) : 0;
   const registrationCTR = visitantes != null && visitantes > 0 ? ((stats.step1 / visitantes) * 100) : 0;
   const landingToPayPct = visitantes != null && visitantes > 0 ? ((stats.paidConfirmed / visitantes) * 100) : 0;
 
-  
+
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
         <div>
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Dashboard</h1>
           <p className="text-sm text-ink-500">Visão geral do webinar em tempo real</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Period selector */}
+          <div className="flex items-center gap-1 bg-surface rounded-lg p-0.5">
+            {(["7d","14d","30d","all"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${period === p ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-700"}`}
+              >
+                {p === "7d" ? "7 dias" : p === "14d" ? "14 dias" : p === "30d" ? "30 dias" : "Desde início"}
+              </button>
+            ))}
+          </div>
           {onRefresh && (
             <button
               onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }}
@@ -253,16 +302,21 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               Atualizar
             </button>
           )}
-          <p className="text-[13px] text-ink-400 mt-1">{dateStr}</p>
+          <p className="text-[13px] text-ink-400">{dateStr}</p>
         </div>
       </div>
+      {period !== "all" && (
+        <div className="mb-4 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-[12px] text-blue-700">
+          A filtrar por <strong>últimos {period === "7d" ? "7" : period === "14d" ? "14" : "30"} dias</strong> · Visitantes mostram total acumulado (desde 8 Fev)
+        </div>
+      )}
 
       {/* Funnel */}
       <div className="bg-white border border-border rounded-xl p-6 mb-5">
         <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de Inscrição</h2>
         <p className="text-[13px] text-ink-400 mb-5">Da landing page ao pagamento</p>
         <div className="space-y-1">
-          {/* Step 0: Visitors */}
+          {/* Step 0: Visitors — transparent state */}
           <div>
             <div className="flex items-center gap-3">
               <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
@@ -272,8 +326,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 <div className="h-full rounded-full bg-ink-300" style={{ width: "100%" }} />
               </div>
               <div className="flex items-center gap-1.5 w-28 justify-end shrink-0">
-                {visitantesLoading ? (
+                {visitantesState.status === "loading" ? (
                   <span className="text-[12px] text-ink-400 animate-pulse">—</span>
+                ) : visitantesState.status === "unavailable" ? (
+                  <span className="text-[12px] font-semibold" style={{ color: "hsl(var(--amber-500))" }}>Indisp.</span>
                 ) : (
                   <>
                     <span className="text-[13px] font-heading font-bold text-ink-700">{visitantes?.toLocaleString("pt-PT")}</span>
@@ -282,13 +338,37 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 )}
               </div>
             </div>
+            {/* Status row below step 0 bar */}
             <div className="flex items-center gap-2 ml-[200px] max-sm:ml-[140px] pl-1 mt-0.5 flex-wrap">
-              {!visitantesLoading && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", border: "1px solid hsl(var(--blue-600) / 0.2)" }}>
-                  <RefreshCcw size={8} />
-                  via Analytics · rota /
-                </span>
+              {visitantesState.status === "ok" && (
+                <>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                    style={{ background: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", border: "1px solid hsl(var(--blue-600) / 0.2)" }}>
+                    <RefreshCcw size={8} />
+                    via Analytics Cache · rota /
+                  </span>
+                  {visitantesState.updatedAt && (
+                    <span className="text-[10px] text-ink-400">
+                      Actualizado em {formatUpdatedAt(visitantesState.updatedAt)}
+                    </span>
+                  )}
+                </>
+              )}
+              {visitantesState.status === "unavailable" && (
+                <>
+                  <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--amber-500))" }}>Indisponível</span>
+                  {visitantesState.value != null && visitantesState.updatedAt && (
+                    <span className="text-[10px] text-ink-400">
+                      Último valor: {visitantesState.value.toLocaleString("pt-PT")} ({formatUpdatedAt(visitantesState.updatedAt)})
+                    </span>
+                  )}
+                  <button
+                    onClick={fetchVisitantes}
+                    className="text-[10px] font-semibold text-blue-600 hover:underline flex items-center gap-0.5"
+                  >
+                    <RefreshCcw size={8} /> Re-tentar
+                  </button>
+                </>
               )}
             </div>
             {visitantes != null && visitantes > 0 && visitorDropLost > 0 && (
@@ -359,11 +439,17 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                     <span className={`${valueSize} font-heading font-bold text-ink-700 w-28 text-right shrink-0`}>
                       {step.value}{" "}
                       <span className="text-ink-400 font-normal text-[11px]">
-                        ({pct.toFixed(1)}%)
-                        {isLast && visitantes != null && visitantes > 0 && (
-                          <span style={{ color: "hsl(var(--amber-500))" }}>
-                            {" "}· {landingToPayPct.toFixed(1)}% dos visitantes
-                          </span>
+                        {isLast ? (
+                          <>
+                            ({pct.toFixed(1)}% dos inscritos
+                            {visitantes != null && visitantes > 0 && (
+                              <span style={{ color: "hsl(var(--amber-500))" }}>
+                                {" "}· {landingToPayPct.toFixed(1)}% dos visitantes
+                              </span>
+                            )})
+                          </>
+                        ) : (
+                          <>({pct.toFixed(1)}%)</>
                         )}
                       </span>
                     </span>
@@ -391,7 +477,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       {/* KPIs */}
       <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3.5 mb-5">
         {[
-          { icon: Users, iconColor: "hsl(var(--blue-600))", value: String(stats.total), label: "Inscritos activos", sub: "Desde 8 Fev 2026" },
+          { icon: Users, iconColor: "hsl(var(--blue-600))", value: String(stats.total), label: "Inscritos activos", sub: period === "all" ? "Desde 8 Fev 2026" : `Últimos ${period === "7d" ? "7" : period === "14d" ? "14" : "30"} dias` },
           { icon: Euro, iconColor: "hsl(var(--green-600))", value: `€${stats.receita.toFixed(2)}`, label: "Receita Confirmada", sub: `${stats.nPremiumPaid} Premium · ${stats.nMCPaid} MC · ${stats.nBundlePaid} Bundle pagos` },
           { icon: BarChart2, iconColor: "#7C3AED", value: `€${stats.ticket.toFixed(2)}`, label: "Ticket médio", sub: "entre quem pagou" },
         ].map((kpi, idx) => (
@@ -402,16 +488,21 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <p className="text-[11px] text-ink-400">{kpi.sub}</p>
           </div>
         ))}
-        {/* Conversion KPI — standalone card with dual context */}
+        {/* Conversion KPI — two separate rates clearly labelled */}
         <div className="bg-white border border-border rounded-xl p-5">
           <TrendingUp size={20} style={{ color: "hsl(var(--amber-500))" }} />
+          {/* Primary KPI: inscritos → pago */}
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{stats.conversao.toFixed(1)}%</p>
-          <p className="text-[13px] text-ink-500 mt-1">Taxa de conversão (inscritos → pago)</p>
+          <p className="text-[13px] text-ink-500 mt-1">Taxa Inscritos → Pago</p>
           <p className="text-[11px] text-ink-400 mt-0.5">{stats.paidConfirmed} de {stats.total} inscritos activos pagaram</p>
+          {/* Secondary KPI: landing page → pago (only if visitors available) */}
           {visitantes != null && visitantes > 0 && (
-            <p className="text-[11px] mt-1" style={{ color: "hsl(var(--amber-500))" }}>
-              {landingToPayPct.toFixed(1)}% dos visitantes da landing page
-            </p>
+            <>
+              <div className="border-t border-dashed border-border my-3" />
+              <p className="font-heading font-bold text-[20px] leading-none" style={{ color: "hsl(var(--amber-500))" }}>{landingToPayPct.toFixed(1)}%</p>
+              <p className="text-[12px] text-ink-500 mt-0.5">Landing page → Pago</p>
+              <p className="text-[11px] text-ink-400">{stats.paidConfirmed} de {visitantes.toLocaleString("pt-PT")} visitantes únicos</p>
+            </>
           )}
         </div>
       </div>
