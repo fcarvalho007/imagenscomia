@@ -109,6 +109,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const step3 = active.filter((i) => i.step_reached >= 3).length;
     const step4 = active.filter((i) => i.step_reached >= 4).length;
     const step5 = active.filter((i) => i.step_reached >= 5).length;
+    const clickedToPay = active.filter((i) => i.upgrade_clicked_at !== null).length;
+    const paidConfirmed = active.filter((i) => i.paid_at !== null).length;
 
     // Sources
     const srcMap: Record<string, number> = {};
@@ -177,8 +179,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     ].sort((a, b) => b.count - a.count);
     const maxDiff = difficulties[0]?.count || 1;
 
-    // Funnel drop-offs
-    const funnelValues = [step1, step2, step3, step4, step5];
+    // Funnel drop-offs (7 steps: from step1 to paidConfirmed)
+    const funnelValues = [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
     const dropOffs = funnelValues.slice(0, -1).map((v, i) => ({
       lost: v - funnelValues[i + 1],
       pct: v ? ((v - funnelValues[i + 1]) / v) * 100 : 0,
@@ -192,7 +194,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
     });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, clickedToPay, paidConfirmed, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
   }, [inscritos]);
 
   const now = new Date();
@@ -200,11 +202,13 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
   const funnelSteps = [
-    { label: "Submeteu inscrição", value: stats.step1, color: "hsl(var(--blue-600))" },
-    { label: "Chegou ao Passo 1 (Origem)", value: stats.step2, color: "hsl(var(--blue-600))" },
-    { label: "Completou Passo 2 (Dúvida)", value: stats.step3, color: "#0891B2" },
-    { label: "Viu oferta Premium (Passo 3)", value: stats.step4, color: "hsl(var(--amber-500))" },
-    { label: "Flow completo (Passo 5)", value: stats.step5, color: "hsl(var(--green-600))" },
+    { label: "Submeteu inscrição",               value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           separator: false },
+    { label: "Chegou ao Passo 1 — Origem",       value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           separator: false },
+    { label: "Chegou ao Passo 2 — Dúvida",       value: stats.step3,          color: "#0891B2",               note: null,                           separator: false },
+    { label: "Viu oferta Premium (Passo 3)",     value: stats.step4,          color: "hsl(var(--amber-500))", note: null,                           separator: false },
+    { label: "Viu oferta Masterclass (Passo 4)", value: stats.step5,          color: "#7C3AED",               note: null,                           separator: true  },
+    { label: "Clicou para pagar",                value: stats.clickedToPay,   color: "hsl(var(--amber-500))", note: "preenche dados de faturação",   separator: false },
+    { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           separator: false },
   ];
 
   const visitorDropLost = visitantes > 0 ? visitantes - stats.step1 : 0;
@@ -277,6 +281,14 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             const isMaxDrop = idx === stats.maxDropIdx && drop && drop.lost > 0;
             return (
               <div key={idx}>
+                {/* Separator before "Intenção de compra" steps */}
+                {step.separator && (
+                  <div className="flex items-center gap-2 my-2">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-ink-400 px-2">— Intenção de compra →</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
                     {idx + 1}. {step.label}
@@ -291,6 +303,9 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                     {step.value} <span className="text-ink-400 font-normal text-[11px]">({pct.toFixed(1)}%)</span>
                   </span>
                 </div>
+                {step.note && (
+                  <p className="text-[10px] text-ink-400 ml-[200px] max-sm:ml-[140px] pl-1 -mt-0.5">· {step.note} ·</p>
+                )}
                 {drop && drop.lost > 0 && (
                   <div className={`flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 ${isMaxDrop ? "text-red-500 font-semibold" : "text-ink-400"}`}>
                     <ArrowDown size={10} />
