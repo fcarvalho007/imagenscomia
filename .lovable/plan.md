@@ -1,195 +1,170 @@
 
-## Diagnóstico Completo — Estado Actual vs. Requisitos
+## Diagnóstico Final
 
-### O que está a funcionar
-- `send-payment-link` edge function existe e tem: validação `X-CRM-Secret`, guard-rail `paid_at`, URL estável, logging em `message_logs`
-- `SendPaymentModal` existe com cooldown de 6h (via `messageLogs`) e UI de sucesso
-- `updateStepReached` no hook funciona correctamente
-- `ActivityTimeline` tem estrutura correcta de filters e timeline
+### Situação confirmada
+- A API de analytics da Lovable **funciona** e retorna dados reais: **2226 visitantes únicos** na rota `/` entre 8–18 Fev 2026.
+- A edge function `get-analytics-visitors` **falha sempre** porque o `LOVABLE_API_KEY` guardado nos secrets não tem permissão para chamar a API de analytics externamente — só o agente Lovable tem acesso interno a esses dados.
+- Resultado actual: a função retorna `null`, o frontend usa o fallback hardcoded `2225` silenciosamente, sem qualquer indicação de estado ou timestamp.
 
-### Problemas reais identificados
+### Problemas a resolver
+1. **Visitantes — fonte instável e silenciosa**: fallback hardcoded sem transparência, sem timestamp, sem "re-tentar"
+2. **KPI duplo confuso**: 5.2% (inscritos→pago) e 0.5% (visitantes→pago) aparecem misturados sem clareza
+3. **Sem período seleccionável**: tudo é "desde o início"
+4. **Sem tooltips informativos**: utilizador não sabe o que é cada métrica
 
-**1. Actividade mostra "Sem registos" — BUG CRÍTICO DE UX**
+---
 
-A causa é dupla:
-- `fetchMessageLogs` limita a 10 registos mas isso está correcto
-- O problema real: `isManual` no `ActivityTimeline` só considera `reminder_manual` e `followup_backlog_checkin`. O `manual_payment_link_sent` **não está incluído** — filtrando por "Manual" não aparece.
-- O filtro "Emails" não inclui `manual_payment_link_sent`
-- O `TEMPLATE_LABELS` não tem label para `manual_payment_link_sent`, `payment_confirmed_customer`, `crm_step_changed`, etc. — aparece a chave raw
+## Solução para Visitantes — Cache em Base de Dados
 
-**2. Segurança: `VITE_CRM_ADMIN_SECRET` exposto no browser**
+Como a API de analytics só é acessível pelo agente Lovable (não via token externo), a architecture correta é:
 
-Em `SendPaymentModal.tsx` linha 63:
-```ts
-const crmSecret = import.meta.env.VITE_CRM_ADMIN_SECRET || "";
-```
-`VITE_` prefixo vai directamente para o bundle JS público — qualquer utilizador pode inspecionar e obter o segredo. Isto invalida completamente a protecção da edge function.
+1. **Criar tabela `analytics_cache`** com `key TEXT PRIMARY KEY`, `value INTEGER`, `updated_at TIMESTAMPTZ`, `source TEXT`
+2. **Inserir o valor actual (2226)** directamente na tabela via migration
+3. **Remover a edge function `get-analytics-visitors`** (que falha sempre)
+4. **No `DashboardView`**: ler `analytics_cache` via Supabase client directamente (sem edge function)
+5. **UI**: mostrar número + badge "via Analytics Cache · rota /" + "Actualizado em DD Mês HH:mm" + botão "Pedir actualização" que cria um evento de sistema (para que o agent atualize manualmente quando necessário)
 
-**Solução correcta:** Usar `verify_jwt = true` + validar JWT na edge function para confirmar que é admin. O `X-CRM-Secret` passa a ser desnecessário — substitui-se por autenticação JWT com verificação de role admin.
-
-**3. `paid_at` não é seleccionado no fetch da registration**
-
-Em `send-payment-link/index.ts` linha 83:
-```ts
-.select("id, email, name, first_name, order_id")
-```
-`paid_at` **não está na query select** mas é verificado em `if (reg.paid_at)` na linha 95 — logo `reg.paid_at` é sempre `undefined` e o guard-rail nunca actua.
-
-**4. Cooldown server-side em falta na edge function**
-
-A edge function não verifica o `message_logs` para impor cooldown 6h server-side. Apenas o frontend verifica, mas o frontend pode ser contornado. O spec exige verificação também no backend.
-
-**5. `ActivityTimeline` — filtro "Manual" incompleto e labels em falta**
-
-- `isManual` não cobre `manual_payment_link_sent`, `crm_step_changed`, `crm_note_saved`
-- Empty state mostra "Sem registos" — devia mostrar mensagem útil
+Esta abordagem é **100% fiável**, transparente, auditável e sem dependências externas que falham. O valor é actualizado pelo agent periodicamente (basta uma query SQL).
 
 ---
 
 ## Plano de Implementação
 
-### Ficheiro 1: `supabase/functions/send-payment-link/index.ts`
+### 1. Migration — Tabela `analytics_cache`
 
-**3 correcções:**
+Criar tabela simples:
+```sql
+CREATE TABLE public.analytics_cache (
+  key TEXT PRIMARY KEY,
+  value INTEGER NOT NULL,
+  source TEXT NOT NULL DEFAULT 'manual',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-**a) Adicionar `paid_at` à query select:**
-```ts
-.select("id, email, name, first_name, order_id, paid_at")
+-- Inserir valor actual confirmado
+INSERT INTO analytics_cache (key, value, source, updated_at)
+VALUES ('landing_visitors', 2226, 'lovable_analytics_api', '2026-02-18T14:00:00Z');
+
+-- RLS: só leitura pública (o dashboard precisa de ler sem auth)
+ALTER TABLE public.analytics_cache ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_anon_select_analytics_cache" ON public.analytics_cache
+  FOR SELECT USING (true);
 ```
 
-**b) Cooldown server-side — antes de criar o link EuPago:**
-```ts
-// Check 6h cooldown in message_logs
-const since6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
-const { data: recentLog } = await supabase
-  .from("message_logs")
-  .select("created_at")
-  .eq("registration_id", registrationId)
-  .eq("template_key", "manual_payment_link_sent")
-  .gte("created_at", since6h)
-  .limit(1)
-  .maybeSingle();
+### 2. Edge function `get-analytics-visitors` — Simplificar
 
-if (recentLog) {
-  const retryAfterMs = 6 * 60 * 60 * 1000 - (Date.now() - new Date(recentLog.created_at).getTime());
-  return new Response(
-    JSON.stringify({ status: "cooldown", retryAfterMs }),
-    { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-  );
-}
-```
+Remover toda a lógica de chamada à API externa. A função passa a apenas:
+- Ler `analytics_cache` WHERE key = 'landing_visitors'
+- Retornar `{ visitors, source, updated_at }`
 
-**c) Substituir `X-CRM-Secret` por JWT + role admin:**
+Assim fica simples, fiável e sem falhas de autenticação. Quando o agente actualizar o valor na tabela, o dashboard passa a mostrar o novo valor automaticamente.
 
-Remover validação por `X-CRM-Secret`. Passar para autenticação por JWT:
-```ts
-// verify_jwt = true no config.toml para esta função
-// OR: verificar manualmente o JWT e confirmar role admin
-const authHeader = req.headers.get("Authorization");
-const token = authHeader?.replace("Bearer ", "") || "";
-const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-if (authErr || !user) return 401;
-// Check admin role
-const { data: roleData } = await supabase
-  .from("user_roles")
-  .select("role")
-  .eq("user_id", user.id)
-  .eq("role", "admin")
-  .maybeSingle();
-if (!roleData) return 403;
-```
+### 3. `DashboardView.tsx` — 4 melhorias
 
-(O `config.toml` mantém `verify_jwt = false` porque fazemos verificação manual, mas sem depender de `VITE_CRM_ADMIN_SECRET`)
+**A) Visitantes — estado transparente**
 
-### Ficheiro 2: `src/components/crm/modal/SendPaymentModal.tsx`
-
-**2 correcções:**
-
-**a) Remover `VITE_CRM_ADMIN_SECRET`** — não passar o header `x-crm-secret`. A autenticação passa a ser feita exclusivamente pelo JWT Bearer token do utilizador autenticado.
-
-**b) Tratar resposta 429 (cooldown server-side):**
-```ts
-if (res.status === 429) {
-  const data = await res.json();
-  toast({ title: "Cooldown activo", description: `Aguarda ${Math.ceil(data.retryAfterMs / 60000)} min` });
-  return;
-}
-```
-
-### Ficheiro 3: `src/components/crm/templateLabels.ts`
-
-**Adicionar labels em falta:**
-```ts
-manual_payment_link_sent: "Link de pagamento enviado (manual)",
-payment_confirmed_customer: "Confirmação de pagamento",
-crm_step_changed: "Alteração de etapa (CRM)",
-crm_note_saved: "Nota guardada (CRM)",
-payment_link_regenerated: "Link regenerado",
-masterclass_upsell_premium: "Convite Masterclass (Premium)",
-```
-
-### Ficheiro 4: `src/components/crm/modal/ActivityTimeline.tsx`
-
-**3 melhorias:**
-
-**a) Expandir `isManual` para incluir acções CRM:**
-```ts
-isManual: [
-  "reminder_manual",
-  "followup_backlog_checkin",
-  "manual_payment_link_sent",
-  "crm_step_changed",
-  "crm_note_saved",
-  "payment_link_regenerated",
-].includes(log.template_key),
-```
-
-**b) Melhorar categorização dos filtros:**
-- `emails`: type === "email" (todos)
-- `payments`: type === "payment" OU `template_key` contém "payment", "paid", "eupago"
-- `errors`: `status === "failed"` OU `error != null`
-- `manual`: `isManual === true`
-
-**c) Melhorar empty state:**
+Estado actual (silencioso):
 ```tsx
-<div className="py-6 text-center">
-  <p className="text-[13px] text-muted-foreground">Ainda sem actividade registada.</p>
-  <p className="text-[11px] text-muted-foreground/60 mt-1">
-    Os envios de email, eventos de pagamento e acções manuais serão listados aqui.
-  </p>
-</div>
+// Se falha, mostra 2225 sem aviso
+setVisitantes(2225);
 ```
 
-**d) Mostrar `payment_url` (link estável) nos items de tipo `manual_payment_link_sent`:**
-Mapear o campo `payment_url` do log para exibir junto ao item da timeline.
-
-### Ficheiro 5: `src/hooks/useInscritos.ts`
-
-**1 correcção:**
-
-Aumentar o `limit` do `fetchMessageLogs` de 10 para 50 para garantir que todos os logs relevantes são carregados:
-```ts
-.limit(50)
+Estado novo (transparente):
+```tsx
+// 3 estados possíveis:
+// - loading: "—" animado
+// - success: número + badge + "Actualizado em DD Mês HH:mm"  
+// - unavailable: "Indisponível" + "Último valor: N (data)" + botão "Re-tentar"
+const [visitantesState, setVisitantesState] = useState<{
+  value: number | null;
+  updatedAt: string | null;
+  source: string | null;
+  status: "loading" | "ok" | "unavailable";
+}>({ value: null, updatedAt: null, source: null, status: "loading" });
 ```
+
+UI do Passo 0:
+- `status === "ok"`: número, badge `via Analytics Cache · rota /`, `Actualizado em DD Mês HH:mm`
+- `status === "unavailable"`: "Indisponível" em âmbar, `Último valor conhecido: N`, botão `Re-tentar`
+- Drop-off row só aparece se `value != null`
+
+**B) KPI conversão — duas taxas claramente separadas**
+
+Card actual (confuso):
+```tsx
+<p>Taxa de conversão (inscritos → pago)</p>
+<p>{paidConfirmed} de {total} inscritos pagaram</p>
+<p style={amber}>{landingToPayPct}% dos visitantes da landing page</p>  ← misturado
+```
+
+Card novo (dois KPIs separados com visual distinto):
+```tsx
+// KPI principal
+<p className="text-[32px]">{conversao.toFixed(1)}%</p>
+<p>Taxa Inscritos → Pago</p>
+<p className="text-[11px] text-ink-400">{paidConfirmed} de {total} inscritos activos pagaram</p>
+
+// Divisor
+<div className="border-t border-dashed border-border my-3" />
+
+// KPI secundário (só se visitantes disponíveis)
+<p className="text-[20px] font-bold" style={amber}>{landingToPayPct.toFixed(1)}%</p>
+<p className="text-[12px] text-ink-500">Landing page → Pago</p>
+<p className="text-[11px] text-ink-400">{paidConfirmed} de {visitantes} visitantes únicos</p>
+```
+
+**C) Funil — último passo mais claro**
+
+No último passo do funil (Pagamento confirmado), a percentagem actualmente mostra:
+```
+12 (5.2%) · 0.5% dos visitantes
+```
+Tornar mais legível:
+```
+12 inscritos (5.2% dos inscritos · 0.5% dos visitantes)
+```
+Labels explícitos inline evitam confusão entre as duas bases.
+
+**D) Selector de período — simples, 4 opções**
+
+Adicionar no topo do dashboard, ao lado do botão "Atualizar":
+```tsx
+const [period, setPeriod] = useState<"7d" | "14d" | "30d" | "all">("all");
+```
+Botões pill: `7 dias | 14 dias | 30 dias | Desde início`
+
+O `period` filtra `inscritos` por `created_at` antes de calcular stats:
+```tsx
+const filtered = period === "all" 
+  ? inscritos 
+  : inscritos.filter(i => new Date(i.timestamp) >= periodStart);
+```
+Os visitantes da analytics cache **não são filtrados** por período (só temos o total acumulado) — mostrar nota "Desde 8 Fev" sempre junto ao passo 0.
+
+O selector afecta: inscritos, receita, conversão, ticket, funil, fontes, planos, dúvidas, pipeline, pendentes.
+
+### 4. Ficheiros a criar/editar
+
+| Ficheiro | O que muda |
+|---|---|
+| `supabase/migrations/...` | Criar `analytics_cache` + inserir 2226 + RLS |
+| `supabase/functions/get-analytics-visitors/index.ts` | Ler de `analytics_cache` (sem chamada API externa) |
+| `src/components/crm/DashboardView.tsx` | Estados transparentes visitantes, KPI duplo claro, selector de período |
+
+### 5. O que NÃO muda
+- `send-payment-link` — já corrigido
+- `ActivityTimeline` — já corrigido
+- `templateLabels` — já corrigido
+- Tabelas existentes — sem alterações de schema (excepto nova tabela `analytics_cache`)
+- Pipeline, Tabela, Ficha — sem alterações
 
 ---
 
-## O que NÃO muda
+## Resultado Final Esperado
 
-- `FunnelView.tsx` — o marcador "SAIU AQUI" já funciona correctamente com `step_reached`
-- `InscritoModal.tsx` — botão "Enviar link de pagamento" e selector de estágio já funcionam
-- `ActionsSection.tsx` — cooldown visual já implementado
-- `useInscritos.ts` — `updateStepReached` já funciona
-- `supabase/config.toml` — configuração correcta
-
----
-
-## Resumo das prioridades
-
-| Prioridade | Problema | Ficheiro |
-|---|---|---|
-| 🔴 CRÍTICO | `paid_at` ausente na query (guard-rail inoperacional) | `send-payment-link/index.ts` |
-| 🔴 CRÍTICO | `VITE_CRM_ADMIN_SECRET` exposto no bundle | `SendPaymentModal.tsx` + `send-payment-link/index.ts` |
-| 🟠 ALTO | Cooldown server-side ausente | `send-payment-link/index.ts` |
-| 🟠 ALTO | Actividade mostra "Sem registos" (filtro manual incorrecto + labels em falta) | `ActivityTimeline.tsx` + `templateLabels.ts` |
-| 🟡 MÉDIO | `fetchMessageLogs` limite de 10 | `useInscritos.ts` |
+- Passo 0 lê de `analytics_cache` → sempre funciona, nunca silencioso
+- Se tabela falhar: "Indisponível · Último valor: 2226 (18 Fev 14:00)" + Re-tentar
+- KPI mostra `5.2%` grande + `0.5%` menor com labels inequívocos
+- Funil: último passo = "12 (5.2% dos inscritos · 0.5% dos visitantes)"
+- Selector de período filtra tudo excepto visitantes (que são acumulados)
+- O agent pode atualizar o valor bastando fazer `UPDATE analytics_cache SET value=2500, updated_at=NOW() WHERE key='landing_visitors'`
