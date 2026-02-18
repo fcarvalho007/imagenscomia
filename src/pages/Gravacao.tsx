@@ -35,10 +35,8 @@ const quickFacts = [
 const packItems = [
   "Gravação completa (HD)",
   "Resumo PDF da sessão",
-  "Checklist: ferramentas recomendadas por objetivo",
-  "Estrutura de briefing → instrução reutilizável",
-  "Checklist anti-erros (como corrigir resultados genéricos)",
-  "Mini-biblioteca de prompts base (editáveis)",
+  "Guia de Apoio (32 páginas) sobre Imagens com IA e Nano Banana Pro",
+  "Documento com biblioteca de prompts base (editáveis)",
 ];
 
 const challenges = [
@@ -53,24 +51,24 @@ const challenges = [
 const methods = [
   {
     num: "01",
-    title: "Ferramentas certas (sem confusão)",
+    title: "Estado da Arte",
     borderColor: "border-l-blue-600",
-    desc: "Mapa de decisão simples para escolher a ferramenta certa por objetivo.",
-    deliverable: "Saber exatamente que ferramenta usar — sem perder tempo a comparar.",
+    desc: "Modelos e versões disponíveis. Ferramentas gratuitas e pagas — o que escolher e quando.",
+    deliverable: "Mapa claro do ecossistema actual de IA para imagens.",
   },
   {
     num: "02",
-    title: "Instruções profissionais (do briefing ao resultado)",
+    title: "Instruções Profissionais",
     borderColor: "border-l-[#0891B2]",
-    desc: "Modelo reutilizável + checklist anti-erros para corrigir falhas.",
-    deliverable: "Método consistente que transforma qualquer briefing em resultado.",
+    desc: "Passo a passo do briefing à produção. Adaptação de formatos e edição do resultado.",
+    deliverable: "Método replicável para qualquer brief.",
   },
   {
     num: "03",
-    title: "Imagens para redes sociais e anúncios (prontas a usar)",
+    title: "Do Objetivo ao Criativo",
     borderColor: "border-l-green-600",
-    desc: "Variações e consistência para produzir criativos com qualidade.",
-    deliverable: "Processo simples para produzir criativos com qualidade.",
+    desc: "Fluxo de trabalho completo. Peças prontas a publicar — com consistência visual.",
+    deliverable: "Processo para produzir criativos com qualidade e velocidade.",
   },
 ];
 
@@ -88,20 +86,20 @@ const notFor = [
 ];
 
 const faqs = [
-  { q: "Como recebo o acesso?", a: "Após a confirmação do pagamento, receberá um email com o link de acesso imediato à gravação e aos documentos de apoio." },
-  { q: "Quanto tempo fica disponível?", a: "O acesso à gravação e aos documentos é permanente — pode rever quantas vezes quiser, ao seu ritmo." },
-  { q: "Inclui documentos de apoio?", a: "Sim. Inclui resumo PDF, checklist de ferramentas, estrutura de briefing reutilizável, checklist anti-erros e mini-biblioteca de prompts." },
+  { q: "Como recebo o acesso?", a: "Recebes um email com o link de acesso imediato à gravação e aos documentos de apoio, logo após a confirmação do pagamento." },
+  { q: "Quanto tempo fica disponível?", a: "O acesso à gravação e aos documentos é permanente — podes rever quantas vezes quiseres, ao teu ritmo." },
+  { q: "Inclui documentos de apoio?", a: "Sim. Inclui resumo PDF da sessão, Guia de Apoio (32 páginas) e biblioteca de prompts base editáveis." },
   { q: "Funciona com ferramentas gratuitas?", a: "Sim. O método é demonstrado com ferramentas gratuitas e pagas, e aplica-se a qualquer uma delas." },
   { q: "Preciso de conhecimentos técnicos?", a: "Não. A gravação foi pensada para profissionais de marketing e empresários — não é necessário saber programar ou ter experiência com IA." },
   { q: "Emite fatura/recibo?", a: "Sim. A fatura é emitida automaticamente após confirmação do pagamento." },
-  { q: "E se tiver dificuldades?", a: "Pode contactar-nos a qualquer momento por email ou pelo WhatsApp disponível nesta página." },
+  { q: "E se tiver dificuldades?", a: "Podes contactar-nos a qualquer momento por email ou pelo WhatsApp disponível nesta página." },
 ];
 
 /* ── Page ── */
 
 const Gravacao = () => {
   usePageMeta({
-    title: "Gravação: Criar Imagens com IA para Empresas — Acesso Imediato",
+    title: "Gravação: Aprende a Criar Imagens Profissionais com Inteligência Artificial",
     description: "Acesso imediato à gravação do webinar + documentos de apoio. Método testado para criar imagens profissionais com IA. 27 €, pagamento único.",
   });
 
@@ -192,7 +190,7 @@ const Gravacao = () => {
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Gravação: Imagens Profissionais<br />com Inteligência Artificial
+              Gravação: Aprende a Criar Imagens Profissionais<br />com Inteligência Artificial
             </h1>
           </motion.div>
 
@@ -282,7 +280,7 @@ const Gravacao = () => {
         <div className="container mx-auto px-4 sm:px-6 max-w-[700px]">
           <ScrollReveal>
             <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-10">
-              O que recebe (Pack 27 €)
+              O que recebes (Pack 27 €)
             </h2>
           </ScrollReveal>
 
@@ -333,7 +331,7 @@ const Gravacao = () => {
 
           <ScrollReveal delay={0.4}>
             <p className="text-center text-[17px] text-ink-500 mt-8">
-              Se houver identificação com 2 ou mais pontos, esta gravação encurta meses de tentativa e erro.
+              Se te identificares com 2 ou mais pontos, esta gravação encurta meses de tentativa e erro.
             </p>
           </ScrollReveal>
         </div>
