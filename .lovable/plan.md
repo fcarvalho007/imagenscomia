@@ -1,176 +1,187 @@
 
-## Mudanças na Página /recursos
+## Alterações à Página /recursos + Tags E-Goi para Bundle
 
-### Resumo das 5 alterações pedidas
+### Resumo das mudanças
 
-| # | Pedido | Localização |
+| # | Pedido | Ficheiro |
 |---|---|---|
-| 1 | Remover botão "Abrir no Vimeo" e "Copiar link" | Componente `ActionBar` + chamada no JSX |
-| 2 | Remover tab "Prompts" → substituir por "Guia de Prompts" na tab "Guia" com badge "disponível a 25 de Fevereiro" | Tab `Guia`, `TabBar`, tipo `TabType`, array `TABS` |
-| 3 | Na tab "Guia" → sub-secção "Guia de Apoio Nano Bana — disponível a 25 de Fevereiro" | Dentro do conteúdo da tab `Guia` |
-| 4 | Ao lado da gravação: "Resumo PDF da sessão" | Tab `Gravação` — à direita dos capítulos, ou como sub-secção abaixo |
-| 5 | Disponibilizar áudio da gravação (não editado) | Tab `Gravação` + sidebar |
+| 1 | Mensagem "vídeo a ser processado" + previsão quinta-feira 12h | `RecursosConteudo.tsx` |
+| 2 | Botão "Criação de Projecto — SOP de Prompts" (Google Drive) | `RecursosConteudo.tsx` |
+| 3 | Botão "Exercício Prático Google WHISK" (Google Drive) | `RecursosConteudo.tsx` |
+| 4 | Botão "Resumo do webinar" (Google Drive) — substituir link local | `RecursosConteudo.tsx` |
+| 5 | Botão "Áudio em Bruto do Webinar" (Google Drive) — substituir link local | `RecursosConteudo.tsx` |
+| 6 | Tags E-Goi: bundle → tag 33 (masterclass) + 32 (premium) no webhook de pagamento | `supabase/functions/eupago-webhook/index.ts` |
 
 ---
 
-### Detalhe técnico por alteração
+### Detalhe Técnico
 
-#### 1. Remover "Abrir no Vimeo" e "Copiar link" da ActionBar
+#### 1. Player — estado "A processar" com previsão
 
-O componente `ActionBar` (linhas 119–170) tem 3 botões:
-- "Abrir no Vimeo" → **remover**
-- "Abrir no YouTube" → **manter** (condicional, só aparece se `youtubeUrl` estiver preenchido)
-- "Copiar link" → **remover**
+O player Vimeo está ligado e a tentar carregar (o embed está preenchido). O pedido é mostrar junto ao player uma mensagem de que o vídeo ainda está a ser processado, com previsão de quinta-feira às 12h.
 
-Como ficará: se `youtubeUrl` estiver vazio (caso actual), a `ActionBar` fica completamente vazia e pode ser removida. Para não deixar espaço morto, **apagar o componente `ActionBar` e a sua chamada no JSX**.
+A solução mais limpa: adicionar um banner/aviso **por cima do player**, sempre visível, que informa o estado. Quando o vídeo estiver pronto, basta remover o banner.
 
-Se no futuro quiserem adicionar YouTube, o botão pode voltar diretamente como link inline.
+```tsx
+{/* Processing notice — remover quando o vídeo estiver pronto */}
+<div className="flex items-center gap-2.5 mb-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+  <Clock size={14} className="text-amber-600 shrink-0" />
+  <span>
+    <strong>Vídeo a ser processado.</strong> Previsão de disponibilidade: 
+    quinta-feira, 20 de Fevereiro, às 12h00.
+  </span>
+</div>
+```
+
+Em alternativa, se o `vimeoEmbed` apontar para um vídeo que ainda não é público/acessível, o iframe pode dar erro de player. O banner clarifica a situação ao utilizador.
 
 ---
 
-#### 2. Remover tab "Prompts" → fusão com tab "Guia"
+#### 2–5. Botões de recursos — novos links para Google Drive
 
-**Mudanças ao tipo e array de tabs:**
+Os links actuais (`/resumo-sessao.pdf`, `/audio-sessao.mp3`) são ficheiros locais que não existem — substituir pelos links reais do Google Drive. Todos os links abrem numa nova janela (Google Drive viewer).
+
+**Novos links no `RECURSOS_CONFIG`:**
+
 ```ts
-// Antes:
-type TabType = "Gravação" | "Guia" | "Prompts" | "FAQ";
-const TABS: TabType[] = ["Gravação", "Guia", "Prompts", "FAQ"];
-
-// Depois:
-type TabType = "Gravação" | "Guia" | "FAQ";
-const TABS: TabType[] = ["Gravação", "Guia", "FAQ"];
+const RECURSOS_CONFIG = {
+  // ... existente ...
+  resumoPdfUrl: "https://drive.google.com/file/d/1sZj7k-Jtvzh5gX6jkWGHCiY4C-IEE88Q/view?usp=sharing",
+  audioUrl: "https://drive.google.com/file/d/1EhFXTgoiw82iNWBpuEI56amU1JwjKT_h/view?usp=sharing",
+  sopPromptsUrl: "https://drive.google.com/file/d/1Y7OAI7grYS90GIGQ8sy0rj9_Jff8YpCr/view?usp=sharing",
+  whiskUrl: "https://drive.google.com/file/d/1OEOOp_2Jr6mQGxkGDDM56vZPXiTCbbhF/view?usp=sharing",
+};
 ```
 
-O `TabBar` remove a lógica do dot azul de "Prompts" (linha 109–111).
+Os botões de "Resumo" e "Áudio" passam a usar `target="_blank"` em vez de `download` (Google Drive não suporta atributo `download` directo de links de partilha).
 
-O bloco `{activeTab === "Prompts" && ...}` (linhas 356–402) é **removido**.
+**Novos botões SOP e WHISK** aparecem:
+- Na **tab Gravação** (abaixo dos capítulos, junto ao Resumo e Áudio) 
+- Na **sidebar** (na secção "Recursos")
 
-**Na sidebar**, o botão "Biblioteca de Prompts" (linhas 460–489) continua a existir mas em vez de mudar para a tab "Prompts" (que deixa de existir), passa a ser um bloco teaser inline na sidebar — ou aponta para a nova secção dentro da tab "Guia".
-
----
-
-#### 3. Tab "Guia" — nova secção "Guia de Apoio" + "Guia de Prompts" com teaser
-
-A tab "Guia" actual tem:
-1. Banner de download do PDF
-2. Checklist accordion
-
-Vai ficar com:
-1. Banner de download do Guia de Apoio PDF (existente — **mantido**)
-2. **[NOVO]** Secção "Guia de Prompts" com badge "Disponível a 25 de Fevereiro" + bullets do que inclui (teaser — conteúdo migrado da ex-tab Prompts)
+Layout dos novos botões:
 
 ```tsx
-{/* Guia de Prompts — teaser */}
-<div className="mt-6 pt-5 border-t border-gray-100">
-  <div className="flex items-center gap-2 mb-3">
-    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-      Guia de Prompts
-    </p>
-    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
-      Disponível a 25 Fev
-    </span>
+{/* SOP de Prompts */}
+<a
+  href={RECURSOS_CONFIG.sopPromptsUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
+>
+  <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+    <FileText size={14} className="text-violet-600" />
   </div>
-  <ul className="space-y-2.5">
-    {["50+ prompts por categoria (fotografia, produto, editorial, vídeo)",
-      "Templates para Freepik Mystic, Adobe Firefly e Midjourney",
-      "Exemplos com resultado esperado e variações de estilo"
-    ].map((b, i) => (
-      <li key={i} className="flex items-start gap-2.5 text-sm text-gray-600">
-        <Check size={13} className="text-blue-500 mt-0.5 shrink-0" />
-        {b}
-      </li>
-    ))}
-  </ul>
-  <p className="text-xs text-gray-400 mt-4">
-    📧 Receberás um email assim que estiver disponível.
-  </p>
-</div>
-```
-
----
-
-#### 4. Tab "Gravação" — adicionar "Resumo PDF da sessão"
-
-Abaixo do índice de capítulos, adicionar um bloco de download do resumo:
-
-```tsx
-{/* Resumo PDF */}
-<div className="mt-5 pt-5 border-t border-gray-100">
-  <a
-    href={RECURSOS_CONFIG.resumoPdfUrl}
-    download
-    className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
-  >
-    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-      <Download size={14} className="text-blue-600" />
-    </div>
-    <div>
-      <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
-      <span className="text-[11px] text-gray-500">PDF · Descarregar</span>
-    </div>
-  </a>
-</div>
-```
-
-Adicionar `resumoPdfUrl: "/resumo-sessao.pdf"` ao `RECURSOS_CONFIG` (o ficheiro PDF pode ser colocado na pasta `/public` mais tarde).
-
----
-
-#### 5. Áudio da gravação (não editado)
-
-Adicionar na tab "Gravação" abaixo do resumo PDF, e na sidebar.
-
-**Tab Gravação — bloco de áudio:**
-
-```tsx
-{/* Áudio da gravação */}
-<div className="mt-3">
-  <a
-    href={RECURSOS_CONFIG.audioUrl}
-    download
-    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-  >
-    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-      {/* Headphones icon */}
-      <Headphones size={14} className="text-gray-500" />
-    </div>
-    <div>
-      <span className="text-sm font-medium text-gray-900 block">Áudio da sessão</span>
-      <span className="text-[11px] text-gray-500">MP3 · Não editado · Descarregar</span>
-    </div>
-  </a>
-</div>
-```
-
-**Sidebar — novos items na secção "Recursos":**
-
-```tsx
-{/* Resumo PDF */}
-<a href={RECURSOS_CONFIG.resumoPdfUrl} download className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 ...">
-  <Download size={14} className="text-blue-600" />
   <div>
-    <span className="text-sm font-medium">Resumo da sessão</span>
-    <span className="text-[11px] text-gray-500">PDF</span>
+    <span className="text-sm font-medium text-gray-900 block">Criação de Projecto — SOP de Prompts</span>
+    <span className="text-[11px] text-gray-500">PDF · Abrir</span>
   </div>
 </a>
 
-{/* Áudio */}
-<a href={RECURSOS_CONFIG.audioUrl} download className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 ...">
-  <Headphones size={14} className="text-gray-500" />
+{/* WHISK */}
+<a
+  href={RECURSOS_CONFIG.whiskUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+>
+  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+    <Layers size={14} className="text-green-600" />
+  </div>
   <div>
-    <span className="text-sm font-medium">Áudio da sessão</span>
-    <span className="text-[11px] text-gray-500">MP3 · Não editado</span>
+    <span className="text-sm font-medium text-gray-900 block">Exercício Google WHISK</span>
+    <span className="text-[11px] text-gray-500">1 Prompt, Vários Resultados · Abrir</span>
   </div>
 </a>
 ```
 
-Adicionar ao `RECURSOS_CONFIG`:
+Ícones a importar: `FileText` e `Layers` (já no pacote `lucide-react`).
+
+---
+
+#### 6. Tags E-Goi para compradores de bundle
+
+**Contexto:** o webhook de pagamento (`eupago-webhook/index.ts`) já processa pagamentos e confirma registos. Após a confirmação, precisa de:
+- Para `plan_selected === "bundle"`: marcar tag **33** (masterclass) + tag **32** (premium)
+- Para `plan_selected === "masterclass"`: marcar tag **33**
+- Para `plan_selected === "premium"`: marcar tag **32**
+
+**Localização no código:** após o bloco que regista `payment_confirmed` no `payment_events` (linha ~186), dentro do bloco `if (matchedRegId)`.
+
+**Implementação — função `attachEgoiTags`:**
+
 ```ts
-resumoPdfUrl: "/resumo-sessao.pdf",   // colocar ficheiro em /public
-audioUrl: "/audio-sessao.mp3",        // colocar ficheiro em /public
+const attachEgoiTag = async (contactId: string, tagId: number, apiKey: string) => {
+  const res = await fetch(
+    `https://api.egoiapp.com/lists/5/contacts/actions/attach-tag`,
+    {
+      method: "POST",
+      headers: { "Apikey": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ tag_id: tagId, contacts: [contactId] }),
+    }
+  );
+  const text = await res.text();
+  console.log(`E-goi attach tag ${tagId}: status=${res.status}, body=${text}`);
+};
+
+// Obter contactId pelo email no E-goi
+const getEgoiContactId = async (email: string, apiKey: string): Promise<string | null> => {
+  const res = await fetch(
+    `https://api.egoiapp.com/lists/5/contacts?email=${encodeURIComponent(email)}`,
+    { headers: { "Apikey": apiKey } }
+  );
+  const data = await res.json();
+  return data?.items?.[0]?.contact || null;
+};
 ```
 
-Os links vão aparecer correctamente quando os ficheiros forem colocados na pasta `/public`. Até lá, o botão estará visível mas o download não terá ficheiro.
+**Lógica de tags por plano:**
+
+```ts
+// TAG IDs
+const TAG_PREMIUM = 32;   // premium_pass_webinar_imagens_com_ia_18_fev
+const TAG_MASTERCLASS = 33; // masterclass_webinar_imagens_com_ia_18_fev
+
+const EGOI_API_KEY = Deno.env.get("EGOI_API_KEY");
+if (EGOI_API_KEY && reg?.plan_selected && reg?.email) {
+  const contactId = await getEgoiContactId(reg.email, EGOI_API_KEY);
+  if (contactId) {
+    if (["premium", "bundle"].includes(reg.plan_selected)) {
+      await attachEgoiTag(contactId, TAG_PREMIUM, EGOI_API_KEY);
+    }
+    if (["masterclass", "bundle"].includes(reg.plan_selected)) {
+      await attachEgoiTag(contactId, TAG_MASTERCLASS, EGOI_API_KEY);
+    }
+  }
+}
+```
+
+**Onde inserir no webhook:** logo após o bloco de `payment_confirmed` event insert, antes do bloco de email de factura. Fica como operação non-blocking (dentro de `try/catch`).
+
+---
+
+### Organização final do conteúdo na tab Gravação
+
+```text
+📹 Índice da sessão
+  [capítulos clicáveis — sem alteração]
+
+── divider ──
+
+📄 Resumo do webinar              → Drive link
+🎧 Áudio em Bruto do Webinar      → Drive link
+📋 SOP — Criação de Projecto      → Drive link
+🔢 Exercício Google WHISK         → Drive link
+```
+
+### Organização final da sidebar (secção Recursos)
+
+```text
+📄 Resumo da sessão       [Drive]
+🎧 Áudio da sessão        [Drive]
+📋 SOP de Prompts         [Drive]
+🔢 Exercício WHISK        [Drive]
+```
 
 ---
 
@@ -178,12 +189,12 @@ Os links vão aparecer correctamente quando os ficheiros forem colocados na past
 
 | Ficheiro | Mudança |
 |---|---|
-| `src/components/recursos/RecursosConteudo.tsx` | Único ficheiro a editar — todas as 5 alterações acima |
+| `src/components/recursos/RecursosConteudo.tsx` | Banner "processando", novos links Drive, 2 novos botões (SOP + WHISK), ícones FileText + Layers |
+| `supabase/functions/eupago-webhook/index.ts` | Após match de pagamento, chamar E-goi API para marcar tags 32/33 conforme o plano |
 
 ### O que NÃO muda
+- Layout 2 colunas, estilo visual clean
 - Lógica de autenticação
-- Layout 2 colunas
-- Estilo visual clean (fundo cinzento, cards brancos, azul CTA)
-- Tab "Gravação", "FAQ"
-- Sidebar (Suporte, Masterclass/Upsell)
-- localStorage para tab activa (ajustar para não guardar "Prompts" como valor válido)
+- Tabs (Gravação, Guia, FAQ)
+- Suporte / Masterclass upsell na sidebar
+- Restante lógica do webhook
