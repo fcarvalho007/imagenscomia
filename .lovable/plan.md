@@ -1,147 +1,90 @@
 
-## Alterações: Proteção de pagantes + Template Masterclass para Premium
+## Refinamento do Funil de Inscrição no Dashboard
 
-### Contexto e diagnóstico
+### Diagnóstico factual — como os passos realmente mapeiam
 
-**Fluxo automático (cron):** Já está protegido. A query que busca candidatos na linha 463 inclui `.is("paid_at", null)` — quem tem `paid_at` preenchido nunca entra no fluxo de upsell automático. Correto.
+O funil de upgrade tem 5 passos reais:
+- **Passo 1** → Origem (onde ouviu falar)
+- **Passo 2** → Dúvida (dificuldade principal)
+- **Passo 3** → Oferta Premium
+- **Passo 4** → Oferta Masterclass ← está a faltar no dashboard actual
+- **Passo 5** → Confirmação/Checkout (dados de faturação + pagamento)
 
-**Modo manual (CRM):** Vulnerável. Quando um admin usa o botão "Reenviar email" no modal de um inscrito, o código do `manual_send` apenas verifica `do_not_contact` — não verifica se a pessoa já pagou. Um admin pode enviar inadvertidamente um email de upsell a um cliente que já pagou.
+O `step_reached` na base de dados é atualizado à entrada de cada passo:
+- `step_reached >= 4` = chegou ao Passo 3 (viu Premium)
+- `step_reached >= 5` = chegou ao Passo 4 (viu Masterclass) — actualmente rotulado erroneamente como "Flow completo"
 
-**Estado actual dos pagantes:**
-- 12 pagaram no total (9 Premium, 0 Masterclass, 3 Bundle)
-- 16 têm plano seleccionado mas ainda não pagaram (candidatos activos ao follow-up)
+O "Flow completo" actual no dashboard (184 pessoas) corresponde na realidade a quem viu a Masterclass, não a quem completou o checkout.
 
----
+### Dados reais da base de dados (factual, sem invenção)
 
-### Alteração 1 — Guard-rail no modo manual: bloquear envio a pagantes
+```
+0. Visitaram a landing page        2 500  (editável)
+1. Submeteram inscrição              234  (100% dos inscritos activos)
+2. Chegou Passo 1 (Origem)           229  → drop de 5 (2%)
+3. Chegou Passo 2 (Dúvida)           227  → drop de 2 (1%)
+4. Viu oferta Premium (Passo 3)      193  → drop de 34 (15%)
+5. Viu oferta Masterclass (Passo 4)  184  → drop de 9 (5%)
+6. Clicou em pagar (upgrade_clicked)  18  → drop de 166 (90%)  ← MAIOR DROP-OFF
+7. Pagamento confirmado (paid_at)     12  → drop de 6 (33%)
+```
 
-**Ficheiro:** `supabase/functions/followup-abandoned/index.ts`
+**Passo 6 e 7 não existem actualmente no funil do dashboard.** São calculados diretamente de `upgrade_clicked_at IS NOT NULL` e `paid_at IS NOT NULL` — campos já existentes no `inscritos` array.
 
-Após carregar o registo no modo `manual_send` (linha ~384), adicionar verificação:
+O maior drop-off real é entre "Viu Masterclass" (184) e "Clicou para pagar" (18) — 90% de abandono. Este é o insight mais valioso e está completamente escondido do dashboard actual.
+
+### Alterações no código
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
+
+**1. Adicionar dois novos valores ao `stats` useMemo:**
+```ts
+const clickedToPay = active.filter((i) => i.upgrade_clicked_at !== null).length;
+const paidConfirmed = active.filter((i) => i.paid_at !== null).length;
+```
+
+**2. Actualizar o array `funnelSteps` de 5 para 7 passos:**
 
 ```ts
-// Já existe:
-if (reg.do_not_contact) {
-  return new Response(JSON.stringify({ error: "do_not_contact is true" }), ...)
-}
-
-// ADICIONAR a seguir:
-if (reg.paid_at) {
-  return new Response(JSON.stringify({ error: "already_paid", paid_at: reg.paid_at }), {
-    status: 400,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-```
-
-O campo `paid_at` já é selectado na query do modo manual (`.select("*")`), por isso não requer alteração de schema.
-
-Adicionalmente, na query do modo manual, garantir que o select inclui explicitamente `paid_at` (já está no `select("*")` — sem alteração necessária).
-
----
-
-### Alteração 2 — Feedback visual no CRM quando tentativa de envio a pagante
-
-**Ficheiro:** `src/components/crm/modal/ActionsSection.tsx`
-
-Quando a API devolve `{ error: "already_paid" }`, mostrar uma mensagem clara em vez de um erro genérico:
-
-```
-⚠️  Este inscrito já efectuou o pagamento. Não é possível enviar emails de upsell.
-```
-
-Verificar como o componente trata actualmente os erros da chamada `sendBacklogCheckin` / `resendPaymentEmail` e adicionar o caso `already_paid`.
-
----
-
-### Alteração 3 — Novo template "Masterclass para Premium" na base de dados
-
-Criar um novo template de email com `template_key = "masterclass_upsell_premium"` directamente na tabela `email_templates`.
-
-**Conteúdo proposto:**
-
-- **Subject:** `{{name}}, tens interesse em reservar a Masterclass de Imagem para Vídeo?`
-- **Corpo (texto curto e não-agressivo):**
-
-```
-Olá {{name}},
-
-Já tens o teu Premium Pass assegurado — óptimo.
-
-Só queria perguntar se tens interesse em reservar também a Masterclass de Imagem para Vídeo com IA, que vai acontecer em Março.
-
-É uma formação prática e intensiva — não é um webinar. Fica a saber mais aqui:
-{{masterclass_link}}
-
-Se não tiveres interesse, não há problema — não voltarei a perguntar.
-
-Frederico Carvalho
-```
-
-- **Variables:** `["name", "masterclass_link"]`
-- **Channel:** `email`
-- **is_active:** `true`
-
-O `{{masterclass_link}}` pode ser uma página de informação (landing page da Masterclass ou uma página simples de interesse/reserva). Por agora pode ser um URL estático definido no momento do envio manual.
-
----
-
-### Alteração 4 — Botão no CRM para enviar o template Masterclass a inscritos Premium pagantes
-
-**Ficheiro:** `src/components/crm/modal/ActionsSection.tsx`
-
-Adicionar uma secção condicional que só aparece quando `inscrito.payment_status === "paid"` e `inscrito.plan === "premium"`:
-
-```
-[ Convidar para Masterclass ]
-```
-
-Este botão:
-1. Chama `sendBacklogCheckin(inscrito.id, "masterclass_upsell_premium")`
-2. Tem o seu próprio cooldown visual (verificar `lastEmailMap` para este template)
-3. Não é afectado pelo guard-rail `already_paid` porque o template key é diferente do `reminder_manual` — **mas precisamos garantir que o guard-rail só bloqueia templates de upsell de pagamento**, não todos os templates
-
-**Refinamento do guard-rail (ponto 1):** Em vez de bloquear todo o `manual_send` para pagantes, bloquear apenas os templates de upsell de pagamento. A lista de templates bloqueados para pagantes:
-
-```ts
-const PAYMENT_UPSELL_TEMPLATES = [
-  "followup_stage_0",
-  "followup_stage_1",
-  "followup_stage_2",
-  "followup_backlog_checkin",
-  "followup_backlog_weak",
-  "followup_final_before_event",
-  "reminder_manual",
+const funnelSteps = [
+  { label: "Submeteu inscrição",              value: stats.step1,         color: "hsl(var(--blue-600))",   note: null },
+  { label: "Chegou ao Passo 1 — Origem",      value: stats.step2,         color: "hsl(var(--blue-600))",   note: null },
+  { label: "Chegou ao Passo 2 — Dúvida",      value: stats.step3,         color: "#0891B2",                note: null },
+  { label: "Viu oferta Premium (Passo 3)",    value: stats.step4,         color: "hsl(var(--amber-500))",  note: null },
+  { label: "Viu oferta Masterclass (Passo 4)", value: stats.step5,        color: "#7C3AED",                note: null },
+  { label: "Clicou para pagar",               value: stats.clickedToPay,  color: "hsl(var(--amber-500))",  note: "upgrade_clicked_at" },
+  { label: "Pagamento confirmado",             value: stats.paidConfirmed, color: "hsl(var(--green-600))", note: "paid_at" },
 ];
-
-if (reg.paid_at && PAYMENT_UPSELL_TEMPLATES.includes(manualMode.templateKey)) {
-  return new Response(JSON.stringify({ error: "already_paid" }), { status: 400, ... });
-}
 ```
 
-Assim o template `masterclass_upsell_premium` pode ser enviado a pagantes de Premium, mas os templates de recuperação de pagamento continuam protegidos.
+**3. Actualizar `dropOffs` para 6 transições** (actualmente calcula apenas 4):
 
----
+O cálculo de `dropOffs` já usa `funnelValues` dinâmicamente — basta adicionar os valores ao array `funnelValues`:
 
-### O que NÃO muda
+```ts
+const funnelValues = [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
+```
 
-- O fluxo automático (cron) já está correcto — nenhuma alteração necessária
-- Todos os outros templates existentes ficam intactos
-- A lógica de cooldown do `reminder_manual` mantém-se
+**4. Legenda de contexto em dois passos especiais:**
 
----
+Para os passos 6 e 7 (clicar para pagar e confirmação), adicionar uma sub-label descritiva pequena que contextualiza o que acontece nessa fase — informar que entre o clique e o pagamento há o preenchimento de dados de faturação:
 
-### Ficheiros alterados
+Junto ao passo "Clicou para pagar" mostrar uma nota `· preenche dados de faturação ·` em tom mais suave (text-ink-400, 11px).
+
+**5. Actualizar `maxDropIdx`** — já é calculado automaticamente pelo `reduce` sobre `dropOffs`, logo vai identificar automaticamente o maior drop como sendo entre o passo 5 (Masterclass) e passo 6 (clicou para pagar), que é o correto factualmente (drop de 166 pessoas, ~90%).
+
+**6. UX melhorada: separador visual entre "funil de interesse" e "funil de pagamento":**
+
+Entre o passo 5 (Masterclass) e o passo 6 (Clicou para pagar) adicionar um separador horizontal subtil com a label `— Intenção de compra →` para distinguir visualmente os dois momentos do funil.
+
+### Ficheiro alterado
 
 | Ficheiro | Alteração |
 |---|---|
-| `supabase/functions/followup-abandoned/index.ts` | Guard-rail: bloquear templates de upsell de pagamento para registos com `paid_at` |
-| `src/components/crm/modal/ActionsSection.tsx` | Feedback visual para `already_paid` + botão "Convidar para Masterclass" condicional para Premium pagantes |
-| Base de dados (`email_templates`) | Inserir novo template `masterclass_upsell_premium` via SQL directo |
+| `src/components/crm/DashboardView.tsx` | Adicionar `clickedToPay` e `paidConfirmed` ao `stats`; expandir `funnelSteps` de 5 para 7; actualizar `funnelValues` para 7 entradas; adicionar separador visual e nota contextual nos passos de pagamento |
 
-### Sequência de implementação
-
-1. Inserir template na BD (SQL)
-2. Actualizar `followup-abandoned` com o guard-rail selectivo
-3. Actualizar `ActionsSection.tsx` com feedback + botão Masterclass
-4. Fazer deploy da edge function actualizada
+### O que NÃO muda
+- Nenhum dado é inventado — todos os valores vêm de campos existentes no array `inscritos`
+- A lógica de visitantes editável mantém-se
+- O formato visual das barras, drop indicators e highlight do maior drop-off mantém-se
+- Todas as outras secções do dashboard ficam intactas
