@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.redeem-voucher]
 verify_jwt = false
+
+[functions.bulk-tag-egoi]
+verify_jwt = false
