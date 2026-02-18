@@ -1,90 +1,91 @@
 
-## Refinamento do Funil de Inscrição no Dashboard
+## Refinamento do Funil de Inscrição — Separador + Design
 
-### Diagnóstico factual — como os passos realmente mapeiam
+### Diagnóstico
 
-O funil de upgrade tem 5 passos reais:
-- **Passo 1** → Origem (onde ouviu falar)
-- **Passo 2** → Dúvida (dificuldade principal)
-- **Passo 3** → Oferta Premium
-- **Passo 4** → Oferta Masterclass ← está a faltar no dashboard actual
-- **Passo 5** → Confirmação/Checkout (dados de faturação + pagamento)
+**Problema 1 — Separador mal posicionado:**
+O separador "— Intenção de compra →" está actualmente definido com `separator: true` no passo "Viu oferta Masterclass (Passo 4)" (índice 4 do array). O utilizador correctamente identifica que a intenção de compra começa quando a pessoa **vê a oferta Premium** (Passo 3 do funil, índice 3 do array). Basta mover o `separator: true` do índice 4 para o índice 3.
 
-O `step_reached` na base de dados é atualizado à entrada de cada passo:
-- `step_reached >= 4` = chegou ao Passo 3 (viu Premium)
-- `step_reached >= 5` = chegou ao Passo 4 (viu Masterclass) — actualmente rotulado erroneamente como "Flow completo"
+**Problema 2 — Design plano e sem hierarquia visual:**
+A secção actual usa barras horizontais idênticas para todos os passos, sem distinguir visualmente as duas fases do funil (qualificação vs. intenção de compra). A zona de "intenção de compra" merece destaque visual diferenciado.
 
-O "Flow completo" actual no dashboard (184 pessoas) corresponde na realidade a quem viu a Masterclass, não a quem completou o checkout.
+---
 
-### Dados reais da base de dados (factual, sem invenção)
+### Alteração 1 — Mover o separador para antes de "Viu oferta Premium"
 
-```
-0. Visitaram a landing page        2 500  (editável)
-1. Submeteram inscrição              234  (100% dos inscritos activos)
-2. Chegou Passo 1 (Origem)           229  → drop de 5 (2%)
-3. Chegou Passo 2 (Dúvida)           227  → drop de 2 (1%)
-4. Viu oferta Premium (Passo 3)      193  → drop de 34 (15%)
-5. Viu oferta Masterclass (Passo 4)  184  → drop de 9 (5%)
-6. Clicou em pagar (upgrade_clicked)  18  → drop de 166 (90%)  ← MAIOR DROP-OFF
-7. Pagamento confirmado (paid_at)     12  → drop de 6 (33%)
-```
+**Ficheiro:** `src/components/crm/DashboardView.tsx` (linha 204–212)
 
-**Passo 6 e 7 não existem actualmente no funil do dashboard.** São calculados diretamente de `upgrade_clicked_at IS NOT NULL` e `paid_at IS NOT NULL` — campos já existentes no `inscritos` array.
-
-O maior drop-off real é entre "Viu Masterclass" (184) e "Clicou para pagar" (18) — 90% de abandono. Este é o insight mais valioso e está completamente escondido do dashboard actual.
-
-### Alterações no código
-
-**Ficheiro:** `src/components/crm/DashboardView.tsx`
-
-**1. Adicionar dois novos valores ao `stats` useMemo:**
-```ts
-const clickedToPay = active.filter((i) => i.upgrade_clicked_at !== null).length;
-const paidConfirmed = active.filter((i) => i.paid_at !== null).length;
-```
-
-**2. Actualizar o array `funnelSteps` de 5 para 7 passos:**
+Mudar `separator: false` → `separator: true` no passo "Viu oferta Premium (Passo 3)" e `separator: true` → `separator: false` no passo "Viu oferta Masterclass (Passo 4)":
 
 ```ts
 const funnelSteps = [
-  { label: "Submeteu inscrição",              value: stats.step1,         color: "hsl(var(--blue-600))",   note: null },
-  { label: "Chegou ao Passo 1 — Origem",      value: stats.step2,         color: "hsl(var(--blue-600))",   note: null },
-  { label: "Chegou ao Passo 2 — Dúvida",      value: stats.step3,         color: "#0891B2",                note: null },
-  { label: "Viu oferta Premium (Passo 3)",    value: stats.step4,         color: "hsl(var(--amber-500))",  note: null },
-  { label: "Viu oferta Masterclass (Passo 4)", value: stats.step5,        color: "#7C3AED",                note: null },
-  { label: "Clicou para pagar",               value: stats.clickedToPay,  color: "hsl(var(--amber-500))",  note: "upgrade_clicked_at" },
-  { label: "Pagamento confirmado",             value: stats.paidConfirmed, color: "hsl(var(--green-600))", note: "paid_at" },
+  { label: "Submeteu inscrição",               ..., separator: false },
+  { label: "Chegou ao Passo 1 — Origem",       ..., separator: false },
+  { label: "Chegou ao Passo 2 — Dúvida",       ..., separator: false },
+  { label: "Viu oferta Premium (Passo 3)",     ..., separator: true  }, // ← AQUI
+  { label: "Viu oferta Masterclass (Passo 4)", ..., separator: false }, // ← e aqui
+  { label: "Clicou para pagar",                ..., separator: false },
+  { label: "Pagamento confirmado",             ..., separator: false },
 ];
 ```
 
-**3. Actualizar `dropOffs` para 6 transições** (actualmente calcula apenas 4):
+---
 
-O cálculo de `dropOffs` já usa `funnelValues` dinâmicamente — basta adicionar os valores ao array `funnelValues`:
+### Alteração 2 — Redesign visual da secção de "Intenção de compra"
 
-```ts
-const funnelValues = [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
+**Ficheiro:** `src/components/crm/DashboardView.tsx` (linhas 276–320)
+
+Actualmente os passos de intenção de compra (4–7) têm exactamente o mesmo visual dos passos de qualificação (1–3). Proposta de melhoria visual:
+
+**A. Separador mais expressivo:**
+Substituir o separador actual (linha fina + texto cinzento) por um separador com background tinted âmbar suave, tornando a transição mais clara:
+
+```jsx
+{step.separator && (
+  <div className="flex items-center gap-2 my-3">
+    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500)/0.3)" }} />
+    <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+          style={{ color: "hsl(var(--amber-500))", background: "hsl(var(--amber-500)/0.08)", border: "1px solid hsl(var(--amber-500)/0.2)" }}>
+      Intenção de compra
+    </span>
+    <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500)/0.3)" }} />
+  </div>
+)}
 ```
 
-**4. Legenda de contexto em dois passos especiais:**
+**B. Fundo subtil para a zona de intenção de compra:**
+Os passos com índice ≥ 3 (após o separador) ficam envoltos num wrapper com `background: hsl(var(--amber-500)/0.03)` e `border-left: 2px solid hsl(var(--amber-500)/0.2)` e `padding-left: 8px`, criando uma zona visualmente distinta.
 
-Para os passos 6 e 7 (clicar para pagar e confirmação), adicionar uma sub-label descritiva pequena que contextualiza o que acontece nessa fase — informar que entre o clique e o pagamento há o preenchimento de dados de faturação:
+Para implementar isto, adicionar ao array `funnelSteps` uma propriedade `isConversion: boolean` — `true` para os passos 4–7. O render envolve esses passos num `div` com classe de fundo âmbar subtil.
 
-Junto ao passo "Clicou para pagar" mostrar uma nota `· preenche dados de faturação ·` em tom mais suave (text-ink-400, 11px).
+**C. Labels mais descritivas (sub-labels):**
 
-**5. Actualizar `maxDropIdx`** — já é calculado automaticamente pelo `reduce` sobre `dropOffs`, logo vai identificar automaticamente o maior drop como sendo entre o passo 5 (Masterclass) e passo 6 (clicou para pagar), que é o correto factualmente (drop de 166 pessoas, ~90%).
+Adicionar ao array `funnelSteps` uma propriedade `sublabel` opcional para contextualizar:
+- "Viu oferta Premium (Passo 3)" → sublabel: `"Viu a oferta de €27"`
+- "Viu oferta Masterclass (Passo 4)" → sublabel: `"Viu a oferta de €57,81"`
+- "Clicou para pagar" → já tem `note: "preenche dados de faturação"` — manter
+- "Pagamento confirmado" → sublabel: `"Receita confirmada"`
 
-**6. UX melhorada: separador visual entre "funil de interesse" e "funil de pagamento":**
+As sub-labels aparecem em `text-[11px] text-ink-400` sob o label principal, alinhadas com a barra.
 
-Entre o passo 5 (Masterclass) e o passo 6 (Clicou para pagar) adicionar um separador horizontal subtil com a label `— Intenção de compra →` para distinguir visualmente os dois momentos do funil.
+**D. Barra de progresso mais grossa na zona de conversão:**
+Os passos de intenção de compra usam `h-3` em vez de `h-2.5` para as barras, e a barra do passo "Pagamento confirmado" usa `h-3.5` com fundo verde — reforçando que é o destino final do funil.
+
+**E. Número de pessoas em destaque na zona de conversão:**
+Para os passos 4–7, o número de pessoas (ex: "18") aparece em `text-[15px]` bold em vez de `text-[13px]`, para melhor leitura da progressão de conversão.
+
+---
 
 ### Ficheiro alterado
 
 | Ficheiro | Alteração |
 |---|---|
-| `src/components/crm/DashboardView.tsx` | Adicionar `clickedToPay` e `paidConfirmed` ao `stats`; expandir `funnelSteps` de 5 para 7; actualizar `funnelValues` para 7 entradas; adicionar separador visual e nota contextual nos passos de pagamento |
+| `src/components/crm/DashboardView.tsx` | Mover `separator: true` para o passo Premium; redesign visual da zona de intenção de compra (separador âmbar, fundo subtil, sub-labels, barras mais espessas, números em destaque) |
 
 ### O que NÃO muda
-- Nenhum dado é inventado — todos os valores vêm de campos existentes no array `inscritos`
-- A lógica de visitantes editável mantém-se
-- O formato visual das barras, drop indicators e highlight do maior drop-off mantém-se
+
+- Os dados são todos reais — sem alterações na lógica de cálculo
+- Os 7 passos mantêm-se, apenas a apresentação visual muda
+- O highlight do maior drop-off (vermelho/âmbar) mantém-se
+- O campo editável de visitantes mantém-se
 - Todas as outras secções do dashboard ficam intactas
