@@ -18,41 +18,54 @@ export default function CRM() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
 
-  // Listen to auth state
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          // Check admin role
-          const { data } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .eq("role", "admin")
-            .maybeSingle();
-          setAuthenticated(!!data);
-        } else {
-          setAuthenticated(false);
-        }
-        setCheckingAuth(false);
-      }
-    );
+    let isMounted = true;
 
-    // Check existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
+    const checkAdminRole = async (userId: string) => {
+      try {
         const { data } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", session.user.id)
+          .eq("user_id", userId)
           .eq("role", "admin")
           .maybeSingle();
-        setAuthenticated(!!data);
+        if (isMounted) setAuthenticated(!!data);
+      } catch {
+        if (isMounted) setAuthenticated(false);
       }
-      setCheckingAuth(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    // Listener para mudanças CONTÍNUAS de auth (não controla isLoading)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!isMounted) return;
+        if (session?.user) {
+          setTimeout(() => checkAdminRole(session.user.id), 0);
+        } else {
+          setAuthenticated(false);
+        }
+      }
+    );
+
+    // Carga INICIAL — controla checkingAuth, aguarda role antes de resolver
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (session?.user) {
+          await checkAdminRole(session.user.id);
+        }
+      } finally {
+        if (isMounted) setCheckingAuth(false);
+      }
+    };
+
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail } = useInscritos();
