@@ -53,14 +53,14 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
         </ul>
 
         <span className="inline-block text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-medium mb-3">
-          5 de Março · Vagas limitadas
+          5 de Março, quinta-feira · 10h00
         </span>
 
         <Button
           className="w-full gap-2 text-sm h-9"
           onClick={() => window.open(MASTERCLASS_URL, "_blank")}
         >
-          Ver Masterclass
+          Inscrição na Masterclass (3h)
           <ArrowRight size={14} />
         </Button>
       </div>
@@ -114,7 +114,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
 
       <div className="flex items-center gap-2 mb-4">
         <span className="text-xs bg-[hsl(var(--amber-50))] text-[hsl(var(--amber-700))] border border-[hsl(var(--amber-200))] px-2.5 py-1 rounded-full font-medium">
-          Acesso imediato · 5 de Março
+          5 de Março, quinta-feira · 10h00
         </span>
       </div>
 
@@ -122,7 +122,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
         className="w-full gap-2"
         onClick={() => window.open(MASTERCLASS_URL, "_blank")}
       >
-        Ver Masterclass
+        Inscrição na Masterclass (3h)
         <ArrowRight size={16} />
       </Button>
 
