@@ -199,6 +199,59 @@ async function processPayment(data: PaymentData) {
       .update({ registration_id: matchedRegId, processed_at: new Date().toISOString() })
       .eq("idempotency_key", idempotencyKey);
 
+    // ── E-Goi: attach purchase tags based on plan ──────────────────────────
+    try {
+      const EGOI_API_KEY = Deno.env.get("EGOI_API_KEY");
+      const TAG_PREMIUM = 32;      // premium_pass_webinar_imagens_com_ia_18_fev
+      const TAG_MASTERCLASS = 33;  // masterclass_webinar_imagens_com_ia_18_fev
+
+      if (EGOI_API_KEY) {
+        const { data: regForTags } = await supabase
+          .from("registrations")
+          .select("email, plan_selected")
+          .eq("id", matchedRegId)
+          .maybeSingle();
+
+        if (regForTags?.email && regForTags?.plan_selected) {
+          const plan = regForTags.plan_selected;
+
+          // Look up contact by email
+          const contactRes = await fetch(
+            `https://api.egoiapp.com/lists/5/contacts?email=${encodeURIComponent(regForTags.email)}`,
+            { headers: { "Apikey": EGOI_API_KEY } }
+          );
+          const contactData = await contactRes.json();
+          const contactId: string | null = contactData?.items?.[0]?.contact || null;
+
+          if (contactId) {
+            const attachTag = async (tagId: number) => {
+              const res = await fetch(
+                "https://api.egoiapp.com/lists/5/contacts/actions/attach-tag",
+                {
+                  method: "POST",
+                  headers: { "Apikey": EGOI_API_KEY, "Content-Type": "application/json" },
+                  body: JSON.stringify({ tag_id: tagId, contacts: [contactId] }),
+                }
+              );
+              const text = await res.text();
+              console.log(`📌 E-goi attach tag ${tagId} to ${regForTags.email}: status=${res.status}, body=${text}`);
+            };
+
+            if (["premium", "bundle"].includes(plan)) {
+              await attachTag(TAG_PREMIUM);
+            }
+            if (["masterclass", "bundle"].includes(plan)) {
+              await attachTag(TAG_MASTERCLASS);
+            }
+          } else {
+            console.warn(`⚠️ E-goi: contact not found for email=${regForTags.email}`);
+          }
+        }
+      }
+    } catch (egoiErr) {
+      console.error("E-goi tag error (non-blocking):", egoiErr);
+    }
+
     // ── Send invoice notification email (idempotent) ──
     try {
       const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");

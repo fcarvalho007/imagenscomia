@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Download, Clock, LogOut,
-  Mail, MessageCircle, Check, ChevronDown, Play, Headphones,
+  Mail, MessageCircle, Check, ChevronDown, Play, Headphones, FileText, Layers,
 } from "lucide-react";
 import {
   Accordion,
@@ -20,8 +20,10 @@ const RECURSOS_CONFIG = {
   guiaPdfUrl: "/guia-essencial-seo.png",
   promptsUrl: "",
   promptsAvailableDate: new Date("2026-02-25"),
-  resumoPdfUrl: "/resumo-sessao.pdf",
-  audioUrl: "/audio-sessao.mp3",
+  resumoPdfUrl: "https://drive.google.com/file/d/1sZj7k-Jtvzh5gX6jkWGHCiY4C-IEE88Q/view?usp=sharing",
+  audioUrl: "https://drive.google.com/file/d/1EhFXTgoiw82iNWBpuEI56amU1JwjKT_h/view?usp=sharing",
+  sopPromptsUrl: "https://drive.google.com/file/d/1Y7OAI7grYS90GIGQ8sy0rj9_Jff8YpCr/view?usp=sharing",
+  whiskUrl: "https://drive.google.com/file/d/1OEOOp_2Jr6mQGxkGDDM56vZPXiTCbbhF/view?usp=sharing",
   masterclassUrl: "https://imagenscomia.com/masterclass",
   chapters: [
     { time: "00:00", label: "Introdução e estado da arte" },
@@ -173,6 +175,14 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0">
 
+            {/* Processing notice */}
+            <div className="flex items-center gap-2.5 mb-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <Clock size={14} className="text-amber-600 shrink-0" />
+              <span>
+                <strong>Vídeo a ser processado.</strong> Previsão de disponibilidade: quinta-feira, 20 de Fevereiro, às 12h00.
+              </span>
+            </div>
+
             {/* Player card */}
             <div
               className="rounded-2xl overflow-hidden bg-black shadow-lg mb-3 border border-gray-200"
@@ -235,38 +245,71 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                     ))}
                   </ul>
 
-                  {/* Resumo PDF */}
-                  <div className="mt-5 pt-5 border-t border-gray-100">
+                  {/* Resources */}
+                  <div className="mt-5 pt-5 border-t border-gray-100 space-y-2.5">
+                    {/* Resumo PDF */}
                     <a
                       href={RECURSOS_CONFIG.resumoPdfUrl}
-                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
                     >
                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                         <Download size={14} className="text-blue-600" />
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
-                        <span className="text-[11px] text-gray-500">PDF · Descarregar</span>
+                        <span className="text-sm font-medium text-gray-900 block">Resumo do webinar</span>
+                        <span className="text-[11px] text-gray-500">PDF · Abrir</span>
                       </div>
                     </a>
 
-                    {/* Áudio da gravação */}
-                    <div className="mt-3">
-                      <a
-                        href={RECURSOS_CONFIG.audioUrl}
-                        download
-                        className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                      >
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                          <Headphones size={14} className="text-gray-500" />
-                        </div>
-                        <div>
-                          <span className="text-sm font-medium text-gray-900 block">Áudio da sessão</span>
-                          <span className="text-[11px] text-gray-500">MP3 · Não editado · Descarregar</span>
-                        </div>
-                      </a>
-                    </div>
+                    {/* Áudio */}
+                    <a
+                      href={RECURSOS_CONFIG.audioUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                        <Headphones size={14} className="text-gray-500" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 block">Áudio em Bruto do Webinar</span>
+                        <span className="text-[11px] text-gray-500">imagensIA c/ fredericocarvalho.pt · MP3 · Abrir</span>
+                      </div>
+                    </a>
+
+                    {/* SOP de Prompts */}
+                    <a
+                      href={RECURSOS_CONFIG.sopPromptsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText size={14} className="text-violet-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 block">Criação de Projecto — SOP de Prompts</span>
+                        <span className="text-[11px] text-gray-500">Standard Operacional · Abrir</span>
+                      </div>
+                    </a>
+
+                    {/* WHISK */}
+                    <a
+                      href={RECURSOS_CONFIG.whiskUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                        <Layers size={14} className="text-green-600" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 block">Exercício Prático Google WHISK</span>
+                        <span className="text-[11px] text-gray-500">1 Prompt, Vários Resultados · Abrir</span>
+                      </div>
+                    </a>
                   </div>
                 </div>
               )}
@@ -409,7 +452,8 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                   {/* 2. Resumo PDF */}
                   <a
                     href={RECURSOS_CONFIG.resumoPdfUrl}
-                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors"
                   >
                     <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
@@ -417,22 +461,55 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
-                      <span className="text-[11px] text-gray-500">PDF</span>
+                      <span className="text-[11px] text-gray-500">PDF · Abrir</span>
                     </div>
                   </a>
 
                   {/* 3. Áudio */}
                   <a
                     href={RECURSOS_CONFIG.audioUrl}
-                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
                   >
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
                       <Headphones size={14} className="text-gray-500" />
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-900 block">Áudio da sessão</span>
-                      <span className="text-[11px] text-gray-500">MP3 · Não editado</span>
+                      <span className="text-sm font-medium text-gray-900 block">Áudio em Bruto do Webinar</span>
+                      <span className="text-[11px] text-gray-500">MP3 · Não editado · Abrir</span>
+                    </div>
+                  </a>
+
+                  {/* 4. SOP de Prompts */}
+                  <a
+                    href={RECURSOS_CONFIG.sopPromptsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-violet-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">SOP de Prompts</span>
+                      <span className="text-[11px] text-gray-500">Criação de Projecto · Abrir</span>
+                    </div>
+                  </a>
+
+                  {/* 5. WHISK */}
+                  <a
+                    href={RECURSOS_CONFIG.whiskUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Layers size={14} className="text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Exercício Google WHISK</span>
+                      <span className="text-[11px] text-gray-500">1 Prompt, Vários Resultados · Abrir</span>
                     </div>
                   </a>
                 </div>
