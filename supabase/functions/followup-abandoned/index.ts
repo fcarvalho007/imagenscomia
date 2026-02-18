@@ -391,6 +391,24 @@ serve(async (req) => {
         });
       }
 
+      // Guard-rail: block payment upsell templates for users who already paid
+      const PAYMENT_UPSELL_TEMPLATES = [
+        "followup_stage_0",
+        "followup_stage_1",
+        "followup_stage_2",
+        "followup_backlog_checkin",
+        "followup_backlog_weak",
+        "followup_final_before_event",
+        "reminder_manual",
+      ];
+
+      if (reg.paid_at && PAYMENT_UPSELL_TEMPLATES.includes(manualMode.templateKey)) {
+        return new Response(JSON.stringify({ error: "already_paid", paid_at: reg.paid_at }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Cooldown 6h for reminder_manual
       if (manualMode.templateKey === "reminder_manual") {
         const { data: recentManual } = await supabase
