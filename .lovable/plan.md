@@ -1,134 +1,129 @@
 
-## Bulk Tagging E-Goi — Compradores Existentes
+## Simplificação da Página /recursos
 
-### Contexto
+### O que muda
 
-O webhook de pagamento já tem a lógica de tagging implementada para novos pagamentos, mas **os compradores anteriores** nunca receberam as tags porque a lógica ainda não existia quando pagaram. São ao total:
-
-| Plano | Nº compradores | Tags a atribuir |
+| # | Pedido | Localização |
 |---|---|---|
-| premium | 11 | Tag 32 |
-| bundle | 2 | Tags 32 + 33 |
-| premium_granted_at (gravação) | 1 | Tag 32 (acesso premium) |
-
-**Total: 14 contactos** a sincronizar no E-Goi.
-
----
-
-### Solução: nova Edge Function `bulk-tag-egoi`
-
-Criar uma função dedicada para este bulk update, separada do `bulk-sync-egoi` existente (que só trata registos/contactos, não tags). A função:
-
-1. Busca na base de dados todos os registos com `paid_at IS NOT NULL OR premium_granted_at IS NOT NULL`
-2. Para cada registo, procura o `contactId` no E-Goi pelo email
-3. Atribui as tags conforme o plano:
-   - `premium` → tag 32
-   - `masterclass` → tag 33
-   - `bundle` → tags 32 + 33
-   - `premium_granted_at` (sem `plan_selected` de produto) → tag 32
-4. Regista resultado por email (ok / contact_not_found / error)
-5. Retorna um relatório JSON com os resultados
-
-A função tem um **delay de 300ms entre chamadas** para não ser banida pela API do E-Goi.
+| 1 | Remover player Vimeo — substituir por aviso a preto (sem cor âmbar) | `RecursosConteudo.tsx` |
+| 2 | Remover tabs FAQ e Guia — ficar só com uma secção única (sem tabs) | `RecursosConteudo.tsx` |
+| 3 | Renomear tab "Gravação" → secção "Apoio ao conhecimento" com itens "Em breve" abaixo | `RecursosConteudo.tsx` |
+| 4 | Remover "Guia PDF / Descarregar" da sidebar | `RecursosConteudo.tsx` |
+| 5 | Destacar mais a caixa da Masterclass na sidebar | `RecursosUpsell.tsx` |
 
 ---
 
-### Implementação técnica
+### Detalhe técnico
 
-**Ficheiro novo:** `supabase/functions/bulk-tag-egoi/index.ts`
+#### 1. Player — substituir por aviso simples a preto
 
-```ts
-// Lógica principal:
+O bloco do player (linhas 186–198) passa a ser um placeholder sóbrio, sem iframe:
 
-// 1. Buscar compradores
-const { data: buyers } = await supabase
-  .from("registrations")
-  .select("email, plan_selected, paid_at, premium_granted_at")
-  .or("paid_at.not.is.null,premium_granted_at.not.is.null");
-
-// 2. Para cada comprador:
-for (const buyer of buyers) {
-  // a) Encontrar contact_id por email
-  const contactRes = await fetch(
-    `https://api.egoiapp.com/lists/5/contacts?email=${encodeURIComponent(buyer.email)}`,
-    { headers: { "Apikey": EGOI_API_KEY } }
-  );
-  const contactId = contactData?.items?.[0]?.contact || null;
-  
-  if (!contactId) {
-    results.push({ email: buyer.email, status: "contact_not_found" });
-    continue;
-  }
-
-  // b) Determinar tags a aplicar
-  const plan = buyer.plan_selected;
-  const tagsToApply: number[] = [];
-  
-  if (["premium", "bundle"].includes(plan) || buyer.premium_granted_at) {
-    tagsToApply.push(32); // TAG_PREMIUM
-  }
-  if (["masterclass", "bundle"].includes(plan)) {
-    tagsToApply.push(33); // TAG_MASTERCLASS
-  }
-
-  // c) Aplicar cada tag via attach-tag
-  for (const tagId of tagsToApply) {
-    await fetch("https://api.egoiapp.com/lists/5/contacts/actions/attach-tag", {
-      method: "POST",
-      headers: { "Apikey": EGOI_API_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ tag_id: tagId, contacts: [contactId] }),
-    });
-  }
-
-  // d) Delay anti-rate-limit
-  await new Promise(r => setTimeout(r, 300));
-}
+```tsx
+<div className="rounded-2xl bg-gray-900 shadow-lg mb-3 border border-gray-800"
+     style={{ aspectRatio: "16/9" }}>
+  <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+    <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
+      <Clock size={20} className="text-gray-400" />
+    </div>
+    <div>
+      <p className="text-white font-semibold text-[15px] mb-1">Gravação em processamento</p>
+      <p className="text-gray-400 text-sm">
+        Disponível em breve. Receberás um email quando estiver pronto.
+      </p>
+    </div>
+  </div>
+</div>
 ```
 
-**`supabase/config.toml`** — adicionar:
-```toml
-[functions.bulk-tag-egoi]
-verify_jwt = false
-```
+O banner âmbar de "processamento" acima do player é **removido** — o placeholder já comunica isso de forma mais limpa.
 
 ---
 
-### Como invocar
+#### 2–3. Tabs → secção única com índice + "Apoio ao conhecimento"
 
-Após deploy, invocar via curl na consola (ou ferramenta de testes):
+As tabs são eliminadas completamente (`TabBar`, `TabType`, `TABS`, `activeTab`). O conteúdo dos tabs é reorganizado numa única vista:
 
-```bash
-curl -X POST https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/bulk-tag-egoi \
-  -H "Authorization: Bearer eyJ..."
+**Estrutura final abaixo do player:**
+
+```
+┌─ Card único ──────────────────────────────────────────────────┐
+│                                                               │
+│  ○ Índice da sessão                                           │
+│    [00:00] Introdução e estado da arte                        │
+│    [08:30] Método: do briefing à imagem                       │
+│    [24:00] Demos ao vivo com ferramentas                      │
+│    [48:00] Q&A e casos práticos                               │
+│                                                               │
+│  ────────────────────────────────                             │
+│                                                               │
+│  📚 Apoio ao conhecimento                                     │
+│                                                               │
+│  [desactivado] 📖 Guia de Apoio Nano Banana Pro (32 páginas)  │
+│                Em breve                                       │
+│                                                               │
+│  [desactivado] 📋 Guia de Prompts                             │
+│                Disponível a 25 de Fevereiro  [badge 25 Fev]   │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-Retorna um relatório como:
-```json
-{
-  "total": 14,
-  "tagged": 12,
-  "contact_not_found": 2,
-  "errors": 0,
-  "details": [
-    { "email": "joana@e-accelerator.pt", "plan": "premium", "tags": [32], "status": "ok" },
-    { "email": "mariahelena@...", "plan": "bundle", "tags": [32, 33], "status": "ok" },
-    ...
-  ]
-}
-```
+O cabeçalho "Apoio ao conhecimento" usa o mesmo estilo de `text-[11px] font-semibold uppercase tracking-widest` já usado nos outros títulos de secção.
+
+O accordion do Guia e as FAQs são **removidos** por completo (simplifica muito o componente).
 
 ---
 
-### Ficheiros a criar/modificar
+#### 4. Sidebar — remover "Guia PDF"
 
-| Ficheiro | Acção |
+O item "Guia PDF / Descarregar" (linhas 376–392) é apagado. A sidebar de "Recursos" fica com:
+- Resumo da sessão
+- Áudio em Bruto
+- SOP de Prompts
+- Exercício Google WHISK
+
+O label "Recursos" mantém-se.
+
+---
+
+#### 5. Destacar a caixa da Masterclass
+
+A variante `compact` em `RecursosUpsell.tsx` passa a ter **fundo azul-escuro** em vez de branco, para se destacar da sidebar:
+
+```tsx
+<div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-md p-4 text-white">
+  <span className="... bg-white/20 text-white border-white/30 ...">Próximo passo</span>
+  <p className="text-sm font-bold text-white ...">Quer ir mais longe?</p>
+  <p className="text-xs text-blue-100 ...">Masterclass — Imagem para Vídeo com IA</p>
+  {/* bullets com ícones a branco */}
+  <span className="... bg-white/20 text-white ...">5 de Março ...</span>
+  <Button className="w-full bg-white text-blue-700 hover:bg-blue-50 ...">
+    Inscrição na Masterclass (3h)
+  </Button>
+</div>
+```
+
+Para quem **já tem a Masterclass**, mantém-se o estilo verde mas também com mais destaque (borda mais grossa, sombra).
+
+---
+
+### Estado final do componente (simplificado)
+
+O componente deixa de ter:
+- `TabType`, `TABS`, `TabBar`, `activeTab`, `showAllFaqs`, `visibleFaqs`
+- Tab Guia com accordion de checklist
+- Tab FAQ com 8 perguntas
+- Banner âmbar de processamento
+- Guia PDF na sidebar
+
+O componente fica com:
+- Placeholder a preto no lugar do player
+- Card único com índice + "Apoio ao conhecimento"
+- Sidebar limpa (4 recursos + suporte + Masterclass destacada)
+
+### Ficheiros a alterar
+
+| Ficheiro | Mudança |
 |---|---|
-| `supabase/functions/bulk-tag-egoi/index.ts` | Criar — nova edge function |
-| `supabase/config.toml` | Adicionar `[functions.bulk-tag-egoi]` com `verify_jwt = false` |
-
-### O que NÃO muda
-- `bulk-sync-egoi` (function existente para sincronizar contactos — mantém-se)
-- `eupago-webhook` (já tem a lógica para novos pagamentos)
-- Base de dados / registrations
-
-Depois de executar, posso confirmar os resultados nos logs da edge function para ver quais os emails que foram marcados com sucesso e quais não foram encontrados no E-Goi.
+| `src/components/recursos/RecursosConteudo.tsx` | Remover player/tabs/FAQ/Guia/GuiaPDF, nova estrutura única, placeholder preto |
+| `src/components/recursos/RecursosUpsell.tsx` | Variante compact com fundo azul-escuro para destaque |
