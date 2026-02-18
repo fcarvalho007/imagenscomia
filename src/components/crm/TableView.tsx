@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send } from "lucide-react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send, FileCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
@@ -372,6 +372,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                   Inscrição<SortIcon col="timestamp" />
                 </th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[60px]">Notas</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[70px]" title="Fatura enviada ao cliente">Fatura</th>
                 <th className="px-4 py-3 w-[50px]"></th>
               </tr>
             </thead>
@@ -523,6 +524,15 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         </span>
                       ) : (
                         <span className="text-ink-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                      {i.invoice_sent ? (
+                        <span title="Fatura enviada" className="inline-flex">
+                          <FileCheck size={16} className="text-green-600" />
+                        </span>
+                      ) : (
+                        <span className="text-ink-300 text-sm">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3">

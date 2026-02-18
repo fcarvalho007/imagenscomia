@@ -39,6 +39,7 @@ interface InscritoModalProps {
   resendPaymentEmail?: (id: string) => Promise<any>;
   onRefresh?: () => void;
   onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
+  onToggleInvoiceSent?: (id: string) => void;
 }
 
 function fmtDate(iso: string) {
@@ -56,7 +57,7 @@ function abbreviateSource(s: string) {
 }
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -589,7 +590,11 @@ export default function InscritoModal({
             <LinkFollowUpSection inscrito={inscrito} onToggleDoNotContact={onToggleDoNotContact} />
 
             {/* Invoice Section */}
-            <InvoiceSection registrationId={inscrito.id} />
+            <InvoiceSection
+              registrationId={inscrito.id}
+              invoiceSent={inscrito.invoice_sent}
+              onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)}
+            />
 
             {/* Funnel */}
             <FunnelView inscrito={inscrito} />

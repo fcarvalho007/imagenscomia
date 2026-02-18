@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface InvoiceSectionProps {
   registrationId: string;
+  invoiceSent: boolean;
+  onToggleInvoiceSent: () => void;
 }
 
-export default function InvoiceSection({ registrationId }: InvoiceSectionProps) {
+export default function InvoiceSection({ registrationId, invoiceSent, onToggleInvoiceSent }: InvoiceSectionProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -38,15 +40,29 @@ export default function InvoiceSection({ registrationId }: InvoiceSectionProps) 
   return (
     <>
       <hr className="border-border my-6" />
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="font-heading font-bold text-[14px] text-foreground">Faturação</h3>
-        <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-            hasData ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <h3 className="font-heading font-bold text-[14px] text-foreground">Faturação</h3>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+              hasData ? "bg-green-100 text-green-700" : "bg-red-100 text-red-600"
+            }`}
+          >
+            {hasData ? "Completo" : "Em falta"}
+          </span>
+        </div>
+        <button
+          onClick={onToggleInvoiceSent}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium border transition-colors ${
+            invoiceSent
+              ? "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+              : "bg-muted text-muted-foreground border-border hover:bg-accent"
           }`}
+          aria-label="Assinalar fatura enviada"
         >
-          {hasData ? "Completo" : "Em falta"}
-        </span>
+          {invoiceSent ? <Check size={12} /> : <FileText size={12} />}
+          {invoiceSent ? "Fatura enviada ✓" : "Assinalar fatura enviada"}
+        </button>
       </div>
       {!hasData ? (
         <p className="text-[13px] text-muted-foreground">Sem dados de faturação</p>

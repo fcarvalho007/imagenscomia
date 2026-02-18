@@ -226,6 +226,7 @@ export type Database = {
           followup_stage: number
           gender_override: string | null
           id: string
+          invoice_sent: boolean
           last_followup_at: string | null
           last_name: string | null
           last_payment_link: string | null
@@ -258,6 +259,7 @@ export type Database = {
           followup_stage?: number
           gender_override?: string | null
           id?: string
+          invoice_sent?: boolean
           last_followup_at?: string | null
           last_name?: string | null
           last_payment_link?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           followup_stage?: number
           gender_override?: string | null
           id?: string
+          invoice_sent?: boolean
           last_followup_at?: string | null
           last_name?: string | null
           last_payment_link?: string | null
