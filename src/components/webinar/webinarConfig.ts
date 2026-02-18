@@ -9,7 +9,7 @@ export const WEBINAR_CONFIG = {
   durationMinutes: 60,
 
   /** Set to true to force the live/embed state regardless of time */
-  isLive: false,
+  isLive: true,
 
   /** YouTube video ID for the live stream */
   YOUTUBE_VIDEO_ID: "hYsTZA9bcPA",

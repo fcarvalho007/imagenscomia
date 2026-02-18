@@ -19,9 +19,10 @@ const WebinarLive = () => {
   const timeDiff = WEBINAR_CONFIG.startDate.getTime() - now.getTime();
   const isNearStart = timeDiff <= 30 * 60 * 1000 && timeDiff > 0;
   const isPast = timeDiff <= 0;
-  const isLive = WEBINAR_CONFIG.isLive || isNearStart;
   const endTime = new Date(WEBINAR_CONFIG.startDate.getTime() + WEBINAR_CONFIG.durationMinutes * 60 * 1000);
   const isEnded = now > endTime && !WEBINAR_CONFIG.isLive;
+  const isDuringWebinar = now >= WEBINAR_CONFIG.startDate && !isEnded;
+  const isLive = WEBINAR_CONFIG.isLive || isNearStart || isDuringWebinar;
 
   return (
     <RegistrationModalProvider>
