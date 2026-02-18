@@ -1,60 +1,28 @@
 
-Vou adaptar o modal de captura para a realidade da página `/live`. Quando o utilizador clica nos botões de upgrade (Premium ou Masterclass), o modal passará a apresentar um contexto de "Upgrade" em vez de "Inscrição Gratuita", mantendo no entanto a recolha de dados e o aviso de RGPD conforme solicitado.
+## Corrigir o redirect de / para /live
 
-### Alterações Planeadas
+### Problema
+O `Index.tsx` tem dois problemas em simultâneo:
 
-#### 1. Sidebar do Webinar (`src/components/webinar/WebinarSidebar.tsx`)
-- Alterar as chamadas da função `open("free")` para `open("premium")` em ambos os botões ("Garantir Premium Pass" e "Garantir lugar na Masterclass").
-- Isto permite que o modal identifique que o objetivo do utilizador é um upgrade e não apenas a inscrição gratuita inicial.
+1. **Violação de regras de hooks do React**: `usePageMeta` é chamado na linha 25, *depois* de um `return` condicional na linha 23. O React exige que os hooks sejam sempre chamados na mesma ordem, independentemente de condições. Isto pode causar o componente a não renderizar corretamente.
 
-#### 2. Modal de Registo (`src/components/landing/RegistrationModal.tsx`)
-- **Deteção da Variante**: Vou extrair o valor `variant` do hook `useRegistrationModal`.
-- **Passagem de Props**: Passar a `variant` para o componente interno `CaptureView`.
-- **Conteúdo Dinâmico no CaptureView**:
-    - **Título**: Se a variante for `premium`, o título mudará para "Upgrade para Premium & Masterclass" (ou similar), removendo a menção a "Webinar Gratuito".
-    - **Subtítulo**: Em vez da data do evento, mostrará algo como "Indique os seus dados para aceder à gravação, prompts e bónus exclusivos".
-    - **Botão de Submissão**: O texto mudará de "Reservar o meu lugar" para "Sim, avançar para o upgrade", mantendo a estratégia de micro-compromisso ("Sim").
-- **Manutenção**: Todos os campos (Nome, Email, WhatsApp) e a caixa de aceitação de termos/RGPD permanecerão inalterados.
+2. **Data já ultrapassada**: O evento (18 Fev às 09:30 UTC) já aconteceu, por isso o redirect devia estar ativo — mas o bug acima pode estar a impedir o seu funcionamento correto.
 
-### Lógica de Fluxo
-Ao submeter os dados no modal, o fluxo continuará a redirecionar o utilizador para a página `/upgrade`, que é o funil de checkout completo onde o utilizador finaliza a compra do Premium ou da Masterclass. Esta abordagem garante que capturamos os dados do utilizador (caso ele tenha chegado à página `/live` por link direto) antes de o enviar para o checkout.
+### Solução
 
----
+Alterar o `src/pages/Index.tsx` para:
 
-### Detalhes Técnicos
+- Mover o `usePageMeta` para **antes** de qualquer `return` condicional (corrige a violação de hooks)
+- Tornar o redirect **incondicional** para `/live`, uma vez que o evento já começou e a landing page de pré-registo não é mais relevante
 
-#### WebinarSidebar.tsx
-Modificar os botões para usar a variante correta:
 ```tsx
-// ...
-onCtaClick={() => open("premium")}
-// ...
+const Index = () => {
+  // Hook sempre chamado, independentemente de condições
+  usePageMeta({ title: "...", description: "..." });
+  
+  // Redirect incondicional — evento já em curso
+  return <Navigate to="/live" replace />;
+};
 ```
 
-#### RegistrationModal.tsx
-Atualizar o `CaptureView` para lidar com a variante:
-```tsx
-const CaptureView = ({ ..., variant }: { ..., variant: "free" | "premium" }) => {
-  const isPremium = variant === "premium";
-  return (
-    <>
-      <h3 className="...">
-        {isPremium ? (
-          "Upgrade para Premium & Masterclass"
-        ) : (
-          <>Quero confirmar o meu lugar para o Webinar <span className="...">Gratuito</span> — Ao Vivo</>
-        )}
-      </h3>
-      <p className="...">
-        {isPremium 
-          ? "Preencha os dados abaixo para aceder à gravação e bónus exclusivos."
-          : "Quarta-feira, 18 de Fevereiro, 10h"}
-      </p>
-      {/* ... campos iguais ... */}
-      <button ...>
-        {loading ? "A processar..." : (isPremium ? "Sim, avançar para o upgrade" : "Reservar o meu lugar")}
-      </button>
-    </>
-  );
-}
-```
+Esta é a alteração mínima e mais segura. O componente continua a existir no router (não é preciso tocar no `App.tsx`), mas redireciona imediatamente todos os visitantes para `/live`.
