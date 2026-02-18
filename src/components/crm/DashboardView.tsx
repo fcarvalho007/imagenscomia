@@ -61,16 +61,13 @@ function abbreviateSource(s: string) {
 
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const [visitantes, setVisitantes] = useState(1034);
+  const [visitantes, setVisitantes] = useState(2500);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
   const [resendSent7d, setResendSent7d] = useState(0);
-  const [internalSent24h, setInternalSent24h] = useState(0);
-  const [internalSent7d, setInternalSent7d] = useState(0);
   const [emailFailed24h, setEmailFailed24h] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
-  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -81,30 +78,15 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo),
       // Resend confirmed (7d)
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo),
-      // Internal (24h)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "internal").eq("status", "sent").gte("created_at", oneDayAgo),
-      // Internal (7d)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "internal").eq("status", "sent").gte("created_at", sevenDaysAgo),
       // Failed (24h)
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo),
       // Failed (7d)
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo),
-      // Stage breakdown (7d, Resend only)
-      supabase.from("message_logs").select("template_key").eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo),
-    ]).then(([resend24, resend7d, internal24, internal7d, failed24, failed7d, stageRes]) => {
+    ]).then(([resend24, resend7d, failed24, failed7d]) => {
       setResendSent24h(resend24.count || 0);
       setResendSent7d(resend7d.count || 0);
-      setInternalSent24h(internal24.count || 0);
-      setInternalSent7d(internal7d.count || 0);
       setEmailFailed24h(failed24.count || 0);
       setEmailFailed7d(failed7d.count || 0);
-      if (stageRes.data) {
-        const counts: Record<string, number> = {};
-        stageRes.data.forEach((r: { template_key: string }) => {
-          counts[r.template_key] = (counts[r.template_key] || 0) + 1;
-        });
-        setStageCounts(counts);
-      }
     });
   }, []);
   const stats = useMemo(() => {
@@ -143,13 +125,15 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     active.forEach((i) => { planCounts[i.plan]++; });
     const pendingCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0 };
     active.forEach((i) => { if (i.payment_status === "awaiting_payment" || i.payment_status === "selected") pendingCounts[i.plan]++; });
+    const paidCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0, free: 0 };
+    pagantes.forEach((i) => { paidCounts[i.plan] = (paidCounts[i.plan] || 0) + 1; });
 
     // Duvidas
     const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
 
-    const nPremiumPaid = pagantes.filter((i) => i.plan === "premium").length;
-    const nMCPaid = pagantes.filter((i) => i.plan === "masterclass").length;
-    const nBundlePaid = pagantes.filter((i) => i.plan === "bundle").length;
+    const nPremiumPaid = paidCounts.premium;
+    const nMCPaid = paidCounts.masterclass;
+    const nBundlePaid = paidCounts.bundle;
 
     // Gender
     const genderCounts = { M: 0, F: 0, U: 0 };
@@ -208,7 +192,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
     });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
+    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
   }, [inscritos]);
 
   const now = new Date();
@@ -339,45 +323,48 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         ))}
       </div>
 
-      {/* Emails (24h + 7 dias) — split by provider */}
-      <div className="grid grid-cols-4 max-md:grid-cols-2 gap-3.5 mb-5">
-        {/* Resend confirmed */}
-        <div className="bg-white border border-border rounded-xl p-5 relative group">
-          <Mail size={20} className="text-green-600" />
-          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{resendSent7d}</p>
-          <p className="text-[13px] text-ink-500 mt-1 flex items-center gap-1">
-            Enviados via Resend
-            <span className="inline-block cursor-help" title="Apenas emails confirmados pelo Resend com ID de entrega">
-              <CheckCircle size={12} className="text-green-500" />
-            </span>
-          </p>
-          <p className="text-[11px] text-ink-400">{resendSent24h} (24h) / {resendSent7d} (7d)</p>
+      {/* Email Follow-up Status */}
+      <div className="bg-white border border-border rounded-xl p-5 mb-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <Mail size={18} className="text-blue-600" />
+          <div>
+            <h3 className="font-heading font-bold text-[14px] text-ink-900">Emails de Follow-up Resend</h3>
+            <p className="text-[12px] text-ink-400">Estado operacional do sistema de emails</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            {emailFailed24h === 0 ? (
+              <span className="flex items-center gap-1 text-[12px] font-semibold text-green-600 bg-green-50 border border-green-200 px-2.5 py-1 rounded-full">
+                <CheckCircle size={12} /> A funcionar normalmente
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                <AlertCircle size={12} /> {emailFailed24h} falha{emailFailed24h !== 1 ? "s" : ""} nas últimas 24h
+              </span>
+            )}
+          </div>
         </div>
-        {/* Internal (legacy) */}
-        <div className="bg-white border border-border rounded-xl p-5 opacity-60">
-          <Mail size={20} className="text-ink-400" />
-          <p className="font-heading font-extrabold text-[32px] text-ink-400 mt-2 leading-none">{internalSent7d}</p>
-          <p className="text-[13px] text-ink-400 mt-1">Logs internos</p>
-          <p className="text-[11px] text-ink-300">{internalSent24h} (24h) / {internalSent7d} (7d)</p>
-        </div>
-        {/* Failed */}
-        <div className="bg-white border border-border rounded-xl p-5">
-          <AlertCircle size={20} className="text-red-500" />
-          <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{emailFailed7d}</p>
-          <p className="text-[13px] text-ink-500 mt-1">Falhas</p>
-          <p className="text-[11px] text-ink-400">{emailFailed24h} (24h) / {emailFailed7d} (7d)</p>
-        </div>
-        {/* Stage breakdown (Resend only) */}
-        <div className="bg-white border border-border rounded-xl p-5">
-          <BarChart2 size={20} className="text-blue-600" />
-          <p className="text-[13px] font-semibold text-ink-700 mt-2">Por etapa (Resend)</p>
-          <div className="mt-2 space-y-1">
-            {[0, 1, 2].map((s) => (
-              <div key={s} className="flex justify-between text-[12px]">
-                <span className="text-ink-500">Etapa {s}</span>
-                <span className="font-semibold text-ink-700">{stageCounts[`followup_stage_${s}`] || 0}</span>
-              </div>
-            ))}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-surface/60 rounded-lg px-4 py-3">
+            <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide mb-1.5">Últimas 24h</p>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-ink-600">Enviados</span>
+              <span className="font-heading font-bold text-[18px] text-ink-900">{resendSent24h}</span>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[13px] text-ink-600">Falhas</span>
+              <span className={`font-heading font-bold text-[18px] ${emailFailed24h > 0 ? "text-red-600" : "text-ink-400"}`}>{emailFailed24h}</span>
+            </div>
+          </div>
+          <div className="bg-surface/60 rounded-lg px-4 py-3">
+            <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide mb-1.5">Últimos 7 dias</p>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-ink-600">Enviados</span>
+              <span className="font-heading font-bold text-[18px] text-ink-900">{resendSent7d}</span>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[13px] text-ink-600">Falhas</span>
+              <span className={`font-heading font-bold text-[18px] ${emailFailed7d > 0 ? "text-amber-600" : "text-ink-400"}`}>{emailFailed7d}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -496,36 +483,60 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         {/* Plans */}
         <div className="bg-white border border-border rounded-xl p-5">
           <h3 className="font-heading font-bold text-sm text-ink-900">Distribuição por Plano</h3>
-          <p className="text-xs text-ink-400 mb-4">Breakdown dos inscritos</p>
-  {(["free", "premium", "masterclass", "bundle"] as const).map((plan) => {
+          <p className="text-xs text-ink-400 mb-4">Inscritos · Pagos · Pendentes</p>
+          {(["premium", "masterclass", "bundle", "free"] as const).map((plan) => {
             const info = PLAN_BADGE(plan);
-            const count = stats.planCounts[plan];
-            const pendingCount = plan !== "free" ? stats.pendingCounts[plan] || 0 : 0;
-            const pct = stats.total ? ((count / stats.total) * 100).toFixed(0) : "0";
+            const total = stats.planCounts[plan] || 0;
+            const paid = stats.paidCounts[plan] || 0;
+            const pending = plan !== "free" ? stats.pendingCounts[plan] || 0 : 0;
+            const free = total - paid - pending;
             const barColors: Record<string, string> = {
               free: "hsl(var(--ink-300))",
               premium: "hsl(var(--blue-600))",
               masterclass: "#7C3AED",
               bundle: "hsl(var(--green-600))",
             };
+            const color = barColors[plan];
+            const paidPct = total ? (paid / total) * 100 : 0;
+            const pendingPct = total ? (pending / total) * 100 : 0;
             return (
-              <div key={plan} className="mb-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: barColors[plan] }} />
-                  <span className="text-[13px] font-medium" style={{ color: info.color }}>{info.label}</span>
-                  {pendingCount > 0 && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                      {pendingCount} pendente{pendingCount !== 1 ? "s" : ""}
+              <div key={plan} className="mb-4 last:mb-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                    <span className="text-[13px] font-semibold" style={{ color: info.color }}>{info.label}</span>
+                  </div>
+                  <span className="font-heading font-bold text-[14px] text-ink-700">{total}</span>
+                </div>
+                {/* Segmented progress bar */}
+                <div className="h-2 rounded-full bg-surface overflow-hidden flex">
+                  <div className="h-full rounded-l-full transition-all duration-500" style={{ width: `${paidPct}%`, background: color }} />
+                  {pending > 0 && (
+                    <div className="h-full transition-all duration-500" style={{ width: `${pendingPct}%`, background: "#F59E0B" }} />
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+                  {paid > 0 && (
+                    <span className="flex items-center gap-1 text-green-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                      {paid} pago{paid !== 1 ? "s" : ""}
                     </span>
                   )}
-                  <span className="ml-auto font-heading font-bold text-[13px] text-ink-500">{count}</span>
-                  <span className="text-xs text-ink-400">{pct}%</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-surface">
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${Number(pct)}%`, background: barColors[plan] }}
-                  />
+                  {pending > 0 && (
+                    <span className="flex items-center gap-1 text-amber-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      {pending} pendente{pending !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  {free > 0 && plan !== "free" && (
+                    <span className="flex items-center gap-1 text-ink-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-ink-300 shrink-0" />
+                      {free} sem pgto
+                    </span>
+                  )}
+                  {plan === "free" && (
+                    <span className="text-ink-400">inscrições gratuitas</span>
+                  )}
                 </div>
               </div>
             );
