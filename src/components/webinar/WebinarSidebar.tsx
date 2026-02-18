@@ -80,7 +80,7 @@ export const WebinarSidebar = () => {
           { icon: <FileText className="w-4 h-4" />, text: "Guia completo de prompts (30+ páginas)" },
         ]}
         ctaLabel="Garantir Premium Pass"
-        onCtaClick={() => open("free")}
+        onCtaClick={() => open("premium")}
         priceNote={
           <>
             <span className="block">Early bird: €15 + IVA</span>
@@ -99,7 +99,7 @@ export const WebinarSidebar = () => {
         ]}
         dateLine="5 de Março (quinta-feira) · Online · 3 horas"
         ctaLabel="Garantir lugar na Masterclass"
-        onCtaClick={() => open("free")}
+        onCtaClick={() => open("premium")}
         priceNote={
           <>
             <span className="block">Early bird: €47 + IVA</span>
