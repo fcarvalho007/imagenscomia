@@ -108,6 +108,18 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([COLUMNS[0].title]));
   const isMobile = useIsMobile();
 
+  const visibleColumns = useMemo(() => {
+    let cols = COLUMNS;
+    if (sourceFilter === "gravacao") {
+      cols = cols
+        .filter((c) => c.title !== "Inscrito" && c.title !== "Flow Completo")
+        .map((c) =>
+          c.title === "Premium Pass — €15" ? { ...c, title: "Premium Pass — €27" } : c
+        );
+    }
+    return cols;
+  }, [sourceFilter]);
+
   const filtered = useMemo(() => {
     let active = inscritos.filter((i) => i.status === "activo");
     if (sourceFilter !== "all") active = active.filter((i) => i.registration_source === sourceFilter);
@@ -159,7 +171,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
       {isMobile ? (
         /* ── MOBILE: Accordion layout ── */
         <div className="space-y-2">
-          {COLUMNS.map((col) => {
+          {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
             const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             const isOpen = openSections.has(col.title);
@@ -206,7 +218,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
       ) : (
         /* ── DESKTOP: Kanban horizontal ── */
         <div className="flex gap-3 overflow-x-auto pb-4">
-          {COLUMNS.map((col) => {
+          {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
             const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             return (
