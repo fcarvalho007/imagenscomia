@@ -60,6 +60,8 @@ function mapRegistration(r: any): Inscrito {
     last_payment_link_sent_at: r.last_payment_link_sent_at || null,
     registration_source: (r.registration_source as "webinar" | "gravacao") || "webinar",
     invoice_sent: (r as any).invoice_sent ?? false,
+    premium_granted_at: (r as any).premium_granted_at || null,
+    premium_granted_by: (r as any).premium_granted_by || null,
   };
 }
 
@@ -333,5 +335,34 @@ export function useInscritos() {
     );
   }, [inscritos]);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent };
+  const grantPremium = useCallback(async (inscritoId: string, adminEmail: string) => {
+    const current = inscritos.find((i) => i.id === inscritoId);
+    if (!current) return;
+    const isGranted = !!current.premium_granted_at;
+    const now = new Date().toISOString();
+    const updateData = isGranted
+      ? { premium_granted_at: null, premium_granted_by: null }
+      : { premium_granted_at: now, premium_granted_by: adminEmail };
+    const { error } = await supabase
+      .from("registrations")
+      .update(updateData as any)
+      .eq("id", inscritoId);
+    if (error) { console.error("Error updating premium grant:", error); return; }
+    await supabase.from("message_logs").insert({
+      registration_id: inscritoId,
+      template_key: "crm_premium_granted",
+      status: "sent",
+      provider: "internal",
+      channel: "email",
+    } as any);
+    setInscritos((prev) =>
+      prev.map((i) =>
+        i.id === inscritoId
+          ? { ...i, premium_granted_at: isGranted ? null : now, premium_granted_by: isGranted ? null : adminEmail }
+          : i
+      )
+    );
+  }, [inscritos]);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium };
 }

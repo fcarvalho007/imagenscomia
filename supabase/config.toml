@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.send-payment-link]
 verify_jwt = false
+
+[functions.redeem-voucher]
+verify_jwt = false

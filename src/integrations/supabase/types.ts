@@ -225,8 +225,11 @@ export type Database = {
           first_name: string | null
           followup_stage: number
           gender_override: string | null
+          gift_code: string | null
+          gifted_at: string | null
           id: string
           invoice_sent: boolean
+          is_gift: boolean
           last_followup_at: string | null
           last_name: string | null
           last_payment_link: string | null
@@ -237,6 +240,8 @@ export type Database = {
           paid_at: string | null
           payment_link_created_at: string | null
           plan_selected: string | null
+          premium_granted_at: string | null
+          premium_granted_by: string | null
           premium_unlocked: boolean | null
           referral_code: string
           referred_by: string | null
@@ -258,8 +263,11 @@ export type Database = {
           first_name?: string | null
           followup_stage?: number
           gender_override?: string | null
+          gift_code?: string | null
+          gifted_at?: string | null
           id?: string
           invoice_sent?: boolean
+          is_gift?: boolean
           last_followup_at?: string | null
           last_name?: string | null
           last_payment_link?: string | null
@@ -270,6 +278,8 @@ export type Database = {
           paid_at?: string | null
           payment_link_created_at?: string | null
           plan_selected?: string | null
+          premium_granted_at?: string | null
+          premium_granted_by?: string | null
           premium_unlocked?: boolean | null
           referral_code: string
           referred_by?: string | null
@@ -291,8 +301,11 @@ export type Database = {
           first_name?: string | null
           followup_stage?: number
           gender_override?: string | null
+          gift_code?: string | null
+          gifted_at?: string | null
           id?: string
           invoice_sent?: boolean
+          is_gift?: boolean
           last_followup_at?: string | null
           last_name?: string | null
           last_payment_link?: string | null
@@ -303,6 +316,8 @@ export type Database = {
           paid_at?: string | null
           payment_link_created_at?: string | null
           plan_selected?: string | null
+          premium_granted_at?: string | null
+          premium_granted_by?: string | null
           premium_unlocked?: boolean | null
           referral_code?: string
           referred_by?: string | null

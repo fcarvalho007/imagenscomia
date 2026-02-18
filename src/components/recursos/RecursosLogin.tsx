@@ -33,7 +33,7 @@ export default function RecursosLogin({ onAuthed }: RecursosLoginProps) {
     try {
       const { data, error: dbError } = await supabase
         .from("registrations")
-        .select("edit_token, first_name, plan_selected, paid_at")
+        .select("edit_token, first_name, plan_selected, paid_at, premium_granted_at")
         .eq("email", email.toLowerCase().trim())
         .maybeSingle();
 
@@ -47,7 +47,8 @@ export default function RecursosLogin({ onAuthed }: RecursosLoginProps) {
         return;
       }
 
-      if (!data.paid_at) {
+      const hasAccess = !!(data.paid_at || (data as any).premium_granted_at);
+      if (!hasAccess) {
         setError("not_paid");
         return;
       }

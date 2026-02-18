@@ -31,13 +31,14 @@ export default function Recursos() {
       try {
         const { data } = await supabase
           .from("registrations")
-          .select("paid_at, plan_selected, first_name")
+          .select("paid_at, plan_selected, first_name, premium_granted_at")
           .eq("email", email)
           .eq("edit_token", token)
           .maybeSingle();
 
-        if (data?.paid_at) {
-          setUserData({ email, token, plan: data.plan_selected, name: data.first_name });
+        const hasAccess = !!(data?.paid_at || (data as any)?.premium_granted_at);
+        if (hasAccess) {
+          setUserData({ email, token, plan: data!.plan_selected, name: data!.first_name });
           setState("authed");
         } else {
           throw new Error("no access");

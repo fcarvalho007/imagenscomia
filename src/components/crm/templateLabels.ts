@@ -22,6 +22,10 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   crm_archived: "Inscrito arquivado",
   // Upsell
   masterclass_upsell_premium: "Convite Masterclass (Premium)",
+  // Premium / Oferta
+  crm_premium_granted: "Acesso Premium concedido (Oferta)",
+  // Voucher
+  voucher_redeemed: "Voucher aplicado (Acesso gratuito)",
 };
 
 export function getTemplateLabel(key: string): string {
