@@ -79,20 +79,16 @@ export default function RecursosConteudo({ userData, onLogout }: RecursosConteud
           {/* ── Main column ── */}
           <div className="flex-1 min-w-0">
 
-            {/* Player placeholder — preto */}
-            <div
-              className="rounded-2xl bg-gray-900 shadow-lg mb-4 border border-gray-800 flex flex-col items-center justify-center gap-3 text-center px-6"
-              style={{ aspectRatio: "16/9" }}
-            >
-              <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
-                <Clock size={20} className="text-gray-400" />
-              </div>
-              <div>
-                <p className="text-white font-semibold text-[15px] mb-1">Gravação em processamento</p>
-                <p className="text-gray-400 text-sm">
-                  Disponível em breve. Receberás um email quando estiver pronto.
-                </p>
-              </div>
+            {/* Player Vimeo — Webinar 18 Fev */}
+            <div className="rounded-2xl overflow-hidden shadow-lg mb-4" style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+              <iframe
+                src="https://player.vimeo.com/video/1166335264?badge=0&autopause=0&player_id=0&app_id=58479"
+                frameBorder="0"
+                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                title="Webinar Gratuito — IA Imagens · 18 Fev · Frederico Carvalho"
+              />
             </div>
 
             {/* Single card: Índice + Apoio ao conhecimento */}
