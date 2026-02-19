@@ -1,129 +1,79 @@
 
-## Simplificação da Página /recursos
+## 3 Correcções — /recursos link + E-goi grantPremium + Dashboard filtros
 
-### O que muda
+### 1. Link "Inscrição na Masterclass (3h)" em /recursos
 
-| # | Pedido | Localização |
-|---|---|---|
-| 1 | Remover player Vimeo — substituir por aviso a preto (sem cor âmbar) | `RecursosConteudo.tsx` |
-| 2 | Remover tabs FAQ e Guia — ficar só com uma secção única (sem tabs) | `RecursosConteudo.tsx` |
-| 3 | Renomear tab "Gravação" → secção "Apoio ao conhecimento" com itens "Em breve" abaixo | `RecursosConteudo.tsx` |
-| 4 | Remover "Guia PDF / Descarregar" da sidebar | `RecursosConteudo.tsx` |
-| 5 | Destacar mais a caixa da Masterclass na sidebar | `RecursosUpsell.tsx` |
+**Problema:** `MASTERCLASS_URL` está definida como `"https://imagenscomia.com/masterclass"` — URL externo que não existe. O botão abre numa nova tab em vez de navegar para `/upgrade-gravacao`.
+
+**Ficheiro:** `src/components/recursos/RecursosUpsell.tsx`
+
+**Alterações:**
+- Remover a constante `MASTERCLASS_URL`
+- Importar `useNavigate` do `react-router-dom`
+- Substituir `window.open(MASTERCLASS_URL, "_blank")` por `navigate("/upgrade-gravacao")` em ambas as variantes (compact e normal)
 
 ---
 
-### Detalhe técnico
+### 2. E-goi Tag 32 ao marcar como "oferta" / grant premium
 
-#### 1. Player — substituir por aviso simples a preto
+**Problema:** O `grantPremium` em `useInscritos.ts` apenas actualiza a base de dados — nunca notifica o E-goi. Quem é marcado manualmente como acesso premium fica sem a Tag 32.
 
-O bloco do player (linhas 186–198) passa a ser um placeholder sóbrio, sem iframe:
+**Solução:** Criar uma Edge Function `grant-premium-egoi` (ou adicionar lógica a uma Edge Function existente) que, dado um `registration_id`, aplica a Tag 32 no E-goi para esse email.
 
-```tsx
-<div className="rounded-2xl bg-gray-900 shadow-lg mb-3 border border-gray-800"
-     style={{ aspectRatio: "16/9" }}>
-  <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6">
-    <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center">
-      <Clock size={20} className="text-gray-400" />
-    </div>
-    <div>
-      <p className="text-white font-semibold text-[15px] mb-1">Gravação em processamento</p>
-      <p className="text-gray-400 text-sm">
-        Disponível em breve. Receberás um email quando estiver pronto.
-      </p>
-    </div>
-  </div>
-</div>
+**Alternativa mais simples:** Adicionar a chamada E-goi directamente no `grantPremium` do `useInscritos.ts` via `supabase.functions.invoke("grant-premium-egoi", ...)`.
+
+**Ficheiros a alterar:**
+- `supabase/functions/grant-premium-egoi/index.ts` — nova Edge Function
+- `supabase/config.toml` — registar a função
+- `src/hooks/useInscritos.ts` — invocar a função após o `supabase.from("registrations").update(...)`
+
+**Lógica da Edge Function `grant-premium-egoi`:**
+```ts
+// 1. Recebe { registration_id }
+// 2. Busca email do registo
+// 3. Procura contactId no E-goi por email
+// 4. Aplica Tag 32 via /attach-tag
+// 5. Retorna { ok: true } ou { error }
 ```
 
-O banner âmbar de "processamento" acima do player é **removido** — o placeholder já comunica isso de forma mais limpa.
+Esta função é idempotente — aplicar uma tag já existente não causa erros no E-goi.
 
 ---
 
-#### 2–3. Tabs → secção única com índice + "Apoio ao conhecimento"
+### 3. Dashboard — Ponto 0 e filtros de período
 
-As tabs são eliminadas completamente (`TabBar`, `TabType`, `TABS`, `activeTab`). O conteúdo dos tabs é reorganizado numa única vista:
+**Problema raiz (2 bugs separados):**
 
-**Estrutura final abaixo do player:**
+**Bug A — `stats` não reage ao período:**
+O `useMemo` de `stats` (linha 250) tem `[inscritos]` na dependência em vez de `[filteredInscritos]`. Quando o utilizador muda o período (7d, 14d...), `filteredInscritos` actualiza-se correctamente, mas `stats` não é recomputado porque a sua dependência (`inscritos`) não mudou.
 
-```
-┌─ Card único ──────────────────────────────────────────────────┐
-│                                                               │
-│  ○ Índice da sessão                                           │
-│    [00:00] Introdução e estado da arte                        │
-│    [08:30] Método: do briefing à imagem                       │
-│    [24:00] Demos ao vivo com ferramentas                      │
-│    [48:00] Q&A e casos práticos                               │
-│                                                               │
-│  ────────────────────────────────                             │
-│                                                               │
-│  📚 Apoio ao conhecimento                                     │
-│                                                               │
-│  [desactivado] 📖 Guia de Apoio Nano Banana Pro (32 páginas)  │
-│                Em breve                                       │
-│                                                               │
-│  [desactivado] 📋 Guia de Prompts                             │
-│                Disponível a 25 de Fevereiro  [badge 25 Fev]   │
-│                                                               │
-└───────────────────────────────────────────────────────────────┘
-```
+Correcção: alterar a dependência de `stats` de `[inscritos]` para `[filteredInscritos]` e garantir que todos os cálculos dentro do `useMemo` usam `filteredInscritos` em vez de `inscritos`.
 
-O cabeçalho "Apoio ao conhecimento" usa o mesmo estilo de `text-[11px] font-semibold uppercase tracking-widest` já usado nos outros títulos de secção.
+**Bug B — Ponto 0 (Visitantes) não é filtrável por data:**
+O valor vem da `analytics_cache` (total acumulado desde o início da campanha). Quando o utilizador selecciona "7 dias", os outros passos do funil filtram-se mas o Ponto 0 continua a mostrar 2226 (total histórico), criando uma discrepância visual.
 
-O accordion do Guia e as FAQs são **removidos** por completo (simplifica muito o componente).
+Correcção: quando o `period` não é `"all"`, mostrar o Ponto 0 com uma nota explicativa "(acumulado)" ou esconder a barra de visitantes totais, substituindo-a por um texto mais neutro que deixe claro que este número é global e não filtrável.
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
+
+**Alterações concretas:**
+
+1. Linha 250: `}, [inscritos]);` → `}, [filteredInscritos]);`
+
+2. Dentro do `useMemo` de `stats`, substituir todas as referências a `inscritos` por `filteredInscritos` (a variável `active` já usa `filteredInscritos` correctamente — verificar se não há referências directas a `inscritos` dentro do useMemo).
+
+3. Ponto 0: Quando `period !== "all"`, adicionar badge "(total campanha)" ao lado do número de visitantes, e ajustar o texto informativo já existente para ser mais claro.
+
+4. Botão "Atualizar" — verificar se o `onRefresh` é passado correctamente. Em `CRM.tsx`, `<DashboardView onRefresh={refresh} ...>`. O `refresh` é `fetchData`. Confirmar que a tipagem bate certo e o botão não está bloqueado por nenhuma condição.
 
 ---
-
-#### 4. Sidebar — remover "Guia PDF"
-
-O item "Guia PDF / Descarregar" (linhas 376–392) é apagado. A sidebar de "Recursos" fica com:
-- Resumo da sessão
-- Áudio em Bruto
-- SOP de Prompts
-- Exercício Google WHISK
-
-O label "Recursos" mantém-se.
-
----
-
-#### 5. Destacar a caixa da Masterclass
-
-A variante `compact` em `RecursosUpsell.tsx` passa a ter **fundo azul-escuro** em vez de branco, para se destacar da sidebar:
-
-```tsx
-<div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl shadow-md p-4 text-white">
-  <span className="... bg-white/20 text-white border-white/30 ...">Próximo passo</span>
-  <p className="text-sm font-bold text-white ...">Quer ir mais longe?</p>
-  <p className="text-xs text-blue-100 ...">Masterclass — Imagem para Vídeo com IA</p>
-  {/* bullets com ícones a branco */}
-  <span className="... bg-white/20 text-white ...">5 de Março ...</span>
-  <Button className="w-full bg-white text-blue-700 hover:bg-blue-50 ...">
-    Inscrição na Masterclass (3h)
-  </Button>
-</div>
-```
-
-Para quem **já tem a Masterclass**, mantém-se o estilo verde mas também com mais destaque (borda mais grossa, sombra).
-
----
-
-### Estado final do componente (simplificado)
-
-O componente deixa de ter:
-- `TabType`, `TABS`, `TabBar`, `activeTab`, `showAllFaqs`, `visibleFaqs`
-- Tab Guia com accordion de checklist
-- Tab FAQ com 8 perguntas
-- Banner âmbar de processamento
-- Guia PDF na sidebar
-
-O componente fica com:
-- Placeholder a preto no lugar do player
-- Card único com índice + "Apoio ao conhecimento"
-- Sidebar limpa (4 recursos + suporte + Masterclass destacada)
 
 ### Ficheiros a alterar
 
-| Ficheiro | Mudança |
+| Ficheiro | Alteração |
 |---|---|
-| `src/components/recursos/RecursosConteudo.tsx` | Remover player/tabs/FAQ/Guia/GuiaPDF, nova estrutura única, placeholder preto |
-| `src/components/recursos/RecursosUpsell.tsx` | Variante compact com fundo azul-escuro para destaque |
+| `src/components/recursos/RecursosUpsell.tsx` | Remover `MASTERCLASS_URL`, usar `useNavigate("/upgrade-gravacao")` |
+| `supabase/functions/grant-premium-egoi/index.ts` | Nova Edge Function — aplica Tag 32 |
+| `supabase/config.toml` | Registar `grant-premium-egoi` com `verify_jwt = false` |
+| `src/hooks/useInscritos.ts` | Invocar `grant-premium-egoi` após `grantPremium` |
+| `src/components/crm/DashboardView.tsx` | Corrigir dependência do useMemo (`filteredInscritos`), clarificar Ponto 0 com período |
