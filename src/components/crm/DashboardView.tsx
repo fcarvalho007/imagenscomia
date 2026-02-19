@@ -247,7 +247,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     });
 
     return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, clickedToPay, paidConfirmed, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
-  }, [inscritos]);
+  }, [filteredInscritos]);
 
   const now = new Date();
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];

@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.bulk-tag-egoi]
 verify_jwt = false
+
+[functions.grant-premium-egoi]
+verify_jwt = false
