@@ -1,7 +1,6 @@
 import { Check, Video, Zap, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const MASTERCLASS_URL = "https://imagenscomia.com/masterclass";
+import { useNavigate } from "react-router-dom";
 
 interface RecursosUpsellProps {
   hasMasterclass: boolean;
@@ -9,6 +8,7 @@ interface RecursosUpsellProps {
 }
 
 export default function RecursosUpsell({ hasMasterclass, compact = false }: RecursosUpsellProps) {
+  const navigate = useNavigate();
   if (hasMasterclass) {
     return (
       <div className={`bg-green-50 border-2 border-green-200 rounded-2xl text-center shadow-sm ${compact ? "p-4" : "p-6"}`}>
@@ -58,7 +58,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
 
         <Button
           className="w-full gap-2 text-sm h-9 bg-white text-blue-700 hover:bg-blue-50"
-          onClick={() => window.open(MASTERCLASS_URL, "_blank")}
+          onClick={() => navigate("/upgrade-gravacao")}
         >
           Inscrição na Masterclass (3h)
           <ArrowRight size={14} />
@@ -120,7 +120,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
 
       <Button
         className="w-full gap-2"
-        onClick={() => window.open(MASTERCLASS_URL, "_blank")}
+        onClick={() => navigate("/upgrade-gravacao")}
       >
         Inscrição na Masterclass (3h)
         <ArrowRight size={16} />

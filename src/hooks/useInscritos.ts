@@ -355,6 +355,14 @@ export function useInscritos() {
       provider: "internal",
       channel: "email",
     } as any);
+    // Apply E-goi Tag 32 when granting (not when revoking)
+    if (!isGranted) {
+      supabase.functions.invoke("grant-premium-egoi", {
+        body: { registration_id: inscritoId },
+      }).then(({ error: egoiErr }) => {
+        if (egoiErr) console.error("Error applying E-goi tag 32:", egoiErr);
+      });
+    }
     setInscritos((prev) =>
       prev.map((i) =>
         i.id === inscritoId
