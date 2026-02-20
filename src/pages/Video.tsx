@@ -262,7 +262,7 @@ const VideoPageInner = () => {
 
           {/* Headline — wider container to fit 2 lines on desktop */}
           <h1
-            className="font-heading leading-[1.05] text-white mb-4 max-w-[920px] mx-auto text-[38px] md:text-[52px] lg:text-[72px]"
+            className="font-heading leading-[1.05] text-white mb-4 max-w-[1100px] mx-auto text-[38px] md:text-[52px] lg:text-[72px]"
             style={{ fontWeight: 900, textShadow: "0 0 80px rgba(22,163,74,0.15)" }}
           >
             <span className="tracking-[-0.5px] md:tracking-[-1px] lg:tracking-[-2px]">
