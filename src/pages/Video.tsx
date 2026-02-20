@@ -239,6 +239,10 @@ const VideoPageInner = () => {
 
       {/* ═══ HERO (slate-950) ═══ */}
       <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: DARK_950, paddingTop: 80, paddingBottom: 80 }}>
+        {/* Background video */}
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.35 }}>
+          <source src="/videos/hero-vidro.mp4" type="video/mp4" />
+        </video>
         {/* Animated orbs background */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
           <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.12, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
@@ -397,8 +401,14 @@ const VideoPageInner = () => {
       <LogoMarquee />
 
       {/* ═══ SECTION 1 — "Quando isto faz sentido" ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#0d0d14" }}>
-        <div className="mx-auto max-w-5xl px-5">
+      <section className="relative overflow-hidden py-20 md:py-28" style={{ background: "#0d0d14" }}>
+        {/* Background video */}
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.5 }}>
+          <source src="/videos/splash-branco.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay for readability during white phase */}
+        <div className="absolute inset-0" style={{ zIndex: 1, background: "rgba(0,0,0,0.55)" }} />
+        <div className="relative mx-auto max-w-5xl px-5" style={{ zIndex: 2 }}>
           <ScrollReveal>
             <div className="text-center mb-6">
               <SectionTitle>O vídeo não é luxo — é o formato que o mercado está a empurrar</SectionTitle>
@@ -443,8 +453,9 @@ const VideoPageInner = () => {
 
         <style>{`
           .pain-card {
-            background: rgba(255,255,255,0.03);
+            background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
           }
           .pain-card:hover {
             border-color: rgba(22,163,74,0.35) !important;
