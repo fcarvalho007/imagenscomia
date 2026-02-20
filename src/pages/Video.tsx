@@ -1,0 +1,597 @@
+import { useEffect, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import {
+  Check, Clock, ArrowLeftRight, XCircle, Layers,
+  FileText, CheckSquare, Video, ChevronDown,
+} from "lucide-react";
+import { usePageMeta } from "@/hooks/usePageMeta";
+import ColorBends from "@/components/landing/ColorBends";
+import {
+  Accordion, AccordionItem, AccordionTrigger, AccordionContent,
+} from "@/components/ui/accordion";
+import { LegalModal } from "@/components/legal/LegalModal";
+import { TermosContent } from "@/components/legal/TermosContent";
+import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
+import { useState } from "react";
+import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
+
+/* ── Scroll reveal wrapper ── */
+const Reveal = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-60px" });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.55, delay, ease: "easeOut" }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+/* ── Shared CTA ── */
+const GreenCTA = ({ label = "Garantir inscrição gratuita", large = false }: { label?: string; large?: boolean }) => (
+  <a
+    href="#inscricao"
+    className={`inline-block font-heading font-bold text-white rounded-xl transition-all ${large ? "text-[17px] px-10 py-4" : "text-[15px] px-7 py-3"}`}
+    style={{ background: "hsl(142 76% 36%)", boxShadow: "0 4px 20px rgba(22,163,74,0.30)" }}
+    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
+  >
+    {label}
+  </a>
+);
+
+/* ── Google badge ── */
+const GoogleBadge = () => (
+  <div className="inline-flex items-center gap-[10px] rounded-[10px] px-[14px] py-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}>
+    <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+    <div className="w-px h-[18px] mx-[2px]" style={{ background: "rgba(255,255,255,0.10)" }} />
+    <div className="flex flex-col gap-px">
+      <div className="flex items-center gap-1">
+        <span className="font-heading font-bold text-[14px]" style={{ color: "#F8FAFC" }}>5,0</span>
+        <span style={{ fontSize: 13, lineHeight: 1, color: "#FBBC05" }}>★★★★★</span>
+      </div>
+      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)" }}>1 194 avaliações no Google</span>
+    </div>
+  </div>
+);
+
+/* ── Eyebrow label ── */
+const Eyebrow = ({ children }: { children: React.ReactNode }) => (
+  <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "hsl(142 76% 36%)" }}>
+    {children}
+  </p>
+);
+
+/* ── Section title ── */
+const SectionTitle = ({ children, light = true }: { children: React.ReactNode; light?: boolean }) => (
+  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 ${light ? "text-white" : ""}`} style={!light ? { color: "hsl(222 47% 11%)" } : {}}>
+    {children}
+  </h2>
+);
+
+/* ── Data ── */
+const painPoints = [
+  { Icon: Clock, text: "Cada vídeo vira um mini-projecto (e nunca há tempo)." },
+  { Icon: ArrowLeftRight, text: "Aprovações viram pingue-pongue (e perde-se o timing)." },
+  { Icon: XCircle, text: "Sai «qualquer coisa», mas não parece a marca (falta consistência)." },
+  { Icon: Layers, text: "Há ferramentas a mais e clareza a menos (confusão e desperdício)." },
+];
+
+const beforeItems = ["Decisões por impulso", "Produção intermitente", "Stress e retrabalho constante"];
+const afterItems = ["Um sistema simples e repetível", "Delegação com critérios claros", "Produção previsível, melhoria contínua"];
+
+const concreteResults = [
+  "Saber que tipo de vídeo faz sentido para cada objectivo (leads, confiança, remarketing).",
+  "Criar um briefing que uma IA ou freelancer executa sem 20 mensagens.",
+  "Validar «serve marketing?» antes de publicar — critérios claros, não opiniões.",
+];
+
+const forWhom = [
+  "Gestores de marketing/comunicação e brand managers.",
+  "Quem faz paid media e precisa de criativos com variações rápidas.",
+  "Fundadores/gestores que querem consistência sem aumentar equipa.",
+  "Profissionais que querem delegar sem perder controlo.",
+];
+const notFor = [
+  "Quem procura cinema, edição avançada ou pós-produção pesada.",
+  "Quem quer vídeos longos e complexos (aqui é clip curto, objectivo claro).",
+  "Quem procura «milagre» sem processo.",
+];
+
+const agenda = [
+  { time: "5 min", title: "Boas-vindas + o que mudou no vídeo" },
+  { time: "15 min", title: "O sistema mínimo de delegação (briefing + checklist)" },
+  { time: "20 min", title: "Demonstração: do briefing ao clip" },
+  { time: "10 min", title: "7 erros que destroem consistência" },
+  { time: "10 min", title: "Q&A + próximos passos" },
+];
+
+const deliverables = [
+  { Icon: FileText, title: "Template de Briefing de Vídeo", desc: "1 página. Pronto a usar com IA ou freelancer." },
+  { Icon: CheckSquare, title: "Checklist «publicável vs rascunho»", desc: "Critérios objectivos de qualidade, sem opiniões." },
+  { Icon: Video, title: "Mini-guia: 5 formatos por objectivo", desc: "Leads, confiança, remarketing, demos e remarketing visual." },
+];
+
+const tools = [
+  { name: "Riverside", desc: "Corta automaticamente e depois ajusta (poupa horas)." },
+  { name: "Flow (Google) / Veo", desc: "Gerar clips e cenas por partes (pode exigir planos elegíveis)." },
+  { name: "Dreamina (CapCut)", desc: "Montar sequência e variações rápidas a partir de imagens." },
+  { name: "Higgsfield", desc: "Variações rápidas de movimento/estilo para social e anúncios." },
+];
+
+const operationalPromises = [
+  "Escolher formato e mensagem com base no objectivo (não «porque fica bonito»).",
+  "Criar 2–3 variações do mesmo conceito (para testes e ângulos).",
+  "Aprovar mais rápido com uma checklist de qualidade.",
+  "Montar um processo semanal simples (produção por lotes).",
+];
+
+const faqs = [
+  { q: "Precisa de experiência com IA?", a: "Não. O foco é processo e decisão, com demonstração simples." },
+  { q: "Serve B2B e B2C?", a: "Serve ambos: anúncios, demos, prova social e conteúdo de confiança." },
+  { q: "Vai haver gravação?", a: "A política de gravação será comunicada na sessão." },
+  { q: "O que preparar?", a: "Um exemplo de produto/serviço e 2–3 imagens (podem ser do site)." },
+  { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno e repetir semanalmente." },
+];
+
+const DARK = "#0a0a0f";
+const DARK_CARD = "#12121a";
+const DARK_BORDER = "rgba(255,255,255,0.08)";
+
+/* ══════════════════════════════════════════════════════ */
+
+const VideoPage = () => {
+  usePageMeta({
+    title: "Webinar Gratuito · Vídeo com IA para Marketing · 2 Março 2026",
+    description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
+  });
+
+  const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
+
+  return (
+    <div className="min-h-screen" style={{ background: DARK, color: "#e2e8f0", scrollBehavior: "smooth" }}>
+
+      {/* ═══ 1 — STICKY TOP BAR ═══ */}
+      <div className="fixed top-0 left-0 right-0 z-50" style={{ background: "rgba(10,10,15,0.92)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${DARK_BORDER}` }}>
+        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-2.5">
+          <span className="text-[12px] font-heading font-semibold uppercase tracking-[0.1em] px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.6)" }}>
+            Webinar gratuito · 2 Março 2026
+          </span>
+          <a
+            href="#inscricao"
+            className="text-[13px] font-heading font-bold text-white px-5 py-2 rounded-lg transition-colors"
+            style={{ background: "hsl(142 76% 36%)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
+          >
+            Garantir inscrição →
+          </a>
+        </div>
+      </div>
+
+      {/* ═══ 2 — HERO ═══ */}
+      <section className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-24">
+        <div className="absolute inset-0 z-0" style={{ opacity: 0.7 }}>
+          <ColorBends colors={["#1E40AF", "#7C3AED", "#0EA5E9", "#10B981"]} rotation={0} speed={0.2} scale={1.3} frequency={0.7} warpStrength={1} mouseInfluence={0.2} parallax={0.2} noise={0.04} transparent autoRotate={1.5} />
+        </div>
+        <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
+          <Reveal>
+            <span className="inline-block font-heading text-[12px] font-semibold uppercase tracking-[0.14em] px-4 py-1.5 rounded-full mb-5" style={{ border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.7)" }}>
+              Webinar gratuito · Ao vivo · 2 Março 2026
+            </span>
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <h1 className="font-heading font-extrabold text-[28px] sm:text-[38px] md:text-[44px] leading-[1.1] text-white mb-5" style={{ letterSpacing: "-0.02em" }}>
+              Vídeo com IA para marketing — sem equipa, sem caos, com um sistema simples de delegação
+            </h1>
+          </Reveal>
+
+          <Reveal delay={0.14}>
+            <p className="text-[16px] sm:text-[18px] leading-[1.65] max-w-[640px] mx-auto mb-7" style={{ color: "rgba(255,255,255,0.6)" }}>
+              Sessão prática para gestores e profissionais de marketing que precisam de produzir clips curtos com consistência, mesmo com pouco tempo e sem estúdio.
+            </p>
+          </Reveal>
+
+          <Reveal delay={0.18}>
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              {["2 de Março · A definir hora", "Online · 45–60 min", "Gratuito", "Lugares limitados para o directo"].map(t => (
+                <span key={t} className="text-[13px] px-3.5 py-1.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.55)" }}>
+                  {t}
+                </span>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.22}>
+            <div className="max-w-[560px] mx-auto text-left space-y-3 mb-8">
+              {[
+                "Transformar um briefing em vídeo curto publicável, sem se perder em ferramentas.",
+                "Saber onde a IA poupa tempo e onde o controlo humano é obrigatório.",
+                "Levar um mini-sistema de delegação: briefing + checklist + critérios de qualidade.",
+              ].map((b, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Check className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "hsl(142 76% 46%)" }} />
+                  <span className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.75)" }}>{b}</span>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.28}>
+            <GreenCTA large />
+            <p className="text-[13px] mt-3" style={{ color: "rgba(255,255,255,0.35)" }}>Sem compromisso. Recomendado assistir ao vivo.</p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 3 — PROBLEM ═══ */}
+      <section id="problema" className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <div className="text-center mb-10">
+              <Eyebrow>O Problema</Eyebrow>
+              <SectionTitle>O vídeo não é luxo — é o formato que o mercado está a empurrar</SectionTitle>
+              <p className="text-[15px] leading-[1.7] max-w-[600px] mx-auto" style={{ color: "rgba(255,255,255,0.55)" }}>
+                O pedido costuma ser o mesmo: «precisa-se de mais vídeo». O bloqueio também: tempo, custo, aprovações e falta de consistência. A IA ajuda, mas só funciona bem quando existe um processo mínimo.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            {painPoints.map(({ Icon, text }, i) => (
+              <Reveal key={i} delay={i * 0.06}>
+                <div className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                  <Icon className="w-5 h-5 mb-3" style={{ color: "rgba(255,255,255,0.35)" }} />
+                  <p className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.7)" }}>{text}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.25}>
+            <p className="text-center text-[16px] italic mt-8" style={{ color: "rgba(255,255,255,0.5)" }}>
+              Se pelo menos 2 destes pontos são verdade, esta sessão foi desenhada para desbloquear.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 4 — TRANSFORMATION ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <div className="text-center mb-10">
+              <Eyebrow>Transformação</Eyebrow>
+              <SectionTitle>O que muda depois de se inscrever</SectionTitle>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.08}>
+            <div className="grid md:grid-cols-2 gap-4 mb-10">
+              {/* Before */}
+              <div className="rounded-xl p-6" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] px-2.5 py-1 rounded-md mb-4" style={{ background: "rgba(239,68,68,0.12)", color: "#f87171" }}>Antes</span>
+                <ul className="space-y-3">
+                  {beforeItems.map((t, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(248,113,113,0.6)" }} />
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.6)" }}>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {/* After */}
+              <div className="rounded-xl p-6" style={{ background: DARK_CARD, border: "1px solid rgba(34,197,94,0.15)" }}>
+                <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] px-2.5 py-1 rounded-md mb-4" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>Depois</span>
+                <ul className="space-y-3">
+                  {afterItems.map((t, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "hsl(142 76% 46%)" }} />
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Reveal>
+
+          <div className="space-y-3">
+            {concreteResults.map((r, i) => (
+              <Reveal key={i} delay={i * 0.06}>
+                <div className="flex items-start gap-4 rounded-xl p-4" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                  <span className="font-heading font-extrabold text-[20px] shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
+                  <p className="text-[14px] leading-[1.6]" style={{ color: "rgba(255,255,255,0.65)" }}>{r}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 5 — QUALIFICATION ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <SectionTitle>Para quem é — e para quem não é</SectionTitle>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="grid md:grid-cols-2 gap-5">
+              <div className="rounded-xl p-6" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                <p className="font-heading font-bold text-[14px] mb-4" style={{ color: "hsl(142 76% 46%)" }}>✓ Certo para</p>
+                <ul className="space-y-3">
+                  {forWhom.map((t, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "hsl(142 76% 46%)" }} />
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.65)" }}>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-xl p-6" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                <p className="font-heading font-bold text-[14px] mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>✗ Não é para</p>
+                <ul className="space-y-3">
+                  {notFor.map((t, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }} />
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 6 — STORYTELLING ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
+        <div className="mx-auto max-w-3xl px-5">
+          {/* Block 1 — prose */}
+          <Reveal>
+            <div className="rounded-xl p-6 mb-8" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK_CARD }}>
+              <h3 className="font-heading font-bold text-[18px] text-white mb-3">A cena típica</h3>
+              <p className="text-[15px] leading-[1.7]" style={{ color: "rgba(255,255,255,0.6)" }}>
+                É segunda-feira. O plano pede 5 peças. A equipa pede «mais vídeo». A marca pede consistência. O problema não é falta de ideias: é que cada vídeo vira um projecto, cada aprovação vira atraso e, quando sai, já passou o momento. Nesta sessão mostra-se o sistema mínimo: briefing → gerar → rever → publicar.
+              </p>
+            </div>
+          </Reveal>
+
+          {/* Block 2 — two paths */}
+          <Reveal delay={0.08}>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="rounded-xl p-5" style={{ background: DARK_CARD, borderLeft: "3px solid rgba(239,68,68,0.35)" }}>
+                <p className="font-heading font-bold text-[15px] text-white mb-2">Caminho A: «faz-se quando houver tempo»</p>
+                <p className="text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>Intermitência, stress, pouca aprendizagem acumulada.</p>
+              </div>
+              <div className="rounded-xl p-5" style={{ background: DARK_CARD, borderLeft: "3px solid hsl(142 76% 36%)" }}>
+                <p className="font-heading font-bold text-[15px] text-white mb-2">Caminho B: «há um processo mínimo repetível»</p>
+                <p className="text-[14px]" style={{ color: "rgba(255,255,255,0.65)" }}>Produção previsível, melhoria contínua, delegação com critérios.</p>
+              </div>
+            </div>
+            <p className="text-center text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>O webinar entrega o Caminho B — sem complicar.</p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 7 — OPERATIONAL PROMISE ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-3xl px-5">
+          <Reveal>
+            <Eyebrow>Promessa operacional</Eyebrow>
+            <SectionTitle>No final, fica capaz de…</SectionTitle>
+          </Reveal>
+          <div className="space-y-4">
+            {operationalPromises.map((p, i) => (
+              <Reveal key={i} delay={i * 0.06}>
+                <div className="flex items-start gap-4">
+                  <span className="font-heading font-extrabold text-[28px] leading-none shrink-0 w-9 text-right" style={{ color: "hsl(142 76% 36%)" }}>{i + 1}</span>
+                  <p className="text-[15px] leading-[1.6] pt-1" style={{ color: "rgba(255,255,255,0.7)" }}>{p}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 8 — AGENDA ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
+        <div className="mx-auto max-w-3xl px-5">
+          <Reveal>
+            <Eyebrow>Agenda · 45–60 min</Eyebrow>
+            <SectionTitle>O que acontece durante a sessão</SectionTitle>
+          </Reveal>
+          <div className="space-y-3">
+            {agenda.map((item, i) => (
+              <Reveal key={i} delay={i * 0.05}>
+                <div className="flex items-center gap-4 rounded-xl p-4" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                  <span className="font-heading font-extrabold text-[18px] w-8 text-center shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
+                  <div className="flex-1">
+                    <p className="text-[15px] font-medium text-white">{item.title}</p>
+                  </div>
+                  <span className="text-[13px] font-medium shrink-0" style={{ color: "rgba(255,255,255,0.35)" }}>{item.time}</span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ 9 — DELIVERABLES ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <Eyebrow>Entregáveis gratuitos</Eyebrow>
+            <SectionTitle>O que se recebe ao participar</SectionTitle>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {deliverables.map(({ Icon, title, desc }, i) => (
+                <div key={i} className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                  <Icon className="w-6 h-6 mb-3" style={{ color: "hsl(142 76% 46%)" }} />
+                  <p className="font-heading font-bold text-[15px] text-white mb-1.5">{title}</p>
+                  <p className="text-[13px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 10 — TOOLS ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <Eyebrow>Ferramentas</Eyebrow>
+            <SectionTitle>O que vamos usar (sem jargão)</SectionTitle>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {tools.map(({ name, desc }, i) => (
+                <div key={i} className="rounded-xl p-5" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                  <p className="font-heading font-bold text-[15px] text-white mb-1">{name}</p>
+                  <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 11 — SPEAKER ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-4xl px-5">
+          <Reveal>
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <img
+                src={fredericoPhoto}
+                alt="Frederico Carvalho"
+                className="w-[200px] h-[200px] md:w-[260px] md:h-[260px] rounded-2xl object-cover shrink-0"
+                style={{ border: `2px solid ${DARK_BORDER}` }}
+              />
+              <div>
+                <p className="font-heading font-extrabold text-[24px] text-white mb-2">Frederico Carvalho</p>
+                <p className="text-[15px] leading-[1.7] mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
+                  Consultor e docente universitário, com experiência em marketing digital e sistemas de produção e automação aplicados ao contexto empresarial.
+                </p>
+                <p className="text-[14px] italic mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Foco em método replicável e decisão — não truques.
+                </p>
+                <GoogleBadge />
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 12 — MID-PAGE CTA ═══ */}
+      <section id="inscricao" className="py-16 md:py-24" style={{ background: DARK }}>
+        <div className="mx-auto max-w-3xl px-5 text-center">
+          <Reveal>
+            <SectionTitle>Quer o sistema mínimo para produzir vídeo com consistência?</SectionTitle>
+            <GreenCTA large />
+            <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Lugares limitados para o directo. Materiais enviados após a sessão.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 13 — FAQ ═══ */}
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <div className="mx-auto max-w-2xl px-5">
+          <Reveal>
+            <SectionTitle>Perguntas frequentes</SectionTitle>
+          </Reveal>
+          <Reveal delay={0.06}>
+            <Accordion type="single" collapsible className="space-y-2">
+              {faqs.map((faq, i) => (
+                <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl overflow-hidden" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                  <AccordionTrigger className="px-5 py-4 text-left text-[15px] font-semibold text-white hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="px-5 pb-4 text-[14px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 14 — UPSELL SOFT ═══ */}
+      <section className="py-12 md:py-16" style={{ background: DARK }}>
+        <div className="mx-auto max-w-3xl px-5">
+          <Reveal>
+            <div className="rounded-xl p-6" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK_CARD }}>
+              <h3 className="font-heading font-bold text-[18px] text-white mb-2">
+                Quer implementar com outputs prontos em 3 horas?
+              </h3>
+              <p className="text-[14px] leading-[1.65] mb-3" style={{ color: "rgba(255,255,255,0.55)" }}>
+                Se fizer sentido, existe uma Masterclass prática (lugares limitados) para sair com clips prontos e um workflow replicável.
+              </p>
+              <a href="#masterclass" className="font-heading font-semibold text-[14px] transition-colors" style={{ color: "hsl(142 76% 46%)" }}>
+                Ver Masterclass →
+              </a>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ 15 — FINAL CTA ═══ */}
+      <section className="relative overflow-hidden py-16 md:py-24">
+        <div className="absolute inset-0 z-0" style={{ opacity: 0.5 }}>
+          <ColorBends colors={["#16A34A", "#0EA5E9", "#7C3AED"]} rotation={45} speed={0.15} scale={1.5} frequency={0.5} warpStrength={0.8} mouseInfluence={0.1} parallax={0.1} noise={0.03} transparent autoRotate={1} />
+        </div>
+        <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
+          <Reveal>
+            <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-6">
+              Inscrição gratuita — e sai com um sistema que dá para repetir
+            </h2>
+            <GreenCTA large />
+            <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
+              Sem compromisso. Evento ao vivo em 2 de Março de 2026.
+            </p>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer className="py-8" style={{ background: DARK, borderTop: `1px solid ${DARK_BORDER}` }}>
+        <div className="mx-auto max-w-4xl px-5 text-center">
+          <p className="text-[13px] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+            © 2026 Frederico Carvalho · DIGITALFC
+          </p>
+          <div className="flex items-center justify-center gap-4 text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>
+            <button onClick={() => setLegalModal("privacidade")} className="hover:underline cursor-pointer">Privacidade</button>
+            <span>·</span>
+            <button onClick={() => setLegalModal("termos")} className="hover:underline cursor-pointer">Termos</button>
+            <span>·</span>
+            <a href="mailto:frederico.carvalho@digitalfc.pt" className="hover:underline">frederico.carvalho@digitalfc.pt</a>
+          </div>
+        </div>
+      </footer>
+
+      {/* Legal modals */}
+      <LegalModal open={legalModal === "termos"} title="Termos e Condições" onOpenChange={() => setLegalModal(null)}>
+        <TermosContent />
+      </LegalModal>
+      <LegalModal open={legalModal === "privacidade"} title="Política de Privacidade" onOpenChange={() => setLegalModal(null)}>
+        <PrivacidadeContent />
+      </LegalModal>
+    </div>
+  );
+};
+
+export default VideoPage;
