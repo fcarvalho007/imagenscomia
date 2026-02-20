@@ -8,6 +8,7 @@ import TemplatesView from "./TemplatesView";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { CalendarDays } from "lucide-react";
+import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
 export interface AuditFilter {
   timeRange?: "24h" | "7d" | "all";
@@ -100,9 +101,12 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
 
   return (
     <div className="p-7 max-sm:p-4 min-h-screen" style={{ background: "#F8FAFC" }}>
-      <div className="mb-5">
-        <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Follow-up</h1>
-        <p className="text-sm" style={{ color: "#64748B" }}>Funil, métricas de envio, lista de pessoas e templates do follow-up automático.</p>
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Follow-up</h1>
+          <p className="text-sm" style={{ color: "#64748B" }}>Funil, métricas de envio, lista de pessoas e templates do follow-up automático.</p>
+        </div>
+        <WebinarSwitcherBar />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

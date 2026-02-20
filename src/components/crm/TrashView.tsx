@@ -5,6 +5,7 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import WebinarBadge from "./WebinarBadge";
+import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
 interface TrashViewProps {
   inscritos: Inscrito[];
@@ -87,12 +88,15 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
-      <div className="mb-5">
-        <div className="flex items-center gap-2 mb-1">
-          <Trash2 size={20} className="text-ink-400" />
-          <h1 className="font-heading font-bold text-[22px] text-ink-900">Lixo</h1>
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Trash2 size={20} className="text-ink-400" />
+            <h1 className="font-heading font-bold text-[22px] text-ink-900">Lixo</h1>
+          </div>
+          <p className="text-sm text-ink-500">{archived.length} inscrito(s) arquivado(s)</p>
         </div>
-        <p className="text-sm text-ink-500">{archived.length} inscrito(s) arquivado(s)</p>
+        <WebinarSwitcherBar />
       </div>
 
       {archived.length === 0 ? (

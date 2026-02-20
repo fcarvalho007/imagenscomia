@@ -5,6 +5,7 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import WebinarBadge from "./WebinarBadge";
+import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
 interface PipelineViewProps {
   inscritos: Inscrito[];
@@ -148,32 +149,36 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
-      <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
+      {/* Row 1: Title + Webinar Switcher */}
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
         <div>
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Pipeline</h1>
           <p className="text-sm text-ink-500">Visão kanban dos inscritos por estado</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex bg-white border border-border rounded-lg overflow-hidden text-[13px]">
-            {(["all", "webinar", "gravacao"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setSourceFilter(f)}
-                className={`px-3 py-2 font-medium transition-colors ${sourceFilter === f ? "bg-blue-600 text-white" : "text-ink-600 hover:bg-off-white"}`}
-              >
-                {f === "all" ? "Todos" : f === "webinar" ? "Pré-webinar" : "Pós-webinar"}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Pesquisar inscrito..."
-              className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
-            />
-          </div>
+        <WebinarSwitcherBar />
+      </div>
+
+      {/* Row 2: Phase filter + Search */}
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
+        <div className="flex bg-white border border-border rounded-lg overflow-hidden text-[13px]">
+          {(["all", "webinar", "gravacao"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setSourceFilter(f)}
+              className={`px-3 py-2 font-medium transition-colors ${sourceFilter === f ? "bg-blue-600 text-white" : "text-ink-600 hover:bg-off-white"}`}
+            >
+              {f === "all" ? "Todos" : f === "webinar" ? "Pré-webinar" : "Pós-webinar"}
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar inscrito..."
+            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[240px] outline-none focus:ring-1 focus:ring-blue-300"
+          />
         </div>
       </div>
 
