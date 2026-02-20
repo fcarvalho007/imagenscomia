@@ -409,7 +409,7 @@ const VideoPageInner = () => {
             <div className="text-center mb-14 md:mb-20">
               <h2 className="font-heading font-extrabold text-[30px] sm:text-[36px] lg:text-[48px] leading-[1.1] text-white" style={{ letterSpacing: "-1px" }}>
                 Vídeo é o formato que o{" "}
-                <span style={{ background: "linear-gradient(135deg, #4ade80 0%, #22d3ee 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                <span className="glitch" data-text="mercado exige">
                   mercado exige
                 </span>
               </h2>
@@ -427,10 +427,10 @@ const VideoPageInner = () => {
               {whenItMakesSense.slice(0, 2).map(({ Icon, label, desc }, i) => (
                 <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
                   <SpotlightCard className="relative overflow-hidden rounded-xl p-6 lg:p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card">
-                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
+                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(168,85,247,0.08)" }}>
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
+                    <Icon className="w-6 h-6 mb-3 relative z-10 pain-card-icon transition-all duration-200" style={{ color: "#a855f7" }} />
                     <p className="font-heading font-bold text-[15px] lg:text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
                     <p className="text-[13px] lg:text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
                   </SpotlightCard>
@@ -446,10 +446,10 @@ const VideoPageInner = () => {
               {whenItMakesSense.slice(2, 4).map(({ Icon, label, desc }, i) => (
                 <motion.div key={i + 2} variants={fadeUp} transition={defaultTransition}>
                   <SpotlightCard className="relative overflow-hidden rounded-xl p-6 lg:p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card">
-                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
+                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(168,85,247,0.08)" }}>
                       {String(i + 3).padStart(2, "0")}
                     </span>
-                    <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
+                    <Icon className="w-6 h-6 mb-3 relative z-10 pain-card-icon transition-all duration-200" style={{ color: "#a855f7" }} />
                     <p className="font-heading font-bold text-[15px] lg:text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
                     <p className="text-[13px] lg:text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
                   </SpotlightCard>
@@ -470,6 +470,86 @@ const VideoPageInner = () => {
             box-shadow: 0 0 20px rgba(74, 222, 128, 0.1) !important;
             background: rgba(255,255,255,0.06) !important;
           }
+          .pain-card:hover .pain-card-icon {
+            filter: drop-shadow(0 0 8px rgba(168,85,247,0.5));
+          }
+
+          /* Glitch effect */
+          .glitch {
+            position: relative;
+            display: inline-block;
+            background: linear-gradient(135deg, #a855f7 0%, #22d3ee 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: glitch-idle 4s ease-in-out infinite;
+          }
+          .glitch::before,
+          .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            -webkit-text-fill-color: initial;
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+          }
+          .glitch::before {
+            animation: glitch-2 3s infinite linear alternate-reverse;
+            color: #a855f7;
+            z-index: -1;
+            opacity: 0.7;
+          }
+          .glitch::after {
+            animation: glitch-3 2s infinite linear alternate-reverse;
+            color: #22d3ee;
+            z-index: -2;
+            opacity: 0.7;
+          }
+          .glitch:hover::before,
+          .glitch:hover::after {
+            opacity: 1;
+          }
+          @keyframes glitch-idle {
+            0%, 90%, 100% { transform: none; }
+            92% { transform: skew(-0.3deg); }
+            94% { transform: none; }
+            96% { transform: skew(0.3deg); }
+            98% { transform: none; }
+          }
+          @keyframes glitch-2 {
+            0% { transform: none; }
+            7% { transform: translate(-2px, -3px); }
+            10% { transform: none; }
+            27% { transform: none; }
+            30% { transform: translate(-5px, -2px); }
+            35% { transform: none; }
+            52% { transform: none; }
+            55% { transform: translate(-1px, -1px); }
+            50% { transform: none; }
+            72% { transform: none; }
+            75% { transform: translate(-2px, -6px); }
+            80% { transform: none; }
+            100% { transform: none; }
+          }
+          @keyframes glitch-3 {
+            0% { transform: none; }
+            7% { transform: translate(2px, 3px); }
+            10% { transform: none; }
+            27% { transform: none; }
+            30% { transform: translate(5px, 2px); }
+            35% { transform: none; }
+            52% { transform: none; }
+            55% { transform: translate(1px, 1px); }
+            50% { transform: none; }
+            72% { transform: none; }
+            75% { transform: translate(2px, 6px); }
+            80% { transform: none; }
+            100% { transform: none; }
+          }
         `}</style>
       </section>
 
@@ -477,28 +557,45 @@ const VideoPageInner = () => {
       <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
         <div className="mx-auto max-w-5xl px-5">
           <ScrollReveal>
-            <SectionTitle>Para quem é — e para quem não é</SectionTitle>
+            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3 text-center" style={{ color: "#a855f7" }}>
+              PÚBLICO-ALVO
+            </p>
+            <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center text-white">
+              Para quem é —{" "}
+              <span style={{ background: "linear-gradient(135deg, #a855f7 0%, #60A5FA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                e para quem não é
+              </span>
+            </h2>
           </ScrollReveal>
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-6" style={{ background: DARK_900, border: `1px solid ${DARK_BORDER}` }}>
-                <p className="font-heading font-bold text-[14px] mb-4" style={{ color: "#60A5FA" }}>✓ Certo para</p>
-                <ul className="space-y-3">
+              <div className="rounded-xl p-7 transition-all duration-200 audience-card-yes" style={{ background: "linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.8) 100%)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
+                  <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
+                  Certo para
+                </p>
+                <ul className="space-y-4">
                   {forWhom.map((t, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#60A5FA" }} />
-                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.65)" }}>{t}</span>
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="font-heading font-bold text-[11px] mt-0.5 shrink-0 w-[22px]" style={{ color: "rgba(168,85,247,0.4)" }}>
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>{t}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl p-6" style={{ background: DARK_900, border: `1px solid ${DARK_BORDER}` }}>
-                <p className="font-heading font-bold text-[14px] mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>✗ Não é para</p>
-                <ul className="space-y-3">
+              <div className="rounded-xl p-7 transition-all duration-200 audience-card-no" style={{ background: "linear-gradient(135deg, rgba(15,23,42,0.8) 0%, rgba(10,10,15,1) 100%)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <XCircle className="w-5 h-5" style={{ color: "rgba(255,255,255,0.3)" }} />
+                  Não é para
+                </p>
+                <ul className="space-y-4">
                   {notFor.map((t, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
+                    <li key={i} className="flex items-start gap-3">
                       <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }} />
-                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>{t}</span>
+                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.50)" }}>{t}</span>
                     </li>
                   ))}
                 </ul>
@@ -506,18 +603,33 @@ const VideoPageInner = () => {
             </div>
           </ScrollReveal>
         </div>
+        <style>{`
+          .audience-card-yes:hover, .audience-card-no:hover {
+            border-color: rgba(168,85,247,0.3) !important;
+            box-shadow: 0 0 30px rgba(168,85,247,0.08);
+          }
+        `}</style>
       </section>
 
 
       {/* ═══ SECTION 4 — AGENDA (Dark cinematic) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#0a0a0f" }}>
-        <div className="mx-auto max-w-3xl px-5">
+      <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "#0a0a0f" }}>
+        {/* Depth gradient */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(168,85,247,0.04) 0%, rgba(29,78,216,0.02) 40%, transparent 80%)" }} />
+        {/* Noise grain overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.03, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
+
+        <div className="relative mx-auto max-w-3xl px-5" style={{ zIndex: 1 }}>
           <ScrollReveal>
             <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#4ade80" }}>
               Agenda · 45 min
             </p>
             <SectionTitle>O que acontece durante a sessão</SectionTitle>
           </ScrollReveal>
+
+          {/* Decorative line */}
+          <div className="h-px mb-8" style={{ background: "linear-gradient(90deg, transparent 0%, #a855f7 30%, #4ade80 70%, transparent 100%)", opacity: 0.4 }} />
+
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
             variants={staggerContainer(0.1)}
@@ -527,24 +639,26 @@ const VideoPageInner = () => {
                 key={i}
                 variants={slideFromLeft}
                 transition={defaultTransition}
-                className="flex items-center py-[14px] transition-all duration-200 group cursor-default agenda-item"
+                className="flex items-center py-5 transition-all duration-200 group cursor-default agenda-item"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
               >
+                {/* Purple decorative bar */}
+                <div className="w-[3px] h-[24px] rounded-full mr-4 shrink-0 transition-all duration-200 agenda-bar" style={{ background: "rgba(168,85,247,0.3)" }} />
                 <span
-                  className="font-heading font-bold text-[11px] w-[40px] shrink-0"
-                  style={{ color: "#4ade80" }}
+                  className="font-heading font-bold text-[12px] w-[44px] shrink-0"
+                  style={{ background: "linear-gradient(135deg, #a855f7, #4ade80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
                 >
                   {item.num}
                 </span>
                 <span
-                  className="flex-1 text-[13px] flex items-center gap-2"
-                  style={{ color: "rgba(255,255,255,0.6)" }}
+                  className="flex-1 text-[15px] flex items-center gap-2"
+                  style={{ color: "rgba(255,255,255,0.65)" }}
                 >
                   {item.title}
                   {item.tag && (
                     <span
                       className="inline-block text-[8px] font-bold uppercase rounded px-[7px] py-[2px]"
-                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", marginLeft: 4 }}
+                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)", marginLeft: 4 }}
                     >
                       {item.tag}
                     </span>
@@ -556,8 +670,12 @@ const VideoPageInner = () => {
         </div>
         <style>{`
           .agenda-item:hover {
-            border-color: rgba(74,222,128,0.2) !important;
-            background: rgba(255,255,255,0.02);
+            border-color: rgba(168,85,247,0.25) !important;
+            background: rgba(168,85,247,0.04);
+          }
+          .agenda-item:hover .agenda-bar {
+            background: #a855f7 !important;
+            box-shadow: 0 0 10px rgba(168,85,247,0.4);
           }
         `}</style>
       </section>
