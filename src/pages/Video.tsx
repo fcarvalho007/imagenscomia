@@ -143,7 +143,6 @@ const videoAgenda = [
     desc: "Estrutura simples para sair com clips prontos a publicar.",
     bullets: ["Do briefing ao primeiro clip: passo a passo", "Checklist de produção para manter consistência"],
     deliverable: "Processo mínimo para produzir vídeo com qualidade.",
-    tag: "CORE",
   },
   {
     num: "02",
@@ -152,15 +151,6 @@ const videoAgenda = [
     desc: "Os erros que quase toda a gente comete — e como os corrigir rápido.",
     bullets: ["Erros de briefing, prompt e revisão", "Ajustes simples que fazem diferença no resultado"],
     deliverable: "Checklist anti-erros para vídeo com IA.",
-  },
-  {
-    num: "03",
-    title: "Q&A — Perguntas e respostas ao vivo",
-    borderColor: "border-l-green-600",
-    desc: "Esclarecer dúvidas em tempo real, com exemplos práticos.",
-    bullets: ["Perguntas livres sobre ferramentas e processo", "Demonstrações a pedido dos participantes"],
-    deliverable: "Respostas directas e aplicáveis ao teu contexto.",
-    tag: "AO VIVO",
   },
 ];
 
@@ -654,7 +644,7 @@ const VideoPageInner = () => {
               O que acontece durante a sessão
             </h2>
             <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
-              3 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
+              2 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
             </p>
           </ScrollReveal>
 
@@ -667,11 +657,9 @@ const VideoPageInner = () => {
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="font-heading font-semibold text-lg text-ink-900">{s.title}</h3>
-                        {s.tag && (
-                          <span className={`shrink-0 font-heading font-semibold text-[14px] px-2.5 py-1 rounded-full ${s.tag === "AO VIVO" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-700"}`}>
-                            {s.tag}
-                          </span>
-                        )}
+                        <span className="shrink-0 bg-blue-50 text-blue-600 font-heading font-semibold text-[14px] px-2.5 py-1 rounded-full">
+                          AO VIVO
+                        </span>
                       </div>
                       <p className="text-[17px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
                       <div className="space-y-1.5 mb-3">
@@ -691,6 +679,19 @@ const VideoPageInner = () => {
               </ScrollReveal>
             ))}
           </div>
+
+          <ScrollReveal>
+            <div className="text-center mt-10">
+              <motion.button
+                onClick={openModal}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
+              >
+                Sim, quero inscrever-me grátis!
+              </motion.button>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
