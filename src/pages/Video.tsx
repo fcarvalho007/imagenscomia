@@ -136,10 +136,18 @@ const notFor = [
 
 
 const agenda = [
-  { num: "001", title: "Boas-vindas + o que mudou no vídeo" },
-  { num: "002", title: "O processo mínimo (briefing + checklist) para produzir vídeo com consistência", tag: "CORE" },
-  { num: "003", title: "Demonstração: do briefing ao primeiro clip (passo a passo)", tag: "AO VIVO" },
-  { num: "004", title: "Erros mais comuns que destroem consistência (e como evitar)" },
+  { num: "001", title: "Workshop Prático: O processo mínimo (briefing + checklist) para produzir vídeo com consistência", tag: "CORE" },
+  { num: "002", title: "Erros mais comuns que destroem consistência (e como evitar)" },
+  { num: "003", title: "Q&A — Perguntas e respostas ao vivo", tag: "AO VIVO" },
+];
+
+const videoTestimonials = [
+  { initials: "JV", gradient: "linear-gradient(135deg, #064e3b, #10b981)", name: "Joana Veigas", role: "Guia local · 46 críticas · 14 fotos", quote: "Gostei muito do Webinar IA Imagens. Interessante, bem explicada e cativante. Curiosa para saber cada vez mais. Vou continuar a acompanhar as muitas dicas que o Frederico vai partilhando. Obrigada Frederico!" },
+  { initials: "CM", gradient: "linear-gradient(135deg, #7c2d12, #f97316)", name: "Cátia Martins", role: "1 crítica", quote: "Foi um webinar excelente. Para o tema que é parece sempre curto mas agrega sempre muito valor. É muito útil para o trabalho do dia a dia, para quem trabalha com criativos. O Frederico nunca desilude." },
+  { initials: "PF", gradient: "linear-gradient(135deg, #1e3a5f, #3b82f6)", name: "Paulo Ferrão", role: "6 críticas", quote: "Webinar esclarecedor. Interessante e recheado como sempre! Obrigado" },
+  { initials: "IM", gradient: "linear-gradient(135deg, #134e4a, #0d9488)", name: "Isabel Martins", role: "2 críticas", quote: "As formações do Frederico são sempre excepcionais. Partilha de conhecimento e ensinamento prático." },
+  { initials: "DR", gradient: "linear-gradient(135deg, #1e1b4b, #7c3aed)", name: "Dário Ramos", role: "Guia local · 18 críticas · 2 fotos", quote: "Profissional Top, sempre disponível para ajudar" },
+  { initials: "MR", gradient: "linear-gradient(135deg, #0c4a6e, #0284c7)", name: "Maria Rocha", role: "2 críticas", quote: "As aulas do prof Frederico Carvalho foram extremamente produtivas e a sua excelente pedagogia torna conteúdos complexos em algo simples, prático e aplicável. Recomendo vivamente." },
 ];
 
 const speakerCredentials = [
@@ -613,13 +621,15 @@ const VideoPageInner = () => {
 
 
       {/* ═══ SECTION 4 — AGENDA (Dark cinematic) ═══ */}
-      <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "#0a0a0f" }}>
-        {/* Depth gradient */}
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(168,85,247,0.04) 0%, rgba(29,78,216,0.02) 40%, transparent 80%)" }} />
+      <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "linear-gradient(180deg, #020617 0%, #0f0a1e 100%)" }}>
+        {/* Central radial gradient — purple */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(168,85,247,0.08) 0%, rgba(29,78,216,0.03) 40%, transparent 80%)" }} />
+        {/* Secondary radial gradient — green, bottom right */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 40% 40% at 80% 85%, rgba(74,222,128,0.05) 0%, transparent 70%)" }} />
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.03, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative mx-auto max-w-4xl px-5" style={{ zIndex: 1 }}>
+        <div className="relative mx-auto max-w-5xl px-5" style={{ zIndex: 1 }}>
           <ScrollReveal>
             <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3 text-center" style={{ color: "#4ade80" }}>
               Agenda · 45 min
@@ -628,28 +638,28 @@ const VideoPageInner = () => {
           </ScrollReveal>
 
           {/* Decorative line */}
-          <div className="h-px mb-10" style={{ background: "linear-gradient(90deg, transparent 0%, #a855f7 30%, #4ade80 70%, transparent 100%)", opacity: 0.4 }} />
+          <div className="h-px mb-12" style={{ background: "linear-gradient(90deg, transparent 0%, #a855f7 30%, #4ade80 70%, transparent 100%)", opacity: 0.4 }} />
 
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
             variants={staggerContainer(0.12)}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
             {agenda.map((item, i) => (
               <motion.div
                 key={i}
                 variants={slideFromLeft}
                 transition={defaultTransition}
-                className="relative rounded-xl p-5 md:p-6 transition-all duration-200 cursor-default agenda-card overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
+                className="relative rounded-2xl p-6 md:p-8 transition-all duration-200 cursor-default agenda-card overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
                 {/* Large decorative number */}
                 <span
-                  className="absolute top-3 right-4 font-heading font-black select-none pointer-events-none"
+                  className="absolute top-4 right-5 font-heading font-black select-none pointer-events-none"
                   style={{
-                    fontSize: 52,
+                    fontSize: 64,
                     lineHeight: 1,
-                    background: "linear-gradient(135deg, rgba(168,85,247,0.10), rgba(74,222,128,0.06))",
+                    background: "linear-gradient(135deg, rgba(168,85,247,0.12), rgba(74,222,128,0.08))",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
@@ -659,18 +669,18 @@ const VideoPageInner = () => {
                 </span>
 
                 {/* Purple sidebar bar */}
-                <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full transition-all duration-200 agenda-bar" style={{ background: "rgba(168,85,247,0.25)" }} />
+                <div className="absolute left-0 top-5 bottom-5 w-[3px] rounded-full transition-all duration-200 agenda-bar" style={{ background: "rgba(168,85,247,0.30)" }} />
 
-                <div className="relative pl-3">
+                <div className="relative pl-4 pt-2">
                   {item.tag && (
                     <span
-                      className="inline-block text-[9px] font-bold uppercase rounded px-[8px] py-[3px] mb-3"
+                      className="inline-block text-[10px] font-bold uppercase rounded px-[8px] py-[3px] mb-4"
                       style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.25)" }}
                     >
                       {item.tag}
                     </span>
                   )}
-                  <p className="text-[16px] font-semibold leading-snug pr-12" style={{ color: "rgba(255,255,255,0.85)" }}>
+                  <p className="text-[17px] font-semibold leading-snug pr-10" style={{ color: "rgba(255,255,255,0.88)" }}>
                     {item.title}
                   </p>
                 </div>
@@ -680,12 +690,12 @@ const VideoPageInner = () => {
         </div>
         <style>{`
           .agenda-card:hover {
-            border-color: rgba(168,85,247,0.30) !important;
-            background: rgba(255,255,255,0.05) !important;
+            border-color: rgba(168,85,247,0.35) !important;
+            background: rgba(255,255,255,0.06) !important;
           }
           .agenda-card:hover .agenda-bar {
             background: #a855f7 !important;
-            box-shadow: 0 0 12px rgba(168,85,247,0.5);
+            box-shadow: 0 0 14px rgba(168,85,247,0.5);
           }
         `}</style>
       </section>
@@ -755,6 +765,56 @@ const VideoPageInner = () => {
                 </div>
               </div>
             </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ SECTION 5.5 — TESTEMUNHOS ═══ */}
+      <section style={{ background: "#0f172a" }} className="py-14 md:py-20 px-4">
+        <div className="mx-auto max-w-[1080px]">
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#a855f7" }}>
+                PROVA SOCIAL
+              </p>
+              <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-white">
+                Testemunhos de quem participou no último webinar
+              </h2>
+              <div className="mt-4">
+                <GoogleBadge />
+              </div>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+            {videoTestimonials.map((t, i) => (
+              <ScrollReveal key={i} delay={i * 0.06}>
+                <div
+                  className="rounded-2xl p-6 transition-colors duration-200 h-full flex flex-col"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.10)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)"; }}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: t.gradient }}>
+                        <span className="font-heading font-bold text-xs text-white/80">{t.initials}</span>
+                      </div>
+                      <div>
+                        <p className="font-heading font-bold text-sm text-white">{t.name}</p>
+                        <p className="text-[14px] mt-[1px]" style={{ color: "rgba(255,255,255,0.5)" }}>{t.role}</p>
+                      </div>
+                    </div>
+                    <span className="font-heading font-extrabold text-5xl leading-none -mt-2" style={{ color: "rgba(168,85,247,0.25)" }}>"</span>
+                  </div>
+                  <p className="text-[17px] leading-[1.65] mb-4 flex-grow" style={{ color: "rgba(255,255,255,0.80)" }}>{t.quote}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px]" style={{ color: "#FBBC05" }}>★★★★★</span>
+                    <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.35)" }}>Google Reviews</span>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
           </div>
         </div>
       </section>
