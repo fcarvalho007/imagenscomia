@@ -43,7 +43,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
           {[
             { Icon: Video, text: "De imagem a vídeo em minutos" },
             { Icon: Zap, text: "Prompts e exemplos prontos a usar" },
-            { Icon: Users, text: "Sessão ao vivo + gravação incluída" },
+            { Icon: Users, text: "Sessão ao vivo + acesso à sessão incluído" },
           ].map(({ Icon, text }, i) => (
             <li key={i} className="flex items-center gap-2 text-xs text-blue-100">
               <Icon size={12} className="text-white shrink-0" />
@@ -106,7 +106,7 @@ export default function RecursosUpsell({ hasMasterclass, compact = false }: Recu
             <Users size={12} className="text-[hsl(var(--blue-600))]" />
           </div>
           <div>
-            <p className="text-sm font-medium text-[hsl(var(--ink-900))]">Sessão ao vivo + gravação incluída</p>
+            <p className="text-sm font-medium text-[hsl(var(--ink-900))]">Sessão ao vivo + acesso à sessão incluído</p>
             <p className="text-xs text-[hsl(var(--ink-400))]">Acesso à sessão e à gravação para rever quando quiseres</p>
           </div>
         </li>

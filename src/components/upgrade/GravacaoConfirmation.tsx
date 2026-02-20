@@ -57,7 +57,7 @@ export const GravacaoConfirmation = ({
   const plan = orderState.masterclass ? "gravacao-masterclass" : "gravacao";
   const title = orderState.masterclass
     ? "Excelente combinação! Confirme o pagamento."
-    : "Gravação + Pack de Apoio — Confirme o pagamento.";
+    : "Pack completo — Confirme o pagamento.";
 
   const handleClick = () => {
     setShowRedirect(true);
@@ -111,7 +111,7 @@ export const GravacaoConfirmation = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
-              <Check className="w-4 h-4 text-green-600" /> Gravação HD + Pack de Apoio
+              <Check className="w-4 h-4 text-green-600" /> Sessão completa + Pack de Apoio
             </span>
             <span className="text-[15px] text-ink-700">€27 <span className="text-[14px] text-ink-400">+ IVA</span></span>
           </div>

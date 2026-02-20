@@ -25,6 +25,8 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
+import googleLogo from "@/assets/logos/google.png";
+import chatgptLogo from "@/assets/logos/chatgpt.webp";
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 24 },
@@ -97,6 +99,13 @@ const methods = [
     desc: "Fluxo de trabalho completo. Peças prontas a publicar — com consistência visual.",
     outcome: "Processo para produzir criativos com qualidade e velocidade.",
   },
+];
+
+const transformationBullets = [
+  "Criar imagens prontas a publicar (IG, LinkedIn, Ads)",
+  "Manter consistência visual entre peças",
+  "Escolher a ferramenta certa para cada caso",
+  "Produzir mais criativos sem depender de terceiros",
 ];
 
 const forWhom = [
@@ -226,7 +235,7 @@ const Gravacao = () => {
   return (
     <div className="min-h-screen" style={{ background: "#FFFFFF" }}>
 
-      {/* ═══ 1. HERO (dark/neon) ═══ */}
+      {/* ═══ 1. HERO (dark/neon, 2 columns) ═══ */}
       <section
         className="relative overflow-hidden"
         style={{ background: "linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)" }}
@@ -241,141 +250,148 @@ const Gravacao = () => {
           />
         </div>
 
-        <div className="relative z-10 mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10" style={{ maxWidth: 860, textAlign: "center" }}>
-          {/* Badge */}
-          <motion.div {...fade(0.05)}>
-            <div className="mb-3">
-              <span
-                className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
+        <div className="relative z-10 max-w-7xl mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10">
+          <div className="grid md:grid-cols-[1fr_380px] gap-10 md:gap-14 items-center">
+            {/* Left column */}
+            <div>
+              {/* Badge */}
+              <motion.div {...fade(0.05)}>
+                <div className="mb-4">
+                  <span
+                    className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
+                    style={{
+                      background: "rgba(37,99,235,0.15)",
+                      border: "1px solid rgba(37,99,235,0.30)",
+                      color: "#93C5FD",
+                      fontSize: 14, fontWeight: 600,
+                      boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
+                    }}
+                  >
+                    ACESSO IMEDIATO · PACK COMPLETO · 27 €
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* H1 */}
+              <motion.div {...fade(0.1)}>
+                <h1>
+                  <span className="block font-heading" style={{
+                    color: "#F8FAFC", fontWeight: 800,
+                    fontSize: "clamp(26px, 4.5vw, 42px)", lineHeight: 1.12,
+                    letterSpacing: "-0.025em", textShadow: "0 2px 40px rgba(0,0,0,0.5)",
+                  }}>
+                    Aprende a criar imagens profissionais com Inteligência Artificial
+                    <span style={{ fontWeight: 600 }}> — com método (não tentativa-erro)</span>
+                  </span>
+                </h1>
+              </motion.div>
+
+              {/* Subheadline */}
+              <motion.div {...fade(0.15)}>
+                <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, color: "#CBD5E1" }}>
+                  Do briefing à imagem pronta a publicar,{" "}
+                  <GradientText className="font-heading font-semibold">
+                    com um processo replicável e templates prontos.
+                  </GradientText>
+                </p>
+                <p className="mt-3" style={{ fontSize: 17 }}>
+                  <GradientText className="font-heading font-semibold">
+                    Vê hoje. Aplica amanhã.
+                  </GradientText>
+                </p>
+              </motion.div>
+
+              {/* 3 micro-bullets */}
+              <motion.div {...fade(0.2)} className="mt-5">
+                <div className="flex flex-wrap gap-3">
+                  {["Consistência visual em minutos", "Menos bloqueios, mais autonomia", "Templates reutilizáveis"].map((b, i) => (
+                    <span key={i} className="inline-flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.65)" }}>
+                      <Check className="w-3.5 h-3.5" style={{ color: "#34D399" }} /> {b}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right column — purchase card */}
+            <motion.div {...fade(0.2)}>
+              <div
+                className="rounded-2xl p-6 backdrop-blur-sm"
                 style={{
-                  background: "rgba(37,99,235,0.15)",
-                  border: "1px solid rgba(37,99,235,0.30)",
-                  color: "#93C5FD",
-                  fontSize: 14, fontWeight: 600,
-                  boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
                 }}
               >
-                ACESSO IMEDIATO · PACK COMPLETO · 27 €
-              </span>
-            </div>
-          </motion.div>
+                <p className="font-heading font-extrabold text-white text-center" style={{ fontSize: "clamp(32px, 5vw, 40px)", lineHeight: 1 }}>
+                  27 € <span className="text-[16px] font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>+ IVA</span>
+                </p>
+                <p className="text-center text-[14px] mt-1 mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  Pagamento único · Acesso imediato
+                </p>
 
-          {/* H1 */}
-          <motion.div {...fade(0.1)}>
-            <h1 style={{ maxWidth: 860, margin: "0 auto" }}>
-              <span className="block font-heading" style={{
-                color: "#F8FAFC", fontWeight: 800,
-                fontSize: "clamp(26px, 4.5vw, 40px)", lineHeight: 1.12,
-                letterSpacing: "-0.025em", textShadow: "0 2px 40px rgba(0,0,0,0.5)",
-              }}>
-                Aprenda a Criar Imagens Profissionais com Inteligência Artificial
-                <span style={{ fontWeight: 600 }}> — com método (não tentativa-erro)</span>
-              </span>
-            </h1>
-          </motion.div>
-
-          {/* Subheadline */}
-          <motion.div {...fade(0.15)}>
-            <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, color: "#CBD5E1" }}>
-              Do briefing à imagem pronta a publicar,{" "}
-              <GradientText className="font-heading font-semibold">
-                com um processo replicável e templates prontos.
-              </GradientText>
-            </p>
-            <p className="mt-3" style={{ fontSize: 17 }}>
-              <GradientText className="font-heading font-semibold">
-                Ver hoje. Aplicar amanhã.
-              </GradientText>
-            </p>
-          </motion.div>
-
-          {/* CTA — green with ElectricBorder */}
-          <motion.div {...fade(0.25)} className="mt-8">
-            <div id="inscrever">
-              <ElectricBorder
-                color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}
-                style={{ display: "inline-block", width: "100%", maxWidth: 400 }}
-              >
-                <button
-                  onClick={openModal}
-                  style={{
-                    background: "#16A34A", color: "#fff",
-                    fontFamily: "Montserrat, sans-serif", fontWeight: 700, fontSize: 16,
-                    padding: "16px 32px", borderRadius: 10, border: "none", cursor: "pointer", width: "100%",
-                  }}
+                <ElectricBorder
+                  color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}
+                  style={{ display: "block", width: "100%" }}
                 >
-                  Garantir acesso imediato (27 €)
-                </button>
-              </ElectricBorder>
-            </div>
+                  <button
+                    onClick={openModal}
+                    style={{
+                      background: "#16A34A", color: "#fff",
+                      fontFamily: "Montserrat, sans-serif", fontWeight: 700, fontSize: 16,
+                      padding: "16px 24px", borderRadius: 10, border: "none", cursor: "pointer", width: "100%",
+                    }}
+                  >
+                    Garantir acesso imediato (27 €)
+                  </button>
+                </ElectricBorder>
 
+                {/* Trust */}
+                <div className="flex flex-col gap-1.5 mt-4 text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Pagamento seguro</span>
+                  <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Acesso imediato após confirmação</span>
+                  <span className="inline-flex items-center gap-1"><FileText className="w-3 h-3" /> Inclui documentos</span>
+                </div>
+
+                {/* Google badge dark */}
+                <div className="mt-4">
+                  <GoogleBadge dark />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* "Ver o que está incluído" link — centered below grid */}
+          <motion.div {...fade(0.3)} className="text-center mt-6">
             <button
               onClick={() => scrollTo("pack-section")}
-              className="flex items-center gap-1 mx-auto mt-4 text-[15px] transition-colors"
+              className="inline-flex items-center gap-1 text-[15px] transition-colors"
               style={{ color: "#93C5FD" }}
             >
               Ver exactamente o que está incluído <ChevronRight className="w-4 h-4" />
             </button>
           </motion.div>
-
-          {/* Trust line */}
-          <motion.div {...fade(0.3)}>
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-5 text-[13px]" style={{ color: "rgba(255,255,255,0.50)" }}>
-              <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> Pagamento seguro</span>
-              <span className="inline-flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> Acesso imediato após confirmação</span>
-              <span className="inline-flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Inclui documentos</span>
-            </div>
-          </motion.div>
-
-          {/* Google badge dark */}
-          <motion.div {...fade(0.35)} className="mt-4">
-            <GoogleBadge dark />
-          </motion.div>
         </div>
       </section>
 
-
-      {/* ═══ 3. O QUE RECEBES ═══ */}
-      <section id="pack-section" style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
-        <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 700 }}>
-          <ScrollReveal>
-            <h2 className="font-heading font-bold text-center mb-10" style={{ fontSize: "clamp(22px, 3vw, 30px)", color: "#0F172A" }}>
-              O que recebes (Pack 27 €)
-            </h2>
-          </ScrollReveal>
-
-          <ScrollReveal delay={0.1}>
-            <div className="rounded-2xl p-8" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-              <div className="space-y-4">
-                {packItems.map((item, i) => {
-                  const Icon = item.icon;
-                  return (
-                    <div key={i} className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#EFF6FF" }}>
-                        <Icon className="w-4 h-4" style={{ color: "#2563EB" }} />
-                      </div>
-                      <p className="text-[16px] pt-1" style={{ color: "#0F172A" }}>{item.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <p className="text-[15px] text-center mt-6 mb-2" style={{ color: "#64748B" }}>
-                Organiza o processo e reduz tentativa-erro. Templates reutilizáveis desde o primeiro dia.
-              </p>
-              <p className="font-heading font-semibold text-center mt-2 mb-6" style={{ color: "#16A34A", fontSize: 16 }}>
-                Tudo pronto para aplicar no dia seguinte.
-              </p>
-
-              <div className="text-center">
-                <CTAButton onClick={openModal} />
-              </div>
-            </div>
-          </ScrollReveal>
+      {/* ═══ 2. LOGO STRIP ═══ */}
+      <section
+        className="py-8"
+        style={{
+          background: "#060D1A",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <p className="text-center text-sm uppercase tracking-widest mb-6" style={{ color: "rgba(255,255,255,0.4)" }}>
+          Tecnologia e ferramentas referidas na sessão
+        </p>
+        <div className="flex items-center justify-center gap-14">
+          <img src={googleLogo} alt="Google" className="h-7 object-contain" style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }} loading="lazy" />
+          <img src={chatgptLogo} alt="OpenAI / ChatGPT" className="h-7 object-contain" style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }} loading="lazy" />
         </div>
       </section>
 
-      {/* ═══ 4. BLOQUEIOS ═══ */}
+      {/* ═══ 3. BLOQUEIOS ═══ */}
       <section id="bloqueios" style={{ background: "#F8FAFC" }} className="py-14 md:py-20">
         <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 960 }}>
           <ScrollReveal>
@@ -403,8 +419,38 @@ const Gravacao = () => {
         </div>
       </section>
 
-      {/* ═══ 5. MÉTODO ═══ */}
+      {/* ═══ 4. TRANSFORMAÇÃO (NEW) ═══ */}
       <section style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
+        <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 700 }}>
+          <ScrollReveal>
+            <h2 className="font-heading font-bold text-center mb-10" style={{ fontSize: "clamp(22px, 3vw, 30px)", color: "#0F172A" }}>
+              No final, vais ser capaz de…
+            </h2>
+          </ScrollReveal>
+
+          <div className="space-y-4">
+            {transformationBullets.map((b, i) => (
+              <ScrollReveal key={i} delay={i * 0.06}>
+                <div className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "#F0FDF4" }}>
+                    <Check className="w-4 h-4" style={{ color: "#16A34A" }} />
+                  </div>
+                  <p className="text-[16px]" style={{ color: "#0F172A" }}>{b}</p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+
+          <ScrollReveal delay={0.3}>
+            <p className="text-center text-[15px] mt-8 font-medium" style={{ color: "#64748B" }}>
+              Processo replicável — não uma lista de truques soltos.
+            </p>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ═══ 5. MÉTODO ═══ */}
+      <section style={{ background: "#F8FAFC" }} className="py-14 md:py-20">
         <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 960 }}>
           <ScrollReveal>
             <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.08em] text-center mb-2" style={{ color: "#2563EB" }}>
@@ -456,7 +502,47 @@ const Gravacao = () => {
         </div>
       </section>
 
-      {/* ═══ 6. GALERIA ═══ */}
+      {/* ═══ 6. O QUE RECEBES ═══ */}
+      <section id="pack-section" style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
+        <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 700 }}>
+          <ScrollReveal>
+            <h2 className="font-heading font-bold text-center mb-10" style={{ fontSize: "clamp(22px, 3vw, 30px)", color: "#0F172A" }}>
+              O que recebes (Pack 27 €)
+            </h2>
+          </ScrollReveal>
+
+          <ScrollReveal delay={0.1}>
+            <div className="rounded-2xl p-8" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+              <div className="space-y-4">
+                {packItems.map((item, i) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#EFF6FF" }}>
+                        <Icon className="w-4 h-4" style={{ color: "#2563EB" }} />
+                      </div>
+                      <p className="text-[16px] pt-1" style={{ color: "#0F172A" }}>{item.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-[15px] text-center mt-6 mb-2" style={{ color: "#64748B" }}>
+                Organiza o processo e reduz tentativa-erro. Templates reutilizáveis desde o primeiro dia.
+              </p>
+              <p className="font-heading font-semibold text-center mt-2 mb-6" style={{ color: "#16A34A", fontSize: 16 }}>
+                Tudo pronto para aplicar no dia seguinte.
+              </p>
+
+              <div className="text-center">
+                <CTAButton onClick={openModal} />
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ═══ 7. GALERIA ═══ */}
       <div style={{ background: "#F8FAFC" }}>
         <GallerySection />
         <p className="text-center text-[15px] pb-10 -mt-4" style={{ color: "#64748B" }}>
@@ -464,7 +550,7 @@ const Gravacao = () => {
         </p>
       </div>
 
-      {/* ═══ 7. AUDIÊNCIA ═══ */}
+      {/* ═══ 8. AUDIÊNCIA ═══ */}
       <section style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
         <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 800 }}>
           <ScrollReveal>
@@ -511,12 +597,12 @@ const Gravacao = () => {
         </div>
       </section>
 
-      {/* ═══ 8. FORMADOR ═══ */}
+      {/* ═══ 9. FORMADOR ═══ */}
       <div id="formador">
         <PresenterSection />
       </div>
 
-      {/* ═══ 9. TESTEMUNHOS ═══ */}
+      {/* ═══ 10. TESTEMUNHOS ═══ */}
       <section id="testemunhos" style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
         <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 960 }}>
           <ScrollReveal>
@@ -558,7 +644,7 @@ const Gravacao = () => {
         </div>
       </section>
 
-      {/* ═══ 10. FAQ ═══ */}
+      {/* ═══ 11. FAQ ═══ */}
       <section id="faq" style={{ background: "#F8FAFC" }} className="py-14 md:py-20">
         <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 760 }}>
           <ScrollReveal>
@@ -599,7 +685,7 @@ const Gravacao = () => {
         </div>
       </section>
 
-      {/* ═══ 11. CTA FINAL ═══ */}
+      {/* ═══ 12. CTA FINAL ═══ */}
       <section style={{ background: "#0F172A" }} className="py-16 md:py-24">
         <div className="mx-auto px-5 sm:px-6 text-center" style={{ maxWidth: 800 }}>
           <ScrollReveal>
@@ -681,37 +767,43 @@ const Gravacao = () => {
 
               <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
                 <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="mt-1 w-4 h-4 rounded shrink-0" style={{ accentColor: "#2563EB" }} />
-                <span className="text-[13px] leading-relaxed" style={{ color: "#64748B" }}>
-                  Autorizo o envio de comunicações relacionadas com este evento e conteúdos de marketing do Frederico Carvalho. Os dados pessoais serão tratados pela sua empresa Fomentar Sonhos.{" "}
-                  <button type="button" onClick={() => setLegalModal("privacidade")} className="underline" style={{ color: "#2563EB" }}>Política de Privacidade</button> e{" "}
-                  <button type="button" onClick={() => setLegalModal("termos")} className="underline" style={{ color: "#2563EB" }}>Termos e Condições</button>.
+                  className="mt-0.5 w-4 h-4 rounded accent-blue-600"
+                />
+                <span className="text-[13px] leading-snug" style={{ color: "#64748B" }}>
+                  Li e aceito os{" "}
+                  <button type="button" onClick={() => setLegalModal("termos")} className="underline" style={{ color: "#2563EB" }}>Termos e Condições</button>{" "}
+                  e a{" "}
+                  <button type="button" onClick={() => setLegalModal("privacidade")} className="underline" style={{ color: "#2563EB" }}>Política de Privacidade</button>.
                 </span>
               </label>
 
-              {error && <p className="text-sm text-center mb-3" style={{ color: "#DC2626" }}>{error}</p>}
+              {error && <p className="text-sm text-red-500 mb-3">{error}</p>}
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                disabled={loading || !acceptedTerms}
+                disabled={loading}
                 onClick={handleRegistration}
-                className="w-full text-white font-heading font-bold text-base py-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                style={{ background: "#2563EB", boxShadow: "0 4px 14px 0 rgba(37,99,235,0.30)" }}
+                className="w-full font-heading font-bold text-base py-4 rounded-xl text-white transition-all disabled:opacity-60"
+                style={{ background: "#16A34A", boxShadow: "0 4px 14px 0 rgba(22,163,74,0.35)" }}
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-                {loading ? "A registar..." : "Quero acesso imediato (27 €)"}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Continuar para pagamento →"}
               </motion.button>
+
+              <p className="text-center text-[13px] mt-3" style={{ color: "#94A3B8" }}>
+                🔒 Pagamento seguro · Acesso imediato
+              </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <LegalModal open={legalModal === "privacidade"} onOpenChange={(v) => !v && setLegalModal(null)} title="Política de Privacidade">
-        <PrivacidadeContent />
-      </LegalModal>
-      <LegalModal open={legalModal === "termos"} onOpenChange={(v) => !v && setLegalModal(null)} title="Termos e Condições">
+      {/* Legal modals */}
+      <LegalModal open={legalModal === "termos"} onOpenChange={() => setLegalModal(null)} title="Termos e Condições">
         <TermosContent />
+      </LegalModal>
+      <LegalModal open={legalModal === "privacidade"} onOpenChange={() => setLegalModal(null)} title="Política de Privacidade">
+        <PrivacidadeContent />
       </LegalModal>
     </div>
   );
