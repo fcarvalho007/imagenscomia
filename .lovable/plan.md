@@ -1,167 +1,162 @@
 
 
-# Multi-Webinar CRM Extension
+# Refinamentos Multi-Webinar no CRM
 
-## Summary
+## Estado actual
 
-Extend the CRM to support multiple webinars (Imagens IA + Video IA) via a new `webinar` column in the `registrations` table and a context switcher in the CRM UI. All existing features remain unchanged -- this is purely additive.
+A base esta feita: coluna `webinar` na BD, contexto React, switcher no sidebar, filtragem no CRM.tsx. No entanto, as views individuais nao se adaptam ao contexto seleccionado -- mostram exactamente a mesma UI independentemente de ser Imagens, Video ou Consolidado.
 
 ---
 
-## Step 1 -- Database Schema
+## Problemas identificados
 
-Add column `webinar` (text, default `'imagens'`, NOT NULL) to `registrations` table via migration:
+### 1. Dashboard com dados hardcoded para Imagens
+- `FIXED_VISITORS = 2686`, `CUTOFF_DATE`, `LIVE_RESULTS` sao especificos do webinar Imagens mas aparecem em qualquer contexto
+- Estes valores devem ser condicionais ao webinar ou ocultados quando irrelevantes
 
-```sql
-ALTER TABLE registrations ADD COLUMN IF NOT EXISTS webinar text NOT NULL DEFAULT 'imagens';
--- Backfill existing rows (already 'imagens' via default, but explicit for safety)
-UPDATE registrations SET webinar = 'imagens' WHERE webinar IS NULL;
-```
+### 2. Nenhuma view adapta a UI ao modo Consolidado
+- Pipeline: cards nao mostram de que webinar sao
+- Tabela: nao ha coluna "Webinar"
+- Follow-up: sem empty state para Video
+- Trash: sem indicacao visual de webinar
 
-No `price_paid` column for now -- the existing `valor` field in the CRM mapping already tracks value, and actual payment amounts can be derived from the plan + paid_at timestamp vs early bird dates. This avoids unnecessary schema changes.
+### 3. Dashboard sem metricas comparativas
+- Sem widget "Comparacao entre Webinars" no modo consolidado
+- Sem tracking Early Bird vs Regular
+- KPIs nao mostram split imagens/video
 
-## Step 2 -- Edge Function: register-free
+---
 
-Update `supabase/functions/register-free/index.ts` to:
-- Accept `webinar` field from request body (default: `'imagens'`)
-- Pass it into the INSERT call: `webinar: webinar || 'imagens'`
+## Plano de implementacao
 
-## Step 3 -- Video Page Registration
+### Fase 1 -- Dashboard awareness (DashboardView.tsx)
 
-Update `src/components/webinar/PurchaseModal.tsx` to pass `webinar: 'video'` in the `register-free` invocation (line 54-60). This ensures all Video landing page registrations are tagged correctly.
+**1a. Configuracao por webinar**
 
-## Step 4 -- Webinar Config Constants
+Mover `FIXED_VISITORS`, `CUTOFF_DATE`, `LIVE_RESULTS` para constantes indexadas por webinar:
 
-Create `src/config/webinarConfig.ts`:
-
-```typescript
-export type WebinarKey = "imagens" | "video";
-export type WebinarContext = WebinarKey | "consolidado";
-
-export const WEBINAR_CONFIG = {
-  imagens: {
-    label: "Imagens IA",
-    emoji: "\uD83D\uDCF7",
-    date: "18 Fev 2026",
-    startDate: new Date("2026-02-18T10:00:00Z"),
-    color: "#1e40af",
-    sidebarSubtitle: "Imagens IA . 18 Fev 2026",
-  },
-  video: {
-    label: "Video IA",
-    emoji: "\uD83C\uDFAC",
-    date: "2 Mar 2026",
-    startDate: new Date("2026-03-02T10:00:00Z"),
-    color: "#16a34a",
-    sidebarSubtitle: "Video IA . 2 Mar 2026",
-  },
-} as const;
-
-export function filterByWebinar<T extends { webinar?: string }>(
-  items: T[],
-  context: WebinarContext
-): T[] {
-  if (context === "consolidado") return items;
-  if (context === "video") return items.filter(i => i.webinar === "video");
-  return items.filter(i => !i.webinar || i.webinar === "imagens");
+```text
+WEBINAR_DASHBOARD_CONFIG = {
+  imagens: { visitors: 2686, cutoff: "2026-02-20", liveResults: {...} },
+  video: { visitors: 0, cutoff: null, liveResults: null },
 }
 ```
 
-## Step 5 -- Data Model Update
+- Quando `webinarContext === "video"`: ocultar bloco "Resultados Live" e visitor funnel step se visitors = 0
+- Quando `webinarContext === "consolidado"`: somar visitors, mostrar ambos live results (se existirem)
 
-Update `src/pages/crm/mockData.ts` Inscrito type: add `webinar: "imagens" | "video"` field.
+**1b. KPI sub-labels no modo consolidado**
 
-Update `src/hooks/useInscritos.ts` `mapRegistration` function: map `r.webinar` to Inscrito (default `"imagens"`).
+Abaixo de cada valor KPI, adicionar linha tipo:
+`"234 imagens + 0 video"` (texto `text-[11px]`, cor `#888`)
 
-## Step 6 -- CRM Context Switcher
+Requer acesso ao contexto webinar -- importar `useWebinarContext` no DashboardView e computar split internamente a partir de `inscritos` (que ja vem filtrado, excepto em consolidado onde vem tudo).
 
-### React Context
+Problema: o DashboardView recebe `inscritos` ja filtrado. Para o modo consolidado mostrar split, precisa dos dados originais OU receber o contexto e fazer split interno.
 
-Create `src/contexts/WebinarContext.tsx` with `WebinarContext` / `WebinarProvider` wrapping the CRM. Stores `webinarContext` state (default: `"imagens"`).
+Solucao: DashboardView importa `useWebinarContext()` e, quando consolidado, separa `inscritos` por campo `.webinar` para calcular splits.
 
-### CRM Root (`src/pages/CRM.tsx`)
+**1c. Funil dual-bar no consolidado**
 
-- Wrap content with `WebinarProvider`
-- Remove prop-drilling of webinar context -- child components use `useWebinarContext()` hook
+Cada step do funil mostra 2 barras lado a lado:
+- Azul (#1e40af) = imagens count
+- Verde (#16a34a) = video count
+- Legenda: "Imagens / Video" abaixo do titulo
 
-### Sidebar (`src/components/crm/CRMSidebar.tsx`)
+**1d. Widget "Comparacao entre Webinars" (consolidado only)**
 
-- Accept/consume webinar context
-- Update subtitle text dynamically based on selected webinar
-- Add context switcher bar at top: 3 buttons (Imagens / Video / Consolidado) with active color states
+Inserido entre KPIs e Email Follow-up:
+- 2 cards lado a lado com metricas identicas (inscritos, receita, taxa, ticket medio)
+- Card video mostra "--" com texto cinza se sem dados
+- Linha de insight abaixo: delta de inscritos e receita
 
-### Context Switcher UI
+**1e. Widget "Early Bird vs Regular"**
 
-Placed inside the sidebar, below the logo area:
-- 3 compact buttons in a row
-- Active: colored background (blue/green/purple), white text
-- Inactive: subtle text, hover highlight
-- Height ~40px, compact layout
+Novo card no dashboard (todos os contextos):
+- Compara `valor` dos pagantes contra thresholds das datas em `WEBINAR_CONFIG`
+- Premium: X a 15 EUR | Y a 27 EUR
+- Masterclass: X a 47 EUR | Y a 97 EUR
+- Usa `paid_at` vs `WEBINAR_CONFIG[webinar].startDate` para determinar early bird
 
-## Step 7 -- View Filtering
+### Fase 2 -- Pipeline badges (PipelineView.tsx)
 
-All views (Dashboard, Pipeline, Tabela, Follow-up, Trash) will consume `useWebinarContext()` and apply `filterByWebinar()` to their data before processing.
+**2a. Badge webinar nos cards (consolidado)**
 
-### DashboardView
-- Filter `inscritos` by webinar context before all calculations
-- For "consolidado": add sub-labels on KPIs showing split ("X imagens + Y video")
-- For "consolidado": add dual-bar funnel (blue = imagens, green = video) with legend
-- Add "Comparacao entre Webinars" section (2-column card) visible only in consolidado
-- Empty state for video when no data exists
+Dentro de `PipelineCard`, quando contexto = consolidado:
+- Adicionar badge "IMG" (azul) ou "VID" (verde) no canto superior direito do card
+- `font-size: 8px`, `padding: 2px 5px`, `border-radius: 3px`
 
-### PipelineView
-- Filter cards by webinar context
-- For "consolidado": add small badge (IMG/VID) on each card with color coding
-- Column headers show split count in consolidado mode
+**2b. Contagens split nos headers de coluna (consolidado)**
 
-### TableView
-- Filter rows by webinar context
-- For "consolidado": add "Webinar" column with badge (IMG/VID), sortable
+Headers mostram: "Inscritos (42 IMG + 0 VID)" em vez de apenas "42"
 
-### FollowUpView
-- Filter SLA data by webinar context
-- For "video" with no subscribers: show empty state with calendar icon and date
-- For "consolidado": merge both, add webinar badge to items
+Requer: PipelineView importar `useWebinarContext()`
 
-### TrashView
-- Filter by webinar context
-- For "consolidado": show all with webinar badge
+### Fase 3 -- Tabela webinar column (TableView.tsx)
 
-## Step 8 -- Early Bird Tracking Widget
+**3a. Coluna "Webinar" no consolidado**
 
-Add to DashboardView (all contexts):
-- Small card "Early Bird vs Preco Regular"
-- Shows count of purchases at each price point by comparing `valor` field against thresholds
-- Premium: X at 15 EUR | Y at 27 EUR
-- Masterclass: X at 47 EUR | Y at 97 EUR
+- Primeira coluna apos checkbox
+- Mostra badge "IMG" ou "VID" com cor
+- Clicavel para ordenar
+- Dropdown no header para filtrar por webinar
+
+**3b. Coluna price_paid**
+
+Nao implementar por agora -- o campo `valor` ja existe e e calculado. Uma coluna `price_paid` na BD seria redundante com a logica actual. Manter `valor` na tabela.
+
+### Fase 4 -- Follow-up adaptacoes (FollowUpView.tsx)
+
+**4a. Empty state para Video**
+
+Quando contexto = video e `inscritos.length === 0`:
+- Icone calendario
+- "Webinar Video a 2 de Marco"
+- "Follow-up aparecera aqui apos as primeiras inscricoes"
+
+**4b. Badge webinar nos itens (consolidado)**
+
+Adicionar badge IMG/VID nas listas de pessoas e envios em modo consolidado.
+
+### Fase 5 -- Trash badges (TrashView.tsx)
+
+Adicionar badge IMG/VID em cada linha quando contexto = consolidado.
 
 ---
 
-## Files to Create
-- `src/config/webinarConfig.ts` -- constants, types, filter utility
-- `src/contexts/WebinarContext.tsx` -- React context provider
+## Detalhes tecnicos
 
-## Files to Modify
-- `supabase/functions/register-free/index.ts` -- accept `webinar` param
-- `src/components/webinar/PurchaseModal.tsx` -- pass `webinar: 'video'`
-- `src/pages/crm/mockData.ts` -- add `webinar` to Inscrito type
-- `src/hooks/useInscritos.ts` -- map webinar field
-- `src/pages/CRM.tsx` -- wrap with WebinarProvider
-- `src/components/crm/CRMSidebar.tsx` -- context switcher + dynamic subtitle
-- `src/components/crm/DashboardView.tsx` -- webinar filtering, consolidado widgets
-- `src/components/crm/PipelineView.tsx` -- webinar filtering, badges
-- `src/components/crm/TableView.tsx` -- webinar column, filtering
-- `src/components/crm/FollowUpView.tsx` -- webinar filtering, empty state
-- `src/components/crm/TrashView.tsx` -- webinar filtering, badges
+### Ficheiros a modificar
 
-## Database Migration
-- `ALTER TABLE registrations ADD COLUMN webinar text NOT NULL DEFAULT 'imagens'`
+| Ficheiro | Alteracoes |
+|----------|-----------|
+| `src/components/crm/DashboardView.tsx` | Importar useWebinarContext, config por webinar, KPI splits, funil dual-bar, widget comparacao, widget early bird |
+| `src/components/crm/PipelineView.tsx` | Importar useWebinarContext, badge IMG/VID nos cards, split counts nos headers |
+| `src/components/crm/TableView.tsx` | Importar useWebinarContext, coluna Webinar condicional |
+| `src/components/crm/FollowUpView.tsx` | Importar useWebinarContext, empty state video |
+| `src/components/crm/FollowUpPessoas.tsx` | Badge webinar no consolidado |
+| `src/components/crm/FollowUpAudit.tsx` | Badge webinar no consolidado |
+| `src/components/crm/TrashView.tsx` | Importar useWebinarContext, badge condicional |
+| `src/config/webinarConfig.ts` | Adicionar dashboard-specific constants (visitors, cutoff, liveResults) |
 
-## Implementation Order
-1. DB migration (schema)
-2. Config + Context files (new)
-3. Edge function + PurchaseModal (registration tagging)
-4. useInscritos + mockData type (data layer)
-5. CRM.tsx + Sidebar (switcher UI)
-6. Each view (Dashboard, Pipeline, Table, FollowUp, Trash) -- can be done in parallel
+### Dependencias
+
+- Todas as views precisam de `useWebinarContext()` -- ja disponivel via contexto
+- Nenhuma alteracao de BD necessaria
+- Nenhuma edge function nova
+
+### Ordem de implementacao
+
+1. `webinarConfig.ts` -- adicionar constantes dashboard
+2. `DashboardView.tsx` -- maior volume de alteracoes (KPIs, funil, widgets)
+3. `PipelineView.tsx` -- badges + split counts
+4. `TableView.tsx` -- coluna webinar
+5. `FollowUpView.tsx` + sub-componentes -- empty state + badges
+6. `TrashView.tsx` -- badges
+
+### Notas de compatibilidade
+
+- Todas as alteracoes sao aditivas -- UI existente mantem-se identica quando contexto = "imagens"
+- O modo "imagens" e o default, preservando comportamento actual
+- Dados existentes sem campo webinar sao tratados como "imagens" pelo filtro
 
