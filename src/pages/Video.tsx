@@ -116,10 +116,10 @@ const SectionTitle = ({ children, light = true }: { children: React.ReactNode; l
 /* ── Data ── */
 
 const whenItMakesSense = [
-  { Icon: BarChart3, label: "Precisa de volume", desc: "O mercado pede vídeos com frequência e a equipa não acompanha." },
-  { Icon: Repeat, label: "Precisa de consistência", desc: "Cada vídeo parece de uma marca diferente." },
-  { Icon: Zap, label: "Precisa de velocidade", desc: "Quando o clip tem de sair hoje, não daqui a duas semanas." },
-  { Icon: BookOpen, label: "Precisa de um método simples", desc: "Menos improviso, mais processo repetível." },
+  { Icon: BarChart3, label: "Precisas de volume", desc: "O mercado pede vídeos com frequência e a tua equipa não acompanha." },
+  { Icon: Repeat, label: "Precisas de consistência", desc: "Cada vídeo parece de uma marca diferente." },
+  { Icon: Zap, label: "Precisas de velocidade", desc: "Quando o clip tem de sair hoje, não daqui a duas semanas." },
+  { Icon: BookOpen, label: "Precisas de um método simples", desc: "Menos improviso, mais processo repetível." },
 ];
 
 const forWhom = [
@@ -403,31 +403,39 @@ const VideoPageInner = () => {
       {/* ═══ SECTION 1 — "Quando isto faz sentido" ═══ */}
       <section className="relative overflow-hidden py-20 md:py-28" style={{ background: "#0d0d14" }}>
         {/* Background video */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.5 }}>
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.6 }}>
           <source src="/videos/splash-branco.mp4" type="video/mp4" />
         </video>
-        {/* Dark overlay for readability during white phase */}
-        <div className="absolute inset-0" style={{ zIndex: 1, background: "rgba(0,0,0,0.55)" }} />
+        {/* Gradient overlay for cinematic readability */}
+        <div className="absolute inset-0" style={{ zIndex: 1, background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.6) 100%)" }} />
         <div className="relative mx-auto max-w-5xl px-5" style={{ zIndex: 2 }}>
           <ScrollReveal>
             <div className="text-center mb-6">
-              <SectionTitle>O vídeo não é luxo — é o formato que o mercado está a empurrar</SectionTitle>
+              <h2 className="font-heading font-extrabold text-[30px] sm:text-[36px] lg:text-[48px] leading-[1.1] text-white" style={{ letterSpacing: "-1px" }}>
+                Vídeo é o formato que o{" "}
+                <span style={{ background: "linear-gradient(135deg, #4ade80 0%, #22d3ee 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  mercado exige
+                </span>
+              </h2>
             </div>
-            <div className="text-center max-w-[640px] mx-auto mb-14 space-y-2">
-              <p className="text-[16px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.50)" }}>
-                O pedido é quase sempre o mesmo: precisamos de mais vídeo.
+            <div className="text-center max-w-[640px] mx-auto mb-16 space-y-2.5">
+              <p className="text-[17px] lg:text-[18px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                O pedido é quase sempre o mesmo: precisas de mais vídeo.
               </p>
-              <p className="text-[16px] leading-[1.65] font-medium" style={{ color: "#f87171" }}>
+              <p className="text-[17px] lg:text-[18px] leading-[1.65] font-medium" style={{ color: "#f87171" }}>
                 O bloqueio também: tempo, custo, aprovações e falta de consistência.
               </p>
-              <p className="text-[16px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.50)" }}>
-                A IA ajuda, mas só funciona quando existe um processo mínimo.
+              <p className="text-[17px] lg:text-[18px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                A IA ajuda, mas só funciona quando tens um processo mínimo.
               </p>
             </div>
           </ScrollReveal>
 
           <ScrollReveal delay={0.08}>
-            <h3 className="font-heading font-bold text-[20px] text-white text-center mb-8">Quando isto faz sentido</h3>
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-[40px] h-[3px] rounded-full mb-4" style={{ background: "#4ade80" }} />
+              <h3 className="font-heading font-semibold text-[22px] text-white text-center" style={{ letterSpacing: "-0.5px" }}>Quando isto faz sentido</h3>
+            </div>
           </ScrollReveal>
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
@@ -437,14 +445,14 @@ const VideoPageInner = () => {
             {whenItMakesSense.map(({ Icon, label, desc }, i) => (
               <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
                 <SpotlightCard
-                  className="relative overflow-hidden rounded-xl p-6 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card"
+                  className="relative overflow-hidden rounded-xl p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card"
                 >
-                  <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.04)" }}>
+                  <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <Icon className="w-5 h-5 mb-3 relative z-10" style={{ color: "#60A5FA" }} />
-                  <p className="font-heading font-semibold text-[15px] mb-1.5 relative z-10" style={{ color: "#ddd" }}>{label}</p>
-                  <p className="text-[13px] leading-[1.55] relative z-10" style={{ color: "rgba(255,255,255,0.50)" }}>{desc}</p>
+                  <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
+                  <p className="font-heading font-bold text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
+                  <p className="text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
                 </SpotlightCard>
               </motion.div>
             ))}
@@ -453,13 +461,14 @@ const VideoPageInner = () => {
 
         <style>{`
           .pain-card {
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(255,255,255,0.08);
-            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.10);
+            backdrop-filter: blur(16px);
           }
           .pain-card:hover {
-            border-color: rgba(22,163,74,0.35) !important;
-            background: rgba(22,163,74,0.05) !important;
+            border-color: #4ade80 !important;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.1) !important;
+            background: rgba(255,255,255,0.06) !important;
           }
         `}</style>
       </section>
