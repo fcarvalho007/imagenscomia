@@ -1,35 +1,47 @@
 
-## Substituir placeholder preto pelo player Vimeo
+
+## Adicionar secção de testemunhos Google na pagina /gravacao
 
 ### O que muda
 
-Apenas 1 ficheiro: `src/components/recursos/RecursosConteudo.tsx`
+Criar uma nova secção de testemunhos reais do Google entre a secção do **Presenter** e o **FAQ** (entre as linhas 439 e 441), com:
 
-O bloco `<div className="rounded-2xl bg-gray-900 ..." style={{ aspectRatio: "16/9" }}>` (linhas 83–96) é substituído pelo embed Vimeo fornecido.
+- Titulo "Avaliações públicas no Google" com o logo do Google e rating 5,0
+- 8 testemunhos reais extraídos das capturas de ecrã:
+  1. **Dario Ramos** — "Profissional Top, sempre disponível para ajudar."
+  2. **Marcelo Caruana** — "Conteúdos sempre muito detalhados e claros :)"
+  3. **Isabel Martins** — "As formações do Frederico são sempre excepcionais. Partilha de conhecimento e ensinamento prático."
+  4. **Silvana Curado** — "Muito bom. A sessão introdutória sobre geração de imagem a que assisti teve uma velocidade ótima, para o meu nível de conhecimento médio-baixo e cumpriu escrupulosamente a proposta de valor. Boa energia!"
+  5. **Paulo Ferrao** — "Webinar esclarecedor. Interessante e recheado como sempre! Obrigado"
+  6. **Joana Veigas** — "Gostei muito do Webinar IA Imagens. Interessante, bem explicada e cativante. Curiosa para saber casa vez mais. Vou continuar a acompanhar as muitas dicas que o Frederico vai partilhando. Obrigada Frederico!"
+  7. **Catia Martins** — "Foi um webinar excelente. Para o tema que é parece sempre curto mas agrega sempre muito valor. E é muito útil para o trabalho do dia a dia, para quem trabalha com criativos. O Frederico nunca desilude."
 
-O import do ícone `Clock` pode ser mantido (ainda é usado no Índice da sessão) — não é removido.
+- Cards brancos com bordas suaves, 5 estrelas douradas, nome em bold
+- Grid responsivo: 1 coluna mobile, 2 colunas tablet, 3 colunas desktop
+- Fundo `bg-background` para manter consistência com o resto da pagina
 
-### Código final do bloco do player (linhas 83–96)
-
-```tsx
-{/* Player Vimeo — Webinar 18 Fev */}
-<div className="rounded-2xl overflow-hidden shadow-lg mb-4" style={{ padding: "56.25% 0 0 0", position: "relative" }}>
-  <iframe
-    src="https://player.vimeo.com/video/1166335264?badge=0&autopause=0&player_id=0&app_id=58479"
-    frameBorder="0"
-    allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
-    referrerPolicy="strict-origin-when-cross-origin"
-    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
-    title="Webinar Gratuito — IA Imagens · 18 Fev · Frederico Carvalho"
-  />
-</div>
-```
-
-O script `https://player.vimeo.com/api/player.js` é carregado adicionando um `useEffect` que insere o script no `<head>` uma única vez (evita duplicados se o componente re-renderizar). Alternativa mais simples: adicionar o script diretamente ao `index.html` — é a abordagem mais limpa e sem side-effects em React.
-
-### Ficheiros a alterar
+### Ficheiro a alterar
 
 | Ficheiro | Alteração |
 |---|---|
-| `src/components/recursos/RecursosConteudo.tsx` | Linhas 83–96: substituir div placeholder pelo iframe Vimeo |
-| `index.html` | Adicionar `<script src="https://player.vimeo.com/api/player.js"></script>` antes do `</body>` |
+| `src/pages/Gravacao.tsx` | Adicionar array `googleReviews` nos dados (apos linha 96) e inserir secção JSX entre Presenter e FAQ (entre linhas 439 e 441) |
+
+### Estrutura da secção
+
+```text
++--------------------------------------------------+
+|  [Google logo]  5,0 ★★★★★  · Avaliações públicas |
++--------------------------------------------------+
+|  Card 1  |  Card 2  |  Card 3                    |
+|  Card 4  |  Card 5  |  Card 6                    |
+|  Card 7  |                                        |
++--------------------------------------------------+
+```
+
+Cada card mostra:
+- Inicial colorida (circulo com primeira letra do nome)
+- Nome em bold
+- 5 estrelas douradas
+- Texto do testemunho
+
+Nenhum ficheiro novo e criado — tudo dentro de `Gravacao.tsx` usando os mesmos componentes (`ScrollReveal`) e estilos ja presentes na pagina.
