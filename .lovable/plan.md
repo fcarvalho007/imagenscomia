@@ -1,142 +1,134 @@
 
-# Premium Animations for /video
 
-## Summary
+# Upgrades visuais para /video — Alinhamento com /inicial
 
-Add premium visual effects and animations to the existing /video page without changing any copy, layout, or content. Create 3 new reusable components and enhance Video.tsx with Framer Motion animations and CSS effects.
+## Resumo
 
----
+Aplicar upgrades visuais na pagina /video para alinhar com o estilo premium da pagina /inicial. Inclui sticky bar com countdown, iconografia Lucide, botao CTA com ElectricBorder, logo marquee, redesign de seccoes e upgrades tipograficos no hero.
 
-## New Files to Create
-
-### 1. `src/components/ui/aurora-background.tsx`
-
-Reusable aurora gradient background with 3 animated blobs:
-- Blob 1: deep green #16a34a at 15% opacity, 20s float loop
-- Blob 2: electric blue #1d4ed8 at 10% opacity, 25s float loop
-- Blob 3: violet #7c3aed at 8% opacity, 30s float loop
-- Base background: #050709
-- Noise grain overlay via CSS SVG filter (feTurbulence, 3% opacity)
-- All blobs use CSS keyframes with scale pulse and position drift
-- Respects `prefers-reduced-motion` (static positioning, no animation)
-- Props: `className`, `intensity` (optional multiplier for opacity)
-
-### 2. `src/components/ui/shimmer-button.tsx`
-
-Reusable shimmer CTA button wrapper:
-- White gradient sweep (15% opacity) travels left-to-right every 3s via CSS keyframe
-- Pulsating box-shadow: `0 0 20px rgba(22,163,74,0.4)` every 2s
-- Hover: scale 1.02, shadow intensifies to `0 0 35px rgba(22,163,74,0.6)`
-- Wraps children (passes through existing button content/styles)
-- Respects `prefers-reduced-motion`
-
-### 3. `src/components/ui/spotlight-card.tsx`
-
-Reusable card with cursor-following spotlight:
-- `onMouseMove` tracks pointer position relative to card
-- Renders radial gradient at cursor pos: green #16a34a at 8% opacity, fades to transparent at 60% radius
-- Hover: border transitions to rgba(22,163,74,0.3), translateY(-2px), subtle box-shadow
-- `onMouseLeave` resets spotlight
-- Respects `prefers-reduced-motion`
+Todas as alteracoes sao feitas exclusivamente em `src/pages/Video.tsx`. Nenhum texto, routing ou estrutura e alterado.
 
 ---
 
-## Changes to `src/pages/Video.tsx`
+## Ficheiro unico a modificar
 
-### Imports to add
-- `motion` from `framer-motion` (already imported via ScrollReveal pattern)
-- `AuroraBackground` from new component
-- `ShimmerButton` from new component
-- `SpotlightCard` from new component
-
-### Hero Section (Section 2)
-
-**Background:** Replace `ColorBends` div with `<AuroraBackground />` component.
-
-**Headline:** Split headline text into individual words, wrap each in `motion.span` with staggered animation:
-- `initial: { opacity: 0, y: 20, filter: "blur(4px)" }`
-- `animate: { opacity: 1, y: 0, filter: "blur(0px)" }`
-- Stagger: 0.08s per word, start delay 0.3s, duration 0.5s
-
-**Subheadline:** `motion.p` with fade-up after headline completes.
-
-**Info badges:** Each badge wrapped in `motion.span` with stagger 0.1s, scale from 0.9 to 1.
-
-**CTA button:** Wrap `GreenCTA` with `ShimmerButton`.
-
-**Benefit bullets:** Keep existing ScrollReveal.
-
-### Sticky Top Bar (Section 1)
-
-- Add `backdropFilter: "saturate(180%) blur(12px)"` (partially exists, enhance saturation)
-- Track scroll position with `useEffect` + `useState` to increase opacity past hero (transition from 0.92 to 0.98)
-
-### Pain Points (Section 3)
-
-- Replace plain div cards with `SpotlightCard` component
-- Each card uses `motion.div` with `whileInView`, stagger 0.15s
-
-### Transformation (Section 4)
-
-**Before column:** Add red ambient glow div (radial gradient rgba(239,68,68,0.06)), items enter from `x: -20` with stagger 0.1s
-
-**After column:** Add green ambient glow div (radial gradient rgba(22,163,74,0.08)), items enter from `x: 20` with stagger 0.1s
-
-**Result cards:** Hover adds left border accent (2px solid #16a34a) with CSS transition
-
-### Operational Promise (Section 7)
-
-- Large numbers: simple count-up animation using `motion.span` with `whileInView` trigger (animate from 0 to target value over 1.2s using a custom counter component inline)
-- Each line staggers 0.15s on scroll
-
-### Agenda (Section 8)
-
-- Each row slides from `x: -30` with stagger 0.12s
-- Hover: green left border appears via CSS transition, background lightens
-
-### Deliverables + Tools (Sections 9, 10)
-
-- Cards: hover adds green glow border (border-color transition)
-- Staggered fade-up entrance 0.15s between cards
-
-### Speaker (Section 11)
-
-- Photo: `whileInView` from `scale: 0.95, opacity: 0` to `scale: 1, opacity: 1`
-- Green ring glow: `box-shadow: 0 0 0 1px rgba(22,163,74,0.2), 0 0 30px rgba(22,163,74,0.1)`
-- Text: staggered fade-in after photo
-
-### Mid-page CTA (Section 12)
-
-- Add `AuroraBackground` with lower intensity
-- Title: word-by-word blur reveal (same as hero)
-- Button: wrap with `ShimmerButton`
-
-### FAQ (Section 13)
-
-- Accordion items: add green left border on open via `[data-state=open]` CSS
-- Chevron rotation already handled by existing accordion component
-
-### Final CTA (Section 15)
-
-- Add animated green gradient orb (CSS keyframe, 800px radial gradient, slow position drift)
-- Title: staggered word reveal
-- Button: `ShimmerButton` wrapper
-
-### Global
-
-- Define Framer Motion variants as constants at top of file
-- All sections already use `ScrollReveal`; ensure consistent viewport margin `-80px` and `once: true`
-- Add `prefers-reduced-motion` media query wrapper: all motion animations check this and render immediately if reduced motion preferred
+`src/pages/Video.tsx`
 
 ---
 
-## Files summary
+## Alteracoes detalhadas
 
-| File | Action |
-|---|---|
-| `src/components/ui/aurora-background.tsx` | Create |
-| `src/components/ui/shimmer-button.tsx` | Create |
-| `src/components/ui/spotlight-card.tsx` | Create |
-| `src/pages/Video.tsx` | Modify (animations only, no copy changes) |
+### 1. Sticky Top Bar com Countdown
 
-No new dependencies. No layout or content changes.
+Substituir a barra fixa actual por uma versao com countdown igual a /inicial:
+- Importar `useCountdown` de `@/hooks/useCountdown`
+- Adicionar countdown com blocos (dias, horas, min, seg) ao centro
+- Target date: `2026-03-02T10:00:00`
+- Label a esquerda: "AO VIVO . 2 MAR . A DEFINIR HORA"
+- Botao CTA a direita: "Quero inscrever-me!"
+- Gradient background: `from-ink-900 via-[hsl(262,83%,58%)]/20 to-blue-700`
+- Adicionar `pt-[52px]` ao wrapper principal para compensar a barra fixa
+
+### 2. Info Boxes com icones Lucide
+
+Substituir emojis por icones Lucide nas 4 info boxes do hero (ja importados: Calendar, Clock, Timer, GraduationCap):
+- Estilo das caixas: fundo `rgba(6,9,26,0.75)`, backdrop-blur, border `rgba(37,99,235,0.20)`
+- Icone com cor `#60A5FA`
+- Label: `font-size 9px`, `letter-spacing 2px`, `color rgba(255,255,255,0.45)`, `font-weight 700`
+- Value: `font-size 16px`, `font-weight 700`, `color #fff`
+
+### 3. Botao CTA com ElectricBorder
+
+Substituir `ShimmerButton` no hero pelo componente `ElectricBorder`:
+- Importar `ElectricBorder` de `@/components/landing/ElectricBorder`
+- Cor: `#22C55E`, speed: 0.8, chaos: 0.08, borderRadius: 10
+- Botao interior: background `#16A34A`, font-weight 700, padding 16px 32px, border-radius 10, width 100%, max-width 400px
+- Manter texto "Garantir inscricao gratuita"
+
+### 4. Logo Marquee abaixo do Hero
+
+Substituir a marquee de texto actual (ferramentas) por uma marquee de logos identica a /inicial:
+- Importar os mesmos 8 logos do projecto (google, chatgpt, claude, freepik, bytedance, gemini, llama, runcomfy)
+- Label: "PLATAFORMAS A CONSIDERAR" (uppercase, tracking widest, cor rgba(255,255,255,0.4))
+- Logos monocromaticos (filter: brightness(0) invert(1)), opacidade 0.5, h-7
+- Mascara de gradiente lateral para fade suave
+- Animacao: 30s linear infinite loop
+- Background: `#060D1A`, border-top: `1px solid rgba(255,255,255,0.06)`
+
+### 5. Pain Points — Redesign
+
+- Background da seccao: `#0d0d14`
+- Cada card: position relative, overflow hidden
+- Ghost number absoluto: font-size 80px, font-weight 900, color rgba(255,255,255,0.04), bottom -10px, right 10px
+- Numeros: "01", "02", "03", "04"
+- Titulo do card: font-weight 600, color #ddd
+- Hover: border-color rgba(22,163,74,0.35), background rgba(22,163,74,0.05), translateY(-2px)
+- Manter SpotlightCard para efeito de cursor
+- Scroll entrance: stagger 0.12s
+
+### 6. Agenda — Estilo editorial
+
+- Remover bordas de caixa dos rows, usar apenas bottom border (1px solid rgba(255,255,255,0.06))
+- Cada row: flex, padding 14px 0
+- Esquerda: label numerica "001", "002"... (font-size 11px, color #333, font-weight 700, width 40px)
+- Centro: titulo (color #888, font-size 13px, flex 1)
+- Tags inline: item 2 "CORE", item 3 "AO VIVO" (background rgba(22,163,74,0.12), color #16a34a, font-size 8px)
+- Direita: duracao (font-size 11px, color #555)
+- Hover: numero -> #16a34a, titulo -> #fff
+- Scroll: slide x:-20px, stagger 0.1s
+
+### 7. Speaker — Igual a /inicial
+
+Replicar o layout do `PresenterSection` da /inicial:
+- Layout: flex col/row, foto a esquerda (380px), texto a direita
+- Foto: rounded-[20px], h-[320px] md:h-[460px], object-cover object-top
+- Badge sobreposto na foto: fundo branco 95%, "5,0 . 1 194 avaliacoes no Google"
+- Eyebrow: "QUEM APRESENTA" em azul (#2563EB)
+- Nome: font-extrabold 24-34px
+- Subtitulo: "20 anos de experiencia..."
+- Grid 2x2 de credenciais com emojis (Professor, Autor, Host RFM, CEO DIGITALFC)
+- Background: branco (#ffffff), texto escuro
+- Manter a mesma data de credenciais
+
+### 8. Testimonials — Redesign
+
+- Manter fundo escuro
+- Layout: 1 card featured (full width) + 2-3 cards normais
+- Featured: quote mark 48px rgba(22,163,74,0.25), italic text 14px, border rgba(22,163,74,0.2)
+- Cards normais: quote mark 28px, mesmo avatar/nome/stars
+- Stats bar: "5,0 media" | "1.194 avaliacoes" | "Google Reviews verificadas" (11px, cor #555)
+- Animacao: featured primeiro, depois stagger 0.15s
+
+### 9. Background Alternation
+
+- Pain points: `#0d0d14`
+- Transformation: `#050709`
+- Agenda: `#f8f9fa` (light) — todos os textos invertidos para dark
+- Speaker: branco (`#ffffff`)
+- Testimonials: `#050709`
+- FAQ: `#f8f9fa` (light) — textos invertidos
+- Final CTA: `#050709`
+
+### 10. Hero Typography Upgrades
+
+- Headline: font-size 72px desktop / 52px tablet / 38px mobile, font-weight 900, letter-spacing -2px, line-height 1.05
+- Quebra forcada com `<br />` apos "com"
+- "Inteligencia Artificial" em span com gradient text: `linear-gradient(135deg, #16a34a 0%, #4ade80 40%, #22d3ee 100%)`, background-clip text
+- Text-shadow nas partes brancas: `0 0 80px rgba(22,163,74,0.15)`
+- Subtitle: 22px desktop / 18px mobile, font-weight 500, color rgba(255,255,255,0.75)
+- Sub-subtitle: 14px, font-weight 400, color rgba(255,255,255,0.4)
+- Badge: texto actualizado para "WEBINAR GRATUITO . AO VIVO . 2 MARCO"
+- Hero max-width: 780px, padding vertical 80px
+- Orbs mais visiveis: green 0.12, blue 0.09, violet 0.07
+
+---
+
+## Dependencias / Imports a adicionar
+
+- `useCountdown` de `@/hooks/useCountdown`
+- `ElectricBorder` de `@/components/landing/ElectricBorder`
+- `Calendar, Clock, Timer, GraduationCap` de `lucide-react` (Calendar e GraduationCap a adicionar ao import existente)
+- Logos: google, chatgpt, claude, freepik, bytedance, gemini, llama, runcomfy de `@/assets/logos/`
+
+Nenhum package novo. Nenhum ficheiro criado. Apenas `src/pages/Video.tsx` e modificado.
+
