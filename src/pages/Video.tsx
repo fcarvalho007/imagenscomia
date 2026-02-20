@@ -179,11 +179,11 @@ const speakerCredentials = [
 ];
 
 const faqs = [
-  { q: "Precisa de experiência com IA?", a: "Não. O foco é processo e decisão, com demonstração simples." },
-  { q: "Serve B2B e B2C?", a: "Serve ambos: anúncios, demos, prova social e conteúdo de confiança." },
-  { q: "Se não conseguir assistir ao vivo, o que acontece?", a: "Pode inscrever-se na mesma para receber instruções e os próximos passos por email. A gravação integral não está incluída na participação gratuita." },
-  { q: "O que preparar?", a: "Um exemplo de produto/serviço e 2–3 imagens (podem ser do site)." },
-  { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno e repetir semanalmente." },
+  { q: "Preciso de experiência com IA?", a: "De todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
+  { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes. Vais ver exemplos dos dois." },
+  { q: "E se não conseguir assistir ao vivo?", a: "Inscreve-te na mesma — recebes instruções e próximos passos por email. Se quiseres acesso à gravação integral + guia de apoio, o Premium Pass (15 EUR + IVA) garante isso." },
+  { q: "Existe algo mais aprofundado sobre vídeo?", a: "Sim. Além do webinar gratuito, há uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento. Podes adicioná-la durante a inscrição." },
+  { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois do webinar, já consegues produzir os primeiros clips e repetir semanalmente." },
 ];
 
 const DARK_950 = "#020617"; // slate-950
@@ -587,11 +587,6 @@ const VideoPageInner = () => {
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
         <div className="relative z-10 mx-auto max-w-5xl px-5">
-          <ScrollReveal>
-            <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-8 text-center" style={{ color: "rgba(255,255,255,0.30)" }}>
-              PÚBLICO-ALVO
-            </p>
-          </ScrollReveal>
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
               {/* Card: Certo para */}
