@@ -171,7 +171,7 @@ const VideoPageInner = () => {
     description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
   });
 
-  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T21:00:00"));
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T10:00:00"));
   const openModal = () => open("free");
 
   /* Sticky mobile CTA visibility */
@@ -194,7 +194,7 @@ const VideoPageInner = () => {
       >
         <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
           <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
-            AO VIVO · 3 MAR · 21H00
+            AO VIVO · 3 MAR · 10H00
           </p>
 
           <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
@@ -462,7 +462,7 @@ const VideoPageInner = () => {
         <style>{`
           .pain-card {
             background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.08);
             backdrop-filter: blur(16px);
           }
           .pain-card:hover {
@@ -569,7 +569,7 @@ const VideoPageInner = () => {
           </ScrollReveal>
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-7 transition-all duration-200 audience-card-yes" style={{ background: "linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.8) 100%)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <div className="rounded-xl p-7 transition-all duration-200 audience-card-yes" style={{ background: "linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.8) 100%)", border: "1px solid rgba(255,255,255,0.10)" }}>
                 <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
                   <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
                   Certo para
@@ -641,7 +641,7 @@ const VideoPageInner = () => {
                 variants={slideFromLeft}
                 transition={defaultTransition}
                 className="relative rounded-xl p-5 md:p-6 transition-all duration-200 cursor-default agenda-card overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
                 {/* Large decorative number */}
                 <span
@@ -816,7 +816,7 @@ const VideoPageInner = () => {
             Garantir inscrição gratuita
           </h2>
           <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
-            Sem compromisso. Evento ao vivo em 3 de Março de 2026, às 21h.
+            Sem compromisso. Evento ao vivo em 3 de Março de 2026, às 10h.
           </p>
           <div className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
@@ -843,7 +843,7 @@ const VideoPageInner = () => {
 };
 
 const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 21h">
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 10h">
     <VideoPageInner />
   </RegistrationModalProvider>
 );
