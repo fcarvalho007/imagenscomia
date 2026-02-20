@@ -108,7 +108,7 @@ const Eyebrow = ({ children, light = false }: { children: React.ReactNode; light
 
 /* ── Section title ── */
 const SectionTitle = ({ children, light = true }: { children: React.ReactNode; light?: boolean }) => (
-  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center ${light ? "text-white" : ""}`} style={!light ? { color: "#0a0a0f" } : {}}>
+  <h2 className={`font-heading font-extrabold text-[28px] sm:text-[34px] leading-[1.15] mb-6 text-center ${light ? "text-white" : ""}`} style={!light ? { color: "#0a0a0f", letterSpacing: "-0.5px" } : { letterSpacing: "-0.5px" }}>
     {children}
   </h2>
 );
@@ -238,7 +238,7 @@ const VideoPageInner = () => {
 
           <button
             onClick={openModal}
-            className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer hidden sm:block"
+            className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer hidden sm:block focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
           >
             Garantir inscrição gratuita
           </button>
@@ -582,49 +582,53 @@ const VideoPageInner = () => {
         `}</style>
       </section>
 
-      {/* ═══ SECTION 2 — "Para quem é" (slate-950) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#1e293b" }}>
-        <div className="mx-auto max-w-5xl px-5">
+      {/* ═══ SECTION 2 — "Para quem é" (slate-950 + grain) ═══ */}
+      <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "linear-gradient(to bottom, #020617, #0f172a)" }}>
+        {/* Noise grain overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
+        <div className="relative z-10 mx-auto max-w-5xl px-5">
           <ScrollReveal>
-            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3 text-center" style={{ color: "#a855f7" }}>
+            <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-8 text-center" style={{ color: "rgba(255,255,255,0.30)" }}>
               PÚBLICO-ALVO
             </p>
-            <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center text-white">
-              Para quem é{" "}
-              <span style={{ background: "linear-gradient(135deg, #a855f7 0%, #60A5FA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                e para quem não é
-              </span>
-            </h2>
           </ScrollReveal>
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
-              <div className="rounded-2xl p-8 transition-all duration-200 audience-card-yes" style={{ background: "rgba(15,23,42,0.7)", border: "1px solid rgba(255,255,255,0.10)", borderTop: "3px solid rgba(74,222,128,0.5)" }}>
-                <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
-                  <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
-                  Certo para
-                </p>
-                <ul className="space-y-4">
-                  {forWhom.map((t, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
-                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>{t}</span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Card: Certo para */}
+              <div>
+                <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-4" style={{ letterSpacing: "-0.5px" }}>Para quem é</h3>
+                <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-yes" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
+                  <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
+                    <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
+                    Certo para
+                  </p>
+                  <ul className="space-y-4">
+                    {forWhom.map((t, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
+                        <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.70)" }}>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <div className="rounded-2xl p-8 transition-all duration-200 audience-card-no" style={{ background: "rgba(10,10,15,0.6)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid rgba(148,163,184,0.3)" }}>
-                <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  <XCircle className="w-5 h-5" style={{ color: "rgba(255,255,255,0.3)" }} />
-                  Não é para
-                </p>
-                <ul className="space-y-4">
-                  {notFor.map((t, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }} />
-                      <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.50)" }}>{t}</span>
-                    </li>
-                  ))}
-                </ul>
+              {/* Card: Não é para */}
+              <div>
+                <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] mb-4" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "-0.5px" }}>Para quem não é</h3>
+                <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-no" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
+                  <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    <XCircle className="w-5 h-5" style={{ color: "rgba(255,255,255,0.3)" }} />
+                    Não é para
+                  </p>
+                  <ul className="space-y-4">
+                    {notFor.map((t, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(255,255,255,0.25)" }} />
+                        <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.50)" }}>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </ScrollReveal>
@@ -642,14 +646,14 @@ const VideoPageInner = () => {
       <section className="py-16 md:py-24 bg-off-white">
         <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
           <ScrollReveal>
-            <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-blue-600 text-center mb-2">
+            <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] text-blue-600 text-center mb-2">
               AGENDA · 45 MIN
             </p>
             <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
               O que acontece durante a sessão
             </h2>
             <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
-              2 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
+              3 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
             </p>
           </ScrollReveal>
 
@@ -691,7 +695,7 @@ const VideoPageInner = () => {
                 onClick={openModal}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all"
+                className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
               >
                 Sim, quero inscrever-me grátis!
               </motion.button>
@@ -774,10 +778,10 @@ const VideoPageInner = () => {
         <div className="mx-auto max-w-[1080px]">
           <ScrollReveal>
             <div className="text-center mb-12">
-              <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#a855f7" }}>
+              <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>
                 AVALIAÇÕES PÚBLICAS
               </p>
-              <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] text-white">
+              <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white" style={{ letterSpacing: "-0.5px" }}>
                 Testemunhos de quem participou no último webinar
               </h2>
               <div className="mt-4">
@@ -872,7 +876,7 @@ const VideoPageInner = () => {
           `}</style>
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-5 text-center">
-          <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-4">
+          <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white leading-[1.15] mb-4" style={{ letterSpacing: "-0.5px" }}>
             Garantir inscrição gratuita
           </h2>
           <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
