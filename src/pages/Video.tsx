@@ -18,6 +18,7 @@ import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegi
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { FooterSection } from "@/components/landing/FooterSection";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
+import { LogoMarquee } from "@/components/landing/LogoMarquee";
 
 /* ── Reduced motion check ── */
 const prefersReduced = () =>
@@ -140,7 +141,7 @@ const deliverables = [
 
 const agenda = [
   { num: "001", title: "Boas-vindas + o que mudou no vídeo" },
-  { num: "002", title: "O processo mínimo (briefing + checklist) para produzir vídeo com consistência" },
+  { num: "002", title: "O processo mínimo (briefing + checklist) para produzir vídeo com consistência", tag: "CORE" },
   { num: "003", title: "Demonstração: do briefing ao primeiro clip (passo a passo)", tag: "AO VIVO" },
   { num: "004", title: "Erros mais comuns que destroem consistência (e como evitar)" },
 ];
@@ -240,14 +241,14 @@ const VideoPageInner = () => {
       <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: DARK_950, paddingTop: 80, paddingBottom: 80 }}>
         {/* Animated orbs background */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-          <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.10, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
-          <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.08, top: "10%", right: "-5%", filter: "blur(80px)" }} />
-          <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.06, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.12, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.09, top: "10%", right: "-5%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.07, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
         </div>
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative px-5 text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 1100 }}>
+        <div className="relative px-5 text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 1040 }}>
           {/* Live badge pill */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
             <span className="inline-flex items-center gap-2 font-heading text-[11px] font-semibold uppercase tracking-[2px] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
@@ -261,11 +262,13 @@ const VideoPageInner = () => {
 
           {/* Headline — wider container to fit 2 lines on desktop */}
           <h1
-            className="font-heading leading-[1.05] text-white mb-4 max-w-[900px] mx-auto"
-            style={{ fontWeight: 900, letterSpacing: "-2px", textShadow: "0 0 80px rgba(22,163,74,0.15)", fontSize: "clamp(36px, 5.5vw, 68px)" }}
+            className="font-heading leading-[1.05] text-white mb-4 max-w-[920px] mx-auto text-[38px] md:text-[52px] lg:text-[72px]"
+            style={{ fontWeight: 900, textShadow: "0 0 80px rgba(22,163,74,0.15)" }}
           >
-            <StaggeredWords startDelay={0.2} text="Aprende a criar vídeos com" />
-            <br />
+            <span className="tracking-[-0.5px] md:tracking-[-1px] lg:tracking-[-2px]">
+              <StaggeredWords startDelay={0.2} text="Aprende a criar vídeos com" />
+            </span>
+            <br className="hidden lg:block" />
             <motion.span
               initial="hidden" whileInView="visible" viewport={vpOnce}
               variants={wordReveal}
@@ -294,8 +297,8 @@ const VideoPageInner = () => {
           <motion.p
             initial="hidden" animate="visible"
             variants={fadeUp} transition={{ ...defaultTransition, delay: 0.9 }}
-            className="font-medium mb-2 max-w-[700px] mx-auto"
-            style={{ fontSize: "clamp(17px, 2.2vw, 21px)", color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px" }}
+            className="font-medium mb-2 max-w-[700px] mx-auto text-[18px] lg:text-[22px]"
+            style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.35 }}
           >
             Sais com um sistema, ferramentas e templates prontos (briefing → gerar → rever → publicar)
           </motion.p>
@@ -390,8 +393,11 @@ const VideoPageInner = () => {
         `}</style>
       </section>
 
-      {/* ═══ SECTION 1 — "Quando isto faz sentido" (slate-900) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_900 }}>
+      {/* ═══ LOGO MARQUEE ═══ */}
+      <LogoMarquee />
+
+      {/* ═══ SECTION 1 — "Quando isto faz sentido" ═══ */}
+      <section className="py-20 md:py-28" style={{ background: "#0d0d14" }}>
         <div className="mx-auto max-w-5xl px-5">
           <ScrollReveal>
             <div className="text-center mb-6">
@@ -410,7 +416,6 @@ const VideoPageInner = () => {
             </div>
           </ScrollReveal>
 
-          {/* "Quando isto faz sentido" cards — light cards on dark background */}
           <ScrollReveal delay={0.08}>
             <h3 className="font-heading font-bold text-[20px] text-white text-center mb-8">Quando isto faz sentido</h3>
           </ScrollReveal>
@@ -421,18 +426,31 @@ const VideoPageInner = () => {
           >
             {whenItMakesSense.map(({ Icon, label, desc }, i) => (
               <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
-                <div
-                  className="rounded-xl p-6 h-full transition-all duration-200 hover:-translate-y-[2px]"
-                  style={{ background: "#f8f9fa", border: "1px solid rgba(0,0,0,0.06)" }}
+                <SpotlightCard
+                  className="relative overflow-hidden rounded-xl p-6 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card"
                 >
-                  <Icon className="w-5 h-5 mb-3" style={{ color: "#2563EB" }} />
-                  <p className="font-heading font-bold text-[15px] mb-1.5" style={{ color: "#0a0a0f" }}>{label}</p>
-                  <p className="text-[13px] leading-[1.55]" style={{ color: "#64748b" }}>{desc}</p>
-                </div>
+                  <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.04)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className="w-5 h-5 mb-3 relative z-10" style={{ color: "#60A5FA" }} />
+                  <p className="font-heading font-semibold text-[15px] mb-1.5 relative z-10" style={{ color: "#ddd" }}>{label}</p>
+                  <p className="text-[13px] leading-[1.55] relative z-10" style={{ color: "rgba(255,255,255,0.50)" }}>{desc}</p>
+                </SpotlightCard>
               </motion.div>
             ))}
           </motion.div>
         </div>
+
+        <style>{`
+          .pain-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+          }
+          .pain-card:hover {
+            border-color: rgba(22,163,74,0.35) !important;
+            background: rgba(22,163,74,0.05) !important;
+          }
+        `}</style>
       </section>
 
       {/* ═══ SECTION 2 — "Para quem é" (slate-950) ═══ */}
@@ -470,8 +488,8 @@ const VideoPageInner = () => {
         </div>
       </section>
 
-      {/* ═══ SECTION 3 — "O que muda depois de te inscreveres" (slate-900, light cards) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_900 }}>
+      {/* ═══ SECTION 3 — "O que muda depois de te inscreveres" ═══ */}
+      <section className="py-20 md:py-28" style={{ background: "#050709" }}>
         <div className="mx-auto max-w-5xl px-5">
           <ScrollReveal>
             <SectionTitle>O que muda depois de te inscreveres</SectionTitle>
@@ -520,23 +538,23 @@ const VideoPageInner = () => {
                 variants={slideFromLeft}
                 transition={defaultTransition}
                 className="flex items-center py-[14px] transition-all duration-200 group cursor-default"
-                style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}
+                style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}
               >
                 <span
-                  className="font-heading font-bold text-[11px] w-[40px] shrink-0 transition-colors duration-200 group-hover:text-blue-600"
-                  style={{ color: "#cbd5e1" }}
+                  className="font-heading font-bold text-[11px] w-[40px] shrink-0 transition-colors duration-200"
+                  style={{ color: "#333" }}
                 >
                   {item.num}
                 </span>
                 <span
-                  className="flex-1 text-[14px] transition-colors duration-200 group-hover:text-black flex items-center gap-2"
-                  style={{ color: "#64748b" }}
+                  className="flex-1 text-[13px] transition-colors duration-200 flex items-center gap-2"
+                  style={{ color: "#888" }}
                 >
                   {item.title}
                   {item.tag && (
                     <span
                       className="inline-block text-[8px] font-bold uppercase rounded px-[7px] py-[2px]"
-                      style={{ background: "rgba(37,99,235,0.10)", color: "#2563EB", marginLeft: 4 }}
+                      style={{ background: "rgba(22,163,74,0.12)", color: "#16a34a", marginLeft: 4 }}
                     >
                       {item.tag}
                     </span>
@@ -646,7 +664,7 @@ const VideoPageInner = () => {
       </section>
 
       {/* ═══ FINAL CTA ═══ */}
-      <section className="relative overflow-hidden py-20 md:py-28" style={{ background: DARK_950 }}>
+      <section className="relative overflow-hidden py-20 md:py-28" style={{ background: "#050709" }}>
         {/* Animated gradient orb */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
