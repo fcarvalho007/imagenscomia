@@ -24,7 +24,7 @@ const bullets = [
     sub: "Estruturas para consistência e controlo.",
   },
   {
-    title: "Gravação incluída",
+    title: "Acesso à sessão incluído",
     sub: "Rever e replicar quando necessário.",
   },
 ];

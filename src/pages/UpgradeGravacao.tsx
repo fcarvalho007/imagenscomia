@@ -29,7 +29,7 @@ const stepVariants = {
 };
 
 const UpgradeGravacao = () => {
-  usePageMeta({ title: "Upgrade — Gravação Imagens com IA", description: "Adicione a Masterclass ao seu pack de gravação." });
+  usePageMeta({ title: "Upgrade — Pack Imagens com IA", description: "Adicione a Masterclass ao seu pack completo." });
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [orderState, setOrderState] = useState<GravacaoOrderState>({ gravacao: true, masterclass: false });
@@ -69,7 +69,7 @@ const UpgradeGravacao = () => {
 
       if (error) throw error;
       if (!data) {
-        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página de gravação.");
+        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página do pack.");
         setRecoveryLoading(false);
         return;
       }
@@ -212,7 +212,7 @@ const UpgradeGravacao = () => {
           <div className="flex-1">
             <div className="flex justify-between items-start py-3 border-b border-border">
               <div>
-                <p className="font-semibold text-[14px] text-ink-900">Gravação + Pack de Apoio</p>
+                <p className="font-semibold text-[14px] text-ink-900">Sessão completa + Pack de Apoio</p>
                 <p className="text-[14px] text-ink-400 mt-0.5">Acesso imediato</p>
               </div>
               <p className="font-heading font-bold text-[16px] text-ink-900">€27 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
@@ -248,7 +248,7 @@ const UpgradeGravacao = () => {
               <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-heading font-bold text-[15px] text-green-800">Gravação + Pack de apoio garantidos</p>
+                  <p className="font-heading font-bold text-[15px] text-green-800">Sessão + Pack de apoio garantidos</p>
                   <p className="text-[13px] text-green-700 mt-0.5">Acesso imediato · 27 € (c/ IVA)</p>
                   <p className="text-[13px] text-green-600 mt-1">Esta página é opcional: serve apenas para adicionar extras.</p>
                 </div>
@@ -337,7 +337,7 @@ const UpgradeGravacao = () => {
                 onClick={() => { saveStepData(3, { plan_selected: "gravacao" }); advanceStep(3); }}
                 className="w-full text-center text-[13px] text-ink-400 mt-2 hover:text-ink-600 transition-colors"
               >
-                Continuar só com a gravação
+                Continuar só com o pack
               </button>
             </>
           ) : (
@@ -345,7 +345,7 @@ const UpgradeGravacao = () => {
               onClick={() => { saveStepData(3, { plan_selected: "gravacao" }); advanceStep(3); }}
               className="w-full py-3.5 rounded-xl border border-ink-200 text-ink-600 hover:bg-ink-50 font-medium text-[14px] transition-colors"
             >
-              Continuar só com a gravação (27 €) →
+              Continuar só com o pack (27 €) →
             </button>
           )}
         </div>
