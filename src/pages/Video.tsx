@@ -28,7 +28,7 @@ const fadeUp = {
 };
 
 const wordReveal = {
-  hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+  hidden: { opacity: 0, y: 20, filter: "blur(6px)" },
   visible: { opacity: 1, y: 0, filter: "blur(0px)" },
 };
 
@@ -70,11 +70,11 @@ const StaggeredWords = ({ text, startDelay = 0.3 }: { text: string; startDelay?:
       animate={prefersReduced() ? "visible" : "hidden"}
       whileInView="visible"
       viewport={vpOnce}
-      variants={staggerContainer(0.08)}
+      variants={staggerContainer(0.07)}
       transition={{ delayChildren: startDelay }}
     >
       {words.map((w, i) => (
-        <motion.span key={i} variants={wordReveal} transition={{ duration: 0.5, ease: "easeOut" }} className="inline-block mr-[0.3em]">
+        <motion.span key={i} variants={wordReveal} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="inline-block mr-[0.3em]">
           {w}
         </motion.span>
       ))}
@@ -267,76 +267,175 @@ const VideoPage = () => {
       </div>
 
       {/* ═══ 2 — HERO ═══ */}
-      <section className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-24">
-        {/* Aurora background replaces ColorBends */}
-        <AuroraBackground />
+      <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: "#050709" }}>
+        {/* Animated orbs background */}
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+          <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.08, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.06, top: "10%", right: "-5%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.05, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
+        </div>
+        {/* Noise grain overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
-          {/* Badge */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }} viewport={vpOnce}>
-            <span className="inline-block font-heading text-[12px] font-semibold uppercase tracking-[0.14em] px-4 py-1.5 rounded-full mb-5" style={{ border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.7)" }}>
-              Webinar gratuito · Ao vivo · 2 Março 2026
+        <div className="relative px-5 text-center w-full" style={{ zIndex: 2, maxWidth: 700, margin: "0 auto" }}>
+          {/* Live badge pill */}
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
+            <span className="inline-flex items-center gap-2 font-heading text-[11px] font-bold uppercase tracking-[0.16em] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
+              <span className="relative flex h-[6px] w-[6px]">
+                <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
+                <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
+              </span>
+              WEBINAR GRATUITO · AO VIVO
             </span>
           </motion.div>
 
           {/* Headline — staggered word reveal */}
-          <h1 className="font-heading font-extrabold text-[28px] sm:text-[38px] md:text-[44px] leading-[1.1] text-white mb-5" style={{ letterSpacing: "-0.02em" }}>
-            <StaggeredWords text="Vídeo com IA para marketing — sem equipa, sem caos, com um sistema simples de delegação" startDelay={0.3} />
+          <h1 className="font-heading font-extrabold text-[26px] sm:text-[36px] md:text-[44px] leading-[1.1] text-white mb-4" style={{ letterSpacing: "-0.02em" }}>
+            <StaggeredWords text="Aprende a criar vídeos com Inteligência Artificial para marketing" startDelay={0.2} />
           </h1>
 
-          {/* Subheadline — fade up */}
+          {/* Subtitle */}
           <motion.p
-            initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={fadeUp} transition={{ ...defaultTransition, delay: 1.2 }}
-            className="text-[16px] sm:text-[18px] leading-[1.65] max-w-[640px] mx-auto mb-7"
-            style={{ color: "rgba(255,255,255,0.6)" }}
+            initial="hidden" animate="visible"
+            variants={fadeUp} transition={{ ...defaultTransition, delay: 0.9 }}
+            className="text-[17px] sm:text-[20px] leading-[1.5] font-medium text-white mb-2"
           >
-            Sessão prática para gestores e profissionais de marketing que precisam de produzir clips curtos com consistência, mesmo com pouco tempo e sem estúdio.
+            Com um sistema simples de delegação, sem caos.
           </motion.p>
 
-          {/* Info badges — staggered entrance */}
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={staggerContainer(0.1)}
-            className="flex flex-wrap justify-center gap-2 mb-8"
+          {/* Sub-subtitle */}
+          <motion.p
+            initial="hidden" animate="visible"
+            variants={fadeUp} transition={{ ...defaultTransition, delay: 1.05 }}
+            className="text-[14px] sm:text-[15px] leading-[1.6] mb-9"
+            style={{ color: "rgba(255,255,255,0.45)" }}
           >
-            {["2 de Março · A definir hora", "Online · 45–60 min", "Gratuito", "Lugares limitados para o directo"].map(t => (
-              <motion.span
-                key={t}
+            Sessão prática para gestores e profissionais de marketing
+          </motion.p>
+
+          {/* 4 Info boxes */}
+          <motion.div
+            initial="hidden" animate="visible"
+            variants={staggerContainer(0.1)}
+            transition={{ delayChildren: 1.2 }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[600px] mx-auto"
+          >
+            {([
+              { icon: "📅", label: "DATA", value: "2 de Março" },
+              { icon: "🕐", label: "HORÁRIO", value: "A definir" },
+              { icon: "⏱", label: "DURAÇÃO", value: "45–60 min" },
+              { icon: "🎓", label: "INVESTIMENTO", value: "Gratuito" },
+            ] as const).map((box) => (
+              <motion.div
+                key={box.label}
                 variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="text-[13px] px-3.5 py-1.5 rounded-full font-medium"
-                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.55)" }}
+                className="rounded-[10px] py-3 px-[18px] text-center transition-all duration-200 hero-info-box cursor-default"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
               >
-                {t}
-              </motion.span>
+                <span className="text-[20px] block mb-1">{box.icon}</span>
+                <span className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{box.label}</span>
+                <span className="block text-[14px] font-bold text-white">{box.value}</span>
+              </motion.div>
             ))}
           </motion.div>
 
-          {/* Benefit bullets */}
-          <ScrollReveal delay={0.22}>
-            <div className="max-w-[560px] mx-auto text-left space-y-3 mb-8">
-              {[
-                "Transformar um briefing em vídeo curto publicável, sem se perder em ferramentas.",
-                "Saber onde a IA poupa tempo e onde o controlo humano é obrigatório.",
-                "Levar um mini-sistema de delegação: briefing + checklist + critérios de qualidade.",
-              ].map((b, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <Check className="w-5 h-5 shrink-0 mt-0.5" style={{ color: "hsl(142 76% 46%)" }} />
-                  <span className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.75)" }}>{b}</span>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
-
           {/* CTA with shimmer */}
-          <ScrollReveal delay={0.28}>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 1.5 }}>
             <ShimmerButton>
-              <GreenCTA large />
+              <button
+                onClick={scrollTo("inscricao")}
+                className="inline-block font-heading text-white rounded-xl transition-all duration-200 cursor-pointer text-[17px] px-10 py-4 hover:scale-[1.02]"
+                style={{ background: "hsl(142 76% 36%)", fontWeight: 800, minWidth: 280, boxShadow: "0 0 25px rgba(22,163,74,0.4)" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
+              >
+                Garantir inscrição gratuita
+              </button>
             </ShimmerButton>
-            <p className="text-[13px] mt-3" style={{ color: "rgba(255,255,255,0.35)" }}>Sem compromisso. Recomendado assistir ao vivo.</p>
-          </ScrollReveal>
+
+            {/* Google reviews badge */}
+            <div className="mt-4 flex justify-center">
+              <GoogleBadge />
+            </div>
+          </motion.div>
         </div>
+
+        {/* Hero CSS */}
+        <style>{`
+          @media (prefers-reduced-motion: no-preference) {
+            .hero-orb-1 { animation: heroFloat1 20s ease-in-out infinite; }
+            .hero-orb-2 { animation: heroFloat2 25s ease-in-out infinite reverse; }
+            .hero-orb-3 { animation: heroFloat3 30s ease-in-out infinite; }
+            .hero-live-dot-ping { animation: heroPing 1.5s ease-in-out infinite; }
+          }
+          @keyframes heroFloat1 {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(25px,-15px) scale(1.04); }
+            66% { transform: translate(-15px,18px) scale(0.97); }
+          }
+          @keyframes heroFloat2 {
+            0%,100% { transform: translate(0,0) scale(1); }
+            33% { transform: translate(-20px,20px) scale(1.04); }
+            66% { transform: translate(18px,-12px) scale(0.97); }
+          }
+          @keyframes heroFloat3 {
+            0%,100% { transform: translateX(-50%) translate(0,0) scale(1); }
+            33% { transform: translateX(-50%) translate(25px,-15px) scale(1.04); }
+            66% { transform: translateX(-50%) translate(-15px,18px) scale(0.97); }
+          }
+          @keyframes heroPing {
+            0%,100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0; transform: scale(2.2); }
+          }
+          .hero-info-box:hover {
+            border-color: rgba(22,163,74,0.4) !important;
+            background: rgba(22,163,74,0.06) !important;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .hero-cta-glow { animation: heroGlow 2.5s ease-in-out infinite; }
+          }
+          @keyframes heroGlow {
+            0%,100% { box-shadow: 0 0 25px rgba(22,163,74,0.4); }
+            50% { box-shadow: 0 0 45px rgba(22,163,74,0.65); }
+          }
+        `}</style>
+      </section>
+
+      {/* ═══ 2b — TOOLS MARQUEE STRIP ═══ */}
+      <section style={{ background: "#080a0d", borderTop: "1px solid rgba(255,255,255,0.05)" }} className="py-5 overflow-hidden">
+        <p className="text-center uppercase mb-3" style={{ fontSize: 9, letterSpacing: 2, color: "#444" }}>
+          FERRAMENTAS ABORDADAS NA SESSÃO
+        </p>
+        <div
+          className="relative overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+          }}
+        >
+          <div className="flex w-max hero-marquee">
+            {[...Array(2)].map((_, dup) => (
+              <div key={dup} className="flex items-center" style={{ gap: 48 }}>
+                {["Riverside", "Google Flow", "Veo", "Dreamina (CapCut)", "Higgsfield"].map(t => (
+                  <span key={`${dup}-${t}`} className="whitespace-nowrap" style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>
+                    {t}
+                  </span>
+                ))}
+                <span style={{ width: 48 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+        <style>{`
+          @media (prefers-reduced-motion: no-preference) {
+            .hero-marquee { animation: heroMarquee 18s linear infinite; }
+          }
+          @keyframes heroMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+        `}</style>
       </section>
 
       {/* ═══ 3 — PROBLEM ═══ */}
