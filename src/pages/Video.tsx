@@ -138,11 +138,11 @@ const notFor = [
 const videoAgenda = [
   {
     num: "01",
-    title: "Workshop Prático: O processo mínimo (briefing + checklist) para produzir vídeo com consistência",
+    title: "Ferramentas de vídeo certas (sem confusão)",
     borderColor: "border-l-blue-600",
-    desc: "Estrutura simples para sair com clips prontos a publicar.",
-    bullets: ["Do briefing ao primeiro clip: passo a passo", "Checklist de produção para manter consistência"],
-    deliverable: "Processo mínimo para produzir vídeo com qualidade.",
+    desc: "Antes de escolher a ferramenta, convém perceber o que funciona hoje.",
+    bullets: ["Comparações rápidas entre ferramentas gratuitas e pagas", "Lista curada para guardar nos favoritos"],
+    deliverable: "Mapa de decisão rápido para escolher a ferramenta certa.",
   },
   {
     num: "02",
@@ -575,7 +575,7 @@ const VideoPageInner = () => {
       </section>
 
       {/* ═══ SECTION 2 — "Para quem é" (slate-950) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
+      <section className="py-20 md:py-28" style={{ background: "#1e293b" }}>
         <div className="mx-auto max-w-5xl px-5">
           <ScrollReveal>
             <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3 text-center" style={{ color: "#a855f7" }}>
@@ -590,7 +590,7 @@ const VideoPageInner = () => {
           </ScrollReveal>
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
-              <div className="rounded-xl p-7 transition-all duration-200 audience-card-yes" style={{ background: "linear-gradient(135deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.8) 100%)", border: "1px solid rgba(255,255,255,0.10)" }}>
+              <div className="rounded-2xl p-8 transition-all duration-200 audience-card-yes" style={{ background: "rgba(15,23,42,0.7)", border: "1px solid rgba(255,255,255,0.10)", borderTop: "3px solid rgba(74,222,128,0.5)" }}>
                 <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
                   <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
                   Certo para
@@ -607,7 +607,7 @@ const VideoPageInner = () => {
                   ))}
                 </ul>
               </div>
-              <div className="rounded-xl p-7 transition-all duration-200 audience-card-no" style={{ background: "linear-gradient(135deg, rgba(15,23,42,0.8) 0%, rgba(10,10,15,1) 100%)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="rounded-2xl p-8 transition-all duration-200 audience-card-no" style={{ background: "rgba(10,10,15,0.6)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid rgba(148,163,184,0.3)" }}>
                 <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.45)" }}>
                   <XCircle className="w-5 h-5" style={{ color: "rgba(255,255,255,0.3)" }} />
                   Não é para
