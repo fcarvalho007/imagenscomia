@@ -38,6 +38,21 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     identifier: "WEBINAR-GRAVMC",
     description: "Gravação + Pack + Masterclass — Webinar IA",
   },
+  "video-premium": {
+    value: 18.45,
+    identifier: "WEBINAR-VIDPREM",
+    description: "Premium Pass — Vídeo com IA",
+  },
+  "video-masterclass": {
+    value: 57.81,
+    identifier: "WEBINAR-VIDMC",
+    description: "Masterclass — Vídeo com IA",
+  },
+  "video-bundle": {
+    value: 76.26,
+    identifier: "WEBINAR-VIDBUNDLE",
+    description: "Premium + Masterclass — Vídeo com IA",
+  },
 };
 
 serve(async (req) => {

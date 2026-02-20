@@ -16,6 +16,8 @@ import { TermosContent } from "@/components/legal/TermosContent";
 import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
+import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
 
 /* Logo imports */
@@ -262,7 +264,8 @@ const DARK_BORDER = "rgba(255,255,255,0.08)";
 
 /* ══════════════════════════════════════════════════════ */
 
-const VideoPage = () => {
+const VideoPageInner = () => {
+  const { open } = useRegistrationModal();
   usePageMeta({
     title: "Webinar Gratuito · Vídeo com IA para Marketing · 3 Março 2026",
     description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
@@ -270,7 +273,7 @@ const VideoPage = () => {
 
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
   const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T21:00:00"));
-
+  const openModal = () => open("free");
   return (
     <div className="min-h-screen pt-[52px]" style={{ background: DARK, color: "#e2e8f0" }}>
 
@@ -296,7 +299,7 @@ const VideoPage = () => {
           </div>
 
           <button
-            onClick={scrollTo("inscricao")}
+            onClick={openModal}
             className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer"
           >
             Quero inscrever-me!
@@ -414,7 +417,7 @@ const VideoPage = () => {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 1.5 }} className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
-                onClick={scrollTo("inscricao")}
+                onClick={openModal}
                 className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 32px", borderRadius: 10, maxWidth: 400, minWidth: 280 }}
               >
@@ -986,7 +989,7 @@ const VideoPage = () => {
           <div className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
-                onClick={scrollTo("inscricao")}
+                onClick={openModal}
                 className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 32px", borderRadius: 10, maxWidth: 400, minWidth: 280 }}
               >
@@ -1023,8 +1026,15 @@ const VideoPage = () => {
       <LegalModal open={legalModal === "privacidade"} title="Política de Privacidade" onOpenChange={() => setLegalModal(null)}>
         <PrivacidadeContent />
       </LegalModal>
+      <RegistrationModal />
     </div>
   );
 };
+
+const VideoPage = () => (
+  <RegistrationModalProvider redirectPath="/upgrade-video">
+    <VideoPageInner />
+  </RegistrationModalProvider>
+);
 
 export default VideoPage;

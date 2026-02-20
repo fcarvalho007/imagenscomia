@@ -15,6 +15,7 @@ import UpgradeSucesso from "./pages/UpgradeSucesso";
 import Pagar from "./pages/Pagar";
 import Gravacao from "./pages/Gravacao";
 import UpgradeGravacao from "./pages/UpgradeGravacao";
+import UpgradeVideo from "./pages/UpgradeVideo";
 import Inicial from "./pages/Inicial";
 import Recursos from "./pages/Recursos";
 import VideoPage from "./pages/Video";
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/pagar" element={<Pagar />} />
           <Route path="/gravacao" element={<Gravacao />} />
           <Route path="/upgrade-gravacao" element={<UpgradeGravacao />} />
+          <Route path="/upgrade-video" element={<UpgradeVideo />} />
           <Route path="/inicial" element={<Inicial />} />
           <Route path="/recursos" element={<Recursos />} />
           <Route path="/video" element={<VideoPage />} />
