@@ -1,23 +1,22 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw, Youtube, Eye, Clock, TrendingUp as Peak, ThumbsUp, UserPlus } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
 
 type Period = "7d" | "14d" | "30d" | "all";
 
-interface VisitantesState {
-  value: number | null;
-  updatedAt: string | null;
-  source: string | null;
-  status: "loading" | "ok" | "unavailable";
-}
+/* ── Constants ── */
+const FIXED_VISITORS = 2686;
+const CUTOFF_DATE = new Date("2026-02-20T23:59:59");
 
-function formatUpdatedAt(iso: string): string {
-  const d = new Date(iso);
-  const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-  return `${d.getDate()} ${months[d.getMonth()]} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-}
+const LIVE_RESULTS = {
+  views: 268,
+  avgDuration: "27:35",
+  peakViewers: 109,
+  likes: 14,
+  newSubs: 11,
+};
 
 function getPeriodStart(period: Period): Date | null {
   if (period === "all") return null;
@@ -83,9 +82,6 @@ function abbreviateSource(s: string) {
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
-  const [visitantesState, setVisitantesState] = useState<VisitantesState>({
-    value: null, updatedAt: null, source: null, status: "loading",
-  });
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
@@ -93,39 +89,16 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [emailFailed24h, setEmailFailed24h] = useState(0);
   const [emailFailed7d, setEmailFailed7d] = useState(0);
 
-  const fetchVisitantes = useCallback(async () => {
-    setVisitantesState(prev => ({ ...prev, status: "loading" }));
-    const { data, error } = await supabase.functions.invoke("get-analytics-visitors");
-    if (!error && data?.visitors != null && data.visitors > 0) {
-      setVisitantesState({
-        value: data.visitors,
-        updatedAt: data.updated_at ?? null,
-        source: data.source ?? null,
-        status: "ok",
-      });
-    } else {
-      setVisitantesState(prev => ({
-        ...prev,
-        status: "unavailable",
-      }));
-    }
-  }, []);
-
-  useEffect(() => { fetchVisitantes(); }, [fetchVisitantes]);
-
   useEffect(() => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const cutoffISO = CUTOFF_DATE.toISOString();
 
     Promise.all([
-      // Resend confirmed (24h)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo),
-      // Resend confirmed (7d)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo),
-      // Failed (24h)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo),
-      // Failed (7d)
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo).lte("created_at", cutoffISO),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo).lte("created_at", cutoffISO),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo).lte("created_at", cutoffISO),
+      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo).lte("created_at", cutoffISO),
     ]).then(([resend24, resend7d, failed24, failed7d]) => {
       setResendSent24h(resend24.count || 0);
       setResendSent7d(resend7d.count || 0);
@@ -133,9 +106,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       setEmailFailed7d(failed7d.count || 0);
     });
   }, []);
-  // Period-filtered inscritos
+
+  // Period-filtered inscritos + cutoff date
   const filteredInscritos = useMemo(() => {
-    const active = inscritos.filter((i) => i.status === "activo");
+    const active = inscritos.filter((i) => i.status === "activo" && new Date(i.timestamp) <= CUTOFF_DATE);
     const periodStart = getPeriodStart(period);
     if (!periodStart) return active;
     return active.filter((i) => new Date(i.timestamp) >= periodStart);
@@ -144,18 +118,15 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const stats = useMemo(() => {
     const active = filteredInscritos;
     const total = active.length;
-    // Only count confirmed revenue (paid_at exists)
     const pagantes = active.filter((i) => i.paid_at !== null);
     const receita = pagantes.reduce((s, i) => s + i.valor, 0);
     const conversao = total ? (pagantes.length / total) * 100 : 0;
     const ticket = pagantes.length ? receita / pagantes.length : 0;
-    // Pipeline: pending payments
     const pendentes = active.filter((i) => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
     const pipelineValor = pendentes.reduce((s, i) => s + i.valor, 0);
     const seleccionaram = active.filter((i) => i.payment_status === "selected");
     const aguardamPgto = active.filter((i) => i.payment_status === "awaiting_payment");
 
-    // Funnel (using real step_reached from DB)
     const step1 = active.length;
     const step2 = active.filter((i) => i.step_reached >= 2).length;
     const step3 = active.filter((i) => i.step_reached >= 3).length;
@@ -164,7 +135,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const clickedToPay = active.filter((i) => i.upgrade_clicked_at !== null).length;
     const paidConfirmed = active.filter((i) => i.paid_at !== null).length;
 
-    // Sources
     const srcMap: Record<string, number> = {};
     active.forEach((i) => i.source.forEach((s) => {
       if (s === "SKIPPED") return;
@@ -174,7 +144,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const sources = Object.entries(srcMap).sort((a, b) => b[1] - a[1]);
     const maxSrc = sources[0]?.[1] || 1;
 
-    // Plans
     const planCounts: Record<string, number> = { free: 0, premium: 0, masterclass: 0, bundle: 0 };
     active.forEach((i) => { planCounts[i.plan]++; });
     const pendingCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0 };
@@ -182,18 +151,15 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const paidCounts: Record<string, number> = { premium: 0, masterclass: 0, bundle: 0, free: 0 };
     pagantes.forEach((i) => { paidCounts[i.plan] = (paidCounts[i.plan] || 0) + 1; });
 
-    // Duvidas
     const comDuvida = active.filter((i) => i.duvida !== "" && i.duvida !== "SKIPPED");
 
     const nPremiumPaid = paidCounts.premium;
     const nMCPaid = paidCounts.masterclass;
     const nBundlePaid = paidCounts.bundle;
 
-    // Gender
     const genderCounts = { M: 0, F: 0, U: 0 };
     active.forEach((i) => { genderCounts[i.gender]++; });
 
-    // Difficulties breakdown
     const PREDEFINED_DIFFICULTIES = [
       "Não sei descrever o estilo visual que quero",
       "Os resultados ficam sempre genéricos, sem identidade",
@@ -212,7 +178,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           remaining = remaining.replace(pd, "");
         }
       });
-      // Clean up leftover separators
       remaining = remaining.replace(/^[,\s]+|[,\s]+$/g, "").replace(/,\s*,/g, ",").trim();
       if (remaining.includes("Outro:")) {
         outroCount++;
@@ -231,7 +196,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     ].sort((a, b) => b.count - a.count);
     const maxDiff = difficulties[0]?.count || 1;
 
-    // Funnel drop-offs (7 steps: from step1 to paidConfirmed)
     const funnelValues = [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
     const dropOffs = funnelValues.slice(0, -1).map((v, i) => ({
       lost: v - funnelValues[i + 1],
@@ -239,7 +203,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     }));
     const maxDropIdx = dropOffs.reduce((mi, d, i) => (d.lost > dropOffs[mi].lost ? i : mi), 0);
 
-    // Pending > 6h
     const pendingOver6h = active.filter((i) => {
       if (i.payment_status !== "awaiting_payment" && i.payment_status !== "selected") return false;
       const ref = i.upgrade_clicked_at || i.timestamp;
@@ -263,14 +226,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
   ];
 
-  const visitantes = visitantesState.value;
-  const visitantesLoading = visitantesState.status === "loading";
-  const visitorDropLost = visitantes != null && visitantes > 0 ? visitantes - stats.step1 : 0;
-  const visitorDropPct = visitantes != null && visitantes > 0 ? ((visitorDropLost / visitantes) * 100) : 0;
-  const registrationCTR = visitantes != null && visitantes > 0 ? ((stats.step1 / visitantes) * 100) : 0;
-  const landingToPayPct = visitantes != null && visitantes > 0 ? ((stats.paidConfirmed / visitantes) * 100) : 0;
-
-
+  const visitantes = FIXED_VISITORS;
+  const visitorDropLost = visitantes - stats.step1;
+  const visitorDropPct = (visitorDropLost / visitantes) * 100;
+  const registrationCTR = (stats.step1 / visitantes) * 100;
+  const landingToPayPct = (stats.paidConfirmed / visitantes) * 100;
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
@@ -293,6 +253,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </button>
             ))}
           </div>
+          {/* Cutoff badge */}
+          <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
+            Dados até: 20 Fev 2026
+          </span>
           {onRefresh && (
             <button
               onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }}
@@ -316,7 +280,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de Inscrição</h2>
         <p className="text-[13px] text-ink-400 mb-5">Da landing page ao pagamento</p>
         <div className="space-y-1">
-          {/* Step 0: Visitors — transparent state */}
+          {/* Step 0: Visitors — fixed value */}
           <div>
             <div className="flex items-center gap-3">
               <span className="text-[12px] text-ink-500 w-[200px] max-sm:w-[140px] shrink-0 truncate">
@@ -326,52 +290,18 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                 <div className="h-full rounded-full bg-ink-300" style={{ width: "100%" }} />
               </div>
               <div className="flex items-center gap-1.5 w-28 justify-end shrink-0">
-                {visitantesState.status === "loading" ? (
-                  <span className="text-[12px] text-ink-400 animate-pulse">—</span>
-                ) : visitantesState.status === "unavailable" ? (
-                  <span className="text-[12px] font-semibold" style={{ color: "hsl(var(--amber-500))" }}>Indisp.</span>
-                ) : (
-                  <>
-                    <span className="text-[13px] font-heading font-bold text-ink-700">{visitantes?.toLocaleString("pt-PT")}</span>
-                    <span className="text-ink-400 font-normal text-[11px]">(100%)</span>
-                  </>
-                )}
+                <span className="text-[13px] font-heading font-bold text-ink-700">{visitantes.toLocaleString("pt-PT")}</span>
+                <span className="text-ink-400 font-normal text-[11px]">(100%)</span>
               </div>
             </div>
-            {/* Status row below step 0 bar */}
+            {/* Fixed value badge */}
             <div className="flex items-center gap-2 ml-[200px] max-sm:ml-[140px] pl-1 mt-0.5 flex-wrap">
-              {visitantesState.status === "ok" && (
-                <>
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", border: "1px solid hsl(var(--blue-600) / 0.2)" }}>
-                    <RefreshCcw size={8} />
-                    via Analytics Cache · rota /
-                  </span>
-                  {visitantesState.updatedAt && (
-                    <span className="text-[10px] text-ink-400">
-                      Actualizado em {formatUpdatedAt(visitantesState.updatedAt)}
-                    </span>
-                  )}
-                </>
-              )}
-              {visitantesState.status === "unavailable" && (
-                <>
-                  <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--amber-500))" }}>Indisponível</span>
-                  {visitantesState.value != null && visitantesState.updatedAt && (
-                    <span className="text-[10px] text-ink-400">
-                      Último valor: {visitantesState.value.toLocaleString("pt-PT")} ({formatUpdatedAt(visitantesState.updatedAt)})
-                    </span>
-                  )}
-                  <button
-                    onClick={fetchVisitantes}
-                    className="text-[10px] font-semibold text-blue-600 hover:underline flex items-center gap-0.5"
-                  >
-                    <RefreshCcw size={8} /> Re-tentar
-                  </button>
-                </>
-              )}
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: "hsl(var(--surface))", color: "hsl(var(--ink-500))", border: "1px solid hsl(var(--ink-200))" }}>
+                Total desde início · valor fixo (sem API analytics)
+              </span>
             </div>
-            {visitantes != null && visitantes > 0 && visitorDropLost > 0 && (
+            {visitorDropLost > 0 && (
               <div className="flex items-center gap-1.5 ml-[200px] max-sm:ml-[140px] pl-1 py-1 text-red-500 font-semibold">
                 <ArrowDown size={10} />
                 <span className="text-[11px]">
@@ -383,7 +313,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           </div>
           {/* Remaining funnel steps */}
           {funnelSteps.map((step, idx) => {
-            const base = visitantes > 0 ? visitantes : stats.step1;
+            const base = visitantes;
             const pct = base ? (step.value / base) * 100 : 0;
             const drop = idx < stats.dropOffs.length ? stats.dropOffs[idx] : null;
             const isMaxDrop = idx === stats.maxDropIdx && drop && drop.lost > 0;
@@ -392,7 +322,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             const valueSize = step.isConversion ? "text-[15px]" : "text-[13px]";
             return (
               <div key={idx}>
-                {/* Separator before "Intenção de compra" zone */}
                 {step.separator && (
                   <div className="flex items-center gap-2 my-4">
                     <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500) / 0.35)" }} />
@@ -409,7 +338,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                     <div className="flex-1 h-px" style={{ background: "hsl(var(--amber-500) / 0.35)" }} />
                   </div>
                 )}
-                {/* Wrap conversion steps in amber-tinted zone */}
                 <div
                   className="rounded-lg py-0.5"
                   style={
@@ -442,11 +370,10 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                         {isLast ? (
                           <>
                             ({pct.toFixed(1)}% dos inscritos
-                            {visitantes != null && visitantes > 0 && (
-                              <span style={{ color: "hsl(var(--amber-500))" }}>
-                                {" "}· {landingToPayPct.toFixed(1)}% dos visitantes
-                              </span>
-                            )})
+                            <span style={{ color: "hsl(var(--amber-500))" }}>
+                              {" "}· {landingToPayPct.toFixed(1)}% dos visitantes
+                            </span>
+                            )
                           </>
                         ) : (
                           <>({pct.toFixed(1)}%)</>
@@ -488,23 +415,44 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <p className="text-[11px] text-ink-400">{kpi.sub}</p>
           </div>
         ))}
-        {/* Conversion KPI — two separate rates clearly labelled */}
+        {/* Conversion KPI */}
         <div className="bg-white border border-border rounded-xl p-5">
           <TrendingUp size={20} style={{ color: "hsl(var(--amber-500))" }} />
-          {/* Primary KPI: inscritos → pago */}
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{stats.conversao.toFixed(1)}%</p>
           <p className="text-[13px] text-ink-500 mt-1">Taxa Inscritos → Pago</p>
           <p className="text-[11px] text-ink-400 mt-0.5">{stats.paidConfirmed} de {stats.total} inscritos activos pagaram</p>
-          {/* Secondary KPI: landing page → pago (only if visitors available) */}
-          {visitantes != null && visitantes > 0 && (
-            <>
-              <div className="border-t border-dashed border-border my-3" />
-              <p className="font-heading font-bold text-[20px] leading-none" style={{ color: "hsl(var(--amber-500))" }}>{landingToPayPct.toFixed(1)}%</p>
-              <p className="text-[12px] text-ink-500 mt-0.5">Landing page → Pago</p>
-              <p className="text-[11px] text-ink-400">{stats.paidConfirmed} de {visitantes.toLocaleString("pt-PT")} visitantes únicos</p>
-            </>
-          )}
+          <div className="border-t border-dashed border-border my-3" />
+          <p className="font-heading font-bold text-[20px] leading-none" style={{ color: "hsl(var(--amber-500))" }}>{landingToPayPct.toFixed(1)}%</p>
+          <p className="text-[12px] text-ink-500 mt-0.5">Landing page → Pago</p>
+          <p className="text-[11px] text-ink-400">{stats.paidConfirmed} de {visitantes.toLocaleString("pt-PT")} visitantes</p>
         </div>
+      </div>
+
+      {/* Resultados Live · 18 Fev */}
+      <div className="bg-white border border-border rounded-xl p-5 mb-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <Youtube size={20} className="text-red-600" />
+          <div>
+            <h3 className="font-heading font-bold text-[14px] text-ink-900">Resultados Live · 18 Fev</h3>
+            <p className="text-[12px] text-ink-400">Métricas do YouTube Live</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-5 max-md:grid-cols-3 max-sm:grid-cols-2 gap-4">
+          {[
+            { label: "Visualizações", value: String(LIVE_RESULTS.views), icon: Eye },
+            { label: "Duração média", value: LIVE_RESULTS.avgDuration, icon: Clock },
+            { label: "Pico de viewers", value: String(LIVE_RESULTS.peakViewers), icon: TrendingUp },
+            { label: "Gostos", value: String(LIVE_RESULTS.likes), icon: ThumbsUp },
+            { label: "Novos subscritores", value: `+${LIVE_RESULTS.newSubs}`, icon: UserPlus },
+          ].map((m, idx) => (
+            <div key={idx} className="bg-surface/60 rounded-lg px-4 py-3 text-center">
+              <m.icon size={16} className="text-ink-400 mx-auto mb-1.5" />
+              <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none">{m.value}</p>
+              <p className="text-[11px] text-ink-500 mt-1">{m.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-ink-400 mt-3 text-right">Fonte: YouTube Live Studio · 18 Fev 2026</p>
       </div>
 
       {/* Email Follow-up Status */}
@@ -556,7 +504,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       {/* Pipeline + Pending >6h — 2 columns */}
       {(stats.pendentes.length > 0 || stats.pendingOver6h.length > 0) && (
         <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4 mb-5">
-          {/* Left: Pipeline Pendente */}
           {stats.pendentes.length > 0 && (
             <div className="bg-amber-50/60 border border-amber-200 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -567,7 +514,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               <p className="text-[12px] text-amber-700 mt-1">
                 {stats.pendentes.length} inscrito{stats.pendentes.length !== 1 ? "s" : ""} por converter
               </p>
-
               <div className="mt-3 space-y-2">
                 {stats.seleccionaram.length > 0 && (
                   <div className="flex items-start gap-2 p-2.5 bg-orange-50/80 border border-orange-200 rounded-lg">
@@ -588,7 +534,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                   </div>
                 )}
               </div>
-
               <div className="flex gap-3 mt-3 text-[12px] text-amber-700 flex-wrap">
                 {stats.pendingCounts.premium > 0 && <span>{stats.pendingCounts.premium} Premium</span>}
                 {stats.pendingCounts.masterclass > 0 && <span>{stats.pendingCounts.masterclass} MC</span>}
@@ -597,7 +542,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             </div>
           )}
 
-          {/* Right: Pendentes há +6h */}
           {stats.pendingOver6h.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-3">
@@ -669,35 +613,33 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           <h3 className="font-heading font-bold text-sm text-ink-900">Distribuição por Plano</h3>
           <p className="text-xs text-ink-400 mb-4">Inscritos · Pagos · Pendentes</p>
           {(["premium", "masterclass", "bundle", "free"] as const).map((plan) => {
-            const info = PLAN_BADGE(plan);
             const total = stats.planCounts[plan] || 0;
             const paid = stats.paidCounts[plan] || 0;
-            const pending = plan !== "free" ? stats.pendingCounts[plan] || 0 : 0;
+            const pending = stats.pendingCounts[plan] || 0;
             const free = total - paid - pending;
-            const barColors: Record<string, string> = {
-              free: "hsl(var(--ink-300))",
-              premium: "hsl(var(--blue-600))",
-              masterclass: "#7C3AED",
-              bundle: "hsl(var(--green-600))",
-            };
-            const color = barColors[plan];
-            const paidPct = total ? (paid / total) * 100 : 0;
-            const pendingPct = total ? (pending / total) * 100 : 0;
+            const badge = PLAN_BADGE(plan);
+            const pct = stats.total ? ((total / stats.total) * 100).toFixed(0) : "0";
             return (
-              <div key={plan} className="mb-4 last:mb-0">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                    <span className="text-[13px] font-semibold" style={{ color: info.color }}>{info.label}</span>
-                  </div>
-                  <span className="font-heading font-bold text-[14px] text-ink-700">{total}</span>
+              <div key={plan} className="mb-3.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full"
+                    style={{ background: badge.bg, color: badge.color }}
+                  >
+                    {badge.label}
+                  </span>
+                  <span className="ml-auto font-heading font-bold text-[14px] text-ink-700">{total}</span>
+                  <span className="text-[11px] text-ink-400">{pct}%</span>
                 </div>
-                {/* Segmented progress bar */}
-                <div className="h-2 rounded-full bg-surface overflow-hidden flex">
-                  <div className="h-full rounded-l-full transition-all duration-500" style={{ width: `${paidPct}%`, background: color }} />
-                  {pending > 0 && (
-                    <div className="h-full transition-all duration-500" style={{ width: `${pendingPct}%`, background: "#F59E0B" }} />
-                  )}
+                <div className="h-2 rounded-full bg-surface overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${stats.total ? (total / stats.total) * 100 : 0}%`,
+                      background: badge.color,
+                      opacity: 0.7,
+                    }}
+                  />
                 </div>
                 <div className="flex items-center gap-3 mt-1.5 text-[11px]">
                   {paid > 0 && (
@@ -944,21 +886,14 @@ function LeaderboardConvites() {
                 key={entry.referralCode}
                 className={`flex items-center gap-3 py-2.5 px-2 -mx-2 rounded ${idx < data.length - 1 ? "border-b border-border" : ""} ${eligible ? "bg-green-50/50" : ""}`}
               >
-                {/* Position / Medal */}
                 <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{
                   background: idx < 3 ? MEDAL_COLORS[idx] : "hsl(var(--surface))",
                   color: idx < 3 ? "#fff" : "hsl(var(--ink-500))",
                 }}>
                   {idx + 1}
                 </div>
-
-                {/* Name */}
                 <span className="flex-1 text-[14px] font-semibold text-ink-800">{entry.name}</span>
-
-                {/* Count */}
                 <span className="font-heading font-bold text-[14px] text-ink-700">{entry.count} <span className="text-[11px] font-normal text-ink-400">convite{entry.count !== 1 ? "s" : ""}</span></span>
-
-                {/* Eligible check */}
                 {eligible && (
                   <span className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center shrink-0">
                     <Check size={12} className="text-white" />
