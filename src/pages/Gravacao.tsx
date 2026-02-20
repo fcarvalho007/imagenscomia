@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useAnimationFrame, useTransform } from "framer-motion";
 import {
   Check, X, User, Mail, Phone, Loader2,
   Play, FileText, BookOpen, Sparkles, ListChecks, Lightbulb,
   ChevronRight, ShieldCheck, Clock, Zap,
   MessageCircle, MailIcon,
 } from "lucide-react";
+import ColorBends from "@/components/landing/ColorBends";
+import ElectricBorder from "@/components/landing/ElectricBorder";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { GallerySection } from "@/components/landing/GallerySection";
@@ -41,17 +43,28 @@ const packItems = [
   { icon: Lightbulb, text: "Biblioteca de melhores prompts (editáveis, por objectivo)" },
 ];
 
-const quickAnswers = [
-  { q: "O que é?", a: "Um pack on-demand com vídeo (60 min) + documentos prontos a aplicar para criar imagens profissionais com IA.", anchor: "" },
-  { q: "Do que se trata?", a: "Um método passo-a-passo (Nano Banana Pro) para gerar criativos com consistência e velocidade.", anchor: "" },
-  { q: "Que dores resolve?", a: "Elimina imagens genéricas, inconsistência visual e tentativa-erro com ferramentas de IA.", anchor: "#bloqueios" },
-  { q: "Porque devo comprar agora?", a: "Porque organiza o processo e reduz tentativa-erro; fica com templates reutilizáveis.", anchor: "" },
-  { q: "Como a vida pode mudar?", a: "Menos bloqueios, mais autonomia: cria quando precisa, sem depender de designer/agência.", anchor: "" },
-  { q: "O que vou ser capaz de fazer?", a: "Criar imagens prontas a publicar, manter consistência visual e adaptar formatos para Instagram/LinkedIn/Ads.", anchor: "" },
-  { q: "Quem é o formador?", a: "Frederico Carvalho — 20 anos de experiência em marketing digital, professor universitário e autor.", anchor: "#formador" },
-  { q: "Existe prova social?", a: "5,0 ★★★★★ · 1 194 avaliações públicas no Google (DIGITALFC).", anchor: "#testemunhos" },
-  { q: "Principais dúvidas?", a: "Consulta a secção de perguntas frequentes em baixo.", anchor: "#faq" },
-];
+/* ── GradientText (animated) ── */
+function GradientText({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const progress = useMotionValue(0);
+  const elapsed = useRef(0);
+  const lastTime = useRef<number | null>(null);
+  const duration = 8000;
+  useAnimationFrame((time) => {
+    if (lastTime.current === null) { lastTime.current = time; return; }
+    elapsed.current += time - lastTime.current;
+    lastTime.current = time;
+    const cycle = elapsed.current % (duration * 2);
+    progress.set(cycle < duration ? (cycle / duration) * 100 : 100 - ((cycle - duration) / duration) * 100);
+  });
+  const bgPos = useTransform(progress, (p) => `${p}% 50%`);
+  return (
+    <motion.span className={className} style={{
+      backgroundImage: "linear-gradient(to right, #60A5FA, #A78BFA, #34D399, #60A5FA)",
+      backgroundSize: "300% 100%", backgroundPosition: bgPos,
+      WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", display: "inline",
+    }}>{children}</motion.span>
+  );
+}
 
 const challenges = [
   { num: "01", title: "Criativos com aspeto genérico (tipo stock)" },
@@ -213,60 +226,93 @@ const Gravacao = () => {
   return (
     <div className="min-h-screen" style={{ background: "#FFFFFF" }}>
 
-      {/* ═══ 1. HERO ═══ */}
-      <section style={{ background: "#FFFFFF" }} className="pt-8 pb-12 md:pt-14 md:pb-20">
-        <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 820, textAlign: "center" }}>
+      {/* ═══ 1. HERO (dark/neon) ═══ */}
+      <section
+        className="relative overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #06091A 0%, #0B1230 50%, #080E22 100%)" }}
+      >
+        {/* ColorBends background */}
+        <div className="absolute inset-0 z-0" style={{ opacity: 0.85 }}>
+          <ColorBends
+            colors={["#1E40AF", "#7C3AED", "#0EA5E9", "#10B981"]}
+            rotation={0} speed={0.25} scale={1.2} frequency={0.8}
+            warpStrength={1.2} mouseInfluence={0.3} parallax={0.3} noise={0.05}
+            transparent autoRotate={2}
+          />
+        </div>
+
+        <div className="relative z-10 mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10" style={{ maxWidth: 860, textAlign: "center" }}>
           {/* Badge */}
           <motion.div {...fade(0.05)}>
-            <span
-              className="inline-block font-heading uppercase tracking-[0.1em] px-5 py-2 rounded-full mb-5"
-              style={{
-                background: "#EFF6FF",
-                border: "1px solid #BFDBFE",
-                color: "#2563EB",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              ACESSO IMEDIATO · PACK COMPLETO · 27 €
-            </span>
+            <div className="mb-3">
+              <span
+                className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
+                style={{
+                  background: "rgba(37,99,235,0.15)",
+                  border: "1px solid rgba(37,99,235,0.30)",
+                  color: "#93C5FD",
+                  fontSize: 14, fontWeight: 600,
+                  boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
+                }}
+              >
+                ACESSO IMEDIATO · PACK COMPLETO · 27 €
+              </span>
+            </div>
           </motion.div>
 
           {/* H1 */}
           <motion.div {...fade(0.1)}>
-            <h1
-              className="font-heading"
-              style={{
-                color: "#0F172A",
-                fontWeight: 800,
-                fontSize: "clamp(26px, 4.5vw, 40px)",
-                lineHeight: 1.15,
-                letterSpacing: "-0.025em",
-              }}
-            >
-              Aprenda a Criar Imagens Profissionais com Inteligência Artificial
-              <span style={{ color: "#334155", fontWeight: 600 }}> — com método (não tentativa-erro)</span>
+            <h1 style={{ maxWidth: 860, margin: "0 auto" }}>
+              <span className="block font-heading" style={{
+                color: "#F8FAFC", fontWeight: 800,
+                fontSize: "clamp(26px, 4.5vw, 40px)", lineHeight: 1.12,
+                letterSpacing: "-0.025em", textShadow: "0 2px 40px rgba(0,0,0,0.5)",
+              }}>
+                Aprenda a Criar Imagens Profissionais com Inteligência Artificial
+                <span style={{ fontWeight: 600 }}> — com método (não tentativa-erro)</span>
+              </span>
             </h1>
           </motion.div>
 
           {/* Subheadline */}
           <motion.div {...fade(0.15)}>
-            <p style={{ fontSize: 18, marginTop: 16, color: "#334155", lineHeight: 1.6 }}>
-              Do briefing à imagem pronta a publicar, com um processo replicável e templates prontos.
+            <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, color: "#CBD5E1" }}>
+              Do briefing à imagem pronta a publicar,{" "}
+              <GradientText className="font-heading font-semibold">
+                com um processo replicável e templates prontos.
+              </GradientText>
             </p>
-            <p className="font-heading font-semibold mt-3" style={{ fontSize: 17, color: "#2563EB" }}>
-              Ver hoje. Aplicar amanhã.
+            <p className="mt-3" style={{ fontSize: 17 }}>
+              <GradientText className="font-heading font-semibold">
+                Ver hoje. Aplicar amanhã.
+              </GradientText>
             </p>
           </motion.div>
 
-          {/* CTA */}
+          {/* CTA — green with ElectricBorder */}
           <motion.div {...fade(0.25)} className="mt-8">
-            <CTAButton onClick={openModal} />
+            <div id="inscrever">
+              <ElectricBorder
+                color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}
+                style={{ display: "inline-block", width: "100%", maxWidth: 400 }}
+              >
+                <button
+                  onClick={openModal}
+                  style={{
+                    background: "#16A34A", color: "#fff",
+                    fontFamily: "Montserrat, sans-serif", fontWeight: 700, fontSize: 16,
+                    padding: "16px 32px", borderRadius: 10, border: "none", cursor: "pointer", width: "100%",
+                  }}
+                >
+                  Garantir acesso imediato (27 €)
+                </button>
+              </ElectricBorder>
+            </div>
 
             <button
               onClick={() => scrollTo("pack-section")}
               className="flex items-center gap-1 mx-auto mt-4 text-[15px] transition-colors"
-              style={{ color: "#2563EB" }}
+              style={{ color: "#93C5FD" }}
             >
               Ver exactamente o que está incluído <ChevronRight className="w-4 h-4" />
             </button>
@@ -274,69 +320,20 @@ const Gravacao = () => {
 
           {/* Trust line */}
           <motion.div {...fade(0.3)}>
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-5 text-[13px]" style={{ color: "#64748B" }}>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-5 text-[13px]" style={{ color: "rgba(255,255,255,0.50)" }}>
               <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" /> Pagamento seguro</span>
               <span className="inline-flex items-center gap-1"><Zap className="w-3.5 h-3.5" /> Acesso imediato após confirmação</span>
               <span className="inline-flex items-center gap-1"><FileText className="w-3.5 h-3.5" /> Inclui documentos</span>
             </div>
           </motion.div>
 
-          {/* Google badge */}
-          <motion.div {...fade(0.35)} className="mt-6">
-            <GoogleBadge />
+          {/* Google badge dark */}
+          <motion.div {...fade(0.35)} className="mt-4">
+            <GoogleBadge dark />
           </motion.div>
         </div>
       </section>
 
-      {/* ═══ 2. RESPOSTAS RÁPIDAS ═══ */}
-      <section style={{ background: "#F8FAFC" }} className="py-14 md:py-20">
-        <div className="mx-auto px-5 sm:px-6" style={{ maxWidth: 900 }}>
-          <ScrollReveal>
-            <h2 className="font-heading font-bold text-center mb-10" style={{ fontSize: "clamp(22px, 3vw, 30px)", color: "#0F172A" }}>
-              Respostas rápidas
-            </h2>
-          </ScrollReveal>
-
-          {/* Desktop: 2-col grid; Mobile: accordion */}
-          <div className="hidden md:grid grid-cols-2 gap-4">
-            {quickAnswers.map((item, i) => (
-              <ScrollReveal key={i} delay={i * 0.04}>
-                <div className="rounded-2xl p-5 h-full" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                  <p className="font-heading font-semibold text-[15px] mb-1.5" style={{ color: "#0F172A" }}>{item.q}</p>
-                  <p className="text-[15px] leading-relaxed" style={{ color: "#334155" }}>
-                    {item.a}
-                    {item.anchor && (
-                      <button onClick={() => scrollTo(item.anchor.replace("#", ""))} className="ml-1 underline underline-offset-2" style={{ color: "#2563EB" }}>
-                        Ver mais ↓
-                      </button>
-                    )}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          <div className="md:hidden">
-            <Accordion type="single" collapsible className="space-y-2">
-              {quickAnswers.map((item, i) => (
-                <AccordionItem key={i} value={`qa-${i}`} className="rounded-xl px-4" style={{ background: "#FFFFFF", border: "1px solid #E2E8F0" }}>
-                  <AccordionTrigger className="text-[15px] font-heading font-semibold hover:no-underline" style={{ color: "#0F172A" }}>
-                    {item.q}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-[15px] leading-relaxed" style={{ color: "#334155" }}>
-                    {item.a}
-                    {item.anchor && (
-                      <button onClick={() => scrollTo(item.anchor.replace("#", ""))} className="ml-1 underline underline-offset-2" style={{ color: "#2563EB" }}>
-                        Ver mais ↓
-                      </button>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </div>
-      </section>
 
       {/* ═══ 3. O QUE RECEBES ═══ */}
       <section id="pack-section" style={{ background: "#FFFFFF" }} className="py-14 md:py-20">
@@ -363,7 +360,10 @@ const Gravacao = () => {
                 })}
               </div>
 
-              <p className="font-heading font-semibold text-center mt-8 mb-6" style={{ color: "#16A34A", fontSize: 16 }}>
+              <p className="text-[15px] text-center mt-6 mb-2" style={{ color: "#64748B" }}>
+                Organiza o processo e reduz tentativa-erro. Templates reutilizáveis desde o primeiro dia.
+              </p>
+              <p className="font-heading font-semibold text-center mt-2 mb-6" style={{ color: "#16A34A", fontSize: 16 }}>
                 Tudo pronto para aplicar no dia seguinte.
               </p>
 
@@ -397,7 +397,7 @@ const Gravacao = () => {
 
           <ScrollReveal delay={0.35}>
             <p className="text-center text-[16px] mt-10" style={{ color: "#64748B" }}>
-              Se houver identificação com 2+ pontos, este pack encurta meses de tentativa-erro.
+              Se houver identificação com 2+ pontos, este pack encurta meses de tentativa-erro. Menos bloqueios, mais autonomia: cria quando precisa, sem depender de designer ou agência.
             </p>
           </ScrollReveal>
         </div>
