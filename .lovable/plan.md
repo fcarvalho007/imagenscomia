@@ -1,47 +1,79 @@
 
 
-## Adicionar secção de testemunhos Google na pagina /gravacao
+# Dashboard CRM — Resultados Live + Visitantes fixos + Data de corte
 
-### O que muda
+## Resumo das 3 alteracoes
 
-Criar uma nova secção de testemunhos reais do Google entre a secção do **Presenter** e o **FAQ** (entre as linhas 439 e 441), com:
+1. **Novo card "Resultados Live · 18 Fev"** com 5 metricas do YouTube
+2. **Passo 0 do funil fixado a 2686** com badge explicito "valor fixo · sem API analytics"
+3. **Data de corte global (20 Fev 2026)** aplicada a todos os dados do dashboard
 
-- Titulo "Avaliações públicas no Google" com o logo do Google e rating 5,0
-- 8 testemunhos reais extraídos das capturas de ecrã:
-  1. **Dario Ramos** — "Profissional Top, sempre disponível para ajudar."
-  2. **Marcelo Caruana** — "Conteúdos sempre muito detalhados e claros :)"
-  3. **Isabel Martins** — "As formações do Frederico são sempre excepcionais. Partilha de conhecimento e ensinamento prático."
-  4. **Silvana Curado** — "Muito bom. A sessão introdutória sobre geração de imagem a que assisti teve uma velocidade ótima, para o meu nível de conhecimento médio-baixo e cumpriu escrupulosamente a proposta de valor. Boa energia!"
-  5. **Paulo Ferrao** — "Webinar esclarecedor. Interessante e recheado como sempre! Obrigado"
-  6. **Joana Veigas** — "Gostei muito do Webinar IA Imagens. Interessante, bem explicada e cativante. Curiosa para saber casa vez mais. Vou continuar a acompanhar as muitas dicas que o Frederico vai partilhando. Obrigada Frederico!"
-  7. **Catia Martins** — "Foi um webinar excelente. Para o tema que é parece sempre curto mas agrega sempre muito valor. E é muito útil para o trabalho do dia a dia, para quem trabalha com criativos. O Frederico nunca desilude."
+Tudo no ficheiro `src/components/crm/DashboardView.tsx`.
 
-- Cards brancos com bordas suaves, 5 estrelas douradas, nome em bold
-- Grid responsivo: 1 coluna mobile, 2 colunas tablet, 3 colunas desktop
-- Fundo `bg-background` para manter consistência com o resto da pagina
+---
 
-### Ficheiro a alterar
+## A) Card "Resultados Live · 18 Fev"
 
-| Ficheiro | Alteração |
+Inserido logo apos os 4 KPIs existentes (linha ~508) e antes do card "Emails de Follow-up Resend".
+
+Layout: card branco com 5 metricas em grid 3+2 (desktop) / 2+2+1 (mobile):
+
+| Metrica | Valor |
 |---|---|
-| `src/pages/Gravacao.tsx` | Adicionar array `googleReviews` nos dados (apos linha 96) e inserir secção JSX entre Presenter e FAQ (entre linhas 439 e 441) |
+| Visualizacoes | 268 |
+| Duracao media | 27:35 |
+| Pico de visualizacoes | 109 |
+| Total de gostos | 14 |
+| Novos subscritores | 11 |
 
-### Estrutura da secção
+Rodape discreto: "Fonte: YouTube Live Studio · 18 Fev 2026"
+
+Dados hardcoded como constante `LIVE_RESULTS` no topo do componente — valores administrativos, sem input editavel.
+
+---
+
+## B) Passo 0 — Visitantes fixo a 2686
+
+Substituir toda a logica de `fetchVisitantes` / `visitantesState` por uma constante:
 
 ```text
-+--------------------------------------------------+
-|  [Google logo]  5,0 ★★★★★  · Avaliações públicas |
-+--------------------------------------------------+
-|  Card 1  |  Card 2  |  Card 3                    |
-|  Card 4  |  Card 5  |  Card 6                    |
-|  Card 7  |                                        |
-+--------------------------------------------------+
+const FIXED_VISITORS = 2686;
 ```
 
-Cada card mostra:
-- Inicial colorida (circulo com primeira letra do nome)
-- Nome em bold
-- 5 estrelas douradas
-- Texto do testemunho
+- O valor 2686 e usado directamente no Passo 0 e em todos os calculos de percentagem do funil
+- O badge muda de "via Analytics Cache" para: **"Total desde inicio · valor fixo (sem API analytics)"**
+- Remove-se o estado `visitantesState`, o `fetchVisitantes`, o `useEffect` e o botao "Re-tentar"
+- Remove-se a chamada ao edge function `get-analytics-visitors`
 
-Nenhum ficheiro novo e criado — tudo dentro de `Gravacao.tsx` usando os mesmos componentes (`ScrollReveal`) e estilos ja presentes na pagina.
+---
+
+## C) Data de corte global — 20 Fev 2026
+
+Adicionar constante no topo:
+
+```text
+const CUTOFF_DATE = new Date("2026-02-20T23:59:59");
+```
+
+### Onde e aplicada:
+
+1. **`filteredInscritos`** — alem do filtro de periodo, tambem filtra `i.timestamp <= CUTOFF_DATE`
+2. **Badge no header** — junto do selector de periodo, aparece: "Dados ate: 20 Fev 2026" (badge cinza discreta)
+3. **Queries de email** (resend/falhas 24h e 7d) — adicionar `.lte("created_at", CUTOFF_DATE.toISOString())` (para consistencia)
+4. Todos os KPIs, funil, pipeline pendente e "Pendentes ha +6h" ja derivam de `filteredInscritos`, por isso ficam automaticamente filtrados
+
+### Labels de conversao (sem alteracao de logica, apenas clareza):
+
+- KPI card: "Taxa Inscritos → Pago" com sublabel "X de Y inscritos activos pagaram" (ja existe)
+- Passo 7 do funil: "X% dos visitantes" calculado sobre 2686 (ja existe, agora com valor fixo correcto)
+
+---
+
+## Ficheiro a alterar
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/DashboardView.tsx` | Constantes `FIXED_VISITORS` e `CUTOFF_DATE`; novo card Live Results; simplificar Passo 0; badge de data de corte no header; filtro temporal em `filteredInscritos` e queries de email |
+
+Nenhum ficheiro novo. Nenhuma alteracao na base de dados.
+
