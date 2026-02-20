@@ -7,6 +7,7 @@ import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabe
 import SendPaymentModal from "./modal/SendPaymentModal";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import WebinarBadge from "./WebinarBadge";
+import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -255,9 +256,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
-      <div className="mb-5">
-        <h1 className="font-heading font-bold text-[22px] text-ink-900">Tabela</h1>
-        <p className="text-sm text-ink-500">{active.length} inscritos no total</p>
+      <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
+        <div>
+          <h1 className="font-heading font-bold text-[22px] text-ink-900">Tabela</h1>
+          <p className="text-sm text-ink-500">{active.length} inscritos no total</p>
+        </div>
+        <WebinarSwitcherBar />
       </div>
 
       {/* Quick Filter Chips */}

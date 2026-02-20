@@ -19,36 +19,6 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 
-function WebinarSwitcher() {
-  const { webinarContext, setWebinarContext } = useWebinarContext();
-  const items: { key: WebinarCtxType; emoji: string; label: string; color: string }[] = [
-    { key: "imagens", emoji: "📷", label: "Imagens", color: WEBINAR_CONFIG.imagens.color },
-    { key: "video", emoji: "🎬", label: "Vídeo", color: WEBINAR_CONFIG.video.color },
-    { key: "consolidado", emoji: "⊕", label: "Todos", color: CONSOLIDADO_COLOR },
-  ];
-  return (
-    <div className="flex gap-1 px-3 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-      {items.map((it) => {
-        const active = webinarContext === it.key;
-        return (
-          <button
-            key={it.key}
-            onClick={() => setWebinarContext(it.key)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
-            style={{
-              background: active ? it.color : "transparent",
-              color: active ? "#fff" : "rgba(255,255,255,0.45)",
-            }}
-          >
-            <span>{it.emoji}</span>
-            {it.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function getSidebarSubtitle(ctx: WebinarCtxType): string {
   if (ctx === "consolidado") return "Todos os Webinars";
   return WEBINAR_CONFIG[ctx].sidebarSubtitle;
@@ -68,9 +38,6 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
           {getSidebarSubtitle(webinarContext)}
         </p>
       </div>
-
-      {/* Webinar Switcher */}
-      <WebinarSwitcher />
 
       {/* Nav */}
       <nav className="flex flex-col gap-1 mt-3">
