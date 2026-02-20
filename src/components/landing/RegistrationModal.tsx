@@ -13,7 +13,7 @@ type ConfirmationMode = "referral" | "simple";
 
 export const RegistrationModal = () => {
   const navigate = useNavigate();
-  const { isOpen, close, referredBy, variant, redirectPath } = useRegistrationModal();
+  const { isOpen, close, referredBy, variant, redirectPath, subtitle } = useRegistrationModal();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -182,6 +182,7 @@ export const RegistrationModal = () => {
                 error={error}
                 onSubmit={handleCapture}
                 variant={variant}
+                subtitle={subtitle}
               />
             )}
 
@@ -225,6 +226,7 @@ const CaptureView = ({
   error,
   onSubmit,
   variant = "free",
+  subtitle,
 }: {
   fullName: string;
   setFullName: (v: string) => void;
@@ -238,6 +240,7 @@ const CaptureView = ({
   error: React.ReactNode | null;
   onSubmit: () => void;
   variant?: "free" | "premium";
+  subtitle?: string;
 }) => {
   const isPremium = variant === "premium";
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
@@ -254,7 +257,7 @@ const CaptureView = ({
     <p className="text-[15px] text-ink-500 mb-3">
       {isPremium
         ? "Indique os seus dados para aceder à gravação e bónus exclusivos."
-        : "Quarta-feira, 18 de Fevereiro, 10h"}
+        : subtitle}
     </p>
 
     <div className="space-y-3 mb-4">
