@@ -264,12 +264,12 @@ const DARK_BORDER = "rgba(255,255,255,0.08)";
 
 const VideoPage = () => {
   usePageMeta({
-    title: "Webinar Gratuito · Vídeo com IA para Marketing · 2 Março 2026",
+    title: "Webinar Gratuito · Vídeo com IA para Marketing · 3 Março 2026",
     description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
   });
 
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
-  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-02T10:00:00"));
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T21:00:00"));
 
   return (
     <div className="min-h-screen pt-[52px]" style={{ background: DARK, color: "#e2e8f0" }}>
@@ -282,7 +282,7 @@ const VideoPage = () => {
       >
         <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
           <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
-            AO VIVO · 2 MAR · A DEFINIR HORA
+            AO VIVO · 3 MAR · 21H00
           </p>
 
           <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
@@ -315,7 +315,7 @@ const VideoPage = () => {
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative px-5 text-center w-full" style={{ zIndex: 2, maxWidth: 780, margin: "0 auto" }}>
+        <div className="relative px-5 text-center w-full" style={{ zIndex: 2, maxWidth: 960, margin: "0 auto" }}>
           {/* Live badge pill */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
             <span className="inline-flex items-center gap-2 font-heading text-[11px] font-semibold uppercase tracking-[2px] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
@@ -323,14 +323,14 @@ const VideoPage = () => {
                 <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
                 <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
               </span>
-              WEBINAR GRATUITO · AO VIVO · 2 MARÇO
+              WEBINAR GRATUITO · AO VIVO
             </span>
           </motion.div>
 
           {/* Headline — 72px desktop, gradient on "Inteligência Artificial" */}
           <h1
             className="font-heading leading-[1.05] text-white mb-4"
-            style={{ fontWeight: 900, letterSpacing: "-2px", textShadow: "0 0 80px rgba(22,163,74,0.15)", fontSize: "clamp(38px, 6vw, 72px)" }}
+            style={{ fontWeight: 900, letterSpacing: "-2px", textShadow: "0 0 80px rgba(22,163,74,0.15)", fontSize: "clamp(36px, 5.5vw, 62px)" }}
           >
             <StaggeredWords startDelay={0.2}>
               {["Aprende", "a", "criar", "vídeos", "com"].map((w, i) => (
@@ -391,8 +391,8 @@ const VideoPage = () => {
             className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[640px] mx-auto"
           >
             {([
-              { Icon: Calendar, label: "DATA", value: "2 de Março" },
-              { Icon: Clock, label: "HORÁRIO", value: "A definir" },
+              { Icon: Calendar, label: "DATA", value: "3 de Março" },
+              { Icon: Clock, label: "HORÁRIO", value: "21h00" },
               { Icon: Timer, label: "DURAÇÃO", value: "45–60 min" },
               { Icon: GraduationCap, label: "INVESTIMENTO", value: "Gratuito" },
             ] as const).map((box) => (
@@ -995,7 +995,7 @@ const VideoPage = () => {
             </ElectricBorder>
           </div>
           <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
-            Sem compromisso. Evento ao vivo em 2 de Março de 2026.
+            Sem compromisso. Evento ao vivo em 3 de Março de 2026.
           </p>
         </div>
       </section>
