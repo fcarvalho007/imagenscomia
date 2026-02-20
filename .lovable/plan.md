@@ -1,69 +1,77 @@
 
 
-# Upgrade cinematografico — 3 seccoes da pagina /video
+# Refinamentos Hero + Consistencia de cores + Agenda cinematografica
 
 ## Resumo
 
-Refinar 3 seccoes: (1) cards + titulo com glitch effect e icones roxos, (2) "Para quem e" com melhor UX/UI, (3) Agenda mais cinematografica.
+4 alteracoes na pagina /video:
+
+1. Hero: reduzir font-size do subtitulo para caber numa linha, actualizar data/horario/duracao, mudar icon do "Investimento", aumentar CTA, mudar texto do CTA
+2. Agenda: redesign mais cinematografico
+3. Revisao de consistencia de cores em toda a pagina
 
 ---
 
-## 1. Seccao "Video e o formato que o mercado exige"
+## 1. Hero — Subtitulo numa so linha
 
-### Titulo com efeito Glitch
+### Subtitulo menor
+- Linha 300: reduzir font-size de `text-[18px] lg:text-[22px]` para `text-[15px] lg:text-[18px]`
+- Texto ja esta correcto: "Sais com um sistema, ferramentas e templates prontos (briefing -> gerar -> rever -> publicar)"
+- Aumentar `max-w` de 900px para 960px para garantir que cabe numa linha em desktop
 
-Aplicar CSS glitch effect no titulo completo (ou apenas em "mercado exige"). O efeito usa pseudo-elementos `::before` e `::after` com `data-text` para criar separacao de cor (vermelho/ciano) com animacoes de skew e translate subtis. Activar ao hover e tambem com animacao idle muito suave.
+### Info boxes actualizados
+- Linha 324-327: actualizar valores:
+  - DATA: "3 de Marco" (ja esta)
+  - HORARIO: de "21h00" para "10h00"
+  - DURACAO: de "45-60 min" para "45 min"
+  - INVESTIMENTO: "Gratuito" (ja esta) — mudar icon de `GraduationCap` para `Layers` (ou `Gift` se disponivel — usar `Layers` que ja esta importado, ou importar `Sparkles`)
+- Importar `Sparkles` de lucide-react para o icon de investimento (mais adequado que GraduationCap)
 
-Cores do glitch: `::before` em `#a855f7` (roxo) e `::after` em `#22d3ee` (ciano) — alinhado com a paleta do site em vez de vermelho.
-
-### Icons roxos nos cards
-
-Alterar a cor dos icones dos 4 cards de verde (`#4ade80`) para roxo (`#a855f7`). Manter o hover dos cards em verde para contraste.
-
-### Numeros de fundo dos cards
-
-Alterar a cor dos numeros grandes (01, 02, 03, 04) para um tom roxo muito subtil (`rgba(168,85,247,0.08)`) em vez do branco actual.
-
-### Hover dos cards
-
-Manter border verde no hover mas adicionar um subtil glow roxo nos icones ao hover.
-
----
-
-## 2. Seccao "Para quem e — e para quem nao e"
-
-### Layout melhorado
-
-- Adicionar eyebrow "PUBLICO-ALVO" em roxo acima do titulo
-- Titulo: manter texto, adicionar gradient roxo/azul em "para quem nao e"
-- Cards: fundo com gradiente subtil (nao flat), borders mais visiveis
-- "Certo para": icones verdes com check marks mais vistosos, texto mais legivel (opacity 0.75 em vez de 0.65)
-- "Nao e para": manter mais apagado mas com melhor contraste
-- Adicionar numeracao subtil nos items "Certo para" (01, 02, 03, 04) do lado esquerdo
-- Hover nos cards: border glow subtil
-- Spacing: mais padding interno (p-7 em vez de p-6)
+### CTA maior
+- Linha 348-349: aumentar padding de `20px 48px` para `22px 56px`, font-size de `text-lg` para `text-[20px]`
+- Texto: ja esta "Sim, quero inscrever-me gratis" (correcto)
 
 ---
 
-## 3. Seccao Agenda — mais cinematografica
+## 2. Agenda — redesign cinematografico
 
-### Fundo com profundidade
+A seccao actual (linhas 616-681) tem o layout basico correcto mas precisa de mais impacto visual:
 
-- Manter fundo `#0a0a0f` mas adicionar um gradient radial roxo/azul muito subtil ao centro (opacity ~5%) para profundidade
-- Adicionar grain/noise overlay igual ao hero
+### Layout e estrutura
+- Manter o fundo `#0a0a0f` com gradient radial e noise
+- Substituir a lista plana por cards individuais com fundo subtil para cada item da agenda
+- Cada card: `rounded-xl`, `p-5 md:p-6`, fundo `rgba(255,255,255,0.03)`, border `rgba(255,255,255,0.06)`
+- Grid de 2 colunas em desktop (2x2), 1 coluna em mobile
 
-### Items da agenda
+### Numeros grandes decorativos
+- Numeros (001-004) como elementos grandes semi-transparentes (font-size 48px, opacity 0.08) no canto superior direito de cada card — semelhante ao estilo dos cards da seccao 1
+- Numero visivel em gradient roxo-verde
 
-- Numeros (001-004): gradient roxo-verde em vez de verde flat
-- Aumentar font-size do titulo de cada item de 13px para 15px
-- Aumentar padding vertical dos items (py-5 em vez de py-3.5)
-- Adicionar icone ou barra lateral decorativa roxa do lado esquerdo
-- Tags (CORE, AO VIVO): manter verde mas com borda mais visivel
-- Hover: background mais pronunciado com borda lateral roxa
+### Titulo de cada item
+- Font-size: 16px (em vez de 15px)
+- Cor: branca (`rgba(255,255,255,0.85)`)
+- Font-weight: 600
+
+### Tags
+- CORE e AO VIVO: manter verde mas com border mais visivel e font-size 9px
+
+### Hover
+- Border muda para roxo subtil
+- Background fica ligeiramente mais claro
+- A barra decorativa lateral roxa ganha glow
 
 ### Linha decorativa
+- Manter a linha gradient roxo-verde entre titulo e items
 
-Adicionar uma linha horizontal decorativa com gradient roxo-verde entre o titulo e os items da agenda.
+---
+
+## 3. Consistencia de cores
+
+Revisao geral:
+- Palette principal: roxo (`#a855f7`) para acentos decorativos, verde (`#4ade80` / `#16A34A`) para CTAs e tags positivos, azul (`#60A5FA`) para info boxes, ciano (`#22d3ee`) para glitch
+- Verificar que todas as seccoes dark usam `#020617` ou `#0a0a0f` de forma consistente
+- Eyebrows: roxo na seccao "Para quem e", verde na Agenda — manter esta diferenciacao intencional
+- Borders: uniformizar em `rgba(255,255,255,0.08)` para todas as seccoes dark
 
 ---
 
@@ -71,15 +79,9 @@ Adicionar uma linha horizontal decorativa com gradient roxo-verde entre o titulo
 
 ### Ficheiro: `src/pages/Video.tsx`
 
-#### Glitch CSS (novo bloco `<style>`)
-Adicionar keyframes `glitch-1`, `glitch-2`, `glitch-3` com pseudo-elementos. O titulo tera um wrapper `<span>` com `className="glitch"` e `data-text="mercado exige"`. Cores adaptadas: `#a855f7` e `#22d3ee`.
-
-#### Edicoes:
-1. **Linhas 410-415**: Redesenhar titulo com glitch effect em "mercado exige"
-2. **Linhas 433, 452**: Alterar cor dos icones de `#4ade80` para `#a855f7`
-3. **Linhas 430, 449**: Alterar cor dos numeros de fundo para `rgba(168,85,247,0.08)`
-4. **Linhas 462-473**: Actualizar CSS `.pain-card` com hover roxo nos icones
-5. **Linhas 476-509**: Redesenhar seccao "Para quem e" com eyebrow, melhor spacing, numeracao, hover effects
-6. **Linhas 512-562**: Redesenhar Agenda com gradient de fundo, numeros com gradient, items maiores, decoracao roxa
-7. Adicionar novo bloco `<style>` com keyframes do glitch
+1. **Linha 2**: adicionar import de `Sparkles` do lucide-react
+2. **Linha 300**: reduzir font-size do subtitulo e aumentar max-w
+3. **Linhas 324-327**: actualizar horario para 10h00, duracao para 45 min, icon investimento para Sparkles
+4. **Linhas 348-349**: aumentar padding e font-size do CTA
+5. **Linhas 616-681**: redesenhar Agenda com cards em grid 2x2, numeros decorativos, hover effects melhorados
 
