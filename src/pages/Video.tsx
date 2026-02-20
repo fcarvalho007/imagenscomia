@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Check, Clock, XCircle, Layers,
-  Calendar, Timer, GraduationCap,
+  Calendar, Timer, Sparkles,
   Zap, BarChart3, Repeat, BookOpen,
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
@@ -297,7 +297,7 @@ const VideoPageInner = () => {
           <motion.p
             initial="hidden" animate="visible"
             variants={fadeUp} transition={{ ...defaultTransition, delay: 0.9 }}
-            className="font-medium mb-2 max-w-[900px] mx-auto text-[18px] lg:text-[22px]"
+            className="font-medium mb-2 max-w-[960px] mx-auto text-[15px] lg:text-[18px]"
             style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.35 }}
           >
             Sais com um sistema, ferramentas e templates prontos (briefing → gerar → rever → publicar)
@@ -322,9 +322,9 @@ const VideoPageInner = () => {
           >
             {([
               { Icon: Calendar, label: "DATA", value: "3 de Março" },
-              { Icon: Clock, label: "HORÁRIO", value: "21h00" },
-              { Icon: Timer, label: "DURAÇÃO", value: "45–60 min" },
-              { Icon: GraduationCap, label: "INVESTIMENTO", value: "Gratuito" },
+              { Icon: Clock, label: "HORÁRIO", value: "10h00" },
+              { Icon: Timer, label: "DURAÇÃO", value: "45 min" },
+              { Icon: Sparkles, label: "INVESTIMENTO", value: "Gratuito" },
             ] as const).map((box) => (
               <motion.div
                 key={box.label}
@@ -345,8 +345,8 @@ const VideoPageInner = () => {
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
                 onClick={openModal}
-                className="font-heading text-white text-lg transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full"
-                style={{ background: "#16A34A", fontWeight: 700, padding: "20px 48px", borderRadius: 10, maxWidth: 480, minWidth: 280 }}
+                className="font-heading text-white text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full"
+                style={{ background: "#16A34A", fontWeight: 700, padding: "22px 56px", borderRadius: 10, maxWidth: 500, minWidth: 300 }}
               >
                 Sim, quero inscrever-me grátis
               </button>
@@ -619,63 +619,73 @@ const VideoPageInner = () => {
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.03, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative mx-auto max-w-3xl px-5" style={{ zIndex: 1 }}>
+        <div className="relative mx-auto max-w-4xl px-5" style={{ zIndex: 1 }}>
           <ScrollReveal>
-            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#4ade80" }}>
+            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3 text-center" style={{ color: "#4ade80" }}>
               Agenda · 45 min
             </p>
             <SectionTitle>O que acontece durante a sessão</SectionTitle>
           </ScrollReveal>
 
           {/* Decorative line */}
-          <div className="h-px mb-8" style={{ background: "linear-gradient(90deg, transparent 0%, #a855f7 30%, #4ade80 70%, transparent 100%)", opacity: 0.4 }} />
+          <div className="h-px mb-10" style={{ background: "linear-gradient(90deg, transparent 0%, #a855f7 30%, #4ade80 70%, transparent 100%)", opacity: 0.4 }} />
 
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={staggerContainer(0.1)}
+            variants={staggerContainer(0.12)}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-5"
           >
             {agenda.map((item, i) => (
               <motion.div
                 key={i}
                 variants={slideFromLeft}
                 transition={defaultTransition}
-                className="flex items-center py-5 transition-all duration-200 group cursor-default agenda-item"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+                className="relative rounded-xl p-5 md:p-6 transition-all duration-200 cursor-default agenda-card overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
               >
-                {/* Purple decorative bar */}
-                <div className="w-[3px] h-[24px] rounded-full mr-4 shrink-0 transition-all duration-200 agenda-bar" style={{ background: "rgba(168,85,247,0.3)" }} />
+                {/* Large decorative number */}
                 <span
-                  className="font-heading font-bold text-[12px] w-[44px] shrink-0"
-                  style={{ background: "linear-gradient(135deg, #a855f7, #4ade80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                  className="absolute top-3 right-4 font-heading font-black select-none pointer-events-none"
+                  style={{
+                    fontSize: 52,
+                    lineHeight: 1,
+                    background: "linear-gradient(135deg, rgba(168,85,247,0.10), rgba(74,222,128,0.06))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
                 >
                   {item.num}
                 </span>
-                <span
-                  className="flex-1 text-[15px] flex items-center gap-2"
-                  style={{ color: "rgba(255,255,255,0.65)" }}
-                >
-                  {item.title}
+
+                {/* Purple sidebar bar */}
+                <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-full transition-all duration-200 agenda-bar" style={{ background: "rgba(168,85,247,0.25)" }} />
+
+                <div className="relative pl-3">
                   {item.tag && (
                     <span
-                      className="inline-block text-[8px] font-bold uppercase rounded px-[7px] py-[2px]"
-                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)", marginLeft: 4 }}
+                      className="inline-block text-[9px] font-bold uppercase rounded px-[8px] py-[3px] mb-3"
+                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.25)" }}
                     >
                       {item.tag}
                     </span>
                   )}
-                </span>
+                  <p className="text-[16px] font-semibold leading-snug pr-12" style={{ color: "rgba(255,255,255,0.85)" }}>
+                    {item.title}
+                  </p>
+                </div>
               </motion.div>
             ))}
           </motion.div>
         </div>
         <style>{`
-          .agenda-item:hover {
-            border-color: rgba(168,85,247,0.25) !important;
-            background: rgba(168,85,247,0.04);
+          .agenda-card:hover {
+            border-color: rgba(168,85,247,0.30) !important;
+            background: rgba(255,255,255,0.05) !important;
           }
-          .agenda-item:hover .agenda-bar {
+          .agenda-card:hover .agenda-bar {
             background: #a855f7 !important;
-            box-shadow: 0 0 10px rgba(168,85,247,0.4);
+            box-shadow: 0 0 12px rgba(168,85,247,0.5);
           }
         `}</style>
       </section>
