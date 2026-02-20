@@ -13,7 +13,7 @@ type ConfirmationMode = "referral" | "simple";
 
 export const RegistrationModal = () => {
   const navigate = useNavigate();
-  const { isOpen, close, referredBy, variant } = useRegistrationModal();
+  const { isOpen, close, referredBy, variant, redirectPath } = useRegistrationModal();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -61,13 +61,13 @@ export const RegistrationModal = () => {
       if (data?.alreadyRegistered) {
         close();
         const existingName = (data as any).name || `${firstName.trim()} ${lastName.trim()}`;
-        navigate(`/upgrade?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+        navigate(`${redirectPath}?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
         setLoading(false);
         return;
       }
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+      navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
       // Fire tracking after navigation — never block the flow
       setTimeout(() => {
         try {
@@ -102,7 +102,7 @@ export const RegistrationModal = () => {
   const handleGoToPremium = () => {
     close();
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
+    navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleReferralPath = () => {
@@ -113,7 +113,7 @@ export const RegistrationModal = () => {
   const handleContinueFree = () => {
     close();
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-    navigate(`/upgrade?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
+    navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}`);
   };
 
   const handleClose = () => {

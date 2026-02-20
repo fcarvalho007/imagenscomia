@@ -9,6 +9,7 @@ interface ModalContextType {
   open: (variant?: ModalVariant) => void;
   close: () => void;
   referredBy: string | null;
+  redirectPath: string;
 }
 
 const ModalContext = createContext<ModalContextType>({
@@ -17,11 +18,12 @@ const ModalContext = createContext<ModalContextType>({
   open: () => {},
   close: () => {},
   referredBy: null,
+  redirectPath: "/upgrade",
 });
 
 export const useRegistrationModal = () => useContext(ModalContext);
 
-export const RegistrationModalProvider = ({ children }: { children: ReactNode }) => {
+export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade" }: { children: ReactNode; redirectPath?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [variant, setVariant] = useState<ModalVariant>("free");
   const [referredBy, setReferredBy] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export const RegistrationModalProvider = ({ children }: { children: ReactNode })
   const close = () => setIsOpen(false);
 
   return (
-    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy }}>
+    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy, redirectPath }}>
       {children}
     </ModalContext.Provider>
   );
