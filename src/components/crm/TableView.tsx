@@ -5,6 +5,8 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabels";
 import SendPaymentModal from "./modal/SendPaymentModal";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import WebinarBadge from "./WebinarBadge";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -64,6 +66,8 @@ type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached"
 type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend" | "em_atraso";
 
 export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached }: TableViewProps) {
+  const { webinarContext } = useWebinarContext();
+  const isConsolidado = webinarContext === "consolidado";
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -350,6 +354,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     {...(somePageSelected && !allPageSelected ? { "data-state": "indeterminate" } : {})}
                   />
                 </th>
+                {isConsolidado && (
+                  <th className="px-3 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[60px]">
+                    Webinar
+                  </th>
+                )}
                 {([
                   { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
                   { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
@@ -391,6 +400,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <Checkbox checked={isSelected} onCheckedChange={() => toggleSelect(i.id)} aria-label={`Seleccionar ${i.nome}`} />
                     </td>
+                    {isConsolidado && (
+                      <td className="px-3 py-3">
+                        <WebinarBadge webinar={i.webinar} />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <span className="font-semibold text-[15px] text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
                     </td>

@@ -6,6 +6,8 @@ import FollowUpAudit from "./FollowUpAudit";
 import FollowUpPessoas from "./FollowUpPessoas";
 import TemplatesView from "./TemplatesView";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import { CalendarDays } from "lucide-react";
 
 export interface AuditFilter {
   timeRange?: "24h" | "7d" | "all";
@@ -42,6 +44,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const [auditSubTab, setAuditSubTab] = useState<"pessoas" | "envios">("pessoas");
   const [logs, setLogs] = useState<MessageLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const { webinarContext } = useWebinarContext();
 
   const fetchLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -77,6 +80,23 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const handleViewSends = useCallback((templateKey: string) => {
     goToAudit({ templateKey, provider: "resend", confirmedOnly: true, subTab: "envios" });
   }, [goToAudit]);
+
+  // Empty state for video with no subscribers
+  if (webinarContext === "video" && inscritos.filter(i => i.status === "activo").length === 0) {
+    return (
+      <div className="p-7 max-sm:p-4 min-h-screen" style={{ background: "#F8FAFC" }}>
+        <div className="mb-5">
+          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Follow-up</h1>
+          <p className="text-sm" style={{ color: "#64748B" }}>Funil, métricas de envio, lista de pessoas e templates do follow-up automático.</p>
+        </div>
+        <div className="bg-white border border-border rounded-xl p-12 text-center">
+          <CalendarDays size={40} className="mx-auto mb-3" style={{ color: "#94A3B8" }} />
+          <p className="font-heading font-bold text-[16px]" style={{ color: "#0F172A" }}>Webinar Vídeo a 2 de Março</p>
+          <p className="text-[13px] mt-2" style={{ color: "#94A3B8" }}>Follow-up aparecerá aqui após as primeiras inscrições</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-7 max-sm:p-4 min-h-screen" style={{ background: "#F8FAFC" }}>
