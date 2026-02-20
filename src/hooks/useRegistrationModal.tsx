@@ -10,7 +10,10 @@ interface ModalContextType {
   close: () => void;
   referredBy: string | null;
   redirectPath: string;
+  subtitle: string;
 }
+
+const DEFAULT_SUBTITLE = "Terça-feira, 10 de Março, 10h";
 
 const ModalContext = createContext<ModalContextType>({
   isOpen: false,
@@ -19,11 +22,12 @@ const ModalContext = createContext<ModalContextType>({
   close: () => {},
   referredBy: null,
   redirectPath: "/upgrade",
+  subtitle: DEFAULT_SUBTITLE,
 });
 
 export const useRegistrationModal = () => useContext(ModalContext);
 
-export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade" }: { children: ReactNode; redirectPath?: string }) => {
+export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade", subtitle = DEFAULT_SUBTITLE }: { children: ReactNode; redirectPath?: string; subtitle?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [variant, setVariant] = useState<ModalVariant>("free");
   const [referredBy, setReferredBy] = useState<string | null>(null);
@@ -42,7 +46,7 @@ export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade" 
   const close = () => setIsOpen(false);
 
   return (
-    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy, redirectPath }}>
+    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy, redirectPath, subtitle }}>
       {children}
     </ModalContext.Provider>
   );

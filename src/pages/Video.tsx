@@ -11,9 +11,7 @@ import ElectricBorder from "@/components/landing/ElectricBorder";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
-import { LegalModal } from "@/components/legal/LegalModal";
-import { TermosContent } from "@/components/legal/TermosContent";
-import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
+import { FooterSection } from "@/components/landing/FooterSection";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
@@ -271,7 +269,6 @@ const VideoPageInner = () => {
     description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
   });
 
-  const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
   const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T21:00:00"));
   const openModal = () => open("free");
   return (
@@ -1004,35 +1001,14 @@ const VideoPageInner = () => {
       </section>
 
       {/* ═══ FOOTER ═══ */}
-      <footer className="py-8" style={{ background: DARK, borderTop: `1px solid ${DARK_BORDER}` }}>
-        <div className="mx-auto max-w-4xl px-5 text-center">
-          <p className="text-[13px] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>
-            © 2026 Frederico Carvalho · DIGITALFC
-          </p>
-          <div className="flex items-center justify-center gap-4 text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>
-            <button onClick={() => setLegalModal("privacidade")} className="hover:underline cursor-pointer">Privacidade</button>
-            <span>·</span>
-            <button onClick={() => setLegalModal("termos")} className="hover:underline cursor-pointer">Termos</button>
-            <span>·</span>
-            <a href="mailto:frederico.carvalho@digitalfc.pt" className="hover:underline">frederico.carvalho@digitalfc.pt</a>
-          </div>
-        </div>
-      </footer>
-
-      {/* Legal modals */}
-      <LegalModal open={legalModal === "termos"} title="Termos e Condições" onOpenChange={() => setLegalModal(null)}>
-        <TermosContent />
-      </LegalModal>
-      <LegalModal open={legalModal === "privacidade"} title="Política de Privacidade" onOpenChange={() => setLegalModal(null)}>
-        <PrivacidadeContent />
-      </LegalModal>
+      <FooterSection />
       <RegistrationModal />
     </div>
   );
 };
 
 const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video">
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 21h">
     <VideoPageInner />
   </RegistrationModalProvider>
 );
