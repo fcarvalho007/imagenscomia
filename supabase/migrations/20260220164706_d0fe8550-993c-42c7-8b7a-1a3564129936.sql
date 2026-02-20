@@ -1,0 +1,1 @@
+ALTER TABLE public.registrations ADD COLUMN IF NOT EXISTS webinar text NOT NULL DEFAULT 'imagens';

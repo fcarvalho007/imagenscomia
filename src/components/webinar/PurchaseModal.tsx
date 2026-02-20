@@ -17,6 +17,7 @@ interface PurchaseModalProps {
   onOpenChange: (open: boolean) => void;
   plan: "premium" | "masterclass" | "gravacao";
   planLabel: string;
+  webinar?: "imagens" | "video";
 }
 
 export const PurchaseModal = ({
@@ -24,6 +25,7 @@ export const PurchaseModal = ({
   onOpenChange,
   plan,
   planLabel,
+  webinar = "imagens",
 }: PurchaseModalProps) => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -56,6 +58,7 @@ export const PurchaseModal = ({
           firstName: trimmedFirst,
           lastName: trimmedLast,
           email: trimmedEmail,
+          webinar,
         },
       });
 

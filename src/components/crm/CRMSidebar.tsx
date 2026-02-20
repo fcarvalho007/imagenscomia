@@ -1,6 +1,8 @@
 import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import { WEBINAR_CONFIG, CONSOLIDADO_COLOR, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 
 export type CRMView = "dashboard" | "pipeline" | "tabela" | "templates" | "lixo";
 interface CRMSidebarProps {
@@ -17,22 +19,61 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 
+function WebinarSwitcher() {
+  const { webinarContext, setWebinarContext } = useWebinarContext();
+  const items: { key: WebinarCtxType; emoji: string; label: string; color: string }[] = [
+    { key: "imagens", emoji: "📷", label: "Imagens", color: WEBINAR_CONFIG.imagens.color },
+    { key: "video", emoji: "🎬", label: "Vídeo", color: WEBINAR_CONFIG.video.color },
+    { key: "consolidado", emoji: "⊕", label: "Todos", color: CONSOLIDADO_COLOR },
+  ];
+  return (
+    <div className="flex gap-1 px-3 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      {items.map((it) => {
+        const active = webinarContext === it.key;
+        return (
+          <button
+            key={it.key}
+            onClick={() => setWebinarContext(it.key)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors"
+            style={{
+              background: active ? it.color : "transparent",
+              color: active ? "#fff" : "rgba(255,255,255,0.45)",
+            }}
+          >
+            <span>{it.emoji}</span>
+            {it.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function getSidebarSubtitle(ctx: WebinarCtxType): string {
+  if (ctx === "consolidado") return "Todos os Webinars";
+  return WEBINAR_CONFIG[ctx].sidebarSubtitle;
+}
+
 function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps) {
+  const { webinarContext } = useWebinarContext();
   return (
     <div className="flex flex-col h-full py-5 px-3">
       {/* Logo */}
-      <div className="px-3 pb-5 mb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="px-3 pb-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="flex items-center gap-2">
           <BarChart2 size={22} className="text-blue-300" />
           <span className="font-heading font-extrabold text-base text-white">WebinarCRM</span>
         </div>
         <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-          18 Fev · Imagens IA
+          {getSidebarSubtitle(webinarContext)}
         </p>
       </div>
 
+      {/* Webinar Switcher */}
+      <WebinarSwitcher />
+
       {/* Nav */}
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1 mt-3">
         {NAV_ITEMS.map((item) => {
           const active = activeView === item.view;
           return (
@@ -66,19 +107,6 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
 
       {/* Spacer */}
       <div className="mt-auto" />
-
-      {/* Event badge */}
-      <div
-        className="rounded-lg p-2.5 mb-2 mx-1"
-        style={{ background: "rgba(22,163,74,0.12)", border: "1px solid rgba(22,163,74,0.20)" }}
-      >
-        <p className="font-heading font-semibold text-xs" style={{ color: "#4ADE80" }}>
-          🗓 18 Fev · 10h00
-        </p>
-        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.40)" }}>
-          Ao vivo · 7 dias
-        </p>
-      </div>
 
       {/* Logout */}
       <button

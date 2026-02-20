@@ -249,6 +249,7 @@ export type Database = {
           sources: string | null
           step_reached: number | null
           upgrade_clicked_at: string | null
+          webinar: string
           whatsapp: string | null
         }
         Insert: {
@@ -287,6 +288,7 @@ export type Database = {
           sources?: string | null
           step_reached?: number | null
           upgrade_clicked_at?: string | null
+          webinar?: string
           whatsapp?: string | null
         }
         Update: {
@@ -325,6 +327,7 @@ export type Database = {
           sources?: string | null
           step_reached?: number | null
           upgrade_clicked_at?: string | null
+          webinar?: string
           whatsapp?: string | null
         }
         Relationships: []

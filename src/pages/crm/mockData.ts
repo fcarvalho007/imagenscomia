@@ -40,6 +40,7 @@ export type Inscrito = {
   invoice_sent: boolean;
   premium_granted_at: string | null;
   premium_granted_by: string | null;
+  webinar: "imagens" | "video";
 };
 
 export const MOCK_DATA: Inscrito[] = [];
