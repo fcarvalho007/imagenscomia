@@ -10,6 +10,7 @@ import Convites from "./pages/Convites";
 import NotFound from "./pages/NotFound";
 import CRM from "./pages/CRM";
 import WebinarLive from "./pages/WebinarLive";
+import WebinarLiveVideo from "./pages/WebinarLiveVideo";
 import Termos from "./pages/Termos";
 import UpgradeSucesso from "./pages/UpgradeSucesso";
 import Pagar from "./pages/Pagar";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/convites" element={<Convites />} />
           <Route path="/crm" element={<CRM />} />
           <Route path="/live" element={<WebinarLive />} />
+          <Route path="/live-video" element={<WebinarLiveVideo />} />
           <Route path="/termos" element={<Termos />} />
           <Route path="/upgrade/sucesso" element={<UpgradeSucesso />} />
           <Route path="/pagar" element={<Pagar />} />
