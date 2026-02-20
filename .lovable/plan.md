@@ -1,98 +1,78 @@
 
 
-# Background Videos no Hero e na seccao "O video nao e luxo"
+# Upgrade visual da seccao "O video nao e luxo"
 
 ## Resumo
 
-Adicionar dois videos MP4 como backgrounds visuais em duas seccoes da pagina /video:
-1. **Hero** — video "vidro" como fundo atras dos orbs e do conteudo
-2. **"O video nao e luxo"** — video "splash branco" como fundo, com adaptacao das cores do texto/cards para manter legibilidade durante a transicao branco-para-preto
+Tornar a seccao mais cinematografica, actualizar textos para tratamento por "tu", e melhorar a hierarquia visual.
 
----
+## Alteracoes em `src/pages/Video.tsx`
 
-## Alteracoes
+### 1. Titulo principal (linha 414)
 
-### Copiar ficheiros para o projecto
+Alterar de:
+"O video nao e luxo -- e o formato que o mercado esta a empurrar"
 
-Os dois videos MP4 serao copiados para `public/videos/`:
-- `public/videos/hero-vidro.mp4`
-- `public/videos/splash-branco.mp4`
+Para:
+"Video e o formato que o mercado exige"
 
-Usamos `public/` porque videos grandes nao devem ser bundled pelo Vite — sao servidos estaticamente.
+Mais curto, directo, impactante. Tipografia maior (36px mobile, 48px desktop) com gradient text em "mercado exige" para destaque cinematografico.
 
----
+### 2. Subtitulos (linhas 417-425)
 
-### 1. Hero — Video de fundo "vidro" (`src/pages/Video.tsx`, linhas 241-249)
+Reescrever em tratamento por "tu":
 
-Adicionar um elemento `<video>` com autoplay, loop, muted, playsInline, posicionado absolutamente atras dos orbs:
+- "O pedido e quase sempre o mesmo: precisas de mais video."
+- "O bloqueio tambem: tempo, custo, aprovacoes e falta de consistencia."
+- "A IA ajuda, mas so funciona quando tens um processo minimo."
 
-```
-position: absolute, inset: 0, z-index: 0
-object-fit: cover, width/height 100%
-opacity: 0.35 (para nao competir com o texto)
-```
+Aumentar font-size para 18px e melhorar espacamento (mb-16 em vez de mb-14).
 
-Os orbs (z-index 1) e o conteudo (z-index 2) ficam por cima. O noise grain tambem fica por cima.
+### 3. Cards — texto por "tu" (linhas 118-123)
 
----
+Actualizar labels e descricoes:
 
-### 2. Seccao "O video nao e luxo" — Video "splash branco" (`src/pages/Video.tsx`, linhas 400-454)
+- "Precisas de volume" / "O mercado pede videos com frequencia e a tua equipa nao acompanha."
+- "Precisas de consistencia" / "Cada video parece de uma marca diferente."
+- "Precisas de velocidade" / "Quando o clip tem de sair hoje, nao daqui a duas semanas."
+- "Precisas de um metodo simples" / "Menos improviso, mais processo repetivel."
 
-Adicionar `position: relative` e `overflow: hidden` a seccao, e inserir o video como fundo absoluto:
+### 4. Cards — upgrade visual cinematografico
 
-```
-position: absolute, inset: 0, z-index: 0
-object-fit: cover, width/height 100%
-opacity: 0.5
-```
+Melhorar o estilo dos `.pain-card`:
 
-**Adaptacao para legibilidade durante a fase branca do video:**
+- Background: `rgba(255,255,255,0.04)` com `backdrop-filter: blur(16px)` e `border: 1px solid rgba(255,255,255,0.10)`
+- Padding: `p-7` em vez de `p-6`
+- Icones: cor verde (#4ade80) em vez de azul, tamanho 6 (24px)
+- Label: 16px, font-weight 700, cor branca
+- Descricao: 14px, `rgba(255,255,255,0.55)`
+- Numero de fundo: opacidade ligeiramente maior (0.06)
+- Hover: borda verde mais visivel, subtle glow verde
 
-Como o video comeca branco e depois fica preto, os textos brancos ficam invisiveis no inicio. Solucao:
+### 5. Overlay e video — mais cinematografico
 
-- Adicionar um overlay escuro semi-transparente por cima do video:
-  `background: rgba(0,0,0,0.55)`, z-index: 1
-  Isto garante que o texto branco se le mesmo quando o fundo do video e branco
+- Reduzir opacidade do overlay de 0.55 para 0.45 para deixar o video splash mais visivel
+- Adicionar gradient overlay (de baixo para cima, preto) para fade natural na base
+- Video opacity de 0.5 para 0.6 para mais presenca visual
 
-- Os cards (SpotlightCard) ja tem background proprio (`rgba(255,255,255,0.03)`) — reforcar para `rgba(0,0,0,0.6)` com `backdrop-filter: blur(8px)` para garantir legibilidade constante
+### 6. Subtitulo "Quando isto faz sentido"
 
-- Todo o conteudo textual fica em `position: relative, z-index: 2`
+- Aumentar para 22px, font-weight 600, letter-spacing -0.5px
+- Adicionar uma linha decorativa verde (40px de largura) acima do texto, centrada
 
 ---
 
 ## Detalhes tecnicos
 
-### Ficheiro modificado
-`src/pages/Video.tsx`
+### Ficheiro: `src/pages/Video.tsx`
 
-### Ficheiros criados
-- `public/videos/hero-vidro.mp4` (copia de user-uploads)
-- `public/videos/splash-branco.mp4` (copia de user-uploads)
-
-### Elemento video (ambas as seccoes)
-```html
-<video
-  autoPlay
-  loop
-  muted
-  playsInline
-  className="absolute inset-0 w-full h-full object-cover"
-  style={{ zIndex: 0, opacity: X }}
->
-  <source src="/videos/nome.mp4" type="video/mp4" />
-</video>
-```
-
-### Estrutura z-index no hero
-- z-index 0: video de fundo
-- z-index 1: orbs + noise grain (ja existente)
-- z-index 2: conteudo (ja existente)
-
-### Estrutura z-index na seccao "O video nao e luxo"
-- z-index 0: video de fundo
-- z-index 1: overlay escuro (novo)
-- z-index 2: conteudo (todo o conteudo actual envolvido em div relativo)
-
-### Cards reforçados
-Os `.pain-card` passam de `background: rgba(255,255,255,0.03)` para `background: rgba(0,0,0,0.6)` com `backdrop-filter: blur(8px)` para manter legibilidade durante a fase branca do video.
+Edicoes:
+1. Linhas 118-123: actualizar array `whenItMakesSense` (textos por "tu")
+2. Linha 410: overlay de `rgba(0,0,0,0.55)` para gradient overlay com transparencia variavel
+3. Linha 406: video opacity de 0.5 para 0.6
+4. Linha 414: novo titulo
+5. Linhas 416-426: novos subtitulos
+6. Linha 430: subtitulo "Quando isto faz sentido" com decoracao
+7. Linhas 439-448: cards com estilos melhorados
+8. Linhas 454-463: CSS `.pain-card` actualizado
 
