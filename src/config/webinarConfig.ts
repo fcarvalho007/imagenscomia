@@ -24,6 +24,34 @@ export const WEBINAR_CONFIG = {
 
 export const CONSOLIDADO_COLOR = "#7c3aed";
 
+/** Dashboard-specific constants per webinar */
+export const WEBINAR_DASHBOARD_CONFIG = {
+  imagens: {
+    visitors: 2686,
+    cutoffDate: new Date("2026-02-20T23:59:59"),
+    liveResults: {
+      views: 268,
+      avgDuration: "27:35",
+      peakViewers: 109,
+      likes: 14,
+      newSubs: 11,
+      date: "18 Fev",
+    },
+  },
+  video: {
+    visitors: 0,
+    cutoffDate: null as Date | null,
+    liveResults: null as null | {
+      views: number;
+      avgDuration: string;
+      peakViewers: number;
+      likes: number;
+      newSubs: number;
+      date: string;
+    },
+  },
+} as const;
+
 export function filterByWebinar<T extends { webinar?: string }>(
   items: T[],
   context: WebinarContext
@@ -31,4 +59,10 @@ export function filterByWebinar<T extends { webinar?: string }>(
   if (context === "consolidado") return items;
   if (context === "video") return items.filter((i) => i.webinar === "video");
   return items.filter((i) => !i.webinar || i.webinar === "imagens");
+}
+
+/** Small reusable badge for webinar identification in consolidado mode */
+export function webinarBadgeStyle(webinar: string): { bg: string; color: string; label: string } {
+  if (webinar === "video") return { bg: "#16a34a", color: "#fff", label: "VID" };
+  return { bg: "#1e40af", color: "#fff", label: "IMG" };
 }

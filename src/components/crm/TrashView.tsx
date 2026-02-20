@@ -3,6 +3,8 @@ import { Search, Trash2, X, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import WebinarBadge from "./WebinarBadge";
 
 interface TrashViewProps {
   inscritos: Inscrito[];
@@ -40,6 +42,8 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
 const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "—" };
 
 export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewProps) {
+  const { webinarContext } = useWebinarContext();
+  const isConsolidado = webinarContext === "consolidado";
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -120,6 +124,9 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
                       <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} aria-label="Seleccionar todos" />
                     </th>
                     <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider">Nome</th>
+                    {isConsolidado && (
+                      <th className="px-3 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider">Webinar</th>
+                    )}
                     <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider max-md:hidden">Email</th>
                     <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider">Plano</th>
                     <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider">Inscrição</th>
@@ -147,6 +154,11 @@ export default function TrashView({ inscritos, onDelete, onRestore }: TrashViewP
                             <span className="font-semibold text-[14px] text-ink-700">{genderEmoji(i.gender)} {i.nome}</span>
                           </div>
                         </td>
+                        {isConsolidado && (
+                          <td className="px-3 py-3">
+                            <WebinarBadge webinar={i.webinar} />
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-ink-500 max-md:hidden">{i.email}</td>
                         <td className="px-4 py-3">
                           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>

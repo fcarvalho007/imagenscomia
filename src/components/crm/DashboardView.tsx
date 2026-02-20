@@ -3,20 +3,22 @@ import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, Refresh
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
+import WebinarBadge from "./WebinarBadge";
 
 type Period = "7d" | "14d" | "30d" | "all";
 
-/* ── Constants ── */
-const FIXED_VISITORS = 2686;
-const CUTOFF_DATE = new Date("2026-02-20T23:59:59");
-
-const LIVE_RESULTS = {
-  views: 268,
-  avgDuration: "27:35",
-  peakViewers: 109,
-  likes: 14,
-  newSubs: 11,
-};
+/* ── Dashboard config helpers ── */
+function getDashboardConfig(ctx: WebinarCtxType) {
+  if (ctx === "video") return WEBINAR_DASHBOARD_CONFIG.video;
+  if (ctx === "consolidado") return {
+    visitors: WEBINAR_DASHBOARD_CONFIG.imagens.visitors + WEBINAR_DASHBOARD_CONFIG.video.visitors,
+    cutoffDate: WEBINAR_DASHBOARD_CONFIG.imagens.cutoffDate,
+    liveResults: WEBINAR_DASHBOARD_CONFIG.imagens.liveResults,
+  };
+  return WEBINAR_DASHBOARD_CONFIG.imagens;
+}
 
 function getPeriodStart(period: Period): Date | null {
   if (period === "all") return null;
@@ -82,6 +84,8 @@ function abbreviateSource(s: string) {
 export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
+  const { webinarContext } = useWebinarContext();
+  const dashConfig = getDashboardConfig(webinarContext);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
@@ -90,9 +94,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [emailFailed7d, setEmailFailed7d] = useState(0);
 
   useEffect(() => {
+    const cutoff = dashConfig.cutoffDate;
+    if (!cutoff) { setResendSent24h(0); setResendSent7d(0); setEmailFailed24h(0); setEmailFailed7d(0); return; }
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const cutoffISO = CUTOFF_DATE.toISOString();
+    const cutoffISO = cutoff.toISOString();
 
     Promise.all([
       supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo).lte("created_at", cutoffISO),
@@ -105,15 +111,31 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       setEmailFailed24h(failed24.count || 0);
       setEmailFailed7d(failed7d.count || 0);
     });
-  }, []);
+  }, [dashConfig.cutoffDate]);
 
   // Period-filtered inscritos + cutoff date
   const filteredInscritos = useMemo(() => {
-    const active = inscritos.filter((i) => i.status === "activo" && new Date(i.timestamp) <= CUTOFF_DATE);
+    const cutoff = dashConfig.cutoffDate;
+    const active = inscritos.filter((i) => i.status === "activo" && (cutoff ? new Date(i.timestamp) <= cutoff : true));
     const periodStart = getPeriodStart(period);
     if (!periodStart) return active;
     return active.filter((i) => new Date(i.timestamp) >= periodStart);
-  }, [inscritos, period]);
+  }, [inscritos, period, dashConfig.cutoffDate]);
+
+  // Split counts for consolidado KPIs
+  const webinarSplit = useMemo(() => {
+    if (webinarContext !== "consolidado") return null;
+    const img = filteredInscritos.filter((i) => !i.webinar || i.webinar === "imagens");
+    const vid = filteredInscritos.filter((i) => i.webinar === "video");
+    const imgPaid = img.filter((i) => i.paid_at !== null);
+    const vidPaid = vid.filter((i) => i.paid_at !== null);
+    return {
+      imgCount: img.length, vidCount: vid.length,
+      imgReceita: imgPaid.reduce((s, i) => s + i.valor, 0),
+      vidReceita: vidPaid.reduce((s, i) => s + i.valor, 0),
+      imgPaid: imgPaid.length, vidPaid: vidPaid.length,
+    };
+  }, [filteredInscritos, webinarContext]);
 
   const stats = useMemo(() => {
     const active = filteredInscritos;
@@ -226,11 +248,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
   ];
 
-  const visitantes = FIXED_VISITORS;
+  const visitantes = dashConfig.visitors;
   const visitorDropLost = visitantes - stats.step1;
-  const visitorDropPct = (visitorDropLost / visitantes) * 100;
-  const registrationCTR = (stats.step1 / visitantes) * 100;
-  const landingToPayPct = (stats.paidConfirmed / visitantes) * 100;
+  const visitorDropPct = visitantes ? (visitorDropLost / visitantes) * 100 : 0;
+  const registrationCTR = visitantes ? (stats.step1 / visitantes) * 100 : 0;
+  const landingToPayPct = visitantes ? (stats.paidConfirmed / visitantes) * 100 : 0;
 
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
@@ -413,6 +435,13 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{kpi.value}</p>
             <p className="text-[13px] text-ink-500 mt-1">{kpi.label}</p>
             <p className="text-[11px] text-ink-400">{kpi.sub}</p>
+            {webinarSplit && (
+              <p className="text-[11px] mt-1" style={{ color: "#888" }}>
+                {idx === 0 && `${webinarSplit.imgCount} imagens + ${webinarSplit.vidCount} vídeo`}
+                {idx === 1 && `€${webinarSplit.imgReceita.toFixed(0)} imagens + €${webinarSplit.vidReceita.toFixed(0)} vídeo`}
+                {idx === 2 && `${webinarSplit.imgPaid} img + ${webinarSplit.vidPaid} vid pagantes`}
+              </p>
+            )}
           </div>
         ))}
         {/* Conversion KPI */}
@@ -421,39 +450,51 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           <p className="font-heading font-extrabold text-[32px] text-ink-900 mt-2 leading-none">{stats.conversao.toFixed(1)}%</p>
           <p className="text-[13px] text-ink-500 mt-1">Taxa Inscritos → Pago</p>
           <p className="text-[11px] text-ink-400 mt-0.5">{stats.paidConfirmed} de {stats.total} inscritos activos pagaram</p>
-          <div className="border-t border-dashed border-border my-3" />
-          <p className="font-heading font-bold text-[20px] leading-none" style={{ color: "hsl(var(--amber-500))" }}>{landingToPayPct.toFixed(1)}%</p>
-          <p className="text-[12px] text-ink-500 mt-0.5">Landing page → Pago</p>
-          <p className="text-[11px] text-ink-400">{stats.paidConfirmed} de {visitantes.toLocaleString("pt-PT")} visitantes</p>
+          {visitantes > 0 && (
+            <>
+              <div className="border-t border-dashed border-border my-3" />
+              <p className="font-heading font-bold text-[20px] leading-none" style={{ color: "hsl(var(--amber-500))" }}>{landingToPayPct.toFixed(1)}%</p>
+              <p className="text-[12px] text-ink-500 mt-0.5">Landing page → Pago</p>
+              <p className="text-[11px] text-ink-400">{stats.paidConfirmed} de {visitantes.toLocaleString("pt-PT")} visitantes</p>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Resultados Live · 18 Fev */}
-      <div className="bg-white border border-border rounded-xl p-5 mb-5">
-        <div className="flex items-center gap-2.5 mb-4">
-          <Youtube size={20} className="text-red-600" />
-          <div>
-            <h3 className="font-heading font-bold text-[14px] text-ink-900">Resultados Live · 18 Fev</h3>
-            <p className="text-[12px] text-ink-400">Métricas do YouTube Live</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-5 max-md:grid-cols-3 max-sm:grid-cols-2 gap-4">
-          {[
-            { label: "Visualizações", value: String(LIVE_RESULTS.views), icon: Eye },
-            { label: "Duração média", value: LIVE_RESULTS.avgDuration, icon: Clock },
-            { label: "Pico de viewers", value: String(LIVE_RESULTS.peakViewers), icon: TrendingUp },
-            { label: "Gostos", value: String(LIVE_RESULTS.likes), icon: ThumbsUp },
-            { label: "Novos subscritores", value: `+${LIVE_RESULTS.newSubs}`, icon: UserPlus },
-          ].map((m, idx) => (
-            <div key={idx} className="bg-surface/60 rounded-lg px-4 py-3 text-center">
-              <m.icon size={16} className="text-ink-400 mx-auto mb-1.5" />
-              <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none">{m.value}</p>
-              <p className="text-[11px] text-ink-500 mt-1">{m.label}</p>
+      {/* Early Bird vs Regular */}
+      <EarlyBirdWidget inscritos={filteredInscritos} webinarContext={webinarContext} />
+
+      {/* Comparação entre Webinars (consolidado only) */}
+      {webinarContext === "consolidado" && <WebinarComparisonWidget inscritos={filteredInscritos} />}
+
+      {/* Resultados Live */}
+      {dashConfig.liveResults && (
+        <div className="bg-white border border-border rounded-xl p-5 mb-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <Youtube size={20} className="text-red-600" />
+            <div>
+              <h3 className="font-heading font-bold text-[14px] text-ink-900">Resultados Live · {dashConfig.liveResults.date}</h3>
+              <p className="text-[12px] text-ink-400">Métricas do YouTube Live</p>
             </div>
-          ))}
+          </div>
+          <div className="grid grid-cols-5 max-md:grid-cols-3 max-sm:grid-cols-2 gap-4">
+            {[
+              { label: "Visualizações", value: String(dashConfig.liveResults.views), icon: Eye },
+              { label: "Duração média", value: dashConfig.liveResults.avgDuration, icon: Clock },
+              { label: "Pico de viewers", value: String(dashConfig.liveResults.peakViewers), icon: TrendingUp },
+              { label: "Gostos", value: String(dashConfig.liveResults.likes), icon: ThumbsUp },
+              { label: "Novos subscritores", value: `+${dashConfig.liveResults.newSubs}`, icon: UserPlus },
+            ].map((m, idx) => (
+              <div key={idx} className="bg-surface/60 rounded-lg px-4 py-3 text-center">
+                <m.icon size={16} className="text-ink-400 mx-auto mb-1.5" />
+                <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none">{m.value}</p>
+                <p className="text-[11px] text-ink-500 mt-1">{m.label}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-ink-400 mt-3 text-right">Fonte: YouTube Live Studio · {dashConfig.liveResults.date} 2026</p>
         </div>
-        <p className="text-[10px] text-ink-400 mt-3 text-right">Fonte: YouTube Live Studio · 18 Fev 2026</p>
-      </div>
+      )}
 
       {/* Email Follow-up Status */}
       <div className="bg-white border border-border rounded-xl p-5 mb-5">
@@ -827,7 +868,116 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   );
 }
 
-/* ── Leaderboard de Convites ── */
+/* ── Early Bird vs Regular Widget ── */
+function EarlyBirdWidget({ inscritos, webinarContext }: { inscritos: Inscrito[]; webinarContext: WebinarCtxType }) {
+  const data = useMemo(() => {
+    const pagantes = inscritos.filter((i) => i.paid_at && i.plan !== "free");
+    const premiumEarly = pagantes.filter((i) => (i.plan === "premium" || i.plan === "bundle") && i.valor <= 15.01).length;
+    const premiumRegular = pagantes.filter((i) => (i.plan === "premium" || i.plan === "bundle") && i.valor > 15.01 && i.valor <= 27.01).length;
+    const mcEarly = pagantes.filter((i) => (i.plan === "masterclass" || i.plan === "bundle") && i.valor >= 47 && i.valor <= 58).length;
+    const mcRegular = pagantes.filter((i) => (i.plan === "masterclass" || i.plan === "bundle") && i.valor > 76).length;
+    return { premiumEarly, premiumRegular, mcEarly, mcRegular, total: pagantes.length };
+  }, [inscritos]);
+
+  if (data.total === 0) return null;
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5 mb-5">
+      <h3 className="font-heading font-bold text-[14px] text-ink-900 mb-1">Early Bird vs Preço Regular</h3>
+      <p className="text-[12px] text-ink-400 mb-4">Distribuição de compras por preço</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-surface/60 rounded-lg px-4 py-3">
+          <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide mb-2">Premium Pass</p>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-ink-600">€15 <span className="text-[10px] text-ink-400">(early bird)</span></span>
+            <span className="font-heading font-bold text-[18px]" style={{ color: "#2563EB" }}>{data.premiumEarly}</span>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[13px] text-ink-600">€27 <span className="text-[10px] text-ink-400">(regular)</span></span>
+            <span className="font-heading font-bold text-[18px] text-ink-500">{data.premiumRegular}</span>
+          </div>
+        </div>
+        <div className="bg-surface/60 rounded-lg px-4 py-3">
+          <p className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide mb-2">Masterclass</p>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] text-ink-600">€47 <span className="text-[10px] text-ink-400">(early bird)</span></span>
+            <span className="font-heading font-bold text-[18px]" style={{ color: "#7C3AED" }}>{data.mcEarly}</span>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[13px] text-ink-600">€97 <span className="text-[10px] text-ink-400">(regular)</span></span>
+            <span className="font-heading font-bold text-[18px] text-ink-500">{data.mcRegular}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Comparação entre Webinars (consolidado only) ── */
+function WebinarComparisonWidget({ inscritos }: { inscritos: Inscrito[] }) {
+  const metrics = useMemo(() => {
+    const calc = (items: Inscrito[]) => {
+      const active = items.filter((i) => i.status === "activo");
+      const pagantes = active.filter((i) => i.paid_at !== null);
+      const receita = pagantes.reduce((s, i) => s + i.valor, 0);
+      const srcMap: Record<string, number> = {};
+      active.forEach((i) => i.source.forEach((s) => {
+        if (s !== "SKIPPED") { const k = s.startsWith("Instagram") ? "Instagram" : s; srcMap[k] = (srcMap[k] || 0) + 1; }
+      }));
+      const topSource = Object.entries(srcMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+      return {
+        total: active.length,
+        receita,
+        taxa: active.length ? ((pagantes.length / active.length) * 100).toFixed(1) : "0",
+        ticket: pagantes.length ? (receita / pagantes.length).toFixed(2) : "0",
+        topSource,
+        hasPaid: pagantes.length > 0,
+      };
+    };
+    const img = calc(inscritos.filter((i) => !i.webinar || i.webinar === "imagens"));
+    const vid = calc(inscritos.filter((i) => i.webinar === "video"));
+    return { img, vid };
+  }, [inscritos]);
+
+  const renderCard = (title: string, emoji: string, color: string, m: typeof metrics.img, hasData: boolean) => (
+    <div className="bg-white border border-border rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <span>{emoji}</span>
+        <h4 className="font-heading font-bold text-[14px]" style={{ color }}>{title}</h4>
+      </div>
+      {hasData ? (
+        <div className="space-y-2">
+          <div className="flex justify-between"><span className="text-[13px] text-ink-600">Inscritos</span><span className="font-heading font-bold text-ink-900">{m.total}</span></div>
+          <div className="flex justify-between"><span className="text-[13px] text-ink-600">Receita confirmada</span><span className="font-heading font-bold text-ink-900">€{m.receita.toFixed(2)}</span></div>
+          <div className="flex justify-between"><span className="text-[13px] text-ink-600">Taxa free→pago</span><span className="font-heading font-bold text-ink-900">{m.taxa}%</span></div>
+          <div className="flex justify-between"><span className="text-[13px] text-ink-600">Ticket médio</span><span className="font-heading font-bold text-ink-900">€{m.ticket}</span></div>
+          <div className="flex justify-between"><span className="text-[13px] text-ink-600">Top canal</span><span className="text-[13px] font-medium text-ink-700">{m.topSource}</span></div>
+        </div>
+      ) : (
+        <div className="py-6 text-center">
+          <p className="text-ink-400 text-[13px]">—</p>
+          <p className="text-[12px] text-ink-400 mt-1">Disponível após inscrições</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const deltaLine = metrics.vid.total > 0
+    ? `Δ Inscritos: ${metrics.img.total > 0 ? ((metrics.vid.total - metrics.img.total) / metrics.img.total * 100).toFixed(0) : "—"}% vs Imagens · Δ Receita: €${(metrics.vid.receita - metrics.img.receita).toFixed(0)}`
+    : "Webinar a 2 de Março — dados disponíveis após lançamento";
+
+  return (
+    <div className="mb-5">
+      <h3 className="font-heading font-bold text-[15px] text-ink-900 mb-3">Comparação entre Webinars</h3>
+      <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4">
+        {renderCard("Imagens IA · 18 Fev", "📷", "#1e40af", metrics.img, metrics.img.total > 0)}
+        {renderCard("Vídeo IA · 2 Mar", "🎬", "#16a34a", metrics.vid, metrics.vid.total > 0)}
+      </div>
+      <p className="text-[12px] text-ink-400 mt-3 text-center italic">{deltaLine}</p>
+    </div>
+  );
+}
+
 
 interface LeaderboardEntry {
   name: string;

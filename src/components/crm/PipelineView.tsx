@@ -3,6 +3,8 @@ import { Search, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+import WebinarBadge from "./WebinarBadge";
 
 interface PipelineViewProps {
   inscritos: Inscrito[];
@@ -50,14 +52,19 @@ const COLUMNS: Column[] = [
   { title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up },
 ];
 
-function PipelineCard({ inscrito, onSelectInscrito }: { inscrito: Inscrito; onSelectInscrito: (i: Inscrito) => void }) {
+function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscrito: Inscrito; onSelectInscrito: (i: Inscrito) => void; showWebinarBadge?: boolean }) {
   const badge = PLAN_BADGE[inscrito.plan] || DEFAULT_PLAN_BADGE;
   return (
     <div
-      className="bg-white border border-border rounded-[10px] p-3 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer"
+      className="bg-white border border-border rounded-[10px] p-3 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer relative"
       onClick={() => onSelectInscrito(inscrito)}
     >
-      <span className="font-heading font-semibold text-[14px] text-ink-900 truncate block">
+      {showWebinarBadge && (
+        <div className="absolute top-2 right-2">
+          <WebinarBadge webinar={inscrito.webinar} />
+        </div>
+      )}
+      <span className="font-heading font-semibold text-[14px] text-ink-900 truncate block pr-8">
         {genderEmoji(inscrito.gender)} {inscrito.nome}
       </span>
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
@@ -107,6 +114,8 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
   const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao">("all");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([COLUMNS[0].title]));
   const isMobile = useIsMobile();
+  const { webinarContext } = useWebinarContext();
+  const isConsolidado = webinarContext === "consolidado";
 
   const visibleColumns = useMemo(() => {
     let cols = COLUMNS;
@@ -206,7 +215,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                       <p className="text-[12px] text-ink-400 text-center py-4">Sem inscritos</p>
                     ) : (
                       items.map((inscrito) => (
-                        <PipelineCard key={inscrito.id} inscrito={inscrito} onSelectInscrito={onSelectInscrito} />
+                        <PipelineCard key={inscrito.id} inscrito={inscrito} onSelectInscrito={onSelectInscrito} showWebinarBadge={isConsolidado} />
                       ))
                     )}
                   </div>
@@ -235,6 +244,11 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                         {items.length}
                       </span>
                     </div>
+                    {isConsolidado && (
+                      <p className="text-[10px] text-ink-400 mt-0.5">
+                        {items.filter(i => !i.webinar || i.webinar === "imagens").length} IMG + {items.filter(i => i.webinar === "video").length} VID
+                      </p>
+                    )}
                     <p className="text-[12px] font-medium mt-0.5" style={{ color: col.color, opacity: 0.8 }}>
                       €{colRevenue.toFixed(2)}
                     </p>
@@ -242,7 +256,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                 </div>
                 <div className="bg-surface/50 border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2">
                   {items.map((inscrito) => (
-                    <PipelineCard key={inscrito.id} inscrito={inscrito} onSelectInscrito={onSelectInscrito} />
+                    <PipelineCard key={inscrito.id} inscrito={inscrito} onSelectInscrito={onSelectInscrito} showWebinarBadge={isConsolidado} />
                   ))}
                 </div>
               </div>
