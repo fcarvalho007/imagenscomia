@@ -902,7 +902,7 @@ const VideoPageInner = () => {
 };
 
 const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 10h">
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 10h" webinar="video">
     <VideoPageInner />
   </RegistrationModalProvider>
 );

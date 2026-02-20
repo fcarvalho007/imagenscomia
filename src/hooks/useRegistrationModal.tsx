@@ -11,6 +11,7 @@ interface ModalContextType {
   referredBy: string | null;
   redirectPath: string;
   subtitle: string;
+  webinar: "imagens" | "video";
 }
 
 const DEFAULT_SUBTITLE = "Terça-feira, 10 de Março, 10h";
@@ -23,11 +24,12 @@ const ModalContext = createContext<ModalContextType>({
   referredBy: null,
   redirectPath: "/upgrade",
   subtitle: DEFAULT_SUBTITLE,
+  webinar: "imagens",
 });
 
 export const useRegistrationModal = () => useContext(ModalContext);
 
-export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade", subtitle = DEFAULT_SUBTITLE }: { children: ReactNode; redirectPath?: string; subtitle?: string }) => {
+export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade", subtitle = DEFAULT_SUBTITLE, webinar = "imagens" as "imagens" | "video" }: { children: ReactNode; redirectPath?: string; subtitle?: string; webinar?: "imagens" | "video" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [variant, setVariant] = useState<ModalVariant>("free");
   const [referredBy, setReferredBy] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export const RegistrationModalProvider = ({ children, redirectPath = "/upgrade",
   const close = () => setIsOpen(false);
 
   return (
-    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy, redirectPath, subtitle }}>
+    <ModalContext.Provider value={{ isOpen, variant, open, close, referredBy, redirectPath, subtitle, webinar }}>
       {children}
     </ModalContext.Provider>
   );

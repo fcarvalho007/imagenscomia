@@ -13,7 +13,7 @@ type ConfirmationMode = "referral" | "simple";
 
 export const RegistrationModal = () => {
   const navigate = useNavigate();
-  const { isOpen, close, referredBy, variant, redirectPath, subtitle } = useRegistrationModal();
+  const { isOpen, close, referredBy, variant, redirectPath, subtitle, webinar } = useRegistrationModal();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -31,7 +31,7 @@ export const RegistrationModal = () => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPhone = whatsapp ? whatsapp.replace(/[^\d]/g, "") : undefined;
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined },
+      body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined, webinar },
     });
     if (fnError) throw fnError;
     return { referralCode: data.referralCode, referralLink: data.referralLink, alreadyRegistered: data.alreadyRegistered };
