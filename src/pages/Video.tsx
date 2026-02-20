@@ -146,10 +146,18 @@ const videoAgenda = [
   },
   {
     num: "02",
-    title: "Erros mais comuns que destroem consistência (e como evitar)",
+    title: "Workshop Prático: O processo mínimo (briefing + checklist) para produzir vídeo com consistência",
     borderColor: "border-l-[#0891B2]",
+    desc: "Estrutura simples para sair com clips prontos a publicar.",
+    bullets: ["Do briefing ao primeiro clip: passo a passo", "Checklist de produção para manter consistência"],
+    deliverable: "Processo mínimo para produzir vídeo com qualidade.",
+  },
+  {
+    num: "03",
+    title: "Erros mais comuns que destroem consistência (e como evitar)",
+    borderColor: "border-l-green-600",
     desc: "Os erros que quase toda a gente comete — e como os corrigir rápido.",
-    bullets: ["Erros de briefing, prompt e revisão", "Ajustes simples que fazem diferença no resultado"],
+    bullets: ["Ajustes simples que fazem diferença no resultado"],
     deliverable: "Checklist anti-erros para vídeo com IA.",
   },
 ];
@@ -582,7 +590,7 @@ const VideoPageInner = () => {
               PÚBLICO-ALVO
             </p>
             <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center text-white">
-              Para quem é —{" "}
+              Para quem é{" "}
               <span style={{ background: "linear-gradient(135deg, #a855f7 0%, #60A5FA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 e para quem não é
               </span>
@@ -598,9 +606,6 @@ const VideoPageInner = () => {
                 <ul className="space-y-4">
                   {forWhom.map((t, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className="font-heading font-bold text-[11px] mt-0.5 shrink-0 w-[22px]" style={{ color: "rgba(168,85,247,0.4)" }}>
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
                       <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "#4ade80" }} />
                       <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>{t}</span>
                     </li>
