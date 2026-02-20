@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Check, Clock, ArrowLeftRight, XCircle, Layers,
-  FileText, CheckSquare, Video,
+  FileText, CheckSquare, Video, Calendar, Timer, GraduationCap,
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useCountdown } from "@/hooks/useCountdown";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import ElectricBorder from "@/components/landing/ElectricBorder";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
@@ -13,15 +15,35 @@ import { LegalModal } from "@/components/legal/LegalModal";
 import { TermosContent } from "@/components/legal/TermosContent";
 import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
 import { AuroraBackground } from "@/components/ui/aurora-background";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
+
+/* Logo imports */
+import googleLogo from "@/assets/logos/google.png";
+import chatgptLogo from "@/assets/logos/chatgpt.webp";
+import claudeLogo from "@/assets/logos/claude.png";
+import freepikLogo from "@/assets/logos/freepik.png";
+import bytedanceLogo from "@/assets/logos/bytedance.svg";
+import geminiLogo from "@/assets/logos/gemini.png";
+import llamaLogo from "@/assets/logos/llama-meta.png";
+import runcomfyLogo from "@/assets/logos/runcomfy.webp";
+
+const logos = [
+  { src: googleLogo, alt: "Google" },
+  { src: chatgptLogo, alt: "ChatGPT" },
+  { src: claudeLogo, alt: "Claude" },
+  { src: freepikLogo, alt: "Freepik" },
+  { src: bytedanceLogo, alt: "ByteDance" },
+  { src: geminiLogo, alt: "Gemini" },
+  { src: llamaLogo, alt: "LLaMA by Meta" },
+  { src: runcomfyLogo, alt: "RunComfy" },
+];
 
 /* ── Reduced motion check ── */
 const prefersReduced = () =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-/* ── Framer Motion variants (constants for perf) ── */
+/* ── Framer Motion variants ── */
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
   visible: { opacity: 1, y: 0 },
@@ -33,7 +55,7 @@ const wordReveal = {
 };
 
 const slideFromLeft = {
-  hidden: { opacity: 0, x: -30 },
+  hidden: { opacity: 0, x: -20 },
   visible: { opacity: 1, x: 0 },
 };
 
@@ -53,7 +75,7 @@ const staggerContainer = (stagger = 0.1) => ({
 });
 
 const defaultTransition = { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const };
-const vpOnce = { once: true, margin: "-80px" as const };
+const vpOnce = { once: true, margin: "-60px" as const };
 
 /* ── Smooth scroll helper ── */
 const scrollTo = (id: string) => (e: React.MouseEvent) => {
@@ -62,8 +84,22 @@ const scrollTo = (id: string) => (e: React.MouseEvent) => {
 };
 
 /* ── Word splitter for staggered reveal ── */
-const StaggeredWords = ({ text, startDelay = 0.3 }: { text: string; startDelay?: number }) => {
-  const words = text.split(" ");
+const StaggeredWords = ({ text, children, startDelay = 0.3 }: { text?: string; children?: React.ReactNode; startDelay?: number }) => {
+  if (children) {
+    return (
+      <motion.span
+        initial="hidden"
+        animate={prefersReduced() ? "visible" : "hidden"}
+        whileInView="visible"
+        viewport={vpOnce}
+        variants={staggerContainer(0.07)}
+        transition={{ delayChildren: startDelay }}
+      >
+        {children}
+      </motion.span>
+    );
+  }
+  const words = (text || "").split(" ");
   return (
     <motion.span
       initial="hidden"
@@ -104,17 +140,14 @@ const CountUpNumber = ({ value }: { value: number }) => {
   return <span ref={ref}>{count}</span>;
 };
 
-/* ── Shared CTA ── */
-const GreenCTA = ({ label = "Garantir inscrição gratuita", large = false }: { label?: string; large?: boolean }) => (
-  <button
-    onClick={scrollTo("inscricao")}
-    className={`inline-block font-heading font-bold text-white rounded-xl transition-all cursor-pointer ${large ? "text-[17px] px-10 py-4" : "text-[15px] px-7 py-3"}`}
-    style={{ background: "hsl(142 76% 36%)", boxShadow: "0 4px 20px rgba(22,163,74,0.30)" }}
-    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
-  >
-    {label}
-  </button>
+/* ── Countdown Block ── */
+const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <span className="bg-white/20 rounded px-2 py-1 font-heading font-bold text-[16px] max-sm:text-[14px] text-white min-w-[34px] max-sm:min-w-[28px] text-center">
+      {String(value).padStart(2, "0")}
+    </span>
+    <span className="text-[10px] text-white/70 mt-0.5">{label}</span>
+  </div>
 );
 
 /* ── Google badge ── */
@@ -138,15 +171,15 @@ const GoogleBadge = () => (
 );
 
 /* ── Eyebrow label ── */
-const Eyebrow = ({ children }: { children: React.ReactNode }) => (
-  <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "hsl(142 76% 36%)" }}>
+const Eyebrow = ({ children, light = false }: { children: React.ReactNode; light?: boolean }) => (
+  <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: light ? "#16a34a" : "hsl(142 76% 36%)" }}>
     {children}
   </p>
 );
 
 /* ── Section title ── */
 const SectionTitle = ({ children, light = true }: { children: React.ReactNode; light?: boolean }) => (
-  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center ${light ? "text-white" : ""}`} style={!light ? { color: "hsl(222 47% 11%)" } : {}}>
+  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center ${light ? "text-white" : ""}`} style={!light ? { color: "#0a0a0f" } : {}}>
     {children}
   </h2>
 );
@@ -182,8 +215,8 @@ const notFor = [
 
 const agenda = [
   { time: "5 min", title: "Boas-vindas + o que mudou no vídeo" },
-  { time: "15 min", title: "O sistema mínimo de delegação (briefing + checklist)" },
-  { time: "20 min", title: "Demonstração: do briefing ao clip" },
+  { time: "15 min", title: "O sistema mínimo de delegação (briefing + checklist)", tag: "CORE" },
+  { time: "20 min", title: "Demonstração: do briefing ao clip", tag: "AO VIVO" },
   { time: "10 min", title: "7 erros que destroem consistência" },
   { time: "10 min", title: "Q&A + próximos passos" },
 ];
@@ -208,6 +241,13 @@ const operationalPromises = [
   "Montar um processo semanal simples (produção por lotes).",
 ];
 
+const speakerCredentials = [
+  { emoji: "🎓", title: "Professor Universitário", sub: "Universidade de Coimbra (FEUC) · Univ. Europeia (IPAM) · Univ. Autónoma · Univ. Aveiro" },
+  { emoji: "📚", title: "Autor", sub: "\"Guia Essencial SEO\" e Co-Autor \"Marketing Digital para Empresas\"" },
+  { emoji: "🎙️", title: "Host Semanal · RFM", sub: "Podcast Marketing por Idiotas" },
+  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC consultoria com auditoria digital a mais de 700+ empresas. L'Oréal. BMW. 3M" },
+];
+
 const faqs = [
   { q: "Precisa de experiência com IA?", a: "Não. O foco é processo e decisão, com demonstração simples." },
   { q: "Serve B2B e B2C?", a: "Serve ambos: anúncios, demos, prova social e conteúdo de confiança." },
@@ -229,76 +269,106 @@ const VideoPage = () => {
   });
 
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
-
-  /* ── Sticky bar scroll opacity ── */
-  const [barOpacity, setBarOpacity] = useState(0.92);
-  useEffect(() => {
-    const handler = () => setBarOpacity(window.scrollY > 500 ? 0.98 : 0.92);
-    window.addEventListener("scroll", handler, { passive: true });
-    return () => window.removeEventListener("scroll", handler);
-  }, []);
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-02T10:00:00"));
 
   return (
-    <div className="min-h-screen" style={{ background: DARK, color: "#e2e8f0" }}>
+    <div className="min-h-screen pt-[52px]" style={{ background: DARK, color: "#e2e8f0" }}>
 
-      {/* ═══ 1 — STICKY TOP BAR ═══ */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-        style={{
-          background: `rgba(10,10,15,${barOpacity})`,
-          backdropFilter: "saturate(180%) blur(12px)",
-          borderBottom: `1px solid ${DARK_BORDER}`,
-        }}
+      {/* ═══ 1 — STICKY TOP BAR WITH COUNTDOWN ═══ */}
+      <motion.div
+        initial={{ y: -50 }}
+        animate={{ y: 0 }}
+        className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-ink-900 via-[hsl(262,83%,58%)]/20 to-blue-700"
       >
-        <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-2.5">
-          <span className="hidden sm:inline-block text-[12px] font-heading font-semibold uppercase tracking-[0.1em] px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.6)" }}>
-            Webinar gratuito · 2 Março 2026
-          </span>
+        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
+          <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
+            AO VIVO · 2 MAR · A DEFINIR HORA
+          </p>
+
+          <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
+            <CountdownBlock value={days} label="dias" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={hours} label="horas" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={minutes} label="min" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={seconds} label="seg" />
+          </div>
+
           <button
             onClick={scrollTo("inscricao")}
-            className="text-[13px] font-heading font-bold text-white px-5 py-2 rounded-lg transition-colors cursor-pointer sm:ml-auto"
-            style={{ background: "hsl(142 76% 36%)" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
+            className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer"
           >
-            Garantir inscrição →
+            Quero inscrever-me!
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ═══ 2 — HERO ═══ */}
-      <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: "#050709" }}>
+      <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: "#050709", paddingTop: 80, paddingBottom: 80 }}>
         {/* Animated orbs background */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-          <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.08, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
-          <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.06, top: "10%", right: "-5%", filter: "blur(80px)" }} />
-          <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.05, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.12, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.09, top: "10%", right: "-5%", filter: "blur(80px)" }} />
+          <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.07, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
         </div>
         {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative px-5 text-center w-full" style={{ zIndex: 2, maxWidth: 700, margin: "0 auto" }}>
+        <div className="relative px-5 text-center w-full" style={{ zIndex: 2, maxWidth: 780, margin: "0 auto" }}>
           {/* Live badge pill */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
-            <span className="inline-flex items-center gap-2 font-heading text-[11px] font-bold uppercase tracking-[0.16em] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
+            <span className="inline-flex items-center gap-2 font-heading text-[11px] font-semibold uppercase tracking-[2px] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
               <span className="relative flex h-[6px] w-[6px]">
                 <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
                 <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
               </span>
-              WEBINAR GRATUITO · AO VIVO
+              WEBINAR GRATUITO · AO VIVO · 2 MARÇO
             </span>
           </motion.div>
 
-          {/* Headline — staggered word reveal */}
-          <h1 className="font-heading font-extrabold text-[26px] sm:text-[36px] md:text-[44px] leading-[1.1] text-white mb-4" style={{ letterSpacing: "-0.02em" }}>
-            <StaggeredWords text="Aprende a criar vídeos com Inteligência Artificial para marketing" startDelay={0.2} />
+          {/* Headline — 72px desktop, gradient on "Inteligência Artificial" */}
+          <h1
+            className="font-heading leading-[1.05] text-white mb-4"
+            style={{ fontWeight: 900, letterSpacing: "-2px", textShadow: "0 0 80px rgba(22,163,74,0.15)", fontSize: "clamp(38px, 6vw, 72px)" }}
+          >
+            <StaggeredWords startDelay={0.2}>
+              {["Aprende", "a", "criar", "vídeos", "com"].map((w, i) => (
+                <motion.span key={i} variants={wordReveal} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="inline-block mr-[0.3em]">
+                  {w}
+                </motion.span>
+              ))}
+              <br />
+              {["Inteligência", "Artificial"].map((w, i) => (
+                <motion.span
+                  key={`ia-${i}`}
+                  variants={wordReveal}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="inline-block mr-[0.3em]"
+                  style={{
+                    background: "linear-gradient(135deg, #16a34a 0%, #4ade80 40%, #22d3ee 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {w}
+                </motion.span>
+              ))}
+              {["para", "marketing"].map((w, i) => (
+                <motion.span key={`end-${i}`} variants={wordReveal} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="inline-block mr-[0.3em]">
+                  {w}
+                </motion.span>
+              ))}
+            </StaggeredWords>
           </h1>
 
           {/* Subtitle */}
           <motion.p
             initial="hidden" animate="visible"
             variants={fadeUp} transition={{ ...defaultTransition, delay: 0.9 }}
-            className="text-[17px] sm:text-[20px] leading-[1.5] font-medium text-white mb-2"
+            className="font-medium mb-2"
+            style={{ fontSize: "clamp(18px, 2.5vw, 22px)", color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px" }}
           >
             Com um sistema simples de delegação, sem caos.
           </motion.p>
@@ -307,58 +377,56 @@ const VideoPage = () => {
           <motion.p
             initial="hidden" animate="visible"
             variants={fadeUp} transition={{ ...defaultTransition, delay: 1.05 }}
-            className="text-[14px] sm:text-[15px] leading-[1.6] mb-9"
-            style={{ color: "rgba(255,255,255,0.45)" }}
+            className="text-[14px] leading-[1.6] mb-9"
+            style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px", fontWeight: 400 }}
           >
             Sessão prática para gestores e profissionais de marketing
           </motion.p>
 
-          {/* 4 Info boxes */}
+          {/* 4 Info boxes with Lucide icons */}
           <motion.div
             initial="hidden" animate="visible"
             variants={staggerContainer(0.1)}
             transition={{ delayChildren: 1.2 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[600px] mx-auto"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[640px] mx-auto"
           >
             {([
-              { icon: "📅", label: "DATA", value: "2 de Março" },
-              { icon: "🕐", label: "HORÁRIO", value: "A definir" },
-              { icon: "⏱", label: "DURAÇÃO", value: "45–60 min" },
-              { icon: "🎓", label: "INVESTIMENTO", value: "Gratuito" },
+              { Icon: Calendar, label: "DATA", value: "2 de Março" },
+              { Icon: Clock, label: "HORÁRIO", value: "A definir" },
+              { Icon: Timer, label: "DURAÇÃO", value: "45–60 min" },
+              { Icon: GraduationCap, label: "INVESTIMENTO", value: "Gratuito" },
             ] as const).map((box) => (
               <motion.div
                 key={box.label}
                 variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className="rounded-[10px] py-3 px-[18px] text-center transition-all duration-200 hero-info-box cursor-default"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                className="rounded-[10px] py-3 px-[18px] text-center transition-all duration-200 hero-info-box cursor-default backdrop-blur-sm"
+                style={{ background: "rgba(6,9,26,0.75)", border: "1px solid rgba(37,99,235,0.20)" }}
               >
-                <span className="text-[20px] block mb-1">{box.icon}</span>
-                <span className="block text-[9px] font-bold uppercase tracking-[0.12em] mb-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{box.label}</span>
-                <span className="block text-[14px] font-bold text-white">{box.value}</span>
+                <box.Icon className="w-[18px] h-[18px] mx-auto mb-1" style={{ color: "#60A5FA" }} />
+                <span className="block text-[9px] font-bold uppercase mb-0.5" style={{ color: "rgba(255,255,255,0.45)", letterSpacing: "2px" }}>{box.label}</span>
+                <span className="block text-[16px] font-bold text-white">{box.value}</span>
               </motion.div>
             ))}
           </motion.div>
 
-          {/* CTA with shimmer */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 1.5 }}>
-            <ShimmerButton>
+          {/* CTA with ElectricBorder */}
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 1.5 }} className="flex justify-center">
+            <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
                 onClick={scrollTo("inscricao")}
-                className="inline-block font-heading text-white rounded-xl transition-all duration-200 cursor-pointer text-[17px] px-10 py-4 hover:scale-[1.02]"
-                style={{ background: "hsl(142 76% 36%)", fontWeight: 800, minWidth: 280, boxShadow: "0 0 25px rgba(22,163,74,0.4)" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
+                className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full"
+                style={{ background: "#16A34A", fontWeight: 700, padding: "16px 32px", borderRadius: 10, maxWidth: 400, minWidth: 280 }}
               >
                 Garantir inscrição gratuita
               </button>
-            </ShimmerButton>
-
-            {/* Google reviews badge */}
-            <div className="mt-4 flex justify-center">
-              <GoogleBadge />
-            </div>
+            </ElectricBorder>
           </motion.div>
+
+          {/* Google reviews badge */}
+          <div className="mt-4 flex justify-center">
+            <GoogleBadge />
+          </div>
         </div>
 
         {/* Hero CSS */}
@@ -389,23 +457,19 @@ const VideoPage = () => {
             50% { opacity: 0; transform: scale(2.2); }
           }
           .hero-info-box:hover {
-            border-color: rgba(22,163,74,0.4) !important;
-            background: rgba(22,163,74,0.06) !important;
-          }
-          @media (prefers-reduced-motion: no-preference) {
-            .hero-cta-glow { animation: heroGlow 2.5s ease-in-out infinite; }
-          }
-          @keyframes heroGlow {
-            0%,100% { box-shadow: 0 0 25px rgba(22,163,74,0.4); }
-            50% { box-shadow: 0 0 45px rgba(22,163,74,0.65); }
+            border-color: rgba(37,99,235,0.40) !important;
+            background: rgba(37,99,235,0.08) !important;
           }
         `}</style>
       </section>
 
-      {/* ═══ 2b — TOOLS MARQUEE STRIP ═══ */}
-      <section style={{ background: "#080a0d", borderTop: "1px solid rgba(255,255,255,0.05)" }} className="py-5 overflow-hidden">
-        <p className="text-center uppercase mb-3" style={{ fontSize: 9, letterSpacing: 2, color: "#444" }}>
-          FERRAMENTAS ABORDADAS NA SESSÃO
+      {/* ═══ 2b — LOGO MARQUEE ═══ */}
+      <section
+        className="py-8"
+        style={{ background: "#060D1A", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        <p className="text-center text-sm uppercase tracking-widest mb-6" style={{ color: "rgba(255,255,255,0.4)" }}>
+          Plataformas a considerar
         </p>
         <div
           className="relative overflow-hidden"
@@ -414,32 +478,32 @@ const VideoPage = () => {
             WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
           }}
         >
-          <div className="flex w-max hero-marquee">
-            {[...Array(2)].map((_, dup) => (
-              <div key={dup} className="flex items-center" style={{ gap: 48 }}>
-                {["Riverside", "Google Flow", "Veo", "Dreamina (CapCut)", "Higgsfield"].map(t => (
-                  <span key={`${dup}-${t}`} className="whitespace-nowrap" style={{ fontSize: 11, fontWeight: 700, color: "#333" }}>
-                    {t}
-                  </span>
-                ))}
-                <span style={{ width: 48 }} />
-              </div>
+          <div className="flex w-max video-logo-marquee">
+            {[...logos, ...logos].map((logo, i) => (
+              <img
+                key={i}
+                src={logo.src}
+                alt={logo.alt}
+                className="h-7 mx-10 object-contain transition-opacity duration-300 hover:opacity-80"
+                style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }}
+                loading="lazy"
+              />
             ))}
           </div>
         </div>
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
-            .hero-marquee { animation: heroMarquee 18s linear infinite; }
+            .video-logo-marquee { animation: videoMarquee 30s linear infinite; }
           }
-          @keyframes heroMarquee {
+          @keyframes videoMarquee {
             0% { transform: translateX(0); }
             100% { transform: translateX(-50%); }
           }
         `}</style>
       </section>
 
-      {/* ═══ 3 — PROBLEM ═══ */}
-      <section id="problema" className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      {/* ═══ 3 — PROBLEM (Pain Points) ═══ */}
+      <section id="problema" className="py-16 md:py-24" style={{ background: "#0d0d14" }}>
         <div className="mx-auto max-w-4xl px-5">
           <ScrollReveal>
             <div className="text-center mb-10">
@@ -451,20 +515,26 @@ const VideoPage = () => {
             </div>
           </ScrollReveal>
 
-          {/* Pain point cards with SpotlightCard */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={staggerContainer(0.15)}
+            variants={staggerContainer(0.12)}
             className="grid sm:grid-cols-2 gap-4"
           >
             {painPoints.map(({ Icon, text }, i) => (
               <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
                 <SpotlightCard
-                  className="rounded-xl p-5"
-                  style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}
+                  className="rounded-xl p-5 relative overflow-hidden transition-all duration-200 hover:-translate-y-[2px]"
+                  style={{ background: "#0d0d14", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
-                  <Icon className="w-5 h-5 mb-3" style={{ color: "rgba(255,255,255,0.35)" }} />
-                  <p className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.7)" }}>{text}</p>
+                  {/* Ghost number */}
+                  <span
+                    className="absolute pointer-events-none select-none"
+                    style={{ fontSize: 80, fontWeight: 900, color: "rgba(255,255,255,0.04)", bottom: -10, right: 10, lineHeight: 1 }}
+                  >
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <Icon className="w-5 h-5 mb-3 relative z-10" style={{ color: "rgba(255,255,255,0.35)" }} />
+                  <p className="text-[15px] leading-[1.55] relative z-10" style={{ color: "#ddd", fontWeight: 600 }}>{text}</p>
                 </SpotlightCard>
               </motion.div>
             ))}
@@ -479,7 +549,7 @@ const VideoPage = () => {
       </section>
 
       {/* ═══ 4 — TRANSFORMATION ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
+      <section className="py-16 md:py-24" style={{ background: "#050709" }}>
         <div className="mx-auto max-w-4xl px-5">
           <ScrollReveal>
             <div className="text-center mb-10">
@@ -489,7 +559,7 @@ const VideoPage = () => {
           </ScrollReveal>
 
           <div className="grid md:grid-cols-2 gap-4 mb-10">
-            {/* Before — red ambient glow */}
+            {/* Before */}
             <motion.div
               initial="hidden" whileInView="visible" viewport={vpOnce}
               variants={staggerContainer(0.1)}
@@ -510,7 +580,7 @@ const VideoPage = () => {
               </div>
             </motion.div>
 
-            {/* After — green ambient glow */}
+            {/* After */}
             <motion.div
               initial="hidden" whileInView="visible" viewport={vpOnce}
               variants={staggerContainer(0.1)}
@@ -532,17 +602,13 @@ const VideoPage = () => {
             </motion.div>
           </div>
 
-          {/* Result cards with hover border */}
+          {/* Result cards */}
           <div className="space-y-3">
             {concreteResults.map((r, i) => (
               <ScrollReveal key={i} delay={i * 0.2}>
                 <div
                   className="flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:border-l-2"
-                  style={{
-                    background: DARK_CARD,
-                    border: `1px solid ${DARK_BORDER}`,
-                    borderLeftColor: "transparent",
-                  }}
+                  style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}`, borderLeftColor: "transparent" }}
                   onMouseEnter={e => { e.currentTarget.style.borderLeftColor = "#16a34a"; e.currentTarget.style.borderLeftWidth = "2px"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.borderLeftWidth = "1px"; }}
                 >
@@ -642,50 +708,46 @@ const VideoPage = () => {
         </div>
       </section>
 
-      {/* ═══ 8 — AGENDA ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      {/* ═══ 8 — AGENDA (Editorial / Light bg) ═══ */}
+      <section className="py-16 md:py-24" style={{ background: "#f8f9fa" }}>
         <div className="mx-auto max-w-3xl px-5">
           <ScrollReveal>
-            <Eyebrow>Agenda · 45–60 min</Eyebrow>
-            <SectionTitle>O que acontece durante a sessão</SectionTitle>
+            <Eyebrow light>Agenda · 45–60 min</Eyebrow>
+            <SectionTitle light={false}>O que acontece durante a sessão</SectionTitle>
           </ScrollReveal>
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={staggerContainer(0.12)}
-            className="space-y-3"
+            variants={staggerContainer(0.1)}
           >
             {agenda.map((item, i) => (
               <motion.div
                 key={i}
                 variants={slideFromLeft}
                 transition={defaultTransition}
-                className="flex items-center gap-4 rounded-xl p-4 transition-all duration-300 group"
-                style={{ background: DARK, border: `1px solid ${DARK_BORDER}`, borderLeftColor: "transparent" }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderLeftColor = "#16a34a";
-                  e.currentTarget.style.borderLeftWidth = "2px";
-                  e.currentTarget.style.background = "#16161f";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderLeftColor = "transparent";
-                  e.currentTarget.style.borderLeftWidth = "1px";
-                  e.currentTarget.style.background = DARK;
-                }}
+                className="flex items-center py-[14px] transition-all duration-200 group cursor-default"
+                style={{ borderBottom: "1px solid rgba(0,0,0,0.08)" }}
               >
-                <span className="font-heading font-extrabold text-[18px] w-8 text-center shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
-                <div className="flex-1">
-                  <p className="text-[15px] font-medium text-white">{item.title}</p>
-                </div>
-                <motion.span
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  whileInView={{ scale: 1, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.3 + i * 0.12, duration: 0.4 }}
-                  className="text-[13px] font-medium shrink-0"
-                  style={{ color: "rgba(255,255,255,0.35)" }}
+                <span
+                  className="font-heading font-bold text-[11px] w-[40px] shrink-0 transition-colors duration-200 group-hover:text-green-600"
+                  style={{ color: "#ddd" }}
                 >
-                  {item.time}
-                </motion.span>
+                  {String(i + 1).padStart(3, "0")}
+                </span>
+                <span
+                  className="flex-1 text-[13px] transition-colors duration-200 group-hover:text-black flex items-center gap-2"
+                  style={{ color: "#888" }}
+                >
+                  {item.title}
+                  {item.tag && (
+                    <span
+                      className="inline-block text-[8px] font-bold uppercase rounded px-[7px] py-[2px]"
+                      style={{ background: "rgba(22,163,74,0.12)", color: "#16a34a", marginLeft: 4 }}
+                    >
+                      {item.tag}
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] shrink-0" style={{ color: "#555" }}>{item.time}</span>
               </motion.div>
             ))}
           </motion.div>
@@ -753,39 +815,71 @@ const VideoPage = () => {
         </div>
       </section>
 
-      {/* ═══ 11 — SPEAKER ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
-        <div className="mx-auto max-w-4xl px-5">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            {/* Photo with green ring glow */}
-            <motion.img
-              src={fredericoPhoto}
-              alt="Frederico Carvalho"
-              className="w-[200px] h-[200px] md:w-[260px] md:h-[260px] rounded-2xl object-cover shrink-0"
-              initial="hidden" whileInView="visible" viewport={vpOnce}
-              variants={scaleIn}
-              transition={{ ...defaultTransition, duration: 0.7 }}
-              style={{
-                border: `2px solid ${DARK_BORDER}`,
-                boxShadow: "0 0 0 1px rgba(22,163,74,0.2), 0 0 30px rgba(22,163,74,0.1)",
-              }}
-            />
-            {/* Text — staggered */}
-            <motion.div
-              initial="hidden" whileInView="visible" viewport={vpOnce}
-              variants={staggerContainer(0.12)}
-            >
-              <motion.p variants={fadeUp} transition={defaultTransition} className="font-heading font-extrabold text-[24px] text-white mb-2">Frederico Carvalho</motion.p>
-              <motion.p variants={fadeUp} transition={defaultTransition} className="text-[15px] leading-[1.7] mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
-                Consultor e docente universitário, com experiência em marketing digital e sistemas de produção e automação aplicados ao contexto empresarial.
-              </motion.p>
-              <motion.p variants={fadeUp} transition={defaultTransition} className="text-[14px] italic mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Foco em método replicável e decisão — não truques.
-              </motion.p>
-              <motion.div variants={fadeUp} transition={defaultTransition}>
-                <GoogleBadge />
-              </motion.div>
-            </motion.div>
+      {/* ═══ 11 — SPEAKER (White bg, like /inicial) ═══ */}
+      <section className="py-14 md:py-20 px-4" style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+        <div className="mx-auto max-w-[960px]">
+          <div className="flex flex-col md:flex-row items-center gap-9 md:gap-16">
+            {/* Photo column */}
+            <ScrollReveal className="w-full md:w-[380px] shrink-0">
+              <div className="relative rounded-[20px] overflow-hidden">
+                <img
+                  src={fredericoPhoto}
+                  alt="Frederico Carvalho"
+                  loading="lazy"
+                  className="w-full h-[320px] md:h-[460px] object-cover object-top rounded-[20px]"
+                />
+                {/* Badge */}
+                <div
+                  className="absolute bottom-5 left-5 rounded-xl px-4 py-3"
+                  style={{
+                    background: "rgba(255,255,255,0.95)",
+                    backdropFilter: "blur(8px)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  }}
+                >
+                  <p className="font-heading font-bold text-[14px]" style={{ color: "#0a0a0f" }}>
+                    ⭐ 5,0 · 1 194 avaliações no Google
+                  </p>
+                  <p className="text-[14px] mt-[2px]" style={{ color: "#64748b" }}>
+                    Frederico Carvalho · DIGITALFC
+                  </p>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Text column */}
+            <ScrollReveal delay={0.1} className="flex-grow w-full">
+              <div className="text-center md:text-left">
+                <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] mb-2" style={{ color: "#2563EB" }}>
+                  QUEM APRESENTA
+                </p>
+                <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] mb-1" style={{ color: "#0a0a0f" }}>
+                  Frederico Carvalho
+                </h2>
+                <p className="font-medium text-[17px] leading-[1.5] mb-7" style={{ color: "#64748b" }}>
+                  20 anos de experiência em marketing digital para empresas
+                </p>
+
+                <div className="mb-7" style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }} />
+
+                {/* Credentials grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
+                  {speakerCredentials.map((c, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2.5 rounded-[10px] p-3.5"
+                      style={{ background: "#f8f9fa", border: "1px solid rgba(0,0,0,0.06)" }}
+                    >
+                      <span className="text-[20px] leading-none shrink-0">{c.emoji}</span>
+                      <div>
+                        <p className="font-heading font-semibold text-[14px]" style={{ color: "#0a0a0f" }}>{c.title}</p>
+                        <p className="text-[14px]" style={{ color: "#64748b" }}>{c.sub}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -797,20 +891,28 @@ const VideoPage = () => {
           <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-white">
             <StaggeredWords text="Quer o sistema mínimo para produzir vídeo com consistência?" />
           </h2>
-          <ShimmerButton>
-            <GreenCTA large />
-          </ShimmerButton>
+          <div className="flex justify-center">
+            <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
+              <button
+                onClick={scrollTo("inscricao")}
+                className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
+                style={{ background: "#16A34A", fontWeight: 700, padding: "16px 32px", borderRadius: 10, maxWidth: 400, minWidth: 280 }}
+              >
+                Garantir inscrição gratuita
+              </button>
+            </ElectricBorder>
+          </div>
           <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
             Lugares limitados para o directo. Materiais enviados após a sessão.
           </p>
         </div>
       </section>
 
-      {/* ═══ 13 — FAQ ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
+      {/* ═══ 13 — FAQ (Light bg) ═══ */}
+      <section className="py-16 md:py-24" style={{ background: "#f8f9fa" }}>
         <div className="mx-auto max-w-2xl px-5">
           <ScrollReveal>
-            <SectionTitle>Perguntas frequentes</SectionTitle>
+            <SectionTitle light={false}>Perguntas frequentes</SectionTitle>
           </ScrollReveal>
           <ScrollReveal delay={0.06}>
             <Accordion type="single" collapsible className="space-y-2">
@@ -819,12 +921,12 @@ const VideoPage = () => {
                   key={i}
                   value={`faq-${i}`}
                   className="rounded-xl overflow-hidden transition-all duration-300 [&[data-state=open]]:border-l-2 [&[data-state=open]]:border-l-green-600"
-                  style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+                  style={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.08)" }}
                 >
-                  <AccordionTrigger className="px-5 py-4 text-left text-[15px] font-semibold text-white hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                  <AccordionTrigger className="px-5 py-4 text-left text-[15px] font-semibold hover:no-underline [&[data-state=open]>svg]:rotate-180" style={{ color: "#0a0a0f" }}>
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="px-5 pb-4 text-[14px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
+                  <AccordionContent className="px-5 pb-4 text-[14px] leading-[1.65]" style={{ color: "#555" }}>
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
@@ -854,7 +956,7 @@ const VideoPage = () => {
       </section>
 
       {/* ═══ 15 — FINAL CTA ═══ */}
-      <section className="relative overflow-hidden py-16 md:py-24" style={{ background: DARK }}>
+      <section className="relative overflow-hidden py-16 md:py-24" style={{ background: "#050709" }}>
         {/* Animated green gradient orb */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
@@ -868,9 +970,7 @@ const VideoPage = () => {
           />
           <style>{`
             @media (prefers-reduced-motion: no-preference) {
-              .final-cta-orb {
-                animation: orb-drift 15s ease-in-out infinite;
-              }
+              .final-cta-orb { animation: orb-drift 15s ease-in-out infinite; }
             }
             @keyframes orb-drift {
               0%, 100% { transform: translate(-50%, -50%) scale(1); }
@@ -883,9 +983,17 @@ const VideoPage = () => {
           <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-6">
             <StaggeredWords text="Inscrição gratuita — e sai com um sistema que dá para repetir" />
           </h2>
-          <ShimmerButton>
-            <GreenCTA large />
-          </ShimmerButton>
+          <div className="flex justify-center">
+            <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
+              <button
+                onClick={scrollTo("inscricao")}
+                className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
+                style={{ background: "#16A34A", fontWeight: 700, padding: "16px 32px", borderRadius: 10, maxWidth: 400, minWidth: 280 }}
+              >
+                Garantir inscrição gratuita
+              </button>
+            </ElectricBorder>
+          </div>
           <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
             Sem compromisso. Evento ao vivo em 2 de Março de 2026.
           </p>
