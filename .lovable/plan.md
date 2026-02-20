@@ -1,76 +1,140 @@
 
-
-# Correcoes ao Hero e consistencia da pagina /video
+# Novo funil de upgrade para /video + Modal de registo
 
 ## Resumo
 
-Corrigir a data do webinar (2 Marco → 3 Marco, 21h), alargar o headline para caber em 2 linhas, remover "2 MARCO" do badge pill, e actualizar horarios em toda a pagina.
+Criar uma nova pagina `/upgrade-video` (duplicada de `/upgrade` / `/upgrade-gravacao`) com um funil de 2 upsells adaptado ao contexto de video:
+- **Upsell 1:** Gravacao da sessao de video a 15 EUR + IVA
+- **Upsell 2:** Masterclass a 47 EUR + IVA
+
+Na pagina `/video`, o botao "Garantir inscricao gratuita" passa a abrir um modal de registo (igual ao da `/inicial`), adaptado ao contexto de video. Apos registo, o utilizador e redirecionado para `/upgrade-video`.
 
 ---
 
-## Ficheiro unico a modificar
+## Ficheiros a criar
 
-`src/pages/Video.tsx`
+### 1. `src/pages/UpgradeVideo.tsx`
 
----
+Duplicar a estrutura de `UpgradeGravacao.tsx` com as seguintes diferencas:
 
-## Alteracoes
+- **OrderState:** `{ videoPremium: boolean; masterclass: boolean }`
+- **Precos:**
+  - Video Premium (gravacao da sessao): 15 EUR + IVA = 18,45 EUR
+  - Masterclass: 47 EUR + IVA = 57,81 EUR
+- **Funil de 3 passos:**
+  - Step 1: `StepQualification` (reutilizar existente)
+  - Step 2: `StepVideoPremium` (novo componente — upsell gravacao a 15 EUR)
+  - Step 3: `StepMasterclass` (reutilizar existente)
+  - Step 4: Confirmacao/pagamento (adaptar `GravacaoConfirmation` ou criar `VideoConfirmation`)
+- **Recovery:** Mesmo mecanismo de email recovery
+- **Side panel:** Mostrar items seleccionados com precos
+- **Meta title:** "Upgrade — Webinar Video com IA"
 
-### 1. Data e hora — de 2 Marco para 3 Marco as 21h
+### 2. `src/components/upgrade/StepVideoPremium.tsx`
 
-Actualizar TODAS as referencias:
+Novo componente de upsell para a gravacao do video:
+- Titulo: "Adicionar Gravacao da Sessao (opcional)"
+- Preco: 15 EUR + IVA (Early bird, depois 27 EUR)
+- Bullets:
+  - "Gravacao HD (acesso continuo)" — Rever ao seu ritmo
+  - "Pack de apoio completo" — Checklists, briefings e templates
+  - "Sessao Q&A exclusiva (30 min)" — Duvidas respondidas ao vivo
+- Estilo identico ao `StepPremium.tsx` existente
+- Botao: "Garantir Gravacao + Pack"
+- Skip: "Continuar com inscricao gratuita"
+- Confirmacao modal "Boa escolha!" (mesmo padrao)
 
-- **Linha 267** — meta title: "2 Março 2026" → "3 Março 2026"
-- **Linha 272** — countdown target: `"2026-03-02T10:00:00"` → `"2026-03-03T21:00:00"`
-- **Linha 285** — sticky bar label: `"AO VIVO · 2 MAR · A DEFINIR HORA"` → `"AO VIVO · 3 MAR · 21H00"`
-- **Linha 394** — info box DATA value: `"2 de Março"` → `"3 de Março"`
-- **Linha 395** — info box HORARIO value: `"A definir"` → `"21h00"`
-- **Linha 998** — final CTA text: `"2 de Março de 2026"` → `"3 de Março de 2026"`
+### 3. `src/components/upgrade/VideoConfirmation.tsx`
 
-### 2. Badge pill — remover "2 MARCO"
-
-- **Linha 326** — texto do badge: `"WEBINAR GRATUITO · AO VIVO · 2 MARÇO"` → `"WEBINAR GRATUITO · AO VIVO"`
-
-### 3. Headline em 2 linhas — alargar max-width
-
-O titulo actualmente espalha-se por 4-5 linhas porque o container e estreito (780px) e o font-size e grande.
-
-- **Linha 318** — alterar maxWidth do container hero de `780` para `960`
-- **Linha 333** — alterar font-size clamp de `clamp(38px, 6vw, 72px)` para `clamp(36px, 5.5vw, 62px)` para melhor equilibrio em 2 linhas
-- **Linha 341** — mover o `<br />` para depois de "Inteligência Artificial" em vez de depois de "com", para forcar exactamente 2 linhas:
-  - Linha 1: "Aprende a criar vídeos com Inteligência Artificial"
-  - Linha 2: "para marketing"
-
-  Alternativa mais equilibrada (se o user preferir):
-  - Linha 1: "Aprende a criar vídeos com"
-  - Linha 2: "Inteligência Artificial para marketing"
-
-  Vou implementar a segunda opcao (manter `<br />` apos "com") mas aumentar o max-width para 960px para que cada linha caiba sem quebrar adicionalmente.
-
-### 4. Consistencia de tamanhos de letra
-
-Rever e uniformizar os tamanhos tipograficos da pagina para hierarquia clara:
-
-- Headline hero: `clamp(36px, 5.5vw, 62px)` (ajustado para 2 linhas)
-- Titulos de seccao (`SectionTitle`): manter `26px/32px` — esta consistente
-- Eyebrow labels: manter `13px` — esta consistente
-- Body text / card text: verificar que nao ha inconsistencias (actualmente consistente)
-
-Nenhuma outra alteracao tipografica necessaria — os tamanhos existentes ja estao bem hierarquizados.
+Duplicar `GravacaoConfirmation.tsx` adaptado:
+- Precos: videoPremium 15 EUR (base), masterclass 47 EUR (base)
+- IVA 23% calculado dinamicamente
+- Mesma estrutura de checkout: subtotal, IVA, total
+- Voucher system reutilizado
+- InvoiceForm reutilizado
+- Plan identifiers enviados ao create-payment: `"video-premium"`, `"video-masterclass"`, ou `"video-bundle"`
 
 ---
 
-## Resumo tecnico
+## Ficheiros a modificar
 
-| Localizacao | Alteracao |
+### 4. `src/pages/Video.tsx`
+
+- Importar `RegistrationModalProvider` e `useRegistrationModal` de `@/hooks/useRegistrationModal`
+- Importar `RegistrationModal` de `@/components/landing/RegistrationModal`
+- Wrap todo o conteudo da pagina com `<RegistrationModalProvider>`
+- Render `<RegistrationModal />` dentro do provider
+- Substituir `onClick={scrollTo("inscricao")}` em TODOS os botoes CTA por `onClick={() => open("free")}` (abre o modal)
+- Tambem no sticky bar CTA e no final CTA
+
+### 5. `src/components/landing/RegistrationModal.tsx`
+
+- Adicionar uma nova prop ou variante ao contexto para saber se o registo vem da pagina de video
+- Apos registo bem-sucedido, se a variante for "video" (ou se estivermos na rota /video), redirecionar para `/upgrade-video` em vez de `/upgrade`
+- Alternativa mais simples: adicionar um campo `redirectTo` ao `RegistrationModalProvider` para configurar a rota de destino pos-registo
+
+### 6. `src/hooks/useRegistrationModal.tsx`
+
+- Adicionar `redirectPath` ao contexto (default: `/upgrade`)
+- Permitir que cada pagina configure para onde o modal redireciona apos registo
+
+### 7. `src/App.tsx`
+
+- Adicionar rota: `<Route path="/upgrade-video" element={<UpgradeVideo />} />`
+
+### 8. `supabase/functions/create-payment/index.ts`
+
+- Adicionar novos planos ao objecto PRODUCTS:
+  - `"video-premium"`: value 18.45, identifier "WEBINAR-VIDPREM", description "Premium Pass — Video com IA"
+  - `"video-masterclass"`: value 57.81, identifier "WEBINAR-VIDMC", description "Masterclass — Video com IA"  
+  - `"video-bundle"`: value 76.26, identifier "WEBINAR-VIDBUNDLE", description "Premium + Masterclass — Video com IA"
+
+---
+
+## Fluxo do utilizador
+
+```text
+/video (landing)
+  |
+  v
+[Clica "Garantir inscricao gratuita"]
+  |
+  v
+[Modal de registo abre — variante "free" adaptada]
+  |
+  v
+[Preenche nome + email + whatsapp + aceita termos]
+  |
+  v
+[register-free edge function chamada]
+  |
+  v
+[Redireciona para /upgrade-video?name=X&email=Y]
+  |
+  v
+Step 1: Qualificacao (Como soube?)
+  |
+  v
+Step 2: Upsell Gravacao (15 EUR + IVA) ← StepVideoPremium
+  |
+  v
+Step 3: Upsell Masterclass (47 EUR + IVA) ← StepMasterclass existente
+  |
+  v
+Step 4: Confirmacao + Pagamento ← VideoConfirmation
+```
+
+---
+
+## Resumo de ficheiros
+
+| Ficheiro | Accao |
 |---|---|
-| meta title (L267) | "2 Março" → "3 Março" |
-| countdown (L272) | `03-02T10:00` → `03-03T21:00` |
-| sticky bar (L285) | "2 MAR · A DEFINIR HORA" → "3 MAR · 21H00" |
-| badge pill (L326) | remover " · 2 MARÇO" |
-| hero max-width (L318) | 780 → 960 |
-| headline font-size (L333) | clamp ajustado para 62px max |
-| info box DATA (L394) | "2 de Março" → "3 de Março" |
-| info box HORARIO (L395) | "A definir" → "21h00" |
-| final CTA text (L998) | "2 de Março" → "3 de Março" |
-
+| `src/pages/UpgradeVideo.tsx` | Criar |
+| `src/components/upgrade/StepVideoPremium.tsx` | Criar |
+| `src/components/upgrade/VideoConfirmation.tsx` | Criar |
+| `src/pages/Video.tsx` | Modificar (CTA abre modal) |
+| `src/components/landing/RegistrationModal.tsx` | Modificar (redirect configurable) |
+| `src/hooks/useRegistrationModal.tsx` | Modificar (adicionar redirectPath) |
+| `src/App.tsx` | Modificar (nova rota) |
+| `supabase/functions/create-payment/index.ts` | Modificar (novos planos) |
