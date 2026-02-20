@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Check, Clock, XCircle, Layers,
-  FileText, CheckSquare, Calendar, Timer, GraduationCap,
+  Calendar, Timer, GraduationCap,
   Zap, BarChart3, Repeat, BookOpen,
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
@@ -134,10 +134,6 @@ const notFor = [
   "Quem procura «milagre» sem processo.",
 ];
 
-const deliverables = [
-  { Icon: FileText, title: "Template de Briefing de Vídeo", desc: "1 página. Pronto a usar com IA ou freelancer." },
-  { Icon: CheckSquare, title: "Checklist «publicável vs rascunho»", desc: "Critérios objectivos de qualidade, sem opiniões." },
-];
 
 const agenda = [
   { num: "001", title: "Boas-vindas + o que mudou no vídeo" },
@@ -400,17 +396,17 @@ const VideoPageInner = () => {
       {/* ═══ LOGO MARQUEE ═══ */}
       <LogoMarquee />
 
-      {/* ═══ SECTION 1 — "Quando isto faz sentido" ═══ */}
-      <section className="relative overflow-hidden py-20 md:py-28" style={{ background: "#0d0d14" }}>
-        {/* Background video */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.6 }}>
-          <source src="/videos/splash-branco.mp4" type="video/mp4" />
+      {/* ═══ SECTION 1 — "Vídeo é o formato que o mercado exige" ═══ */}
+      <section className="relative overflow-hidden py-24 md:py-32" style={{ background: "#0a0a0f" }}>
+        {/* Background video — rosa */}
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.7 }}>
+          <source src="/videos/rosa-video.mp4" type="video/mp4" />
         </video>
-        {/* Gradient overlay for cinematic readability */}
-        <div className="absolute inset-0" style={{ zIndex: 1, background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.6) 100%)" }} />
-        <div className="relative mx-auto max-w-5xl px-5" style={{ zIndex: 2 }}>
+        {/* Radial overlay — transparent centre so the pink ball shows */}
+        <div className="absolute inset-0" style={{ zIndex: 1, background: "radial-gradient(ellipse 50% 60% at 50% 50%, transparent 0%, rgba(10,10,15,0.65) 55%, rgba(10,10,15,0.88) 100%)" }} />
+        <div className="relative mx-auto max-w-6xl px-5" style={{ zIndex: 2 }}>
           <ScrollReveal>
-            <div className="text-center mb-6">
+            <div className="text-center mb-14 md:mb-20">
               <h2 className="font-heading font-extrabold text-[30px] sm:text-[36px] lg:text-[48px] leading-[1.1] text-white" style={{ letterSpacing: "-1px" }}>
                 Vídeo é o formato que o{" "}
                 <span style={{ background: "linear-gradient(135deg, #4ade80 0%, #22d3ee 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
@@ -418,44 +414,48 @@ const VideoPageInner = () => {
                 </span>
               </h2>
             </div>
-            <div className="text-center max-w-[640px] mx-auto mb-16 space-y-2.5">
-              <p className="text-[17px] lg:text-[18px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
-                O pedido é quase sempre o mesmo: precisas de mais vídeo.
-              </p>
-              <p className="text-[17px] lg:text-[18px] leading-[1.65] font-medium" style={{ color: "#f87171" }}>
-                O bloqueio também: tempo, custo, aprovações e falta de consistência.
-              </p>
-              <p className="text-[17px] lg:text-[18px] leading-[1.65]" style={{ color: "rgba(255,255,255,0.55)" }}>
-                A IA ajuda, mas só funciona quando tens um processo mínimo.
-              </p>
-            </div>
           </ScrollReveal>
 
-          <ScrollReveal delay={0.08}>
-            <div className="flex flex-col items-center mb-8">
-              <div className="w-[40px] h-[3px] rounded-full mb-4" style={{ background: "#4ade80" }} />
-              <h3 className="font-heading font-semibold text-[22px] text-white text-center" style={{ letterSpacing: "-0.5px" }}>Quando isto faz sentido</h3>
-            </div>
-          </ScrollReveal>
+          {/* 2 | centre (video shows through) | 2 */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
             variants={staggerContainer(0.12)}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
+            className="grid grid-cols-2 lg:grid-cols-[1fr_1.2fr_1fr] gap-5 lg:gap-6"
           >
-            {whenItMakesSense.map(({ Icon, label, desc }, i) => (
-              <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
-                <SpotlightCard
-                  className="relative overflow-hidden rounded-xl p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card"
-                >
-                  <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
-                  <p className="font-heading font-bold text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
-                  <p className="text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
-                </SpotlightCard>
-              </motion.div>
-            ))}
+            {/* Left column — cards 1 & 2 */}
+            <div className="flex flex-col gap-5 lg:gap-6">
+              {whenItMakesSense.slice(0, 2).map(({ Icon, label, desc }, i) => (
+                <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
+                  <SpotlightCard className="relative overflow-hidden rounded-xl p-6 lg:p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card">
+                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
+                    <p className="font-heading font-bold text-[15px] lg:text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
+                    <p className="text-[13px] lg:text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
+                  </SpotlightCard>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Centre spacer — desktop only, lets the video ball show */}
+            <div className="hidden lg:block" />
+
+            {/* Right column — cards 3 & 4 */}
+            <div className="flex flex-col gap-5 lg:gap-6">
+              {whenItMakesSense.slice(2, 4).map(({ Icon, label, desc }, i) => (
+                <motion.div key={i + 2} variants={fadeUp} transition={defaultTransition}>
+                  <SpotlightCard className="relative overflow-hidden rounded-xl p-6 lg:p-7 h-full transition-all duration-200 hover:-translate-y-[2px] pain-card">
+                    <span className="absolute bottom-[-10px] right-[10px] font-heading text-[80px] font-black leading-none pointer-events-none select-none" style={{ color: "rgba(255,255,255,0.06)" }}>
+                      {String(i + 3).padStart(2, "0")}
+                    </span>
+                    <Icon className="w-6 h-6 mb-3 relative z-10" style={{ color: "#4ade80" }} />
+                    <p className="font-heading font-bold text-[15px] lg:text-[16px] mb-1.5 relative z-10 text-white">{label}</p>
+                    <p className="text-[13px] lg:text-[14px] leading-[1.6] relative z-10" style={{ color: "rgba(255,255,255,0.55)" }}>{desc}</p>
+                  </SpotlightCard>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
         </div>
 
@@ -508,45 +508,15 @@ const VideoPageInner = () => {
         </div>
       </section>
 
-      {/* ═══ SECTION 3 — "O que muda depois de te inscreveres" ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#050709" }}>
-        <div className="mx-auto max-w-5xl px-5">
-          <ScrollReveal>
-            <SectionTitle>O que muda depois de te inscreveres</SectionTitle>
-          </ScrollReveal>
-          <motion.div
-            initial="hidden" whileInView="visible" viewport={vpOnce}
-            variants={staggerContainer(0.15)}
-            className="grid sm:grid-cols-2 gap-5 max-w-[700px] mx-auto"
-          >
-            {deliverables.map(({ Icon, title, desc }, i) => (
-              <motion.div
-                key={i}
-                variants={fadeUp}
-                transition={defaultTransition}
-                className="rounded-xl p-6 transition-all duration-300 hover:-translate-y-[2px]"
-                style={{ background: "#f8f9fa", border: "1px solid rgba(0,0,0,0.06)" }}
-              >
-                <Icon className="w-6 h-6 mb-3" style={{ color: "#2563EB" }} />
-                <p className="font-heading font-bold text-[15px] mb-1.5" style={{ color: "#0a0a0f" }}>{title}</p>
-                <p className="text-[13px] leading-[1.55]" style={{ color: "#64748b" }}>{desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-          <ScrollReveal delay={0.2}>
-            <p className="text-center text-[13px] mt-6" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Serão referidas opções gratuitas e pagas — com critério para escolher sem confusão.
-            </p>
-          </ScrollReveal>
-        </div>
-      </section>
 
-      {/* ═══ SECTION 4 — AGENDA (Light bg) ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#f8f9fa" }}>
+      {/* ═══ SECTION 4 — AGENDA (Dark cinematic) ═══ */}
+      <section className="py-20 md:py-28" style={{ background: "#0a0a0f" }}>
         <div className="mx-auto max-w-3xl px-5">
           <ScrollReveal>
-            <Eyebrow light>Agenda · 45 min</Eyebrow>
-            <SectionTitle light={false}>O que acontece durante a sessão</SectionTitle>
+            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#4ade80" }}>
+              Agenda · 45 min
+            </p>
+            <SectionTitle>O que acontece durante a sessão</SectionTitle>
           </ScrollReveal>
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
@@ -557,24 +527,24 @@ const VideoPageInner = () => {
                 key={i}
                 variants={slideFromLeft}
                 transition={defaultTransition}
-                className="flex items-center py-[14px] transition-all duration-200 group cursor-default"
-                style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}
+                className="flex items-center py-[14px] transition-all duration-200 group cursor-default agenda-item"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
               >
                 <span
-                  className="font-heading font-bold text-[11px] w-[40px] shrink-0 transition-colors duration-200"
-                  style={{ color: "#333" }}
+                  className="font-heading font-bold text-[11px] w-[40px] shrink-0"
+                  style={{ color: "#4ade80" }}
                 >
                   {item.num}
                 </span>
                 <span
-                  className="flex-1 text-[13px] transition-colors duration-200 flex items-center gap-2"
-                  style={{ color: "#888" }}
+                  className="flex-1 text-[13px] flex items-center gap-2"
+                  style={{ color: "rgba(255,255,255,0.6)" }}
                 >
                   {item.title}
                   {item.tag && (
                     <span
                       className="inline-block text-[8px] font-bold uppercase rounded px-[7px] py-[2px]"
-                      style={{ background: "rgba(22,163,74,0.12)", color: "#16a34a", marginLeft: 4 }}
+                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", marginLeft: 4 }}
                     >
                       {item.tag}
                     </span>
@@ -584,6 +554,12 @@ const VideoPageInner = () => {
             ))}
           </motion.div>
         </div>
+        <style>{`
+          .agenda-item:hover {
+            border-color: rgba(74,222,128,0.2) !important;
+            background: rgba(255,255,255,0.02);
+          }
+        `}</style>
       </section>
 
       {/* ═══ SECTION 5 — SPEAKER (White bg) ═══ */}
