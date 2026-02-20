@@ -1,10 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Check, Clock, ArrowLeftRight, XCircle, Layers,
   FileText, CheckSquare, Video,
 } from "lucide-react";
+import { motion, useInView } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import ColorBends from "@/components/landing/ColorBends";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
@@ -12,13 +12,96 @@ import {
 import { LegalModal } from "@/components/legal/LegalModal";
 import { TermosContent } from "@/components/legal/TermosContent";
 import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
-import { useState } from "react";
+import { AuroraBackground } from "@/components/ui/aurora-background";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { SpotlightCard } from "@/components/ui/spotlight-card";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
+
+/* ── Reduced motion check ── */
+const prefersReduced = () =>
+  typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/* ── Framer Motion variants (constants for perf) ── */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const wordReveal = {
+  hidden: { opacity: 0, y: 20, filter: "blur(4px)" },
+  visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+};
+
+const slideFromLeft = {
+  hidden: { opacity: 0, x: -30 },
+  visible: { opacity: 1, x: 0 },
+};
+
+const slideFromRight = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0 },
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.95 },
+  visible: { opacity: 1, scale: 1 },
+};
+
+const staggerContainer = (stagger = 0.1) => ({
+  hidden: {},
+  visible: { transition: { staggerChildren: stagger } },
+});
+
+const defaultTransition = { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] as const };
+const vpOnce = { once: true, margin: "-80px" as const };
 
 /* ── Smooth scroll helper ── */
 const scrollTo = (id: string) => (e: React.MouseEvent) => {
   e.preventDefault();
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+};
+
+/* ── Word splitter for staggered reveal ── */
+const StaggeredWords = ({ text, startDelay = 0.3 }: { text: string; startDelay?: number }) => {
+  const words = text.split(" ");
+  return (
+    <motion.span
+      initial="hidden"
+      animate={prefersReduced() ? "visible" : "hidden"}
+      whileInView="visible"
+      viewport={vpOnce}
+      variants={staggerContainer(0.08)}
+      transition={{ delayChildren: startDelay }}
+    >
+      {words.map((w, i) => (
+        <motion.span key={i} variants={wordReveal} transition={{ duration: 0.5, ease: "easeOut" }} className="inline-block mr-[0.3em]">
+          {w}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+};
+
+/* ── CountUp number ── */
+const CountUpNumber = ({ value }: { value: number }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-60px" });
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!isInView || prefersReduced()) { setCount(value); return; }
+    const dur = 1200;
+    const start = performance.now();
+    const animate = (now: number) => {
+      const p = Math.min((now - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 4);
+      setCount(Math.floor(eased * value));
+      if (p < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [isInView, value]);
+
+  return <span ref={ref}>{count}</span>;
 };
 
 /* ── Shared CTA ── */
@@ -147,11 +230,26 @@ const VideoPage = () => {
 
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
 
+  /* ── Sticky bar scroll opacity ── */
+  const [barOpacity, setBarOpacity] = useState(0.92);
+  useEffect(() => {
+    const handler = () => setBarOpacity(window.scrollY > 500 ? 0.98 : 0.92);
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => window.removeEventListener("scroll", handler);
+  }, []);
+
   return (
     <div className="min-h-screen" style={{ background: DARK, color: "#e2e8f0" }}>
 
       {/* ═══ 1 — STICKY TOP BAR ═══ */}
-      <div className="fixed top-0 left-0 right-0 z-50" style={{ background: "rgba(10,10,15,0.92)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${DARK_BORDER}` }}>
+      <div
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          background: `rgba(10,10,15,${barOpacity})`,
+          backdropFilter: "saturate(180%) blur(12px)",
+          borderBottom: `1px solid ${DARK_BORDER}`,
+        }}
+      >
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-2.5">
           <span className="hidden sm:inline-block text-[12px] font-heading font-semibold uppercase tracking-[0.1em] px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.6)" }}>
             Webinar gratuito · 2 Março 2026
@@ -170,38 +268,52 @@ const VideoPage = () => {
 
       {/* ═══ 2 — HERO ═══ */}
       <section className="relative overflow-hidden pt-20 pb-16 md:pt-28 md:pb-24">
-        <div className="absolute inset-0 z-0" style={{ opacity: 0.7 }}>
-          <ColorBends colors={["#1E40AF", "#7C3AED", "#0EA5E9", "#10B981"]} rotation={0} speed={0.2} scale={1.3} frequency={0.7} warpStrength={1} mouseInfluence={0.2} parallax={0.2} noise={0.04} transparent autoRotate={1.5} />
-        </div>
+        {/* Aurora background replaces ColorBends */}
+        <AuroraBackground />
+
         <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
-          <ScrollReveal>
+          {/* Badge */}
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }} viewport={vpOnce}>
             <span className="inline-block font-heading text-[12px] font-semibold uppercase tracking-[0.14em] px-4 py-1.5 rounded-full mb-5" style={{ border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.7)" }}>
               Webinar gratuito · Ao vivo · 2 Março 2026
             </span>
-          </ScrollReveal>
+          </motion.div>
 
-          <ScrollReveal delay={0.08}>
-            <h1 className="font-heading font-extrabold text-[28px] sm:text-[38px] md:text-[44px] leading-[1.1] text-white mb-5" style={{ letterSpacing: "-0.02em" }}>
-              Vídeo com IA para marketing — sem equipa, sem caos, com um sistema simples de delegação
-            </h1>
-          </ScrollReveal>
+          {/* Headline — staggered word reveal */}
+          <h1 className="font-heading font-extrabold text-[28px] sm:text-[38px] md:text-[44px] leading-[1.1] text-white mb-5" style={{ letterSpacing: "-0.02em" }}>
+            <StaggeredWords text="Vídeo com IA para marketing — sem equipa, sem caos, com um sistema simples de delegação" startDelay={0.3} />
+          </h1>
 
-          <ScrollReveal delay={0.14}>
-            <p className="text-[16px] sm:text-[18px] leading-[1.65] max-w-[640px] mx-auto mb-7" style={{ color: "rgba(255,255,255,0.6)" }}>
-              Sessão prática para gestores e profissionais de marketing que precisam de produzir clips curtos com consistência, mesmo com pouco tempo e sem estúdio.
-            </p>
-          </ScrollReveal>
+          {/* Subheadline — fade up */}
+          <motion.p
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={fadeUp} transition={{ ...defaultTransition, delay: 1.2 }}
+            className="text-[16px] sm:text-[18px] leading-[1.65] max-w-[640px] mx-auto mb-7"
+            style={{ color: "rgba(255,255,255,0.6)" }}
+          >
+            Sessão prática para gestores e profissionais de marketing que precisam de produzir clips curtos com consistência, mesmo com pouco tempo e sem estúdio.
+          </motion.p>
 
-          <ScrollReveal delay={0.18}>
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {["2 de Março · A definir hora", "Online · 45–60 min", "Gratuito", "Lugares limitados para o directo"].map(t => (
-                <span key={t} className="text-[13px] px-3.5 py-1.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.55)" }}>
-                  {t}
-                </span>
-              ))}
-            </div>
-          </ScrollReveal>
+          {/* Info badges — staggered entrance */}
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.1)}
+            className="flex flex-wrap justify-center gap-2 mb-8"
+          >
+            {["2 de Março · A definir hora", "Online · 45–60 min", "Gratuito", "Lugares limitados para o directo"].map(t => (
+              <motion.span
+                key={t}
+                variants={{ hidden: { opacity: 0, scale: 0.9 }, visible: { opacity: 1, scale: 1 } }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="text-[13px] px-3.5 py-1.5 rounded-full font-medium"
+                style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.55)" }}
+              >
+                {t}
+              </motion.span>
+            ))}
+          </motion.div>
 
+          {/* Benefit bullets */}
           <ScrollReveal delay={0.22}>
             <div className="max-w-[560px] mx-auto text-left space-y-3 mb-8">
               {[
@@ -217,8 +329,11 @@ const VideoPage = () => {
             </div>
           </ScrollReveal>
 
+          {/* CTA with shimmer */}
           <ScrollReveal delay={0.28}>
-            <GreenCTA large />
+            <ShimmerButton>
+              <GreenCTA large />
+            </ShimmerButton>
             <p className="text-[13px] mt-3" style={{ color: "rgba(255,255,255,0.35)" }}>Sem compromisso. Recomendado assistir ao vivo.</p>
           </ScrollReveal>
         </div>
@@ -237,16 +352,24 @@ const VideoPage = () => {
             </div>
           </ScrollReveal>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          {/* Pain point cards with SpotlightCard */}
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.15)}
+            className="grid sm:grid-cols-2 gap-4"
+          >
             {painPoints.map(({ Icon, text }, i) => (
-              <ScrollReveal key={i} delay={i * 0.06}>
-                <div className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+              <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
+                <SpotlightCard
+                  className="rounded-xl p-5"
+                  style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}
+                >
                   <Icon className="w-5 h-5 mb-3" style={{ color: "rgba(255,255,255,0.35)" }} />
                   <p className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.7)" }}>{text}</p>
-                </div>
-              </ScrollReveal>
+                </SpotlightCard>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <ScrollReveal delay={0.25}>
             <p className="text-center text-[16px] italic mt-8" style={{ color: "rgba(255,255,255,0.5)" }}>
@@ -266,39 +389,64 @@ const VideoPage = () => {
             </div>
           </ScrollReveal>
 
-          <ScrollReveal delay={0.08}>
-            <div className="grid md:grid-cols-2 gap-4 mb-10">
-              {/* Before */}
-              <div className="rounded-xl p-6" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+          <div className="grid md:grid-cols-2 gap-4 mb-10">
+            {/* Before — red ambient glow */}
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={vpOnce}
+              variants={staggerContainer(0.1)}
+              className="relative rounded-xl p-6"
+              style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+            >
+              <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: "radial-gradient(circle at center, rgba(239,68,68,0.06), transparent 70%)" }} />
+              <div className="relative z-10">
                 <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] px-2.5 py-1 rounded-md mb-4" style={{ background: "rgba(239,68,68,0.12)", color: "#f87171" }}>Antes</span>
                 <ul className="space-y-3">
                   {beforeItems.map((t, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
+                    <motion.li key={i} variants={{ hidden: { opacity: 0, x: -20 }, visible: { opacity: 1, x: 0 } }} transition={defaultTransition} className="flex items-start gap-2.5">
                       <XCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "rgba(248,113,113,0.6)" }} />
                       <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.6)" }}>{t}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               </div>
-              {/* After */}
-              <div className="rounded-xl p-6" style={{ background: DARK_CARD, border: "1px solid rgba(34,197,94,0.15)" }}>
+            </motion.div>
+
+            {/* After — green ambient glow */}
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={vpOnce}
+              variants={staggerContainer(0.1)}
+              className="relative rounded-xl p-6"
+              style={{ background: DARK_CARD, border: "1px solid rgba(34,197,94,0.15)" }}
+            >
+              <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: "radial-gradient(circle at center, rgba(22,163,74,0.08), transparent 70%)" }} />
+              <div className="relative z-10">
                 <span className="inline-block text-[11px] font-bold uppercase tracking-[0.12em] px-2.5 py-1 rounded-md mb-4" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>Depois</span>
                 <ul className="space-y-3">
                   {afterItems.map((t, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
+                    <motion.li key={i} variants={slideFromRight} transition={defaultTransition} className="flex items-start gap-2.5">
                       <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color: "hsl(142 76% 46%)" }} />
                       <span className="text-[14px]" style={{ color: "rgba(255,255,255,0.75)" }}>{t}</span>
-                    </li>
+                    </motion.li>
                   ))}
                 </ul>
               </div>
-            </div>
-          </ScrollReveal>
+            </motion.div>
+          </div>
 
+          {/* Result cards with hover border */}
           <div className="space-y-3">
             {concreteResults.map((r, i) => (
-              <ScrollReveal key={i} delay={i * 0.06}>
-                <div className="flex items-start gap-4 rounded-xl p-4" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+              <ScrollReveal key={i} delay={i * 0.2}>
+                <div
+                  className="flex items-start gap-4 rounded-xl p-4 transition-all duration-300 hover:border-l-2"
+                  style={{
+                    background: DARK_CARD,
+                    border: `1px solid ${DARK_BORDER}`,
+                    borderLeftColor: "transparent",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderLeftColor = "#16a34a"; e.currentTarget.style.borderLeftWidth = "2px"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderLeftColor = "transparent"; e.currentTarget.style.borderLeftWidth = "1px"; }}
+                >
                   <span className="font-heading font-extrabold text-[20px] shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
                   <p className="text-[14px] leading-[1.6]" style={{ color: "rgba(255,255,255,0.65)" }}>{r}</p>
                 </div>
@@ -346,7 +494,6 @@ const VideoPage = () => {
       {/* ═══ 6 — STORYTELLING ═══ */}
       <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-3xl px-5">
-          {/* Block 1 — prose */}
           <ScrollReveal>
             <div className="rounded-xl p-6 mb-8" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK }}>
               <h3 className="font-heading font-bold text-[18px] text-white mb-3">A cena típica</h3>
@@ -356,7 +503,6 @@ const VideoPage = () => {
             </div>
           </ScrollReveal>
 
-          {/* Block 2 — two paths */}
           <ScrollReveal delay={0.08}>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="rounded-xl p-5" style={{ background: DARK, borderLeft: "3px solid rgba(239,68,68,0.35)" }}>
@@ -380,16 +526,20 @@ const VideoPage = () => {
             <Eyebrow>Promessa operacional</Eyebrow>
             <SectionTitle>No final, fica capaz de…</SectionTitle>
           </ScrollReveal>
-          <div className="space-y-4">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.15)}
+            className="space-y-4"
+          >
             {operationalPromises.map((p, i) => (
-              <ScrollReveal key={i} delay={i * 0.06}>
-                <div className="flex items-start gap-4">
-                  <span className="font-heading font-extrabold text-[28px] leading-none shrink-0 w-9 text-right" style={{ color: "hsl(142 76% 36%)" }}>{i + 1}</span>
-                  <p className="text-[15px] leading-[1.6] pt-1" style={{ color: "rgba(255,255,255,0.7)" }}>{p}</p>
-                </div>
-              </ScrollReveal>
+              <motion.div key={i} variants={fadeUp} transition={defaultTransition} className="flex items-start gap-4">
+                <span className="font-heading font-extrabold text-[28px] leading-none shrink-0 w-9 text-right" style={{ color: "hsl(142 76% 36%)" }}>
+                  <CountUpNumber value={i + 1} />
+                </span>
+                <p className="text-[15px] leading-[1.6] pt-1" style={{ color: "rgba(255,255,255,0.7)" }}>{p}</p>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -400,19 +550,46 @@ const VideoPage = () => {
             <Eyebrow>Agenda · 45–60 min</Eyebrow>
             <SectionTitle>O que acontece durante a sessão</SectionTitle>
           </ScrollReveal>
-          <div className="space-y-3">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.12)}
+            className="space-y-3"
+          >
             {agenda.map((item, i) => (
-              <ScrollReveal key={i} delay={i * 0.05}>
-                <div className="flex items-center gap-4 rounded-xl p-4" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
-                  <span className="font-heading font-extrabold text-[18px] w-8 text-center shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
-                  <div className="flex-1">
-                    <p className="text-[15px] font-medium text-white">{item.title}</p>
-                  </div>
-                  <span className="text-[13px] font-medium shrink-0" style={{ color: "rgba(255,255,255,0.35)" }}>{item.time}</span>
+              <motion.div
+                key={i}
+                variants={slideFromLeft}
+                transition={defaultTransition}
+                className="flex items-center gap-4 rounded-xl p-4 transition-all duration-300 group"
+                style={{ background: DARK, border: `1px solid ${DARK_BORDER}`, borderLeftColor: "transparent" }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderLeftColor = "#16a34a";
+                  e.currentTarget.style.borderLeftWidth = "2px";
+                  e.currentTarget.style.background = "#16161f";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderLeftColor = "transparent";
+                  e.currentTarget.style.borderLeftWidth = "1px";
+                  e.currentTarget.style.background = DARK;
+                }}
+              >
+                <span className="font-heading font-extrabold text-[18px] w-8 text-center shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
+                <div className="flex-1">
+                  <p className="text-[15px] font-medium text-white">{item.title}</p>
                 </div>
-              </ScrollReveal>
+                <motion.span
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  whileInView={{ scale: 1, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.3 + i * 0.12, duration: 0.4 }}
+                  className="text-[13px] font-medium shrink-0"
+                  style={{ color: "rgba(255,255,255,0.35)" }}
+                >
+                  {item.time}
+                </motion.span>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -423,17 +600,27 @@ const VideoPage = () => {
             <Eyebrow>Entregáveis gratuitos</Eyebrow>
             <SectionTitle>O que se recebe ao participar</SectionTitle>
           </ScrollReveal>
-          <ScrollReveal delay={0.08}>
-            <div className="grid sm:grid-cols-3 gap-4">
-              {deliverables.map(({ Icon, title, desc }, i) => (
-                <div key={i} className="rounded-xl p-5" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
-                  <Icon className="w-6 h-6 mb-3" style={{ color: "hsl(142 76% 46%)" }} />
-                  <p className="font-heading font-bold text-[15px] text-white mb-1.5">{title}</p>
-                  <p className="text-[13px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.15)}
+            className="grid sm:grid-cols-3 gap-4"
+          >
+            {deliverables.map(({ Icon, title, desc }, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                transition={defaultTransition}
+                className="rounded-xl p-5 transition-all duration-300"
+                style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(22,163,74,0.4)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(22,163,74,0.06) inset"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = DARK_BORDER; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <Icon className="w-6 h-6 mb-3" style={{ color: "hsl(142 76% 46%)" }} />
+                <p className="font-heading font-bold text-[15px] text-white mb-1.5">{title}</p>
+                <p className="text-[13px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
@@ -444,55 +631,79 @@ const VideoPage = () => {
             <Eyebrow>Ferramentas</Eyebrow>
             <SectionTitle>O que vamos usar (sem jargão)</SectionTitle>
           </ScrollReveal>
-          <ScrollReveal delay={0.08}>
-            <div className="grid sm:grid-cols-2 gap-4">
-              {tools.map(({ name, desc }, i) => (
-                <div key={i} className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
-                  <p className="font-heading font-bold text-[15px] text-white mb-1">{name}</p>
-                  <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
-                </div>
-              ))}
-            </div>
-          </ScrollReveal>
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={vpOnce}
+            variants={staggerContainer(0.15)}
+            className="grid sm:grid-cols-2 gap-4"
+          >
+            {tools.map(({ name, desc }, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                transition={defaultTransition}
+                className="rounded-xl p-5 transition-all duration-300"
+                style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(22,163,74,0.4)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(22,163,74,0.06) inset"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = DARK_BORDER; e.currentTarget.style.boxShadow = "none"; }}
+              >
+                <p className="font-heading font-bold text-[15px] text-white mb-1">{name}</p>
+                <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
       {/* ═══ 11 — SPEAKER ═══ */}
       <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-4xl px-5">
-          <ScrollReveal>
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <img
-                src={fredericoPhoto}
-                alt="Frederico Carvalho"
-                className="w-[200px] h-[200px] md:w-[260px] md:h-[260px] rounded-2xl object-cover shrink-0"
-                style={{ border: `2px solid ${DARK_BORDER}` }}
-              />
-              <div>
-                <p className="font-heading font-extrabold text-[24px] text-white mb-2">Frederico Carvalho</p>
-                <p className="text-[15px] leading-[1.7] mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
-                  Consultor e docente universitário, com experiência em marketing digital e sistemas de produção e automação aplicados ao contexto empresarial.
-                </p>
-                <p className="text-[14px] italic mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Foco em método replicável e decisão — não truques.
-                </p>
+          <div className="flex flex-col md:flex-row items-center gap-8">
+            {/* Photo with green ring glow */}
+            <motion.img
+              src={fredericoPhoto}
+              alt="Frederico Carvalho"
+              className="w-[200px] h-[200px] md:w-[260px] md:h-[260px] rounded-2xl object-cover shrink-0"
+              initial="hidden" whileInView="visible" viewport={vpOnce}
+              variants={scaleIn}
+              transition={{ ...defaultTransition, duration: 0.7 }}
+              style={{
+                border: `2px solid ${DARK_BORDER}`,
+                boxShadow: "0 0 0 1px rgba(22,163,74,0.2), 0 0 30px rgba(22,163,74,0.1)",
+              }}
+            />
+            {/* Text — staggered */}
+            <motion.div
+              initial="hidden" whileInView="visible" viewport={vpOnce}
+              variants={staggerContainer(0.12)}
+            >
+              <motion.p variants={fadeUp} transition={defaultTransition} className="font-heading font-extrabold text-[24px] text-white mb-2">Frederico Carvalho</motion.p>
+              <motion.p variants={fadeUp} transition={defaultTransition} className="text-[15px] leading-[1.7] mb-3" style={{ color: "rgba(255,255,255,0.6)" }}>
+                Consultor e docente universitário, com experiência em marketing digital e sistemas de produção e automação aplicados ao contexto empresarial.
+              </motion.p>
+              <motion.p variants={fadeUp} transition={defaultTransition} className="text-[14px] italic mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                Foco em método replicável e decisão — não truques.
+              </motion.p>
+              <motion.div variants={fadeUp} transition={defaultTransition}>
                 <GoogleBadge />
-              </div>
-            </div>
-          </ScrollReveal>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
       {/* ═══ 12 — MID-PAGE CTA ═══ */}
-      <section id="inscricao" className="py-16 md:py-24" style={{ background: DARK_CARD }}>
-        <div className="mx-auto max-w-3xl px-5 text-center">
-          <ScrollReveal>
-            <SectionTitle>Quer o sistema mínimo para produzir vídeo com consistência?</SectionTitle>
+      <section id="inscricao" className="relative overflow-hidden py-16 md:py-24" style={{ background: DARK_CARD }}>
+        <AuroraBackground intensity={0.5} />
+        <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
+          <h2 className="font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-white">
+            <StaggeredWords text="Quer o sistema mínimo para produzir vídeo com consistência?" />
+          </h2>
+          <ShimmerButton>
             <GreenCTA large />
-            <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Lugares limitados para o directo. Materiais enviados após a sessão.
-            </p>
-          </ScrollReveal>
+          </ShimmerButton>
+          <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Lugares limitados para o directo. Materiais enviados após a sessão.
+          </p>
         </div>
       </section>
 
@@ -505,7 +716,12 @@ const VideoPage = () => {
           <ScrollReveal delay={0.06}>
             <Accordion type="single" collapsible className="space-y-2">
               {faqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl overflow-hidden" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                <AccordionItem
+                  key={i}
+                  value={`faq-${i}`}
+                  className="rounded-xl overflow-hidden transition-all duration-300 [&[data-state=open]]:border-l-2 [&[data-state=open]]:border-l-green-600"
+                  style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}
+                >
                   <AccordionTrigger className="px-5 py-4 text-left text-[15px] font-semibold text-white hover:no-underline [&[data-state=open]>svg]:rotate-180">
                     {faq.q}
                   </AccordionTrigger>
@@ -539,20 +755,41 @@ const VideoPage = () => {
       </section>
 
       {/* ═══ 15 — FINAL CTA ═══ */}
-      <section className="relative overflow-hidden py-16 md:py-24">
-        <div className="absolute inset-0 z-0" style={{ opacity: 0.5 }}>
-          <ColorBends colors={["#16A34A", "#0EA5E9", "#7C3AED"]} rotation={45} speed={0.15} scale={1.5} frequency={0.5} warpStrength={0.8} mouseInfluence={0.1} parallax={0.1} noise={0.03} transparent autoRotate={1} />
+      <section className="relative overflow-hidden py-16 md:py-24" style={{ background: DARK }}>
+        {/* Animated green gradient orb */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute w-[800px] h-[800px] rounded-full final-cta-orb"
+            style={{
+              background: "radial-gradient(circle, rgba(22,163,74,0.06) 0%, transparent 70%)",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+          />
+          <style>{`
+            @media (prefers-reduced-motion: no-preference) {
+              .final-cta-orb {
+                animation: orb-drift 15s ease-in-out infinite;
+              }
+            }
+            @keyframes orb-drift {
+              0%, 100% { transform: translate(-50%, -50%) scale(1); }
+              33% { transform: translate(-45%, -55%) scale(1.05); }
+              66% { transform: translate(-55%, -45%) scale(0.95); }
+            }
+          `}</style>
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
-          <ScrollReveal>
-            <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-6">
-              Inscrição gratuita — e sai com um sistema que dá para repetir
-            </h2>
+          <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-6">
+            <StaggeredWords text="Inscrição gratuita — e sai com um sistema que dá para repetir" />
+          </h2>
+          <ShimmerButton>
             <GreenCTA large />
-            <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
-              Sem compromisso. Evento ao vivo em 2 de Março de 2026.
-            </p>
-          </ScrollReveal>
+          </ShimmerButton>
+          <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Sem compromisso. Evento ao vivo em 2 de Março de 2026.
+          </p>
         </div>
       </section>
 
