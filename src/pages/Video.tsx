@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
-import { motion, useInView } from "framer-motion";
+import { useEffect } from "react";
 import {
   Check, Clock, ArrowLeftRight, XCircle, Layers,
-  FileText, CheckSquare, Video, ChevronDown,
+  FileText, CheckSquare, Video,
 } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ColorBends from "@/components/landing/ColorBends";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
@@ -15,34 +15,23 @@ import { PrivacidadeContent } from "@/components/legal/PrivacidadeContent";
 import { useState } from "react";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
 
-/* ── Scroll reveal wrapper ── */
-const Reveal = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 28 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: "easeOut" }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+/* ── Smooth scroll helper ── */
+const scrollTo = (id: string) => (e: React.MouseEvent) => {
+  e.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 };
 
 /* ── Shared CTA ── */
 const GreenCTA = ({ label = "Garantir inscrição gratuita", large = false }: { label?: string; large?: boolean }) => (
-  <a
-    href="#inscricao"
-    className={`inline-block font-heading font-bold text-white rounded-xl transition-all ${large ? "text-[17px] px-10 py-4" : "text-[15px] px-7 py-3"}`}
+  <button
+    onClick={scrollTo("inscricao")}
+    className={`inline-block font-heading font-bold text-white rounded-xl transition-all cursor-pointer ${large ? "text-[17px] px-10 py-4" : "text-[15px] px-7 py-3"}`}
     style={{ background: "hsl(142 76% 36%)", boxShadow: "0 4px 20px rgba(22,163,74,0.30)" }}
     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
   >
     {label}
-  </a>
+  </button>
 );
 
 /* ── Google badge ── */
@@ -74,7 +63,7 @@ const Eyebrow = ({ children }: { children: React.ReactNode }) => (
 
 /* ── Section title ── */
 const SectionTitle = ({ children, light = true }: { children: React.ReactNode; light?: boolean }) => (
-  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 ${light ? "text-white" : ""}`} style={!light ? { color: "hsl(222 47% 11%)" } : {}}>
+  <h2 className={`font-heading font-extrabold text-[26px] sm:text-[32px] leading-[1.15] mb-6 text-center ${light ? "text-white" : ""}`} style={!light ? { color: "hsl(222 47% 11%)" } : {}}>
     {children}
   </h2>
 );
@@ -159,23 +148,23 @@ const VideoPage = () => {
   const [legalModal, setLegalModal] = useState<"termos" | "privacidade" | null>(null);
 
   return (
-    <div className="min-h-screen" style={{ background: DARK, color: "#e2e8f0", scrollBehavior: "smooth" }}>
+    <div className="min-h-screen" style={{ background: DARK, color: "#e2e8f0" }}>
 
       {/* ═══ 1 — STICKY TOP BAR ═══ */}
       <div className="fixed top-0 left-0 right-0 z-50" style={{ background: "rgba(10,10,15,0.92)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${DARK_BORDER}` }}>
         <div className="mx-auto max-w-6xl flex items-center justify-between px-4 py-2.5">
-          <span className="text-[12px] font-heading font-semibold uppercase tracking-[0.1em] px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.6)" }}>
+          <span className="hidden sm:inline-block text-[12px] font-heading font-semibold uppercase tracking-[0.1em] px-3 py-1 rounded-full" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.6)" }}>
             Webinar gratuito · 2 Março 2026
           </span>
-          <a
-            href="#inscricao"
-            className="text-[13px] font-heading font-bold text-white px-5 py-2 rounded-lg transition-colors"
+          <button
+            onClick={scrollTo("inscricao")}
+            className="text-[13px] font-heading font-bold text-white px-5 py-2 rounded-lg transition-colors cursor-pointer sm:ml-auto"
             style={{ background: "hsl(142 76% 36%)" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 72% 29%)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "hsl(142 76% 36%)"; }}
           >
             Garantir inscrição →
-          </a>
+          </button>
         </div>
       </div>
 
@@ -185,25 +174,25 @@ const VideoPage = () => {
           <ColorBends colors={["#1E40AF", "#7C3AED", "#0EA5E9", "#10B981"]} rotation={0} speed={0.2} scale={1.3} frequency={0.7} warpStrength={1} mouseInfluence={0.2} parallax={0.2} noise={0.04} transparent autoRotate={1.5} />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
-          <Reveal>
+          <ScrollReveal>
             <span className="inline-block font-heading text-[12px] font-semibold uppercase tracking-[0.14em] px-4 py-1.5 rounded-full mb-5" style={{ border: "1px solid rgba(255,255,255,0.18)", color: "rgba(255,255,255,0.7)" }}>
               Webinar gratuito · Ao vivo · 2 Março 2026
             </span>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.08}>
+          <ScrollReveal delay={0.08}>
             <h1 className="font-heading font-extrabold text-[28px] sm:text-[38px] md:text-[44px] leading-[1.1] text-white mb-5" style={{ letterSpacing: "-0.02em" }}>
               Vídeo com IA para marketing — sem equipa, sem caos, com um sistema simples de delegação
             </h1>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.14}>
+          <ScrollReveal delay={0.14}>
             <p className="text-[16px] sm:text-[18px] leading-[1.65] max-w-[640px] mx-auto mb-7" style={{ color: "rgba(255,255,255,0.6)" }}>
               Sessão prática para gestores e profissionais de marketing que precisam de produzir clips curtos com consistência, mesmo com pouco tempo e sem estúdio.
             </p>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.18}>
+          <ScrollReveal delay={0.18}>
             <div className="flex flex-wrap justify-center gap-2 mb-8">
               {["2 de Março · A definir hora", "Online · 45–60 min", "Gratuito", "Lugares limitados para o directo"].map(t => (
                 <span key={t} className="text-[13px] px-3.5 py-1.5 rounded-full font-medium" style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${DARK_BORDER}`, color: "rgba(255,255,255,0.55)" }}>
@@ -211,9 +200,9 @@ const VideoPage = () => {
                 </span>
               ))}
             </div>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.22}>
+          <ScrollReveal delay={0.22}>
             <div className="max-w-[560px] mx-auto text-left space-y-3 mb-8">
               {[
                 "Transformar um briefing em vídeo curto publicável, sem se perder em ferramentas.",
@@ -226,19 +215,19 @@ const VideoPage = () => {
                 </div>
               ))}
             </div>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.28}>
+          <ScrollReveal delay={0.28}>
             <GreenCTA large />
             <p className="text-[13px] mt-3" style={{ color: "rgba(255,255,255,0.35)" }}>Sem compromisso. Recomendado assistir ao vivo.</p>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 3 — PROBLEM ═══ */}
       <section id="problema" className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <div className="text-center mb-10">
               <Eyebrow>O Problema</Eyebrow>
               <SectionTitle>O vídeo não é luxo — é o formato que o mercado está a empurrar</SectionTitle>
@@ -246,38 +235,38 @@ const VideoPage = () => {
                 O pedido costuma ser o mesmo: «precisa-se de mais vídeo». O bloqueio também: tempo, custo, aprovações e falta de consistência. A IA ajuda, mas só funciona bem quando existe um processo mínimo.
               </p>
             </div>
-          </Reveal>
+          </ScrollReveal>
 
           <div className="grid sm:grid-cols-2 gap-4">
             {painPoints.map(({ Icon, text }, i) => (
-              <Reveal key={i} delay={i * 0.06}>
+              <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
                   <Icon className="w-5 h-5 mb-3" style={{ color: "rgba(255,255,255,0.35)" }} />
                   <p className="text-[15px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.7)" }}>{text}</p>
                 </div>
-              </Reveal>
+              </ScrollReveal>
             ))}
           </div>
 
-          <Reveal delay={0.25}>
+          <ScrollReveal delay={0.25}>
             <p className="text-center text-[16px] italic mt-8" style={{ color: "rgba(255,255,255,0.5)" }}>
               Se pelo menos 2 destes pontos são verdade, esta sessão foi desenhada para desbloquear.
             </p>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 4 — TRANSFORMATION ═══ */}
       <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <div className="text-center mb-10">
               <Eyebrow>Transformação</Eyebrow>
               <SectionTitle>O que muda depois de se inscrever</SectionTitle>
             </div>
-          </Reveal>
+          </ScrollReveal>
 
-          <Reveal delay={0.08}>
+          <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-4 mb-10">
               {/* Before */}
               <div className="rounded-xl p-6" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
@@ -304,16 +293,16 @@ const VideoPage = () => {
                 </ul>
               </div>
             </div>
-          </Reveal>
+          </ScrollReveal>
 
           <div className="space-y-3">
             {concreteResults.map((r, i) => (
-              <Reveal key={i} delay={i * 0.06}>
+              <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-4 rounded-xl p-4" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
                   <span className="font-heading font-extrabold text-[20px] shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
                   <p className="text-[14px] leading-[1.6]" style={{ color: "rgba(255,255,255,0.65)" }}>{r}</p>
                 </div>
-              </Reveal>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -322,10 +311,10 @@ const VideoPage = () => {
       {/* ═══ 5 — QUALIFICATION ═══ */}
       <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <SectionTitle>Para quem é — e para quem não é</SectionTitle>
-          </Reveal>
-          <Reveal delay={0.08}>
+          </ScrollReveal>
+          <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
               <div className="rounded-xl p-6" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
                 <p className="font-heading font-bold text-[14px] mb-4" style={{ color: "hsl(142 76% 46%)" }}>✓ Certo para</p>
@@ -350,128 +339,128 @@ const VideoPage = () => {
                 </ul>
               </div>
             </div>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 6 — STORYTELLING ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-3xl px-5">
           {/* Block 1 — prose */}
-          <Reveal>
-            <div className="rounded-xl p-6 mb-8" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK_CARD }}>
+          <ScrollReveal>
+            <div className="rounded-xl p-6 mb-8" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK }}>
               <h3 className="font-heading font-bold text-[18px] text-white mb-3">A cena típica</h3>
               <p className="text-[15px] leading-[1.7]" style={{ color: "rgba(255,255,255,0.6)" }}>
                 É segunda-feira. O plano pede 5 peças. A equipa pede «mais vídeo». A marca pede consistência. O problema não é falta de ideias: é que cada vídeo vira um projecto, cada aprovação vira atraso e, quando sai, já passou o momento. Nesta sessão mostra-se o sistema mínimo: briefing → gerar → rever → publicar.
               </p>
             </div>
-          </Reveal>
+          </ScrollReveal>
 
           {/* Block 2 — two paths */}
-          <Reveal delay={0.08}>
+          <ScrollReveal delay={0.08}>
             <div className="grid sm:grid-cols-2 gap-4">
-              <div className="rounded-xl p-5" style={{ background: DARK_CARD, borderLeft: "3px solid rgba(239,68,68,0.35)" }}>
+              <div className="rounded-xl p-5" style={{ background: DARK, borderLeft: "3px solid rgba(239,68,68,0.35)" }}>
                 <p className="font-heading font-bold text-[15px] text-white mb-2">Caminho A: «faz-se quando houver tempo»</p>
                 <p className="text-[14px]" style={{ color: "rgba(255,255,255,0.45)" }}>Intermitência, stress, pouca aprendizagem acumulada.</p>
               </div>
-              <div className="rounded-xl p-5" style={{ background: DARK_CARD, borderLeft: "3px solid hsl(142 76% 36%)" }}>
+              <div className="rounded-xl p-5" style={{ background: DARK, borderLeft: "3px solid hsl(142 76% 36%)" }}>
                 <p className="font-heading font-bold text-[15px] text-white mb-2">Caminho B: «há um processo mínimo repetível»</p>
                 <p className="text-[14px]" style={{ color: "rgba(255,255,255,0.65)" }}>Produção previsível, melhoria contínua, delegação com critérios.</p>
               </div>
             </div>
             <p className="text-center text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>O webinar entrega o Caminho B — sem complicar.</p>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 7 — OPERATIONAL PROMISE ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-3xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <Eyebrow>Promessa operacional</Eyebrow>
             <SectionTitle>No final, fica capaz de…</SectionTitle>
-          </Reveal>
+          </ScrollReveal>
           <div className="space-y-4">
             {operationalPromises.map((p, i) => (
-              <Reveal key={i} delay={i * 0.06}>
+              <ScrollReveal key={i} delay={i * 0.06}>
                 <div className="flex items-start gap-4">
                   <span className="font-heading font-extrabold text-[28px] leading-none shrink-0 w-9 text-right" style={{ color: "hsl(142 76% 36%)" }}>{i + 1}</span>
                   <p className="text-[15px] leading-[1.6] pt-1" style={{ color: "rgba(255,255,255,0.7)" }}>{p}</p>
                 </div>
-              </Reveal>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ═══ 8 — AGENDA ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-3xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <Eyebrow>Agenda · 45–60 min</Eyebrow>
             <SectionTitle>O que acontece durante a sessão</SectionTitle>
-          </Reveal>
+          </ScrollReveal>
           <div className="space-y-3">
             {agenda.map((item, i) => (
-              <Reveal key={i} delay={i * 0.05}>
-                <div className="flex items-center gap-4 rounded-xl p-4" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+              <ScrollReveal key={i} delay={i * 0.05}>
+                <div className="flex items-center gap-4 rounded-xl p-4" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
                   <span className="font-heading font-extrabold text-[18px] w-8 text-center shrink-0" style={{ color: "hsl(142 76% 46%)" }}>{i + 1}</span>
                   <div className="flex-1">
                     <p className="text-[15px] font-medium text-white">{item.title}</p>
                   </div>
                   <span className="text-[13px] font-medium shrink-0" style={{ color: "rgba(255,255,255,0.35)" }}>{item.time}</span>
                 </div>
-              </Reveal>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ═══ 9 — DELIVERABLES ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <Eyebrow>Entregáveis gratuitos</Eyebrow>
             <SectionTitle>O que se recebe ao participar</SectionTitle>
-          </Reveal>
-          <Reveal delay={0.08}>
+          </ScrollReveal>
+          <ScrollReveal delay={0.08}>
             <div className="grid sm:grid-cols-3 gap-4">
               {deliverables.map(({ Icon, title, desc }, i) => (
-                <div key={i} className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                <div key={i} className="rounded-xl p-5" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
                   <Icon className="w-6 h-6 mb-3" style={{ color: "hsl(142 76% 46%)" }} />
                   <p className="font-heading font-bold text-[15px] text-white mb-1.5">{title}</p>
                   <p className="text-[13px] leading-[1.55]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
                 </div>
               ))}
             </div>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 10 — TOOLS ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK }}>
+      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <Eyebrow>Ferramentas</Eyebrow>
             <SectionTitle>O que vamos usar (sem jargão)</SectionTitle>
-          </Reveal>
-          <Reveal delay={0.08}>
+          </ScrollReveal>
+          <ScrollReveal delay={0.08}>
             <div className="grid sm:grid-cols-2 gap-4">
               {tools.map(({ name, desc }, i) => (
-                <div key={i} className="rounded-xl p-5" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
+                <div key={i} className="rounded-xl p-5" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
                   <p className="font-heading font-bold text-[15px] text-white mb-1">{name}</p>
                   <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.5)" }}>{desc}</p>
                 </div>
               ))}
             </div>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 11 — SPEAKER ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-4xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <div className="flex flex-col md:flex-row items-center gap-8">
               <img
                 src={fredericoPhoto}
@@ -490,33 +479,33 @@ const VideoPage = () => {
                 <GoogleBadge />
               </div>
             </div>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 12 — MID-PAGE CTA ═══ */}
-      <section id="inscricao" className="py-16 md:py-24" style={{ background: DARK }}>
+      <section id="inscricao" className="py-16 md:py-24" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-3xl px-5 text-center">
-          <Reveal>
+          <ScrollReveal>
             <SectionTitle>Quer o sistema mínimo para produzir vídeo com consistência?</SectionTitle>
             <GreenCTA large />
             <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
               Lugares limitados para o directo. Materiais enviados após a sessão.
             </p>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 13 — FAQ ═══ */}
-      <section className="py-16 md:py-24" style={{ background: DARK_CARD }}>
+      <section className="py-16 md:py-24" style={{ background: DARK }}>
         <div className="mx-auto max-w-2xl px-5">
-          <Reveal>
+          <ScrollReveal>
             <SectionTitle>Perguntas frequentes</SectionTitle>
-          </Reveal>
-          <Reveal delay={0.06}>
+          </ScrollReveal>
+          <ScrollReveal delay={0.06}>
             <Accordion type="single" collapsible className="space-y-2">
               {faqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl overflow-hidden" style={{ background: DARK, border: `1px solid ${DARK_BORDER}` }}>
+                <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl overflow-hidden" style={{ background: DARK_CARD, border: `1px solid ${DARK_BORDER}` }}>
                   <AccordionTrigger className="px-5 py-4 text-left text-[15px] font-semibold text-white hover:no-underline [&[data-state=open]>svg]:rotate-180">
                     {faq.q}
                   </AccordionTrigger>
@@ -526,15 +515,15 @@ const VideoPage = () => {
                 </AccordionItem>
               ))}
             </Accordion>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* ═══ 14 — UPSELL SOFT ═══ */}
-      <section className="py-12 md:py-16" style={{ background: DARK }}>
+      <section className="py-12 md:py-16" style={{ background: DARK_CARD }}>
         <div className="mx-auto max-w-3xl px-5">
-          <Reveal>
-            <div className="rounded-xl p-6" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK_CARD }}>
+          <ScrollReveal>
+            <div className="rounded-xl p-6" style={{ borderLeft: "3px solid hsl(142 76% 36%)", background: DARK }}>
               <h3 className="font-heading font-bold text-[18px] text-white mb-2">
                 Quer implementar com outputs prontos em 3 horas?
               </h3>
@@ -545,7 +534,7 @@ const VideoPage = () => {
                 Ver Masterclass →
               </a>
             </div>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -555,7 +544,7 @@ const VideoPage = () => {
           <ColorBends colors={["#16A34A", "#0EA5E9", "#7C3AED"]} rotation={45} speed={0.15} scale={1.5} frequency={0.5} warpStrength={0.8} mouseInfluence={0.1} parallax={0.1} noise={0.03} transparent autoRotate={1} />
         </div>
         <div className="relative z-10 mx-auto max-w-3xl px-5 text-center">
-          <Reveal>
+          <ScrollReveal>
             <h2 className="font-heading font-extrabold text-[26px] sm:text-[34px] text-white leading-[1.15] mb-6">
               Inscrição gratuita — e sai com um sistema que dá para repetir
             </h2>
@@ -563,7 +552,7 @@ const VideoPage = () => {
             <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.35)" }}>
               Sem compromisso. Evento ao vivo em 2 de Março de 2026.
             </p>
-          </Reveal>
+          </ScrollReveal>
         </div>
       </section>
 
