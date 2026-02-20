@@ -27,6 +27,23 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import googleLogo from "@/assets/logos/google.png";
 import chatgptLogo from "@/assets/logos/chatgpt.webp";
+import claudeLogo from "@/assets/logos/claude.png";
+import freepikLogo from "@/assets/logos/freepik.png";
+import bytedanceLogo from "@/assets/logos/bytedance.svg";
+import geminiLogo from "@/assets/logos/gemini.png";
+import llamaLogo from "@/assets/logos/llama-meta.png";
+import runcomfyLogo from "@/assets/logos/runcomfy.webp";
+
+const marqueeLogos = [
+  { src: googleLogo, alt: "Google" },
+  { src: chatgptLogo, alt: "ChatGPT" },
+  { src: claudeLogo, alt: "Claude" },
+  { src: freepikLogo, alt: "Freepik" },
+  { src: bytedanceLogo, alt: "ByteDance" },
+  { src: geminiLogo, alt: "Gemini" },
+  { src: llamaLogo, alt: "LLaMA by Meta" },
+  { src: runcomfyLogo, alt: "RunComfy" },
+];
 
 const fade = (delay: number) => ({
   initial: { opacity: 0, y: 24 },
@@ -250,131 +267,82 @@ const Gravacao = () => {
           />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10">
-          <div className="grid md:grid-cols-[1fr_380px] gap-10 md:gap-14 items-center">
-            {/* Left column */}
-            <div>
-              {/* Badge */}
-              <motion.div {...fade(0.05)}>
-                <div className="mb-4">
-                  <span
-                    className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
-                    style={{
-                      background: "rgba(37,99,235,0.15)",
-                      border: "1px solid rgba(37,99,235,0.30)",
-                      color: "#93C5FD",
-                      fontSize: 14, fontWeight: 600,
-                      boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
-                    }}
-                  >
-                    ACESSO IMEDIATO · PACK COMPLETO · 27 €
-                  </span>
-                </div>
-              </motion.div>
-
-              {/* H1 */}
-              <motion.div {...fade(0.1)}>
-                <h1>
-                  <span className="block font-heading" style={{
-                    color: "#F8FAFC", fontWeight: 800,
-                    fontSize: "clamp(26px, 4.5vw, 42px)", lineHeight: 1.12,
-                    letterSpacing: "-0.025em", textShadow: "0 2px 40px rgba(0,0,0,0.5)",
-                  }}>
-                    Aprende a criar imagens profissionais com Inteligência Artificial
-                    <span style={{ fontWeight: 600 }}> — com método (não tentativa-erro)</span>
-                  </span>
-                </h1>
-              </motion.div>
-
-              {/* Subheadline */}
-              <motion.div {...fade(0.15)}>
-                <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, color: "#CBD5E1" }}>
-                  Do briefing à imagem pronta a publicar,{" "}
-                  <GradientText className="font-heading font-semibold">
-                    com um processo replicável e templates prontos.
-                  </GradientText>
-                </p>
-                <p className="mt-3" style={{ fontSize: 17 }}>
-                  <GradientText className="font-heading font-semibold">
-                    Vê hoje. Aplica amanhã.
-                  </GradientText>
-                </p>
-              </motion.div>
-
-              {/* 3 micro-bullets */}
-              <motion.div {...fade(0.2)} className="mt-5">
-                <div className="flex flex-wrap gap-3">
-                  {["Consistência visual em minutos", "Menos bloqueios, mais autonomia", "Templates reutilizáveis"].map((b, i) => (
-                    <span key={i} className="inline-flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.65)" }}>
-                      <Check className="w-3.5 h-3.5" style={{ color: "#34D399" }} /> {b}
-                    </span>
-                  ))}
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Right column — purchase card */}
-            <motion.div {...fade(0.2)}>
-              <div
-                className="rounded-2xl p-6 backdrop-blur-sm"
+        <div
+          className="relative z-10 mx-auto pt-10 pb-12 md:pt-[60px] md:pb-[72px] px-6 md:px-10"
+          style={{ maxWidth: 860, textAlign: "center" }}
+        >
+          {/* Badge */}
+          <motion.div {...fade(0.05)}>
+            <div className="mb-3">
+              <span
+                className="inline-block backdrop-blur-sm font-heading uppercase tracking-[0.12em] px-5 py-2 rounded-full"
                 style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                  background: "rgba(37,99,235,0.15)",
+                  border: "1px solid rgba(37,99,235,0.30)",
+                  color: "#93C5FD",
+                  fontSize: 14, fontWeight: 600,
+                  boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
                 }}
               >
-                <p className="font-heading font-extrabold text-white text-center" style={{ fontSize: "clamp(32px, 5vw, 40px)", lineHeight: 1 }}>
-                  27 € <span className="text-[16px] font-bold" style={{ color: "rgba(255,255,255,0.5)" }}>+ IVA</span>
-                </p>
-                <p className="text-center text-[14px] mt-1 mb-5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  Pagamento único · Acesso imediato
-                </p>
+                ACESSO IMEDIATO
+              </span>
+            </div>
+          </motion.div>
 
-                <ElectricBorder
-                  color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}
-                  style={{ display: "block", width: "100%" }}
+          {/* H1 */}
+          <motion.div {...fade(0.1)}>
+            <h1 style={{ maxWidth: 860, margin: "0 auto" }}>
+              <span className="block font-heading" style={{
+                color: "#F8FAFC", fontWeight: 800,
+                fontSize: "clamp(28px, 4.5vw, 40px)", lineHeight: 1.12,
+                letterSpacing: "-0.025em", textShadow: "0 2px 40px rgba(0,0,0,0.5)",
+              }}>
+                Aprende a Criar Imagens Profissionais{"\n"}com Inteligência Artificial
+              </span>
+            </h1>
+          </motion.div>
+
+          {/* Subheadline */}
+          <motion.div {...fade(0.15)}>
+            <p style={{ fontSize: 18, fontWeight: 400, marginTop: 16, marginBottom: 24, color: "#CBD5E1" }}>
+              Do briefing à imagem pronta a publicar,{" "}
+              <GradientText className="font-heading font-semibold">
+                com um processo replicável e templates prontos.
+              </GradientText>
+            </p>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div {...fade(0.25)}>
+            <div>
+              <ElectricBorder
+                color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}
+                style={{ display: "inline-block", width: "100%", maxWidth: 400 }}
+              >
+                <button
+                  onClick={openModal}
+                  style={{
+                    background: "#16A34A", color: "#fff",
+                    fontFamily: "Montserrat, sans-serif", fontWeight: 700, fontSize: 16,
+                    padding: "16px 32px", borderRadius: 10, border: "none", cursor: "pointer", width: "100%",
+                  }}
                 >
-                  <button
-                    onClick={openModal}
-                    style={{
-                      background: "#16A34A", color: "#fff",
-                      fontFamily: "Montserrat, sans-serif", fontWeight: 700, fontSize: 16,
-                      padding: "16px 24px", borderRadius: 10, border: "none", cursor: "pointer", width: "100%",
-                    }}
-                  >
-                    Garantir acesso imediato (27 €)
-                  </button>
-                </ElectricBorder>
+                  Garantir acesso imediato (27 €)
+                </button>
+              </ElectricBorder>
+            </div>
+          </motion.div>
 
-                {/* Trust */}
-                <div className="flex flex-col gap-1.5 mt-4 text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Pagamento seguro</span>
-                  <span className="inline-flex items-center gap-1"><Zap className="w-3 h-3" /> Acesso imediato após confirmação</span>
-                  <span className="inline-flex items-center gap-1"><FileText className="w-3 h-3" /> Inclui documentos</span>
-                </div>
-
-                {/* Google badge dark */}
-                <div className="mt-4">
-                  <GoogleBadge dark />
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* "Ver o que está incluído" link — centered below grid */}
-          <motion.div {...fade(0.3)} className="text-center mt-6">
-            <button
-              onClick={() => scrollTo("pack-section")}
-              className="inline-flex items-center gap-1 text-[15px] transition-colors"
-              style={{ color: "#93C5FD" }}
-            >
-              Ver exactamente o que está incluído <ChevronRight className="w-4 h-4" />
-            </button>
+          {/* Google badge dark */}
+          <motion.div {...fade(0.3)}>
+            <div className="mt-4">
+              <GoogleBadge dark />
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ═══ 2. LOGO STRIP ═══ */}
+      {/* ═══ 2. LOGO MARQUEE ═══ */}
       <section
         className="py-8"
         style={{
@@ -383,12 +351,37 @@ const Gravacao = () => {
         }}
       >
         <p className="text-center text-sm uppercase tracking-widest mb-6" style={{ color: "rgba(255,255,255,0.4)" }}>
-          Tecnologia e ferramentas referidas na sessão
+          Plataformas a considerar
         </p>
-        <div className="flex items-center justify-center gap-14">
-          <img src={googleLogo} alt="Google" className="h-7 object-contain" style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }} loading="lazy" />
-          <img src={chatgptLogo} alt="OpenAI / ChatGPT" className="h-7 object-contain" style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }} loading="lazy" />
+        <div
+          className="relative overflow-hidden"
+          style={{
+            maskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+            WebkitMaskImage: "linear-gradient(to right, transparent, black 10%, black 90%, transparent)",
+          }}
+        >
+          <div className="flex w-max animate-marquee-gravacao">
+            {[...marqueeLogos, ...marqueeLogos].map((logo, i) => (
+              <img
+                key={i}
+                src={logo.src}
+                alt={logo.alt}
+                className="h-7 mx-10 object-contain"
+                style={{ filter: "brightness(0) invert(1)", opacity: 0.5 }}
+                loading="lazy"
+              />
+            ))}
+          </div>
         </div>
+        <style>{`
+          @keyframes marqueeGravacao {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-marquee-gravacao {
+            animation: marqueeGravacao 30s linear infinite;
+          }
+        `}</style>
       </section>
 
       {/* ═══ 3. BLOQUEIOS ═══ */}
