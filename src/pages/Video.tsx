@@ -124,14 +124,14 @@ const whenItMakesSense = [
 
 const forWhom = [
   "Gestores de marketing/comunicação e brand managers.",
-  "Quem faz paid media e precisa de criativos com variações rápidas.",
+  "Quem faz paid media e precisa de gerar vídeos diferentes e de forma rápida.",
   "Fundadores/gestores que querem consistência sem aumentar equipa.",
   "Profissionais que querem delegar sem perder controlo.",
 ];
 const notFor = [
   "Quem procura cinema, edição avançada ou pós-produção pesada.",
   "Quem quer vídeos longos e complexos (aqui é clip curto, objectivo claro).",
-  "Quem procura «milagre» sem processo.",
+  "Quem procura «milagre» sem processos.",
 ];
 
 
@@ -141,7 +141,7 @@ const videoAgenda = [
     title: "Ferramentas de vídeo certas (sem confusão)",
     borderColor: "border-l-blue-600",
     desc: "Antes de escolher a ferramenta, convém perceber o que funciona hoje.",
-    bullets: ["Comparações rápidas entre ferramentas gratuitas e pagas", "Lista curada para guardar nos favoritos"],
+    bullets: ["Comparações rápidas entre ferramentas gratuitas e pagas", "Lista pronta para guardar nos favoritos"],
     deliverable: "Mapa de decisão rápido para escolher a ferramenta certa.",
   },
   {
@@ -175,14 +175,14 @@ const speakerCredentials = [
   { emoji: "🎓", title: "Professor Universitário", sub: "Universidade de Coimbra (FEUC) · Univ. Europeia (IPAM) · Univ. Autónoma · Univ. Aveiro" },
   { emoji: "📚", title: "Autor", sub: "\"Guia Essencial SEO\" e Co-Autor \"Marketing Digital para Empresas\"" },
   { emoji: "🎙️", title: "Host Semanal · RFM", sub: "Podcast Marketing por Idiotas" },
-  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC consultoria com auditoria digital a mais de 700+ empresas. L'Oréal. BMW. 3M" },
+  { emoji: "🏢", title: "Fundador e CEO", sub: "DIGITALFC: consultoria, formação e auditoria digital para mais de 700 empresas com resultados comprovados" },
 ];
 
 const faqs = [
-  { q: "Preciso de experiência com IA?", a: "De todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
-  { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes. Vais ver exemplos dos dois." },
+  { q: "Preciso de experiência com IA?", a: "Não, de todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
+  { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes sociais. Vais ver exemplos dos dois casos." },
   { q: "E se não conseguir assistir ao vivo?", a: "Inscreve-te na mesma — recebes instruções e próximos passos por email. Se quiseres acesso à gravação integral + guia de apoio, o Premium Pass (15 EUR + IVA) garante isso." },
-  { q: "Existe algo mais aprofundado sobre vídeo?", a: "Sim. Além do webinar gratuito, há uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento. Podes adicioná-la durante a inscrição." },
+  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além do webinar gratuito, haverá uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso já, durante o processo de inscrição neste webinar, ou inscrever-te depois." },
   { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois do webinar, já consegues produzir os primeiros clips e repetir semanalmente." },
 ];
 
@@ -196,11 +196,11 @@ const DARK_BORDER = "rgba(255,255,255,0.08)";
 const VideoPageInner = () => {
   const { open } = useRegistrationModal();
   usePageMeta({
-    title: "Webinar Gratuito · Vídeo com IA para Marketing · 3 Março 2026",
+    title: "Webinar Gratuito · Vídeo com IA para Marketing · 5 Março 2026",
     description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
   });
 
-  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-03T10:00:00"));
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-05T10:00:00"));
   const openModal = () => open("free");
 
   /* Sticky mobile CTA visibility */
@@ -222,11 +222,7 @@ const VideoPageInner = () => {
         style={{ background: "linear-gradient(90deg, #020617 0%, rgba(37,99,235,0.15) 50%, #1e3a8a 100%)" }}
       >
         <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
-          <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
-            AO VIVO · 3 MAR · 10H00
-          </p>
-
-          <div className="flex items-center gap-1.5 mx-auto sm:mx-0">
+          <div className="flex items-center gap-1.5">
             <CountdownBlock value={days} label="dias" />
             <span className="text-white/60 font-bold text-sm">:</span>
             <CountdownBlock value={hours} label="horas" />
@@ -235,6 +231,10 @@ const VideoPageInner = () => {
             <span className="text-white/60 font-bold text-sm">:</span>
             <CountdownBlock value={seconds} label="seg" />
           </div>
+
+          <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
+            AO VIVO · 10H00
+          </p>
 
           <button
             onClick={openModal}
@@ -285,7 +285,7 @@ const VideoPageInner = () => {
                 <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
                 <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
               </span>
-              WEBINAR GRATUITO · AO VIVO
+              WEBINAR GRATUITO · AO VIVO · 5 MARÇO, 10H
             </span>
           </motion.div>
 
@@ -312,14 +312,6 @@ const VideoPageInner = () => {
             >
               Inteligência Artificial
             </motion.span>
-            <motion.span
-              initial="hidden" whileInView="visible" viewport={vpOnce}
-              variants={wordReveal}
-              transition={{ duration: 0.5, delay: 0.75, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-block"
-            >
-              para marketing
-            </motion.span>
           </h1>
 
           {/* Supporting line */}
@@ -329,18 +321,10 @@ const VideoPageInner = () => {
             className="font-medium mb-2 max-w-[960px] mx-auto text-[15px] lg:text-[18px]"
             style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.35 }}
           >
-            Sais com um sistema, ferramentas e templates prontos (briefing → gerar → rever → publicar)
+            Adquires um sistema, ferramentas e templates prontos (briefing → gerar → rever → publicar)
           </motion.p>
 
-          {/* Sub-subtitle */}
-          <motion.p
-            initial="hidden" animate="visible"
-            variants={fadeUp} transition={{ ...defaultTransition, delay: 1.05 }}
-            className="text-[14px] leading-[1.6] mb-9"
-            style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "0.5px", fontWeight: 400 }}
-          >
-            Sessão prática para gestores e profissionais de marketing
-          </motion.p>
+          <div className="mb-9" />
 
           {/* 4 Info boxes */}
           <motion.div
@@ -350,7 +334,7 @@ const VideoPageInner = () => {
             className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[700px] mx-auto"
           >
             {([
-              { Icon: Calendar, label: "DATA", value: "3 de Março" },
+              { Icon: Calendar, label: "DATA", value: "5 de Março" },
               { Icon: Clock, label: "HORÁRIO", value: "10h00" },
               { Icon: Timer, label: "DURAÇÃO", value: "45 min" },
               { Icon: Sparkles, label: "INVESTIMENTO", value: "Gratuito" },
@@ -423,7 +407,7 @@ const VideoPageInner = () => {
       </section>
 
       {/* ═══ LOGO MARQUEE ═══ */}
-      <LogoMarquee />
+      <LogoMarquee label="Plataformas de referência para o tema" />
 
       {/* ═══ SECTION 1 — "Vídeo é o formato que o mercado exige" ═══ */}
       <section className="relative overflow-hidden py-24 md:py-32" style={{ background: "#0a0a0f" }}>
@@ -437,9 +421,9 @@ const VideoPageInner = () => {
           <ScrollReveal>
             <div className="text-center mb-14 md:mb-20">
               <h2 className="font-heading font-extrabold text-[30px] sm:text-[36px] lg:text-[48px] leading-[1.1] text-white" style={{ letterSpacing: "-1px" }}>
-                Vídeo é o formato que o{" "}
-                <span className="glitch" data-text="mercado exige">
-                  mercado exige
+                O mercado exige{" "}
+                <span className="glitch" data-text="Vídeo.">
+                  Vídeo.
                 </span>
               </h2>
             </div>
@@ -593,10 +577,6 @@ const VideoPageInner = () => {
               <div>
                 <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-4" style={{ letterSpacing: "-0.5px" }}>Para quem é</h3>
                 <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-yes" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
-                  <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "#4ade80" }}>
-                    <Check className="w-5 h-5" style={{ color: "#4ade80" }} />
-                    Certo para
-                  </p>
                   <ul className="space-y-4">
                     {forWhom.map((t, i) => (
                       <li key={i} className="flex items-start gap-3">
@@ -609,12 +589,8 @@ const VideoPageInner = () => {
               </div>
               {/* Card: Não é para */}
               <div>
-                <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] mb-4" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "-0.5px" }}>Para quem não é</h3>
+                <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] mb-4" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "-0.5px" }}>Não é para…</h3>
                 <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-no" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
-                  <p className="font-heading font-bold text-[14px] mb-5 flex items-center gap-2" style={{ color: "rgba(255,255,255,0.45)" }}>
-                    <XCircle className="w-5 h-5" style={{ color: "rgba(255,255,255,0.3)" }} />
-                    Não é para
-                  </p>
                   <ul className="space-y-4">
                     {notFor.map((t, i) => (
                       <li key={i} className="flex items-start gap-3">
@@ -648,7 +624,7 @@ const VideoPageInner = () => {
               O que acontece durante a sessão
             </h2>
             <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
-              3 blocos práticos. Demos ao vivo. Resultados no dia seguinte.
+              3 blocos práticos. <em>Demos</em> ao vivo. Resultados no dia seguinte.
             </p>
           </ScrollReveal>
 
@@ -875,7 +851,7 @@ const VideoPageInner = () => {
             Garantir inscrição gratuita
           </h2>
           <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
-            Sem compromisso. Evento ao vivo em 3 de Março de 2026, às 10h.
+            Sem compromisso. Evento ao vivo, a 5 de março de 2026, às 10h.
           </p>
           <div className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
@@ -888,9 +864,6 @@ const VideoPageInner = () => {
               </button>
             </ElectricBorder>
           </div>
-          <p className="text-[13px] mt-4" style={{ color: "rgba(255,255,255,0.30)" }}>
-            Lugares limitados para o directo.
-          </p>
         </div>
       </section>
 
@@ -902,7 +875,7 @@ const VideoPageInner = () => {
 };
 
 const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Terça-feira, 3 de Março, 10h" webinar="video">
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Quarta-feira, 5 de Março, 10h" webinar="video">
     <VideoPageInner />
   </RegistrationModalProvider>
 );
