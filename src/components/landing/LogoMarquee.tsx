@@ -18,7 +18,7 @@ const logos = [
   { src: runcomfyLogo, alt: "RunComfy" },
 ];
 
-export const LogoMarquee = () => {
+export const LogoMarquee = ({ label = "Plataformas a considerar" }: { label?: string }) => {
   return (
     <section
       className="py-8"
@@ -28,7 +28,7 @@ export const LogoMarquee = () => {
       }}
     >
       <p className="text-center text-sm uppercase tracking-widest mb-6" style={{ color: "rgba(255,255,255,0.4)" }}>
-        Plataformas a considerar
+        {label}
       </p>
 
       <div
