@@ -106,40 +106,75 @@ export default function TabResumo({ inscrito, crossHistory, historyLoading, hasM
         )}
       </div>
 
-      {/* ROW 4 — Funnel with progress bar */}
-      <div>
-        <span className="text-[11px] font-bold uppercase tracking-[1.5px] block mb-2.5" style={{ color: "#888" }}>
-          Progresso no Funil
-        </span>
-        {/* Progress bar */}
-        <div className="flex gap-0.5 mb-2.5 rounded-full overflow-hidden h-[6px]" style={{ background: "#e2e8f0" }}>
-          {[1, 2, 3, 4, 5].map(s => (
-            <div key={s} className="flex-1" style={{ background: s <= step ? "#16a34a" : "transparent" }} />
-          ))}
+      {/* ROW 4 — Funnel card */}
+      <div className="rounded-xl p-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+        {/* Header com label + percentagem */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] font-bold uppercase tracking-[1.5px]" style={{ color: "#888" }}>
+            Progresso no Funil
+          </span>
+          <span className="text-[28px] font-bold leading-none" style={{
+            color: pct >= 80 ? "#16a34a" : pct >= 40 ? "#d97706" : "#94a3b8"
+          }}>
+            {pct}%
+          </span>
         </div>
-        {/* Step pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {[1, 2, 3, 4, 5].map((s) => {
+
+        {/* Progress bar */}
+        <div className="rounded-full overflow-hidden h-2 mb-4" style={{ background: "#e2e8f0" }}>
+          <div className="h-full rounded-full transition-all" style={{
+            width: `${pct}%`,
+            background: pct >= 80 ? "#16a34a" : pct >= 40 ? "#d97706" : "#94a3b8"
+          }} />
+        </div>
+
+        {/* Steps vertical list */}
+        <div className="space-y-0">
+          {[1, 2, 3, 4, 5].map(s => {
             const completed = s <= step;
+            const isCurrent = s === step && step < 5;
             const isExit = s === step && step < 5;
             return (
-              <div key={s} className="flex items-center gap-1">
-                <span
-                  className="text-[12px] font-medium px-2.5 py-1 rounded-full"
-                  style={{
-                    background: completed ? "rgba(22,163,74,0.1)" : "#f1f5f9",
-                    border: completed ? "1px solid rgba(22,163,74,0.25)" : "1px solid #e2e8f0",
-                    color: completed ? "#16a34a" : "#94a3b8",
-                  }}
-                >
-                  {completed ? <Check size={11} className="inline -mt-0.5 mr-0.5" /> : <Circle size={9} className="inline -mt-0.5 mr-0.5" />}
-                  {STEP_NAMES[s]}
-                </span>
-                {isExit && <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>SAIU</span>}
+              <div key={s}>
+                {/* Exit indicator BEFORE next incomplete step */}
+                {isExit && (
+                  <div className="flex items-center gap-2 py-1.5 my-0.5">
+                    <div className="flex-1 h-px" style={{ background: "#ef4444" }} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#ef4444" }}>Saiu aqui</span>
+                    <div className="flex-1 h-px" style={{ background: "#ef4444" }} />
+                  </div>
+                )}
+                <div className="flex items-center gap-3 py-1.5">
+                  {/* Icon */}
+                  {completed && !isCurrent ? (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(22,163,74,0.15)" }}>
+                      <Check size={12} style={{ color: "#16a34a" }} />
+                    </div>
+                  ) : isCurrent ? (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(239,68,68,0.12)" }}>
+                      <span className="text-[10px]" style={{ color: "#ef4444" }}>→</span>
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "#f1f5f9" }}>
+                      <Circle size={8} style={{ color: "#cbd5e1" }} />
+                    </div>
+                  )}
+                  {/* Step name */}
+                  <span className="text-[13px] font-medium flex-1" style={{
+                    color: completed ? "#333" : "#94a3b8"
+                  }}>
+                    {STEP_NAMES[s]}
+                  </span>
+                  {/* Status */}
+                  <span className="text-[11px] font-medium" style={{
+                    color: completed && !isCurrent ? "#16a34a" : isCurrent ? "#ef4444" : "#cbd5e1"
+                  }}>
+                    {completed && !isCurrent ? "Concluído" : isCurrent ? "Actual" : "—"}
+                  </span>
+                </div>
               </div>
             );
           })}
-          <span className="ml-auto text-[13px] font-bold" style={{ color: "#333" }}>{pct}%</span>
         </div>
       </div>
 

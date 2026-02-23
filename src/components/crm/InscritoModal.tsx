@@ -12,7 +12,7 @@ import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 
 import StatusBlock from "./modal/StatusBlock";
 import SidebarActions from "./modal/SidebarActions";
-import SidebarFunnel from "./modal/SidebarFunnel";
+
 import TabResumo from "./modal/TabResumo";
 import TabActividade from "./modal/TabActividade";
 import TabHistorico from "./modal/TabHistorico";
@@ -309,14 +309,6 @@ export default function InscritoModal({
                   regenerateLink={regenerateLink}
                 />
 
-                {/* Divider */}
-                <div className="my-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
-
-                {/* SidebarFunnel */}
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[1.5px] mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Funil</p>
-                  <SidebarFunnel stepReached={inscrito.step_reached || 1} />
-                </div>
               </>
             )}
           </div>
@@ -345,7 +337,7 @@ export default function InscritoModal({
               <div className="px-4 py-3 space-y-3" style={{ background: "#0F172A" }}>
                 <StatusBlock inscrito={inscrito} onResendLink={() => setResendModalOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} />
                 <SidebarActions inscrito={inscrito} onToggleFollowUp={onToggleFollowUp} onArchive={onArchive} onDelete={onDelete} onOpenResendModal={() => setResendModalOpen(true)} onOpenSendPayment={() => setSendPaymentOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} sendBacklogCheckin={sendBacklogCheckin} regenerateLink={regenerateLink} />
-                <SidebarFunnel stepReached={inscrito.step_reached || 1} />
+                
               </div>
             )}
 
