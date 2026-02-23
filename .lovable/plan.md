@@ -1,34 +1,49 @@
 
-# Corrigir datas na pagina /confirmacao e /upgrade-video
+# Substituir video de fundo do Hero na pagina /video
 
-## Problema
+## Resumo
 
-1. **`/confirmacao`**: A pagina importa `WEBINAR_CONFIG` (Imagens) e mostra "Cria Imagens Profissionais com IA" e "Quarta-feira, 18 de Fevereiro" no card de partilha social — independentemente do webinar. Precisa de ser context-aware.
+Substituir o ficheiro de video de fundo na seccao Hero ("O mercado exige Video.") pelo novo video enviado pelo utilizador. Cortar ligeiramente a parte inferior do video para esconder a marca "veo" no canto inferior direito.
 
-2. **`/upgrade-video`**: Quando o utilizador nao selecciona nada e clica "skip", redireciona para `/confirmacao` sem parametro `webinar=video`.
+---
 
 ## Alteracoes
 
-### 1. `src/components/landing/ConfirmacaoExtras.tsx`
+### 1. Copiar o novo video para o projecto
 
-- Aceitar prop opcional `webinar?: "imagens" | "video"`
-- Quando `webinar === "video"`, usar titulo e metaLine do `VIDEO_WEBINAR_CONFIG` em vez de `WEBINAR_CONFIG`
-- Actualizar o share text e o card de partilha social para reflectir o webinar correcto
+Copiar `user-uploads://Animar_em_loop_202602231226_6c6lv.mp4` para `public/videos/hero-vidro.mp4`, substituindo o ficheiro existente. Isto evita qualquer alteracao de codigo — o componente ja referencia este caminho.
 
-### 2. `src/pages/Confirmacao.tsx`
+### 2. Esconder a marca "veo" no canto inferior direito
 
-- Ler `searchParams.get("webinar")` para determinar o contexto
-- Passar `webinar` como prop a `ConfirmacaoExtras`
-- Actualizar o `usePageMeta` dinamicamente (titulo "Webinar Video com IA" quando aplicavel)
+Em `src/pages/Video.tsx` (linha 268), ajustar o estilo do elemento `<video>` para cortar ligeiramente a parte inferior:
 
-### 3. `src/pages/UpgradeVideo.tsx`
+- Remover `object-cover` e substituir por estilos inline que ampliam o video ~5% para esconder o rodape
+- Usar `object-fit: cover` com `object-position: center top` para empurrar o fundo (onde esta "veo") para fora da area visivel
+- Alternativa mais robusta: escalar o video com `transform: scale(1.08)` para que os ~4% inferiores fiquem fora do overflow hidden do container
 
-- Linha 316: alterar redirect de `/confirmacao` para `/confirmacao?webinar=video` para manter o contexto
+Implementacao concreta na tag video (linha 268):
 
-## Ficheiros a modificar
+```
+<video
+  autoPlay loop muted playsInline
+  className="absolute inset-0 w-full h-full"
+  style={{
+    zIndex: 0,
+    opacity: 0.35,
+    objectFit: "cover",
+    objectPosition: "center 40%",
+    transform: "scale(1.06)",
+  }}
+>
+```
+
+O `scale(1.06)` amplia ligeiramente o video e o `objectPosition: "center 40%"` desloca o ponto focal para cima, escondendo o rodape com "veo" fora do `overflow-hidden` do container pai.
+
+---
+
+## Ficheiros afectados
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/landing/ConfirmacaoExtras.tsx` | Prop `webinar`, logica condicional para titulo/metaLine |
-| `src/pages/Confirmacao.tsx` | Ler param `webinar`, passar a ConfirmacaoExtras, meta dinamico |
-| `src/pages/UpgradeVideo.tsx` | Corrigir redirect para incluir `?webinar=video` |
+| `public/videos/hero-vidro.mp4` | Substituido pelo novo video |
+| `src/pages/Video.tsx` | Ajuste de estilo no elemento video (linha 268) para cortar rodape |
