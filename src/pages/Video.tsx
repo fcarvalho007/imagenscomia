@@ -265,7 +265,7 @@ const VideoPageInner = () => {
       {/* ═══ HERO (slate-950) ═══ */}
       <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: DARK_950, paddingTop: 80, paddingBottom: 80 }}>
         {/* Background video */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.35, objectFit: "cover", objectPosition: "center 40%", transform: "scale(1.06)" }}>
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.35, objectFit: "cover" }}>
           <source src="/videos/hero-vidro.mp4" type="video/mp4" />
         </video>
         {/* Animated orbs background */}
@@ -412,7 +412,7 @@ const VideoPageInner = () => {
       {/* ═══ SECTION 1 — "Vídeo é o formato que o mercado exige" ═══ */}
       <section className="relative overflow-hidden py-24 md:py-32" style={{ background: "#0a0a0f" }}>
         {/* Background video — rosa */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 0, opacity: 0.7 }}>
+        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.7, objectFit: "cover", objectPosition: "center 40%", transform: "scale(1.06)" }}>
           <source src="/videos/rosa-video.mp4" type="video/mp4" />
         </video>
         {/* Radial overlay — transparent centre so the pink ball shows */}
