@@ -99,7 +99,7 @@ serve(async (req) => {
         const digits = phone ? phone.replace(/\D/g, "") : "";
         const localDigits = digits.startsWith("351") ? digits.slice(3) : digits;
         const cellphone = localDigits.length >= 9
-          ? `+351${localDigits}`
+          ? `351-${localDigits}`
           : undefined;
 
         const payload: Record<string, unknown> = {
