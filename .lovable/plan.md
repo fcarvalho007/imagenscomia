@@ -1,70 +1,34 @@
 
-# Datas evidentes e countdowns na pagina /live-video
+# Corrigir datas na pagina /confirmacao e /upgrade-video
 
-## Resumo
+## Problema
 
-Tornar as datas dos eventos muito claras na sidebar "Upgrade ao conhecimento", adicionando uma caixa dedicada de data com destaque visual em cada OfferCard, e acrescentando um countdown suave ao Premium Pass (para a data do Q&A).
+1. **`/confirmacao`**: A pagina importa `WEBINAR_CONFIG` (Imagens) e mostra "Cria Imagens Profissionais com IA" e "Quarta-feira, 18 de Fevereiro" no card de partilha social — independentemente do webinar. Precisa de ser context-aware.
 
----
+2. **`/upgrade-video`**: Quando o utilizador nao selecciona nada e clica "skip", redireciona para `/confirmacao` sem parametro `webinar=video`.
 
 ## Alteracoes
 
-### `src/components/webinar/VideoWebinarSidebar.tsx`
+### 1. `src/components/landing/ConfirmacaoExtras.tsx`
 
-**1. Caixa de data destacada no OfferCard**
+- Aceitar prop opcional `webinar?: "imagens" | "video"`
+- Quando `webinar === "video"`, usar titulo e metaLine do `VIDEO_WEBINAR_CONFIG` em vez de `WEBINAR_CONFIG`
+- Actualizar o share text e o card de partilha social para reflectir o webinar correcto
 
-Modificar o componente `OfferCard` para aceitar uma nova prop `dateBox` (ReactNode) que renderiza uma caixa propria com fundo suave, antes dos benefits:
+### 2. `src/pages/Confirmacao.tsx`
 
-```
-// Nova caixa de data — fundo azul claro, rounded, padding, icone calendario
-<div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 mb-4">
-  <p className="text-[14px] font-semibold text-ink-900 flex items-center gap-2">
-    <CalendarDays /> Terca-feira, 10 de Marco
-  </p>
-  <p className="text-[13px] text-ink-500">14:30h — 15:00h (Portugal)</p>
-  {/* countdown inline aqui */}
-</div>
-```
+- Ler `searchParams.get("webinar")` para determinar o contexto
+- Passar `webinar` como prop a `ConfirmacaoExtras`
+- Actualizar o `usePageMeta` dinamicamente (titulo "Webinar Video com IA" quando aplicavel)
 
-**2. Premium Pass — caixa de data + countdown**
+### 3. `src/pages/UpgradeVideo.tsx`
 
-Adicionar `dateBox` ao Premium Pass com:
-- Titulo: "Sessao Q&A em grupo"
-- Data: "Terca-feira, 10 de Marco · 14:30h"
-- Countdown suave abaixo: "Faltam Xd XXh XXm" em texto azul (mesmo estilo do MasterclassCountdown existente)
-
-**3. Masterclass — caixa de data + countdown**
-
-Mover a `dateLine` actual ("12 de Marco (quinta-feira) . 10h-13h . Online") para dentro de uma caixa de data propria com o mesmo estilo:
-- Titulo: "Masterclass ao vivo"
-- Data: "Quinta-feira, 12 de Marco · 10h-13h"
-- Countdown suave: reutilizar o `MasterclassCountdown` existente, posicionado dentro da caixa
-
-**4. Criar componente PremiumCountdown**
-
-Novo countdown para a data do Q&A (10 Mar 14:30h), com o mesmo estilo suave do `MasterclassCountdown`:
-```
-const PremiumCountdown = () => {
-  const countdown = useCountdown(new Date("2026-03-10T14:30:00Z"));
-  // mesmo render que MasterclassCountdown
-};
-```
-
----
-
-## Resultado visual esperado
-
-Cada card tera:
-1. Titulo + preco (topo, como esta)
-2. **Caixa de data destacada** — fundo azul claro com data grande e countdown suave
-3. Lista de beneficios
-4. Botao CTA
-5. Nota de preco
-
----
+- Linha 316: alterar redirect de `/confirmacao` para `/confirmacao?webinar=video` para manter o contexto
 
 ## Ficheiros a modificar
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `src/components/webinar/VideoWebinarSidebar.tsx` | Nova prop `dateBox` no OfferCard, caixas de data para Premium e Masterclass, componente PremiumCountdown |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Prop `webinar`, logica condicional para titulo/metaLine |
+| `src/pages/Confirmacao.tsx` | Ler param `webinar`, passar a ConfirmacaoExtras, meta dinamico |
+| `src/pages/UpgradeVideo.tsx` | Corrigir redirect para incluir `?webinar=video` |
