@@ -96,8 +96,10 @@ serve(async (req) => {
 
       if (!contactId) {
         // Create contact
-        const cellphone = phone && phone.replace(/\D/g, "").length > 0
-          ? `+351${phone.replace(/\D/g, "")}`
+        const digits = phone ? phone.replace(/\D/g, "") : "";
+        const localDigits = digits.startsWith("351") ? digits.slice(3) : digits;
+        const cellphone = localDigits.length >= 9
+          ? `+351${localDigits}`
           : undefined;
 
         const payload: Record<string, unknown> = {
