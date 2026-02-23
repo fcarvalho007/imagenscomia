@@ -35,6 +35,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_logs: {
+        Row: {
+          email_key: string
+          error_message: string | null
+          fname: string | null
+          id: string
+          recipient_email: string
+          resend_id: string | null
+          sent_at: string | null
+          status: string
+          webinar: string
+        }
+        Insert: {
+          email_key: string
+          error_message?: string | null
+          fname?: string | null
+          id?: string
+          recipient_email: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status: string
+          webinar: string
+        }
+        Update: {
+          email_key?: string
+          error_message?: string | null
+          fname?: string | null
+          id?: string
+          recipient_email?: string
+          resend_id?: string | null
+          sent_at?: string | null
+          status?: string
+          webinar?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           channel: string

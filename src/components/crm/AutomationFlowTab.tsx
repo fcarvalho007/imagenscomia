@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Users, Mail, CheckCircle2, Send } from "lucide-react";
+import { Users, Mail, CheckCircle2, Send, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, VIDEO_WEBINAR_DATE, type WebinarKey } from "@/config/webinarConfig";
 import type { Inscrito } from "@/pages/crm/mockData";
+import type { EmailStats } from "./FollowUpView";
 
 interface MessageLog {
   id: string;
@@ -22,6 +23,8 @@ interface Props {
   logs: MessageLog[];
   logsLoading: boolean;
   onOpenEditor?: (templateKey: string) => void;
+  emailStats?: EmailStats;
+  emailStatsLoading?: boolean;
 }
 
 type TagType = "IMEDIATO" | "AGENDADO" | "ENVIADO" | "MANUAL" | "ERRO";
@@ -127,9 +130,26 @@ function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webin
 }
 
 /* ─── Status Bar ─── */
-function StatusBar({ logs, webinar }: { logs: MessageLog[]; webinar?: WebinarKey }) {
-  const totalSent = logs.filter((l) => l.provider === "resend" && l.status === "sent").length;
-  const totalFailed = logs.filter((l) => l.status === "failed").length;
+function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?: WebinarKey; emailStats?: EmailStats }) {
+  // Prefer emailStats (from email_send_logs) if available, fallback to message_logs
+  const hasStats = emailStats && Object.keys(emailStats).length > 0;
+
+  let totalSent = 0;
+  let totalFailed = 0;
+
+  if (hasStats) {
+    for (const [key, val] of Object.entries(emailStats)) {
+      if (webinar && !key.startsWith(webinar)) continue;
+      totalSent += val.sent;
+      totalFailed += val.failed;
+    }
+  } else {
+    totalSent = logs.filter((l) => l.provider === "resend" && l.status === "sent").length;
+    totalFailed = logs.filter((l) => l.status === "failed").length;
+  }
+
+  const total = totalSent + totalFailed;
+  const failRate = total > 0 ? totalFailed / total : 0;
 
   const isImagensPast = WEBINAR_CONFIG.imagens.startDate.getTime() < Date.now();
 
@@ -146,22 +166,33 @@ function StatusBar({ logs, webinar }: { logs: MessageLog[]; webinar?: WebinarKey
       : "⏰ Próximo envio: Lembrete 48h · 3 Mar às 10h00";
   }
 
+  // Badge color based on fail rate
+  let badgeColor = "#16a34a"; // green
+  let badgeLabel = "🟢 Sistema operacional";
+  if (failRate > 0.15) {
+    badgeColor = "#ef4444";
+    badgeLabel = "🔴 Sistema com falhas";
+  } else if (failRate > 0.05) {
+    badgeColor = "#f59e0b";
+    badgeLabel = "🟠 Atenção requerida";
+  }
+
   return (
     <div
       className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-6"
       style={{
-        background: "rgba(22,163,74,0.04)",
-        border: "1px solid rgba(22,163,74,0.15)",
+        background: `${badgeColor}08`,
+        border: `1px solid ${badgeColor}26`,
         borderRadius: 8,
         padding: "10px 16px",
         fontSize: 12,
       }}
     >
-      <span style={{ color: "#16a34a" }}>🟢 Sistema operacional</span>
+      <span style={{ color: badgeColor }}>{badgeLabel}</span>
       <span style={{ color: "#94A3B8" }}>·</span>
       <span>📧 {totalSent} emails enviados</span>
       <span style={{ color: "#94A3B8" }}>·</span>
-      <span>❌ {totalFailed} falhas</span>
+      <span style={{ color: totalFailed > 0 ? "#ef4444" : undefined }}>❌ {totalFailed} falhas</span>
       <span style={{ color: "#94A3B8" }}>·</span>
       <span>{statusText}</span>
     </div>
@@ -195,11 +226,15 @@ function Timeline({
   inscritos,
   logs,
   onOpenEditor,
+  emailStats,
+  emailStatsLoading,
 }: {
   webinar: WebinarKey;
   inscritos: Inscrito[];
   logs: MessageLog[];
   onOpenEditor?: (templateKey: string) => void;
+  emailStats?: EmailStats;
+  emailStatsLoading?: boolean;
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
@@ -212,24 +247,33 @@ function Timeline({
     return !i.webinar || i.webinar === "imagens";
   }).length;
 
-  // Count sent/failed per node
+  // Count sent/failed per node — prefer emailStats from email_send_logs
   const nodeCounts = useMemo(() => {
     const result: Record<number, { sent: number; failed: number }> = {};
     for (let idx = 0; idx < nodes.length; idx++) {
       const n = nodes[idx];
       if (n.type !== "email") continue;
-      let sent = 0,
-        failed = 0;
-      for (const l of logs) {
-        if (matchTemplate(l.template_key, n.templateKeyMatch)) {
-          if (l.status === "sent") sent++;
-          if (l.status === "failed") failed++;
+
+      // Derive email_key from templateKeyMatch
+      const rawKey = n.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
+      const statsKey = `${webinar}_${rawKey}`;
+
+      if (emailStats && emailStats[statsKey]) {
+        result[idx] = emailStats[statsKey];
+      } else {
+        // Fallback to message_logs
+        let sent = 0, failed = 0;
+        for (const l of logs) {
+          if (matchTemplate(l.template_key, n.templateKeyMatch)) {
+            if (l.status === "sent") sent++;
+            if (l.status === "failed") failed++;
+          }
         }
+        result[idx] = { sent, failed };
       }
-      result[idx] = { sent, failed };
     }
     return result;
-  }, [nodes, logs]);
+  }, [nodes, logs, emailStats, webinar]);
 
   const handleSendPostWebinar = async () => {
     if (!confirm("Confirmar envio do email pós-webinar a todos os inscritos?")) return;
@@ -251,17 +295,19 @@ function Timeline({
     <div className="relative max-w-[800px] mx-auto">
       {nodes.map((node, idx) => {
         const isLast = idx === nodes.length - 1;
-        const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
-        const counts = nodeCounts[idx];
-        const borderColor =
-          node.type === "trigger"
-            ? "#7c3aed"
-            : node.type === "end"
-            ? "#94A3B8"
-            : tag
-            ? TAG_BORDER[tag]
-            : "#e2e8f0";
-
+         const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
+         const counts = nodeCounts[idx];
+         const hasFailed = (counts?.failed ?? 0) > 0;
+         const borderColor =
+           node.type === "trigger"
+             ? "#7c3aed"
+             : node.type === "end"
+             ? "#94A3B8"
+             : hasFailed
+             ? "#ef4444"
+             : tag
+             ? TAG_BORDER[tag]
+             : "#e2e8f0";
         return (
           <div key={idx}>
             {/* Condition label */}
@@ -335,12 +381,25 @@ function Timeline({
                 {node.type === "trigger" && (
                   <span style={{ fontSize: 12, color: "#888" }}>{inscritosCount} inscrições</span>
                 )}
-                {node.type === "email" && counts && (
-                  <span style={{ fontSize: 12, color: "#888" }}>
-                    {counts.sent > 0 || counts.failed > 0
-                      ? `${counts.sent} enviados · ${counts.failed} falhas`
-                      : "—"}
+                {node.type === "email" && emailStatsLoading && (
+                  <span style={{ fontSize: 12, color: "#94A3B8" }}>
+                    <span className="inline-flex gap-0.5">
+                      <span className="animate-pulse">·</span>
+                      <span className="animate-pulse" style={{ animationDelay: "150ms" }}>·</span>
+                      <span className="animate-pulse" style={{ animationDelay: "300ms" }}>·</span>
+                    </span>
                   </span>
+                )}
+                {node.type === "email" && !emailStatsLoading && counts && (
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span style={{ fontSize: 12, color: counts.sent > 0 ? "#16a34a" : "#999" }}>
+                      {counts.sent} enviados
+                    </span>
+                    <span className="flex items-center gap-1" style={{ fontSize: 12, color: counts.failed > 0 ? "#ef4444" : "#999" }}>
+                      {counts.failed > 0 && <AlertTriangle size={11} />}
+                      {counts.failed} falhas
+                    </span>
+                  </div>
                 )}
                 {node.type === "email" && !node.isPostWebinar && (
                   <button
@@ -394,7 +453,7 @@ function Timeline({
 }
 
 /* ─── Main Component ─── */
-export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpenEditor }: Props) {
+export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpenEditor, emailStats, emailStatsLoading }: Props) {
   const { webinarContext } = useWebinarContext();
 
   if (logsLoading) {
@@ -408,19 +467,19 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   if (webinarContext === "consolidado") {
     return (
       <div>
-        <StatusBar logs={logs} />
+        <StatusBar logs={logs} emailStats={emailStats} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               📷 Imagens IA · 18 Fev 2026
             </h3>
-             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
+             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
           </div>
           <div>
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               🎬 Vídeo IA · 2 Mar 2026
             </h3>
-            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
+            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
           </div>
         </div>
       </div>
@@ -431,8 +490,8 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
 
   return (
     <div>
-      <StatusBar logs={logs} webinar={webinar} />
-      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
+      <StatusBar logs={logs} webinar={webinar} emailStats={emailStats} />
+      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
     </div>
   );
 }

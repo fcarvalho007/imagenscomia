@@ -152,6 +152,17 @@ serve(async (req) => {
           error: resendRes.ok ? null : JSON.stringify(resendData),
         });
 
+        // Log to email_send_logs
+        await supabase.from("email_send_logs").insert({
+          webinar: "video",
+          email_key: "reminder_48h",
+          recipient_email: reg.email,
+          fname: reg.first_name || "",
+          status: resendRes.ok ? "sent" : "failed",
+          resend_id: resendData.id || null,
+          error_message: resendRes.ok ? null : JSON.stringify(resendData),
+        });
+
         if (resendRes.ok) sent++;
         else errors++;
       } catch (err) {

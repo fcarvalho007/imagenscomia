@@ -11,6 +11,8 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { CalendarDays } from "lucide-react";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
+export type EmailStats = Record<string, { sent: number; failed: number }>;
+
 export interface AuditFilter {
   timeRange?: "24h" | "7d" | "all";
   provider?: "resend" | "internal" | "all";
@@ -65,6 +67,8 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   // Email templates state
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
+  const [emailStats, setEmailStats] = useState<EmailStats>({});
+  const [emailStatsLoading, setEmailStatsLoading] = useState(true);
 
   const fetchLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -87,6 +91,27 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
       .in("template_key", TEMPLATE_KEYS)
       .then(({ data }) => {
         if (data) setEmailTemplates(data as EmailTemplate[]);
+      });
+  }, []);
+
+  // Fetch email send logs stats
+  useEffect(() => {
+    setEmailStatsLoading(true);
+    supabase
+      .from("email_send_logs")
+      .select("email_key, status, webinar")
+      .then(({ data }) => {
+        if (data) {
+          const stats: EmailStats = {};
+          for (const row of data) {
+            const key = `${row.webinar}_${row.email_key}`;
+            if (!stats[key]) stats[key] = { sent: 0, failed: 0 };
+            if (row.status === "sent") stats[key].sent++;
+            else if (row.status === "failed") stats[key].failed++;
+          }
+          setEmailStats(stats);
+        }
+        setEmailStatsLoading(false);
       });
   }, []);
 
@@ -172,6 +197,8 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           logs={logs}
           logsLoading={logsLoading}
           onOpenEditor={handleOpenEditor}
+          emailStats={emailStats}
+          emailStatsLoading={emailStatsLoading}
         />
       )}
 

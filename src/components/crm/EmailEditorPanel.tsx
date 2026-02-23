@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Eye, Pencil, Loader2 } from "lucide-react";
+import { X, Eye, Pencil, Loader2, Copy, Check, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -10,6 +10,18 @@ export interface EmailTemplate {
   html_body: string | null;
   updated_at: string;
   updated_by: string | null;
+}
+
+interface SendLog {
+  id: string;
+  webinar: string;
+  email_key: string;
+  recipient_email: string;
+  fname: string | null;
+  status: string;
+  resend_id: string | null;
+  error_message: string | null;
+  sent_at: string;
 }
 
 const EMAIL_KEY_LABELS: Record<string, string> = {
@@ -46,23 +58,165 @@ function formatDate(iso: string): string {
   }
 }
 
+function parseTemplateKey(templateKey: string): { webinar: string; emailKey: string } {
+  const parts = templateKey.split("_");
+  const webinar = parts[0]; // "video" or "imagens"
+  const emailKey = parts.slice(1).join("_"); // "confirmation", "reminder_48h", etc.
+  return { webinar, emailKey };
+}
+
+type ViewMode = "edit" | "preview" | "history";
+
 interface Props {
   template: EmailTemplate | null;
   onClose: () => void;
   onSaved: (updated: EmailTemplate) => void;
 }
 
+/* ─── History Tab ─── */
+function HistoryTab({ templateKey }: { templateKey: string }) {
+  const [logs, setLogs] = useState<SendLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { webinar, emailKey } = parseTemplateKey(templateKey);
+
+  useEffect(() => {
+    setLoading(true);
+    supabase
+      .from("email_send_logs")
+      .select("*")
+      .eq("webinar", webinar)
+      .eq("email_key", emailKey)
+      .order("sent_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        setLogs((data as SendLog[]) || []);
+        setLoading(false);
+      });
+  }, [webinar, emailKey]);
+
+  const handleCopy = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const sentCount = logs.filter((l) => l.status === "sent").length;
+  const failedCount = logs.filter((l) => l.status === "failed").length;
+  const total = sentCount + failedCount;
+  const successRate = total > 0 ? Math.round((sentCount / total) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 size={20} className="animate-spin" style={{ color: "#94A3B8" }} />
+      </div>
+    );
+  }
+
+  if (logs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p style={{ fontSize: 14, color: "#64748B" }}>Nenhum envio registado ainda para este email</p>
+        <p style={{ fontSize: 11, color: "#aaa", marginTop: 12 }}>
+          Nota: logs disponíveis apenas a partir de 23 Fev 2026. Envios anteriores não foram registados.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Summary bar */}
+      <div
+        className="flex flex-wrap gap-x-3 gap-y-1 mb-4"
+        style={{
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: 8,
+          padding: "10px 14px",
+          fontSize: 12,
+        }}
+      >
+        <span>Total: <strong>{sentCount}</strong> enviados</span>
+        <span style={{ color: "#94A3B8" }}>·</span>
+        <span style={{ color: failedCount > 0 ? "#ef4444" : undefined }}><strong>{failedCount}</strong> falharam</span>
+        <span style={{ color: "#94A3B8" }}>·</span>
+        <span>Taxa de sucesso: <strong>{successRate}%</strong></span>
+      </div>
+
+      {/* Table */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Data/Hora</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Email</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Nome</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Estado</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>ID Resend</th>
+            </tr>
+          </thead>
+          <tbody>
+            {logs.map((log) => (
+              <tr key={log.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                <td style={{ padding: "8px 6px", whiteSpace: "nowrap", color: "#333" }}>{formatDate(log.sent_at)}</td>
+                <td style={{ padding: "8px 6px", color: "#333", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {log.recipient_email.length > 32 ? log.recipient_email.slice(0, 32) + "…" : log.recipient_email}
+                </td>
+                <td style={{ padding: "8px 6px", color: "#666" }}>{log.fname || "—"}</td>
+                <td style={{ padding: "8px 6px" }}>
+                  {log.status === "sent" ? (
+                    <span style={{ background: "#dcfce7", color: "#16a34a", fontSize: 10, padding: "2px 8px", borderRadius: 12, fontWeight: 600 }}>Enviado</span>
+                  ) : (
+                    <span
+                      title={log.error_message || "Erro desconhecido"}
+                      style={{ background: "#fee2e2", color: "#dc2626", fontSize: 10, padding: "2px 8px", borderRadius: 12, fontWeight: 600, cursor: "help" }}
+                    >
+                      Falhou
+                    </span>
+                  )}
+                </td>
+                <td style={{ padding: "8px 6px" }}>
+                  {log.resend_id ? (
+                    <button
+                      onClick={() => handleCopy(log.resend_id!)}
+                      className="flex items-center gap-1 hover:underline"
+                      style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#64748B" }}
+                    >
+                      {log.resend_id.length > 12 ? log.resend_id.slice(0, 12) + "…" : log.resend_id}
+                      {copiedId === log.resend_id ? <Check size={10} style={{ color: "#16a34a" }} /> : <Copy size={10} />}
+                    </button>
+                  ) : (
+                    <span style={{ color: "#ccc" }}>—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p style={{ fontSize: 11, color: "#aaa", marginTop: 16 }}>
+        Nota: logs disponíveis apenas a partir de 23 Fev 2026. Envios anteriores não foram registados.
+      </p>
+    </div>
+  );
+}
+
+/* ─── Main Panel ─── */
 export default function EmailEditorPanel({ template, onClose, onSaved }: Props) {
   const [localSubject, setLocalSubject] = useState("");
   const [localBody, setLocalBody] = useState("");
   const [saving, setSaving] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("edit");
 
   useEffect(() => {
     if (template) {
       setLocalSubject(template.subject);
       setLocalBody(template.html_body || "");
-      setPreviewing(false);
+      setViewMode("edit");
     }
   }, [template]);
 
@@ -153,33 +307,92 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
           </button>
         </div>
 
-        {/* Subject */}
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
-          <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const, display: "block", marginBottom: 6 }}>
-            Assunto
-          </label>
-          <input
-            type="text"
-            value={localSubject}
-            onChange={(e) => setLocalSubject(e.target.value)}
-            className="w-full"
+        {/* Subject (only in edit/preview modes) */}
+        {viewMode !== "history" && (
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #f3f4f6" }}>
+            <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const, display: "block", marginBottom: 6 }}>
+              Assunto
+            </label>
+            <input
+              type="text"
+              value={localSubject}
+              onChange={(e) => setLocalSubject(e.target.value)}
+              className="w-full"
+              style={{
+                border: "1px solid #e5e7eb",
+                borderRadius: 6,
+                padding: "8px 12px",
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
+          </div>
+        )}
+
+        {/* Mode toggle tabs */}
+        <div className="flex gap-1" style={{ padding: "8px 20px", borderBottom: "1px solid #f3f4f6" }}>
+          <button
+            onClick={() => setViewMode("edit")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
             style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 6,
-              padding: "8px 12px",
-              fontSize: 14,
-              outline: "none",
+              background: viewMode === "edit" ? "#2563EB" : "transparent",
+              color: viewMode === "edit" ? "#fff" : "#64748B",
             }}
-          />
+          >
+            <Pencil size={12} /> Editar
+          </button>
+          <button
+            onClick={() => setViewMode("preview")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+            style={{
+              background: viewMode === "preview" ? "#2563EB" : "transparent",
+              color: viewMode === "preview" ? "#fff" : "#64748B",
+            }}
+          >
+            <Eye size={12} /> Pré-visualizar
+          </button>
+          <button
+            onClick={() => setViewMode("history")}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+            style={{
+              background: viewMode === "history" ? "#2563EB" : "transparent",
+              color: viewMode === "history" ? "#fff" : "#64748B",
+            }}
+          >
+            <BarChart3 size={12} /> Histórico de envios
+          </button>
         </div>
 
-        {/* Body */}
+        {/* Body / Preview / History */}
         <div className="flex-1 overflow-y-auto" style={{ padding: "16px 20px" }}>
-          <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const, display: "block", marginBottom: 6 }}>
-            Corpo do email (HTML)
-          </label>
+          {viewMode === "edit" && (
+            <>
+              <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const, display: "block", marginBottom: 6 }}>
+                Corpo do email (HTML)
+              </label>
+              <textarea
+                value={localBody}
+                onChange={(e) => setLocalBody(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: 360,
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: 12,
+                  lineHeight: 1.6,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 6,
+                  padding: 12,
+                  resize: "vertical",
+                  outline: "none",
+                }}
+              />
+              <p style={{ fontSize: 11, color: "#aaa", marginTop: 8 }}>
+                💡 Variáveis disponíveis: {"{{fname}}"}, {"{{email}}"}
+              </p>
+            </>
+          )}
 
-          {previewing ? (
+          {viewMode === "preview" && (
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 6, maxHeight: 400, overflow: "auto" }}>
               <iframe
                 srcDoc={localBody.replace(/\{\{fname\}\}/g, "João").replace(/\{\{email\}\}/g, "joao@exemplo.com")}
@@ -188,39 +401,11 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
                 sandbox=""
               />
             </div>
-          ) : (
-            <textarea
-              value={localBody}
-              onChange={(e) => setLocalBody(e.target.value)}
-              style={{
-                width: "100%",
-                minHeight: 360,
-                fontFamily: "'Courier New', monospace",
-                fontSize: 12,
-                lineHeight: 1.6,
-                border: "1px solid #e5e7eb",
-                borderRadius: 6,
-                padding: 12,
-                resize: "vertical",
-                outline: "none",
-              }}
-            />
           )}
 
-          <p style={{ fontSize: 11, color: "#aaa", marginTop: 8 }}>
-            💡 Variáveis disponíveis: {"{{fname}}"}, {"{{email}}"}
-          </p>
-        </div>
-
-        {/* Preview toggle */}
-        <div style={{ padding: "8px 20px" }}>
-          <button
-            onClick={() => setPreviewing(!previewing)}
-            className="flex items-center gap-1.5 text-[13px] font-medium hover:underline"
-            style={{ color: "#3b82f6" }}
-          >
-            {previewing ? <><Pencil size={14} /> Editar HTML</> : <><Eye size={14} /> Pré-visualizar email</>}
-          </button>
+          {viewMode === "history" && (
+            <HistoryTab templateKey={template.template_key} />
+          )}
         </div>
 
         {/* Footer */}
