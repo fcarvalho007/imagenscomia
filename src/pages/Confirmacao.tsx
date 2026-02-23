@@ -22,6 +22,7 @@ const fadeUp = (delay: number) => ({
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
   const userName = searchParams.get("name") || "";
+  const firstName = userName.split(" ")[0];
   const plan = searchParams.get("plan") || "";
   const email = searchParams.get("email") || "";
   const webinar = searchParams.get("webinar") === "video" ? "video" : "imagens";
@@ -91,16 +92,12 @@ const Confirmacao = () => {
                 className="font-heading font-extrabold text-2xl md:text-3xl text-ink-900 mb-2"
               >
                 {isFree
-                  ? (userName ? `O seu lugar está reservado, ${userName}!` : "O seu lugar está reservado!")
-                  : (userName ? `Upgrade Realizado, ${userName}!` : "Upgrade Realizado!")}
+                  ? (firstName ? `${firstName}, o teu lugar está reservado!` : "O teu lugar está reservado!")
+                  : (firstName ? `Upgrade Realizado, ${firstName}!` : "Upgrade Realizado!")}
               </motion.h1>
 
-              <motion.p {...fadeUp(0.2)} className="text-[15px] text-ink-500 mb-1">
-                {isFree ? "A sua inscrição foi confirmada." : "Obrigado pela confiança."}
-              </motion.p>
-
-              <motion.p {...fadeUp(0.25)} className="text-[14px] text-ink-400 mb-8">
-                {isFree ? "Adicione ao calendário para não se esquecer." : "Vamos aguardar a confirmação do seu pagamento."}
+              <motion.p {...fadeUp(0.2)} className="text-[14px] text-ink-400 mb-8">
+                {isFree ? "Adiciona ao calendário para não te esqueceres." : "Vamos aguardar a confirmação do teu pagamento."}
               </motion.p>
             </>
           );
