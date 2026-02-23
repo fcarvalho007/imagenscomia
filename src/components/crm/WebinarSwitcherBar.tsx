@@ -11,15 +11,15 @@ export default function WebinarSwitcherBar() {
   const { webinarContext, setWebinarContext } = useWebinarContext();
 
   return (
-    <div className="flex bg-white border border-border rounded-lg overflow-hidden text-[13px]">
+    <div className="flex gap-1 p-1 rounded-lg border border-[#e5e7eb]" style={{ background: "rgba(0,0,0,0.04)" }}>
       {ITEMS.map((it) => {
         const active = webinarContext === it.key;
         return (
           <button
             key={it.key}
             onClick={() => setWebinarContext(it.key)}
-            className={`flex items-center gap-1 px-3 py-2 font-medium transition-colors ${
-              active ? "text-white" : "text-ink-600 hover:bg-off-white"
+            className={`flex items-center gap-1 rounded-[6px] px-3 py-[5px] text-xs font-semibold transition-colors ${
+              active ? "text-white" : "text-[#888] hover:text-[#333]"
             }`}
             style={active ? { background: it.activeColor } : undefined}
           >
