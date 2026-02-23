@@ -1,203 +1,167 @@
 
 
-# Cross-Webinar History no Modal de Inscrito
+# Personalização de emails por histórico de inscrito
 
 ## Resumo
 
-Adicionar historico cross-webinar ao modal de inscrito: seccao colapsavel com registos anteriores, badge de relacao no sidebar esquerdo, e alerta inteligente para compradores de Masterclass.
+Adicionar lógica de verificação de histórico cross-webinar nas edge functions `send-video-confirmation` e `send-video-postwebinar`, personalizando o conteúdo do email com base no que o inscrito comprou no webinar Imagens. Registar a variante usada numa nova coluna `metadata` na tabela `email_send_logs` e mostrar essa informação no CRM.
 
 ---
 
-## 1. Fetch de historico cross-webinar
+## 1. Migração SQL — nova coluna `metadata`
 
-**Ficheiro:** `src/components/crm/InscritoModal.tsx`
+Adicionar coluna `metadata jsonb` à tabela `email_send_logs`:
 
-Adicionar novo state e fetch on mount (junto dos outros useEffect existentes, ~linha 94):
+```sql
+ALTER TABLE email_send_logs ADD COLUMN IF NOT EXISTS metadata jsonb;
+```
+
+---
+
+## 2. send-video-confirmation — personalização por variante
+
+**Ficheiro:** `supabase/functions/send-video-confirmation/index.ts`
+
+Adicionar função helper `getSubscriberHistory` que consulta a tabela `registrations` para encontrar o registo do inscrito no webinar `imagens`:
 
 ```ts
-const [crossHistory, setCrossHistory] = useState<any[]>([]);
-const [historyLoading, setHistoryLoading] = useState(true);
-
-useEffect(() => {
-  setHistoryLoading(true);
-  supabase
-    .from("registrations")
-    .select("id, webinar, plan_selected, step_reached, created_at, paid_at")
-    .eq("email", inscrito.email)
-    .neq("id", inscrito.id)
-    .order("created_at", { ascending: false })
-    .then(({ data }) => {
-      setCrossHistory(data || []);
-    })
-    .catch(() => setCrossHistory([]))
-    .finally(() => setHistoryLoading(false));
-}, [inscrito.id, inscrito.email]);
+async function getSubscriberHistory(email: string, sb: any) {
+  try {
+    const { data } = await sb
+      .from("registrations")
+      .select("plan_selected, paid_at")
+      .eq("email", email.toLowerCase().trim())
+      .eq("webinar", "imagens")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return data?.[0] || null;
+  } catch { return null; }
+}
 ```
 
-Derivar badges a partir do historico:
+Após construir o HTML base (linha ~99), verificar o histórico e determinar a variante:
 
-```ts
-const hasPaidBefore = crossHistory.some(h => !!h.paid_at);
-const hasAttendedBefore = !hasPaidBefore && crossHistory.some(
-  h => h.step_reached >= 3
-);
-const hasMasterclassImagens = crossHistory.some(
-  h => h.webinar === "imagens" && h.plan_selected === "masterclass" && h.paid_at
-);
-```
-
----
-
-## 2. Badge de relacao no sidebar esquerdo
-
-**Ficheiro:** `src/components/crm/InscritoModal.tsx`
-
-No painel esquerdo (desktop), logo abaixo da data de inscricao (~linha 354, apos o `<p>Inscrito em...</p>`), adicionar:
-
-```tsx
-{hasPaidBefore && (
-  <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
-    style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: "#d97706" }}>
-    ⭐ Cliente anterior
-  </div>
-)}
-{hasAttendedBefore && (
-  <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
-    style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "#3b82f6" }}>
-    🔄 Inscrito anterior
-  </div>
-)}
-```
-
-No mobile (~linha 266, apos o email): mesma logica mas numa linha compacta.
-
-So mostra um dos dois badges (hasPaidBefore tem prioridade). Novos inscritos nao mostram nada.
-
----
-
-## 3. Alerta inteligente (Masterclass cross-sell)
-
-**Ficheiro:** `src/components/crm/InscritoModal.tsx`
-
-No painel direito, logo ACIMA do `<ClientHeader>` (~linha 528), adicionar:
-
-```tsx
-{hasMasterclassImagens && inscrito.webinar === "video" && (
-  <div className="mb-4 rounded-lg p-3.5 flex items-start gap-2.5"
-    style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}>
-    <span className="text-[16px] mt-0.5">⚠️</span>
-    <div>
-      <p className="text-[13px] font-semibold" style={{ color: "#d97706" }}>
-        Este inscrito ja comprou a Masterclass no Webinar Imagens IA
-        ({crossHistory.find(h => h.webinar === "imagens" && h.plan_selected === "masterclass" && h.paid_at)
-          ? fmtDate(crossHistory.find(...)!.paid_at!)
-          : ""}).
-      </p>
-      <p className="text-[12px] mt-0.5" style={{ color: "#d97706" }}>
-        Nao enviar pitch de Masterclass — ajustar comunicacao.
-      </p>
-    </div>
-  </div>
-)}
-```
-
-So aparece quando: inscrito actual e do webinar "video" E tem um registo anterior no "imagens" com `plan_selected === "masterclass"` e `paid_at` preenchido.
-
----
-
-## 4. Seccao "Historico de Webinars" (colapsavel)
-
-**Ficheiro:** `src/components/crm/InscritoModal.tsx`
-
-No painel direito, apos o `<FunnelView>` (~linha 634) e ANTES da seccao "Origem" (~linha 637), adicionar:
-
-```tsx
-<hr className="border-border my-6" />
-<div>
-  <button onClick={toggleHistory} className="flex items-center gap-2 w-full">
-    <ChevronRight size={14} className={`transition-transform ${historyOpen ? "rotate-90" : ""}`} />
-    <h3 className="font-heading font-bold text-[14px] text-foreground">
-      Historico de Webinars
-    </h3>
-    {crossHistory.length > 0 && (
-      <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-        {crossHistory.length}
-      </span>
-    )}
-  </button>
-  
-  {historyOpen && (
-    <div className="mt-3 space-y-2">
-      {historyLoading ? (
-        <p className="text-[12px] text-muted-foreground">A carregar...</p>
-      ) : crossHistory.length === 0 ? (
-        <p className="text-[11px] italic" style={{ color: "#666" }}>
-          Primeira vez neste ecossistema
-        </p>
-      ) : (
-        crossHistory.map(h => <HistoryCard key={h.id} record={h} />)
-      )}
-    </div>
-  )}
-</div>
-```
-
-Estado `historyOpen`: default `true` se `crossHistory.length > 0`, `false` se vazio.
-
-### HistoryCard (inline ou sub-componente)
-
-Cada card de historico:
-
-```tsx
-<div style={{
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(0,0,0,0.06)",
-  borderRadius: 8, padding: "10px 14px"
-}}>
-  {/* Top: webinar badge + data */}
-  <div className="flex items-center justify-between">
-    <span style={{
-      background: h.webinar === "video" ? "rgba(22,163,74,0.15)" : "rgba(30,64,175,0.15)",
-      color: h.webinar === "video" ? "#16a34a" : "#1e40af",
-      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12
-    }}>
-      {h.webinar === "video" ? "🎬 Video IA" : "📷 Imagens IA"} · {WEBINAR_CONFIG[h.webinar]?.date}
-    </span>
-    <span className="text-[11px] text-muted-foreground">{fmtDate(h.created_at)}</span>
-  </div>
-
-  {/* Middle: plano */}
-  <div className="flex items-center gap-2 mt-2">
-    {/* Badge de plano + estado */}
-    {renderPlanBadge(h)}
-  </div>
-
-  {/* Bottom: valor pago (so se paid) */}
-  {h.paid_at && (
-    <div className="mt-1.5 text-[11px] text-muted-foreground">
-      Valor pago: €{PLAN_VALUES[h.plan_selected] || "—"} · Pago em {fmtDate(h.paid_at)}
-    </div>
-  )}
-</div>
-```
-
-Logica de `renderPlanBadge`:
-
-| Condicao | Badge plano | Badge estado |
+| Condição | Variante | Acção |
 |---|---|---|
-| free + step < 3 | "Inscrito gratuito" (cinza) | "Nao completou o flow" (laranja) |
-| free + step >= 3 | "Inscrito gratuito" (cinza) | "Completou o flow" (verde) |
-| premium + paid | "Premium Pass €15+IVA" (azul) | "Pago" (verde) |
-| masterclass + paid | "Masterclass €47+IVA" (roxo) | "Pago" (verde) |
-| bundle + paid | "Bundle €62+IVA" (escuro) | "Pago" (verde) |
+| history = null | A | Sem PS. Email standard. |
+| history.plan_selected = null/free, sem paid_at | B | Append bloco PS "Já nos conhecemos..." |
+| history.plan_selected = premium, com paid_at | C | Append bloco PS "Já és cliente..." orientado para Premium Pass Video |
+| history.plan_selected = masterclass ou bundle, com paid_at | D | Append bloco PS "Já és cliente da Masterclass..." sem pitch MC |
+
+A inserção do PS é feita via string replace: inserir o bloco HTML antes do footer (`<div style="border-top:1px solid #eee;padding-top:16px;margin-top:32px;">`).
+
+O bloco PS tem este formato HTML:
+
+```html
+<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
+  <p style="color:#333;font-size:14px;font-weight:700;margin:0 0 8px;">PÓS-ESCRITO</p>
+  <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">[texto da variante]</p>
+</div>
+```
+
+O insert em `email_send_logs` passa a incluir o campo `metadata`:
+
+```ts
+metadata: JSON.stringify({
+  variant: variantLetter,
+  had_imagens_history: history !== null,
+  imagens_plan: history?.plan_selected || null,
+})
+```
 
 ---
 
-## Ficheiros a modificar
+## 3. send-video-postwebinar — suprimir Masterclass upsell
 
-| Ficheiro | Alteracao |
+**Ficheiro:** `supabase/functions/send-video-postwebinar/index.ts`
+
+Adicionar a mesma função `getSubscriberHistory`.
+
+Alterar o loop de envio (actualmente sequencial, `for...of`). Para cada inscrito:
+
+1. Chamar `getSubscriberHistory(reg.email, supabase)`
+2. Determinar variante:
+   - **D** (masterclass/bundle pagos): Remover o bloco "Queres ir mais fundo? Masterclass..." do HTML e substituir por texto de contacto directo
+   - **C** (premium pago): Adicionar frase "Já conheces o valor do Premium Pass..." antes do bloco Premium Pass
+   - **B** (gratuito anterior): Email standard (sem alterações)
+   - **A** (sem histórico): Email standard
+
+Implementação técnica da remoção do bloco Masterclass (Variante D):
+- O bloco Masterclass começa com `<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">` seguido de "Queres ir mais fundo?"
+- Usar regex para localizar e substituir esse bloco específico por texto alternativo:
+
+```ts
+const mcBlockRegex = /<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">\s*<p[^>]*>Queres ir mais fundo\?<\/p>[\s\S]*?<\/div>\s*<\/div>/;
+html = html.replace(mcBlockRegex, `
+  <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
+    <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">
+      Já tens a Masterclass do nosso trabalho anterior — se quiseres explorar o tema Vídeo em profundidade, entra em contacto directamente: <a href="mailto:frederico@digitalfc.pt" style="color:#16a34a;font-weight:600;">frederico@digitalfc.pt</a>
+    </p>
+  </div>
+`);
+```
+
+Implementação da frase extra para Variante C:
+- Inserir texto antes do bloco Premium Pass ("Queres acesso à gravação completa?") via string replace.
+
+Batch processing: alterar o `for...of` sequencial para processar em lotes de 5 com `Promise.all`:
+
+```ts
+for (let i = 0; i < toSend.length; i += 5) {
+  const batch = toSend.slice(i, i + 5);
+  await Promise.all(batch.map(async (reg) => {
+    // history check + personalise + send + log
+  }));
+}
+```
+
+O insert em `email_send_logs` inclui `metadata` com variante usada (igual ao confirmation).
+
+Fallback: se `getSubscriberHistory` falhar (catch silencioso), usar variante A (email standard).
+
+---
+
+## 4. CRM — coluna "Variante" no histórico de envios
+
+**Ficheiro:** `src/components/crm/EmailEditorPanel.tsx`
+
+Na interface `SendLog`, adicionar campo opcional:
+
+```ts
+metadata: string | null;  // JSON string
+```
+
+No componente `HistoryTab`, na tabela de logs, adicionar coluna "Variante" entre "Estado" e "ID Resend":
+
+| Variante | Badge | Tooltip |
+|---|---|---|
+| A | Badge cinza "A" | "Novo inscrito — email standard" |
+| B | Badge azul "B" | "Inscrito anterior (gratuito) — PS de reconhecimento" |
+| C | Badge roxo "C" | "Cliente Premium anterior — PS orientado para Q&A Vídeo" |
+| D | Badge laranja "D" | "Cliente Masterclass anterior — MC suprimida" |
+| null/parse error | "—" | — |
+
+Parse do metadata:
+
+```ts
+const meta = (() => {
+  try { return log.metadata ? JSON.parse(log.metadata) : null; }
+  catch { return null; }
+})();
+const variant = meta?.variant || null;
+```
+
+Badge com tooltip usando `title` attribute nativo.
+
+---
+
+## Ficheiros a criar/modificar
+
+| Ficheiro | Alteração |
 |---|---|
-| `src/components/crm/InscritoModal.tsx` | Fetch cross-history, badge sidebar, alerta, seccao colapsavel |
+| Migração SQL | `ALTER TABLE email_send_logs ADD COLUMN IF NOT EXISTS metadata jsonb` |
+| `supabase/functions/send-video-confirmation/index.ts` | Adicionar `getSubscriberHistory`, lógica de variantes A-D, PS blocks, metadata no log |
+| `supabase/functions/send-video-postwebinar/index.ts` | Adicionar `getSubscriberHistory`, suprimir MC para D, frase extra para C, batch de 5, metadata no log |
+| `src/components/crm/EmailEditorPanel.tsx` | Coluna "Variante" na tabela de histórico |
 
-Nenhum outro ficheiro e alterado. Sem novas tabelas, sem alteracoes a edge functions, sem mudancas noutras views.
-
+Nenhuma alteração a reminder emails (48h, 24h, 1h), outras views do CRM, ou autenticação.
