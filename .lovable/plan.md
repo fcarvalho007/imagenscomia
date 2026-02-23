@@ -1,33 +1,39 @@
 
-# Corrigir data duplicada na sidebar do Upgrade Video
+# Corrigir bug: plan_selected "video-free" tratado como plano pago
 
 ## Problema
 
-Na sidebar desktop do `/upgrade-video`, quando nenhum addon esta seleccionado, a data e hora do webinar aparecem duas vezes:
+Os registos do webinar video guardam `plan_selected` com prefixo `video-` (ex: `"video-free"`, `"video-premium"`). O campo `plan` e normalizado correctamente (remove o prefixo), mas `plan_selected` mantem o valor original.
 
-- Linha 245: `5 Mar · 10h00`
-- Linha 246: `📅 5 de Março · 10h00`
+Varios locais no CRM comparam `plan_selected !== "free"` para identificar intencao de pagamento. Como `"video-free" !== "free"` e `true`, os inscritos gratuitos do webinar video aparecem incorrectamente como:
+- "Seleccionou e saiu" no Pipeline
+- Contados nos quick filters "Aguarda pgto" na Tabela
+- Incluidos nos filtros de backlog
+
+## Registos afectados (actualmente na BD)
+
+5 registos com `plan_selected = "video-free"` estao a ser tratados como intencao de compra quando sao de facto gratuitos.
 
 ## Solucao
 
-Remover a linha 246 (a segunda ocorrencia com o icone de calendario) e manter apenas a linha 245 com o formato curto `5 Mar · 10h00`, que e consistente com o estilo das outras linhas da sidebar (ex: `12 Mar · 10h-13h`).
+Normalizar `plan_selected` no `mapRegistration` da mesma forma que `plan`, removendo o prefixo `video-`:
 
-## Alteracao
+**Ficheiro:** `src/hooks/useInscritos.ts`
 
-**Ficheiro:** `src/pages/UpgradeVideo.tsx`
+Na funcao `mapRegistration`, linha 46:
 
-Remover a linha 246:
-```
-<p className="text-[12px] mt-1" style={{ color: '#888' }}>📅 5 de Março · 10h00</p>
-```
+| Antes | Depois |
+|---|---|
+| `plan_selected: r.plan_selected \|\| null` | `plan_selected: r.plan_selected ? r.plan_selected.replace(/^video-/, "") : null` |
 
-Resultado final do bloco (linhas 243-249):
-```
-<div>
-  <p className="font-semibold text-[14px] text-ink-900">Webinar Vídeo com IA</p>
-  <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
-</div>
-<p className="font-heading font-bold text-[16px] text-green-600">€0</p>
-```
+Isto garante que `plan_selected` fica `"free"`, `"premium"`, `"masterclass"` ou `"bundle"` independentemente do webinar, alinhando com as comparacoes existentes em todo o CRM (TableView, PipelineView, StatusBlock, TabResumo, TabHistorico).
 
-1 ficheiro, 1 linha removida. Nenhuma alteracao em mobile (a barra mobile nao mostra esta informacao).
+## Impacto
+
+- Pipeline: os 5 inscritos video-free deixam de aparecer como "Seleccionou e saiu" e voltam a coluna "Inscrito"
+- Tabela: quick filters corrigidos (awaiting, backlog, no_resend)
+- Modal: StatusBlock ja normaliza por si, sem impacto
+
+## Ficheiro afectado
+
+`src/hooks/useInscritos.ts` -- 1 linha alterada.
