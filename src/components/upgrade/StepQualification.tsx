@@ -31,7 +31,6 @@ interface Props {
   otherSource: string;
   setOtherSource: (s: string) => void;
   onNext: () => void;
-  onSkip: () => void;
   userName?: string;
   role?: string | null;
   setRole?: (r: string | null) => void;
@@ -40,9 +39,11 @@ interface Props {
 }
 
 export const StepQualification = forwardRef<HTMLDivElement, Props>(
-  ({ sources, setSources, otherSource, setOtherSource, onNext, onSkip, userName, role, setRole, teamSize, setTeamSize }, ref) => {
+  ({ sources, setSources, otherSource, setOtherSource, onNext, userName, role, setRole, teamSize, setTeamSize }, ref) => {
     const [showOther, setShowOther] = useState(sources.includes("Outro"));
+    const [attempted, setAttempted] = useState(false);
     const firstName = userName?.trim().split(" ")[0] || "";
+    const canProceed = !!(role && teamSize);
 
     const toggle = (val: string) => {
       setSources(sources.includes(val) ? sources.filter((s) => s !== val) : [...sources, val]);
@@ -71,7 +72,7 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
         <p className="font-semibold text-[17px] text-ink-900 mb-4">
           Como soubeste desta formação?
         </p>
-        <p className="text-[14px] text-ink-400 mb-3">(opcional — pode seleccionar mais de uma)</p>
+        <p className="text-[14px] text-ink-400 mb-3">(pode seleccionar mais de uma)</p>
 
         <div className="space-y-2.5">
           {SOURCE_OPTIONS.map((opt) => {
@@ -212,20 +213,26 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
           </>
         )}
 
+        {attempted && !canProceed && (
+          <p className="mt-4 text-[13px] text-red-500">
+            Preenche as duas perguntas obrigatórias acima para continuar.
+          </p>
+        )}
+
         <button
-          onClick={onNext}
-          className="mt-7 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-3 px-8 rounded-xl transition-colors"
+          onClick={() => {
+            if (canProceed) {
+              onNext();
+            } else {
+              setAttempted(true);
+            }
+          }}
+          className={`mt-5 font-heading font-bold text-[16px] py-3 px-8 rounded-xl transition-colors ${
+            canProceed ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-gray-200 text-gray-400 cursor-not-allowed"
+          }`}
         >
           Próximo passo →
         </button>
-
-        <div className="w-full h-px bg-border mt-6 mb-3" />
-        <p
-          onClick={onSkip}
-          className="text-[13px] text-ink-500 cursor-pointer text-center hover:text-ink-700 hover:underline transition-colors"
-        >
-          Saltar esta pergunta
-        </p>
       </div>
     );
   }

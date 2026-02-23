@@ -265,10 +265,6 @@ const Upsell = () => {
                       saveStepData(2, { sources: srcText });
                       advanceStep(2);
                     }}
-                    onSkip={() => {
-                      saveStepData(2, { sources: "SKIPPED" });
-                      advanceStep(2);
-                    }}
                     userName={userData.nome}
                   />
                 </motion.div>

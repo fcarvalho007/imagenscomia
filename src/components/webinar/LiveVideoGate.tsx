@@ -5,14 +5,14 @@ const LS_KEY = "live_video_email";
 
 interface Props {
   children: ReactNode;
-  onRequestRegister: () => void;
 }
 
-export default function LiveVideoGate({ children, onRequestRegister }: Props) {
+export default function LiveVideoGate({ children }: Props) {
   const [verified, setVerified] = useState(false);
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [showRedirect, setShowRedirect] = useState(false);
 
   // Check localStorage on mount
   useEffect(() => {
@@ -111,7 +111,7 @@ export default function LiveVideoGate({ children, onRequestRegister }: Props) {
                 Este email não está inscrito no webinar de vídeo.
               </p>
               <button
-                onClick={onRequestRegister}
+                onClick={() => setShowRedirect(true)}
                 className="text-[14px] font-semibold hover:underline"
                 style={{ color: "#16a34a" }}
               >
@@ -121,6 +121,31 @@ export default function LiveVideoGate({ children, onRequestRegister }: Props) {
           )}
         </div>
       </div>
+
+      {/* Redirect modal */}
+      {showRedirect && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-[380px] text-center shadow-lg">
+            <p className="font-heading font-bold text-[18px] text-ink-900 mb-2">Inscrição no webinar</p>
+            <p className="text-[14px] text-ink-500 mb-5">
+              Vais ser encaminhado para a página de inscrição do webinar de vídeo.
+            </p>
+            <a
+              href="/video"
+              className="inline-block font-semibold px-6 py-3 rounded-xl text-white"
+              style={{ background: "#16a34a" }}
+            >
+              Continuar →
+            </a>
+            <button
+              onClick={() => setShowRedirect(false)}
+              className="block mx-auto mt-3 text-[13px] text-ink-400 hover:text-ink-600"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

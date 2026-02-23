@@ -54,7 +54,7 @@ const UpgradeVideo = () => {
     try {
       const { data, error } = await supabase
         .from("registrations")
-        .select("id, name, first_name, last_name, edit_token")
+        .select("id, name, first_name, last_name, edit_token, sources, role, team_size, step_reached, plan_selected")
         .eq("email", trimmed)
         .maybeSingle();
 
@@ -73,6 +73,27 @@ const UpgradeVideo = () => {
         whatsapp: "",
         referralCode: "",
       });
+      // Restore qualification data if available
+      if ((data as any).role) setRole((data as any).role);
+      if ((data as any).team_size) setTeamSize((data as any).team_size);
+      if ((data as any).sources && (data as any).sources !== "SKIPPED") {
+        setSources((data as any).sources.split(", "));
+      }
+
+      // If step 1 already completed with required data, restore step
+      const sr = (data as any).step_reached;
+      if (sr && sr >= 2 && (data as any).role && (data as any).team_size) {
+        const targetStep = sr > 4 ? 4 : sr;
+        setStep(targetStep);
+        const plan = (data as any).plan_selected;
+        if (plan?.includes("premium") || plan?.includes("bundle")) {
+          setOrderState(s => ({ ...s, videoPremium: true }));
+        }
+        if (plan?.includes("masterclass") || plan?.includes("bundle")) {
+          setOrderState(s => ({ ...s, masterclass: true }));
+        }
+      }
+
       setNeedsRecovery(false);
     } catch (err) {
       console.error("Recovery error:", err);
@@ -287,10 +308,6 @@ const UpgradeVideo = () => {
                     onNext={() => {
                       const srcText = sources.length > 0 ? sources.join(", ") : "SKIPPED";
                       saveStepData(2, { sources: srcText, role: role || null, team_size: teamSize || null });
-                      advanceStep(2);
-                    }}
-                    onSkip={() => {
-                      saveStepData(2, { sources: "SKIPPED", role: null, team_size: null });
                       advanceStep(2);
                     }}
                     userName={userData.nome}
