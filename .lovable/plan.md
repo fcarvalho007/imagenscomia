@@ -1,217 +1,202 @@
 
 
-# Redesign Follow-up para "Automacoes"
+# Phase 2 — Editor de Email (Painel lateral)
 
 ## Resumo
 
-Renomear a seccao "Follow-up" para "Automacoes" no sidebar e header, reorganizar os tabs, e criar um novo tab "Fluxo" com timeline visual dos emails automaticos por webinar.
+Adicionar um painel lateral deslizante que permite editar o conteudo HTML e assunto de cada email da timeline. Reutilizar a tabela `email_templates` existente (sem criar nova tabela) e actualizar as edge functions para lerem o template da base de dados em vez de HTML hardcoded.
 
 ---
 
-## 1. Sidebar rename
+## 1. Base de dados — Inserir templates na tabela existente
 
-**Ficheiro:** `src/components/crm/CRMSidebar.tsx` (linha 18)
+A tabela `email_templates` ja existe com colunas `template_key`, `subject`, `html_body`, `name`, etc. Nao e necessario criar nova tabela nem adicionar colunas.
 
-Alterar:
-```
-{ icon: Zap, label: "Follow-up", view: "templates" },
-```
-Para:
-```
-{ icon: Zap, label: "Automações", view: "templates" },
-```
+Inserir 10 rows (5 video + 5 imagens) usando os template_keys ja usados nas edge functions:
+
+| template_key | name | subject | html_body |
+|---|---|---|---|
+| `video_confirmation` | Confirmacao Video | Inscricao confirmada... | HTML do `send-video-confirmation` |
+| `video_reminder_48h` | Lembrete 48h Video | Faltam 2 dias... | HTML do `send-video-reminder-48h` |
+| `video_reminder_24h` | Lembrete 24h Video | E amanha as 10h00... | HTML do `send-video-reminder-24h` |
+| `video_reminder_1h` | Lembrete 1h Video | Comeca em 1 hora... | HTML do `send-video-reminder-1h` |
+| `video_postwebinar` | Pos-webinar Video | Obrigado por estares... | HTML do `send-video-postwebinar` |
+| `imagens_confirmation` | Confirmacao Imagens | (equivalente imagens) | Placeholder HTML |
+| `imagens_reminder_48h` | Lembrete 48h Imagens | ... | Placeholder HTML |
+| `imagens_reminder_24h` | Lembrete 24h Imagens | ... | Placeholder HTML |
+| `imagens_reminder_1h` | Lembrete 1h Imagens | ... | Placeholder HTML |
+| `imagens_postwebinar` | Pos-webinar Imagens | ... | Placeholder HTML |
+
+O HTML de cada template video e extraido literalmente do `buildHtml` de cada edge function, com `${fname}` substituido por `{{fname}}`.
+
+Para imagens, como nao existem edge functions correspondentes, inserir HTML placeholder generico.
+
+Migracao via INSERT (sem alterar schema).
 
 ---
 
-## 2. Page header
+## 2. Fetch de templates no FollowUpView
 
 **Ficheiro:** `src/components/crm/FollowUpView.tsx`
 
-Alterar titulo e subtitulo (linhas 90-91 e 106-107):
+Adicionar state `emailTemplates` e fetch on mount:
 
-- Titulo: `"Automações de Email"`
-- Subtitulo: `"Fluxo de emails automáticos, estado dos envios e edição de templates"`
-- Mesma alteracao no empty state do video (linhas 90-91)
+```ts
+const [emailTemplates, setEmailTemplates] = useState([]);
 
----
-
-## 3. Nova estrutura de tabs
-
-**Ficheiro:** `src/components/crm/FollowUpView.tsx`
-
-Substituir os 3 tabs actuais por 4 novos:
-
-| Tab | Value | Conteudo |
-|-----|-------|----------|
-| Fluxo | `fluxo` | Novo componente `AutomationFlowTab` |
-| Metricas | `metricas` | Componente `FollowUpOverview` existente (sem alteracoes) |
-| Pessoas | `pessoas` | Conteudo actual do tab "audit" (sub-tabs Pessoas/Envios, sem alteracoes) |
-| Templates | `templates` | Componente `TemplatesView` existente (sem alteracoes) |
-
-Default active: `fluxo` (em vez do actual `overview`).
-
-Estilo dos tabs: pill tabs com active = filled blue, inactive = ghost (mesmo estilo ja usado no switcher de sub-tabs Pessoas/Envios — botoes com `background: "#2563EB"` quando activo).
-
-Substituir o `TabsList`/`TabsTrigger` do Radix por botoes pill custom (consistente com o padrao existente no CRM):
-
-```tsx
-const TABS = [
-  { key: "fluxo", label: "Fluxo" },
-  { key: "metricas", label: "Métricas" },
-  { key: "pessoas", label: "Pessoas" },
-  { key: "templates", label: "Templates" },
-];
+useEffect(() => {
+  supabase.from("email_templates")
+    .select("template_key, subject, html_body, name, updated_at, updated_by")
+    .in("template_key", [
+      "video_confirmation", "video_reminder_48h", ...
+      "imagens_confirmation", ...
+    ])
+    .then(({ data }) => { if (data) setEmailTemplates(data); });
+}, []);
 ```
 
+Passar `emailTemplates` e `setEmailTemplates` como props ao `AutomationFlowTab`.
+
+Adicionar state `selectedTemplate` (template row ou null) para controlar o painel.
+
 ---
 
-## 4. Novo componente `AutomationFlowTab`
+## 3. Wiring do botao "Ver email"
 
-**Novo ficheiro:** `src/components/crm/AutomationFlowTab.tsx`
+**Ficheiro:** `src/components/crm/AutomationFlowTab.tsx`
+
+Alterar a assinatura para receber:
+- `emailTemplates` — array de templates
+- `onOpenEditor(templateKey: string)` — callback
+
+No Timeline, adicionar prop `onOpenEditor`.
+
+Cada botao "Ver email ->" chama `onOpenEditor` com o template_key correspondente (ex: `video_confirmation`). O mapeamento usa o webinar context + email_key do node.
+
+Mapa de email_key por node:
+
+| Node title | email_key |
+|---|---|
+| Confirmacao imediata | `confirmation` |
+| Lembrete 48h | `reminder_48h` |
+| Lembrete 24h | `reminder_24h` |
+| Comeca em 1 hora | `reminder_1h` |
+| Email pos-webinar | `postwebinar` |
+
+Template key final: `${webinar}_${email_key}` (ex: `video_confirmation`).
+
+---
+
+## 4. Componente EmailEditorPanel
+
+**Novo ficheiro:** `src/components/crm/EmailEditorPanel.tsx`
 
 ### Props
 
 ```ts
 interface Props {
-  inscritos: Inscrito[];
-  logs: MessageLog[];
-  logsLoading: boolean;
+  template: EmailTemplate | null;  // null = fechado
+  onClose: () => void;
+  onSaved: (updated: EmailTemplate) => void;
 }
 ```
 
-### Logica de dados
+### Comportamento
 
-Para cada node de email, contar envios e falhas a partir dos `logs` existentes (ja carregados em `FollowUpView`). Mapear `template_key` para cada node:
+- Painel fixo, lado direito, 560px (100% mobile)
+- Overlay semitransparente atras (fecha ao clicar)
+- Animacao slide-in/out via CSS transition (translateX)
+- z-index: 50
 
-| Node | template_key esperado |
-|------|----------------------|
-| Confirmacao imediata | Logs com `template_key` que contem "confirmation" ou "stage_0" |
-| Lembrete 48h | `send-video-reminder-48h` ou similar |
-| Lembrete 24h | `send-video-reminder-24h` ou similar |
-| Comeca em 1 hora | `send-video-reminder-1h` ou similar |
-| Pos-webinar | `send-video-postwebinar` ou similar |
+### Layout do painel (de cima para baixo)
 
-Abordagem pragmatica: agrupar logs por `template_key`, mostrar contagens reais. Se nenhum log corresponder a um node, mostrar "—".
+**Header:**
+- Badge do webinar (cor azul/verde conforme contexto)
+- Nome do email (ex: "Confirmacao imediata")
+- template_key em monospace (#999, 11px)
+- Botao X para fechar
+- Indicador de alteracoes nao guardadas (ponto laranja + texto)
 
-### Status bar (CHANGE 5)
+**Assunto:**
+- Label "ASSUNTO" (11px, uppercase, #888)
+- Input text, valor local editavel
 
-Acima da timeline, barra horizontal de resumo:
+**Corpo do email:**
+- Label "CORPO DO EMAIL (HTML)" 
+- Textarea monospace (Courier New, 12px, min-height 360px, resize vertical)
+- Nota: "Variaveis disponiveis: {{fname}}, {{email}}"
 
-```text
-[circulo verde] Sistema operacional  ·  [icone email] N emails enviados  ·  [X] N falhas  ·  [relogio/check] Proximo envio ou Ciclo completo
+**Pre-visualizacao:**
+- Toggle "Pre-visualizar email" / "Editar HTML"
+- Quando activo: iframe com srcdoc para renderizar o HTML de forma segura
+- Max-height 400px, overflow-y auto
+
+**Footer:**
+- Texto "Ultima edicao: [data formatada]"
+- Botao "Cancelar" (ghost, reset local)
+- Botao "Guardar alteracoes" (verde #16a34a, loading state)
+
+### Save
+
+```ts
+await supabase.from("email_templates")
+  .update({
+    subject: localSubject,
+    html_body: localBodyHtml,
+    updated_at: new Date().toISOString(),
+    updated_by: "crm_manual"
+  })
+  .eq("template_key", template.template_key);
 ```
 
-- Contar total de emails enviados: `logs.filter(l => l.provider === "resend" && l.status === "sent").length`
-- Contar falhas: `logs.filter(l => l.status === "failed").length`
-- Para video: "Proximo envio: Lembrete 48h - 3 Mar as 10h00" (calculado a partir de `VIDEO_WEBINAR_DATE`)
-- Para imagens: "Ciclo completo — webinar realizado a 18 Fev"
+Sucesso: toast + actualizar state pai + fechar indicador unsaved.
+Erro: toast de erro, manter painel aberto.
 
-Estilo:
-- `background: rgba(22,163,74,0.04)`, `border: 1px solid rgba(22,163,74,0.15)`, `border-radius: 8px`, `padding: 10px 16px`, `font-size: 12px`
-- Items separados por ` · `
+---
 
-### Timeline visual
+## 5. Edge functions — ler template da DB
 
-Layout: `max-w-[800px] mx-auto`, linha vertical tracejada `#e2e8f0` a ligar os nodes.
+Actualizar cada uma das 5 edge functions video para buscar o template a Supabase antes de enviar:
 
-Implementacao CSS: cada node e um `div` relativo, com um pseudo-elemento ou `div` para a linha tracejada vertical entre nodes.
+**Padrao comum (adicionar em cada funcao):**
 
-#### Estrutura de nodes (7 nodes por webinar)
+```ts
+// Fetch template from DB
+const { data: tpl } = await supabase
+  .from("email_templates")
+  .select("subject, html_body")
+  .eq("template_key", TEMPLATE_KEY)
+  .maybeSingle();
 
-Cada node e um card com:
-- Left border 4px solid (cor depende do tag)
-- `background: white`, `border: 1px solid #e2e8f0`, `border-radius: 10px`, `padding: 16px 20px`
-- Layout: `flex justify-between items-start`
-- Esquerda: icone + titulo (font-heading 14px bold) + subtitulo (12px #64748B) + tag badge
-- Direita: stats (12px #888) + botao accao opcional
-
-#### Tags (badges)
-
-| Tag | Background | Color |
-|-----|-----------|-------|
-| IMEDIATO | #dcfce7 | #16a34a |
-| AGENDADO | #dbeafe | #1d4ed8 |
-| ENVIADO | #dcfce7 | #16a34a |
-| MANUAL | #fef3c7 | #d97706 |
-| ERRO | #fee2e2 | #dc2626 |
-
-Estilo: `font-size: 9px`, `padding: 2px 8px`, `border-radius: 20px`, `font-weight: 700`, uppercase
-
-#### Logica de tag por node
-
-- Determinar se o webinar ja aconteceu: `WEBINAR_CONFIG[ctx].startDate < now`
-- Se sim: tag = "ENVIADO" (se existem logs) ou "—" (se nao)
-- Se nao: tag = "AGENDADO"
-- Node "Confirmacao imediata": sempre "IMEDIATO" (ou "ENVIADO" se webinar passado)
-- Node "Pos-webinar": tag "MANUAL" se webinar video e ainda nao enviado
-
-#### Condicoes entre nodes
-
-Labels centrados na linha tracejada:
-- Entre node 2-3: "48H ANTES DO WEBINAR"
-- Entre node 3-4: "24H ANTES DO WEBINAR"
-- Entre node 4-5: "1H ANTES DO WEBINAR"
-- Entre node 5-6: "APOS O WEBINAR"
-
-Estilo: `font-size: 11px`, `color: #aaa`, `letter-spacing: 1px`, uppercase
-
-#### Node especial: Trigger (node 1)
-
-- Left border: `#7c3aed` (purple)
-- Icone: Users (lucide)
-- Titulo maior: "Inscricao submetida"
-- Subtitulo: "Webinar [nome] . imagenscomia.com/video"
-- Stat direita: "[N] inscricoes" — `inscritos.filter(i => matchWebinar(i)).length`
-
-#### Node especial: End (node 7)
-
-- Left border: `#94A3B8` (grey)
-- Fundo ligeiramente mais claro: `background: #F8FAFC`
-- Icone: CheckCircle2 (lucide)
-- Titulo: "Fluxo concluido"
-- Subtitulo: "Inscrito recebeu todos os emails do ciclo"
-
-#### Botao "Ver email" em cada email node
-
-Cada email node tem um link "Ver email →" a direita.
-Ao clicar: `toast("Editor de email — disponível em breve")` (sonner toast).
-
-#### Botao "Enviar agora" no node pos-webinar (video)
-
-So visivel quando `Date.now() > VIDEO_WEBINAR_DATE.getTime()`.
-Reutilizar a logica do `PostWebinarAction` existente em `DashboardView.tsx`:
-- Ao clicar: modal de confirmacao inline
-- Confirmar: chama `supabase.functions.invoke("send-video-postwebinar", { body: { manual: true } })`
-- Feedback: alert com resultado
-
-### Contexto consolidado
-
-Quando `webinarContext === "consolidado"`: renderizar duas colunas lado a lado.
-
-```tsx
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-  <div>
-    <h3>📷 Imagens IA · 18 Fev 2026</h3>
-    <Timeline webinar="imagens" ... />
-  </div>
-  <div>
-    <h3>🎬 Vídeo IA · 2 Mar 2026</h3>
-    <Timeline webinar="video" ... />
-  </div>
-</div>
+const subject = tpl?.subject ?? "Fallback subject";
+const html = (tpl?.html_body ?? buildHtml(fname))
+  .replace(/\{\{fname\}\}/g, fname || "");
 ```
 
-A status bar no modo consolidado mostra totais agregados.
+A funcao `buildHtml` existente serve como fallback caso o template nao exista na DB.
+
+Funcoes a alterar:
+- `send-video-confirmation/index.ts`
+- `send-video-reminder-48h/index.ts`
+- `send-video-reminder-24h/index.ts`
+- `send-video-reminder-1h/index.ts`
+- `send-video-postwebinar/index.ts`
 
 ---
 
 ## Ficheiros a criar/modificar
 
 | Ficheiro | Alteracao |
-|----------|-----------|
-| `src/components/crm/CRMSidebar.tsx` | Label "Follow-up" → "Automacoes" |
-| `src/components/crm/FollowUpView.tsx` | Header, tabs, default tab, importar AutomationFlowTab |
-| `src/components/crm/AutomationFlowTab.tsx` | **NOVO** — status bar + timeline visual |
+|---|---|
+| Migracao SQL | INSERT 10 rows em `email_templates` |
+| `src/components/crm/EmailEditorPanel.tsx` | **NOVO** — painel lateral editor |
+| `src/components/crm/FollowUpView.tsx` | Fetch templates, state selectedTemplate, renderizar painel |
+| `src/components/crm/AutomationFlowTab.tsx` | Receber `onOpenEditor` prop, wiring botoes "Ver email" |
+| `supabase/functions/send-video-confirmation/index.ts` | Ler template da DB |
+| `supabase/functions/send-video-reminder-48h/index.ts` | Ler template da DB |
+| `supabase/functions/send-video-reminder-24h/index.ts` | Ler template da DB |
+| `supabase/functions/send-video-reminder-1h/index.ts` | Ler template da DB |
+| `supabase/functions/send-video-postwebinar/index.ts` | Ler template da DB |
 
-Nenhuma alteracao a dados, queries, edge functions, autenticacao ou outras views do CRM.
+Nenhuma alteracao a outras views do CRM, autenticacao, ou RLS.
 
