@@ -48,6 +48,7 @@ export default function EmailRecipientsDrawer({ open, onClose, emailKey, webinar
     if (!open || !emailKey) return;
     setLoading(true);
     const fetchData = async () => {
+      // Try email_send_logs first
       let query = supabase
         .from("email_send_logs")
         .select("fname, recipient_email, status, error_message, sent_at, webinar")
@@ -59,7 +60,58 @@ export default function EmailRecipientsDrawer({ open, onClose, emailKey, webinar
       }
 
       const { data } = await query;
-      setRecipients(data || []);
+
+      if (data && data.length > 0) {
+        setRecipients(data);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: fetch from message_logs + registrations
+      let mlQuery = supabase
+        .from("message_logs")
+        .select("registration_id, template_key, provider, status, error, created_at")
+        .eq("provider", "resend")
+        .ilike("template_key", `%${emailKey}%`)
+        .order("created_at", { ascending: false })
+        .limit(500);
+
+      const { data: mlData } = await mlQuery;
+      if (!mlData || mlData.length === 0) {
+        setRecipients([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get registration details
+      const regIds = [...new Set(mlData.map((m) => m.registration_id))];
+      const { data: regs } = await supabase
+        .from("registrations")
+        .select("id, first_name, email, webinar")
+        .in("id", regIds);
+
+      const regMap = new Map((regs || []).map((r) => [r.id, r]));
+
+      const mapped: Recipient[] = mlData
+        .filter((m) => {
+          const reg = regMap.get(m.registration_id);
+          if (!reg) return false;
+          if (webinar !== "consolidado" && reg.webinar !== webinar) return false;
+          return true;
+        })
+        .map((m) => {
+          const reg = regMap.get(m.registration_id)!;
+          return {
+            fname: reg.first_name || null,
+            recipient_email: reg.email,
+            status: m.status === "sent" ? "sent" : "failed",
+            error_message: m.error || null,
+            sent_at: m.created_at,
+            webinar: reg.webinar,
+          };
+        });
+
+      setRecipients(mapped);
       setLoading(false);
     };
     fetchData();

@@ -86,7 +86,19 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
-  const dashConfig = getDashboardConfig(webinarContext);
+  const [videoVisitors, setVideoVisitors] = useState(0);
+
+  useEffect(() => {
+    supabase.from("analytics_cache").select("value").eq("key", "landing_visitors_video").maybeSingle()
+      .then(({ data }) => { if (data) setVideoVisitors(data.value); });
+  }, []);
+
+  const dashConfig = useMemo(() => {
+    const base = getDashboardConfig(webinarContext);
+    if (webinarContext === "video") return { ...base, visitors: videoVisitors };
+    if (webinarContext === "consolidado") return { ...base, visitors: WEBINAR_DASHBOARD_CONFIG.imagens.visitors + videoVisitors };
+    return base;
+  }, [webinarContext, videoVisitors]);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
@@ -322,7 +334,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             <div className="flex items-center gap-2 ml-[200px] max-sm:ml-[140px] pl-1 mt-0.5 flex-wrap">
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full"
                 style={{ background: "hsl(var(--surface))", color: "hsl(var(--ink-500))", border: "1px solid hsl(var(--ink-200))" }}>
-                Total desde início · valor fixo (sem API analytics)
+                {webinarContext === "imagens" ? "Total desde início · valor fixo (sem API analytics)" : "Total desde início"}
               </span>
             </div>
             {visitorDropLost > 0 && (

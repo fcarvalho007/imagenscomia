@@ -72,7 +72,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       type: "email",
       title: "Confirmação imediata",
       subtitle: "Enviado automaticamente · segundos após inscrição",
-      templateKeyMatch: ["confirmation", "stage_0"],
+      templateKeyMatch: ["confirmation"],
       sendOffsetHours: null, // immediate, skip pending
     },
     {
@@ -124,7 +124,7 @@ function matchTemplate(templateKey: string, patterns: string[]): boolean {
 
 function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webinar: WebinarKey): TagType | null {
   if (node.type === "trigger" || node.type === "end") return null;
-  if (node.templateKeyMatch.some((p) => p.includes("confirmation") || p.includes("stage_0"))) {
+  if (node.templateKeyMatch.some((p) => p.includes("confirmation"))) {
     return webinarPast ? "ENVIADO" : "IMEDIATO";
   }
   if (node.isPostWebinar) {

@@ -47,7 +47,7 @@ export const WEBINAR_DASHBOARD_CONFIG = {
     },
   },
   video: {
-    visitors: 0,
+    visitors: 0 as number,
     cutoffDate: null as Date | null,
     liveResults: null as null | {
       views: number;

@@ -123,7 +123,8 @@ serve(async (req) => {
       .from("registrations")
       .select("id, email, first_name")
       .eq("webinar", "video")
-      .eq("do_not_contact", false);
+      .eq("do_not_contact", false)
+      .not("attended_live_at", "is", null);
 
     if (queryErr) throw queryErr;
     if (!registrants || registrants.length === 0) {
