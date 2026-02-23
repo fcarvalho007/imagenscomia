@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { VideoWebinarVideoArea } from "@/components/webinar/VideoWebinarVideoArea";
 import { VideoWebinarSidebar } from "@/components/webinar/VideoWebinarSidebar";
@@ -6,15 +5,16 @@ import { VideoWebinarContent } from "@/components/webinar/VideoWebinarContent";
 import { WebinarFooter } from "@/components/webinar/WebinarFooter";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { VIDEO_WEBINAR_CONFIG } from "@/components/webinar/videoWebinarConfig";
-import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
-import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import LiveVideoGate from "@/components/webinar/LiveVideoGate";
 
-function WebinarLiveVideoInner() {
-  const { open: openModal } = useRegistrationModal();
+const WebinarLiveVideo = () => {
+  usePageMeta({
+    title: `${VIDEO_WEBINAR_CONFIG.title} — DIGITALFC`,
+    description: VIDEO_WEBINAR_CONFIG.summary,
+  });
 
   return (
-    <LiveVideoGate onRequestRegister={openModal}>
+    <LiveVideoGate>
       <div className="min-h-screen bg-[#FAFBFC] font-sans">
         <header className="border-b border-border bg-white/80 backdrop-blur-sm sticky top-0 z-30">
           <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -57,22 +57,8 @@ function WebinarLiveVideoInner() {
 
         <WebinarFooter />
         <WhatsAppSupportButton />
-        <RegistrationModal />
       </div>
     </LiveVideoGate>
-  );
-}
-
-const WebinarLiveVideo = () => {
-  usePageMeta({
-    title: `${VIDEO_WEBINAR_CONFIG.title} — DIGITALFC`,
-    description: VIDEO_WEBINAR_CONFIG.summary,
-  });
-
-  return (
-    <RegistrationModalProvider subtitle="Quarta-feira, 5 de Março, 10h">
-      <WebinarLiveVideoInner />
-    </RegistrationModalProvider>
   );
 };
 
