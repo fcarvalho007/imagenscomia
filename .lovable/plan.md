@@ -1,72 +1,89 @@
 
-# Correcao: Registo video nao aparece no CRM
+# Correcoes: Confirmacao + Followup + Calendario
 
-## Problema raiz
+## 3 Problemas Identificados
 
-A tabela `registrations` tem um **UNIQUE constraint na coluna `email`** (`registrations_email_key`). Isto impede a criacao de um segundo registo com o mesmo email para um webinar diferente. O `register-free` tenta inserir mas o INSERT falha silenciosamente (o codigo nao verifica o `error` retornado pelo Supabase).
+### Problema 1 -- Texto "Upgrade Realizado!" para inscritos gratuitos
 
-Os logs mostram "Created video registration for existing user" mas na verdade a linha nunca foi inserida na base de dados.
+A pagina `/confirmacao` (Confirmacao.tsx) mostra sempre "Upgrade Realizado!" e "Vamos aguardar a confirmacao do seu pagamento" independentemente do plano. Quando o utilizador escolheu tudo gratuito, o texto correcto e "O seu lugar esta reservado!".
 
-## Solucao
+**Solucao**: Verificar o parametro `plan` na URL. Se `plan` estiver vazio ou for "free"/"video-free", mostrar:
+- Titulo: "O seu lugar esta reservado, {nome}!" (ou "O seu lugar esta reservado!")
+- Subtitulo: "A tua inscricao foi confirmada." (em vez de "Vamos aguardar a confirmacao do pagamento")
 
-### Passo 1 — Migracao de base de dados
+Se `plan` tiver valor pago (premium, masterclass, bundle, etc.), manter o texto actual.
 
-1. Remover o unique constraint `registrations_email_key` (email unico)
-2. Criar um novo unique constraint composto `registrations_email_webinar_key` em `(email, webinar)` — permite o mesmo email em webinars diferentes mas impede duplicados no mesmo webinar
+**Ficheiro**: `src/pages/Confirmacao.tsx`, linhas 85-98
 
-```sql
-ALTER TABLE registrations DROP CONSTRAINT registrations_email_key;
-CREATE UNIQUE INDEX registrations_email_webinar_key ON registrations (email, webinar);
+```tsx
+const isFree = !plan || plan === "free" || plan === "video-free";
+
+// Titulo
+{isFree
+  ? (userName ? `O seu lugar está reservado, ${userName}!` : "O seu lugar está reservado!")
+  : (userName ? `Upgrade Realizado, ${userName}!` : "Upgrade Realizado!")}
+
+// Subtitulos
+{isFree ? "A tua inscrição foi confirmada." : "Obrigado pela confiança."}
+{isFree ? "Adiciona ao calendário para não te esqueceres." : "Vamos aguardar a confirmação do seu pagamento."}
 ```
 
-### Passo 2 — Corrigir register-free (error handling)
+### Problema 2 -- Followup envia emails de pagamento a inscritos gratuitos
 
-Em `supabase/functions/register-free/index.ts`, na linha 105 onde faz o INSERT do video registration, adicionar verificacao de erro:
+O `followup-abandoned` filtra candidatos com `.neq("plan_selected", "free")` (linha 484). Mas o upgrade de video guarda `plan_selected: "video-free"` (UpgradeVideo.tsx linha 338). Como `"video-free" !== "free"`, estes utilizadores sao apanhados pelo followup e recebem emails a pedir pagamento.
+
+**Solucao**: Alterar o filtro no `followup-abandoned` para excluir todos os planos gratuitos:
 
 ```typescript
-const { error: insertErr } = await supabase.from("registrations").insert({...});
-if (insertErr) {
-  console.error("Failed to create video registration:", insertErr);
-} else {
-  console.log(`Created video registration for existing user: ${email}`);
-}
+// Antes (linha 484):
+.neq("plan_selected", "free");
+
+// Depois:
+.neq("plan_selected", "free")
+.neq("plan_selected", "video-free");
 ```
 
-### Passo 3 — Corrigir queries maybeSingle() nas edge functions
+Tambem corrigir o redirect no step 3 skip (UpgradeVideo.tsx linha 359) para passar os parametros correctos:
 
-Com dois registos por email, as queries que usam `.eq("email", ...).maybeSingle()` sem filtrar por webinar vao retornar erro (mais de 1 resultado). Funcoes afectadas:
+```typescript
+window.location.href = `/confirmacao?webinar=video&name=${encodeURIComponent(userData.nome)}&email=${encodeURIComponent(userData.email)}&plan=video-free`;
+```
 
-| Funcao | Correcao |
-|---|---|
-| `register-free` (linha 43-47) | Manter maybeSingle mas a query principal ja e "find any existing" — ok, mas mudar para `.limit(1).single()` ou adicionar `.order("created_at").limit(1)` |
-| `check-referrals` (linha 31-34) | Adicionar `.limit(1)` |
-| `redeem-voucher` (linha 46-49) | Adicionar `.limit(1)` |
-| `create-payment` (linhas 85-89, 116-120) | Adicionar `.eq("webinar", webinar)` quando disponivel, ou `.limit(1)` |
-| `generate-reminder` (linha 87-90) | Adicionar `.limit(1)` |
-| `eupago-webhook` (linha 144-152) | Ja usa `.select().eq("email")` sem maybeSingle — ok, update afecta todas as linhas com esse email, mas deve filtrar por webinar |
+**Ficheiros**: `supabase/functions/followup-abandoned/index.ts` (linha 484), `src/pages/UpgradeVideo.tsx` (linha 359)
 
-**Estrategia pratica**: Para funcoes que nao recebem o parametro `webinar`, usar `.order("created_at", { ascending: false }).limit(1).maybeSingle()` para pegar o registo mais recente. Para `create-payment` e `eupago-webhook` que lidam com pagamentos, precisam de identificar o registo correcto (pelo `eupago_ref` ou `order_id`, nao pelo email).
+### Problema 3 -- Calendario nao e adicionado
 
-### Passo 4 — Re-deploy das funcoes alteradas
+O `ConfirmacaoExtras` tem um link Google Calendar hardcoded (linha 44-45) que aponta para um evento especifico (provavelmente o webinar de imagens). Para o webinar de video, o link e o mesmo — pode nao existir ou estar errado.
 
-Deploy de `register-free`, `create-payment`, `check-referrals`, `redeem-voucher`, `generate-reminder`.
+**Solucao**: Gerar o link do Google Calendar dinamicamente usando os dados do `VIDEO_WEBINAR_CONFIG` ou `WEBINAR_CONFIG` conforme o tipo de webinar:
 
-`eupago-webhook` ja usa estrategias de match por `eupago_ref`/`order_id` nas estrategias 1 e 2 — a estrategia 3 (fallback por email) e raramente usada e pode manter `.eq("email", email)` que agora actualiza ambas as linhas (aceitavel como fallback).
+```tsx
+const calendarUrl = (() => {
+  const start = config.startDate;
+  const end = new Date(start.getTime() + config.durationMinutes * 60000);
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(config.title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(config.summary)}`;
+})();
+```
 
-## Ficheiros a modificar
+Isto garante que o link de calendario e correcto para ambos os webinars (imagens e video).
+
+**Ficheiro**: `src/components/landing/ConfirmacaoExtras.tsx` (linhas 44-52)
+
+---
+
+## Resumo de alteracoes
 
 | Ficheiro | Alteracao |
 |---|---|
-| Migracao SQL | DROP unique email, CREATE unique (email, webinar) |
-| `register-free/index.ts` | Error handling no insert (linha 105); query existente (linha 43) adicionar `.order` + `.limit(1)` |
-| `create-payment/index.ts` | Linhas 85-89 e 116-120: adicionar `.order("created_at", {ascending:false}).limit(1)` |
-| `check-referrals/index.ts` | Linha 31-34: adicionar `.limit(1)` |
-| `redeem-voucher/index.ts` | Linha 46-49: adicionar `.limit(1)` |
-| `generate-reminder/index.ts` | Linha 87-90: adicionar `.limit(1)` |
+| `src/pages/Confirmacao.tsx` | Texto condicional: "lugar reservado" vs "upgrade realizado" |
+| `src/pages/UpgradeVideo.tsx` | Redirect step 3 skip: adicionar params name/email/plan |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Google Calendar link dinamico baseado no config do webinar |
+| `supabase/functions/followup-abandoned/index.ts` | Filtro: excluir tambem "video-free" |
 
 ## O que NAO muda
 
-- Frontend / CRM (ja filtra por webinar correctamente)
-- Schema de colunas (nenhuma coluna adicionada/removida)
-- Logica de E-goi (ja corrigida anteriormente)
-- eupago-webhook (estrategias 1/2 usam eupago_ref, nao email)
+- Layout desktop ou mobile (fixes anteriores)
+- Logica de pagamento ou E-goi
+- Outras paginas ou componentes
+- Schema da base de dados
