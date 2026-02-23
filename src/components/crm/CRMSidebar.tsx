@@ -15,7 +15,7 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: LayoutDashboard, label: "Dashboard", view: "dashboard" },
   { icon: Columns, label: "Pipeline", view: "pipeline" },
   { icon: Table, label: "Tabela", view: "tabela" },
-  { icon: Zap, label: "Follow-up", view: "templates" },
+  { icon: Zap, label: "Automações", view: "templates" },
   { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 

@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import FollowUpOverview from "./FollowUpOverview";
 import FollowUpAudit from "./FollowUpAudit";
 import FollowUpPessoas from "./FollowUpPessoas";
 import TemplatesView from "./TemplatesView";
+import AutomationFlowTab from "./AutomationFlowTab";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { CalendarDays } from "lucide-react";
@@ -39,8 +39,17 @@ interface Props {
   onSelectInscrito: (i: Inscrito) => void;
 }
 
+const TABS = [
+  { key: "fluxo", label: "Fluxo" },
+  { key: "metricas", label: "Métricas" },
+  { key: "pessoas", label: "Pessoas" },
+  { key: "templates", label: "Templates" },
+] as const;
+
+type TabKey = typeof TABS[number]["key"];
+
 export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState<TabKey>("fluxo");
   const [auditFilter, setAuditFilter] = useState<AuditFilter>({});
   const [auditSubTab, setAuditSubTab] = useState<"pessoas" | "envios">("pessoas");
   const [logs, setLogs] = useState<MessageLog[]>([]);
@@ -60,7 +69,6 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-  // Template send counts (7d, Resend confirmed)
   const templateSendCounts = useMemo(() => {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     const counts: Record<string, number> = {};
@@ -75,7 +83,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const goToAudit = useCallback((filter: AuditFilter) => {
     setAuditFilter(filter);
     setAuditSubTab(filter.subTab || "envios");
-    setActiveTab("audit");
+    setActiveTab("pessoas");
   }, []);
 
   const handleViewSends = useCallback((templateKey: string) => {
@@ -87,8 +95,8 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
     return (
       <div className="p-7 max-sm:p-4 min-h-screen" style={{ background: "#F8FAFC" }}>
         <div className="mb-5">
-          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Follow-up</h1>
-          <p className="text-sm" style={{ color: "#64748B" }}>Funil, métricas de envio, lista de pessoas e templates do follow-up automático.</p>
+          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Automações de Email</h1>
+          <p className="text-sm" style={{ color: "#64748B" }}>Fluxo de emails automáticos, estado dos envios e edição de templates</p>
         </div>
         <div className="bg-white border border-border rounded-xl p-12 text-center">
           <CalendarDays size={40} className="mx-auto mb-3" style={{ color: "#94A3B8" }} />
@@ -103,30 +111,49 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
     <div className="p-7 max-sm:p-4 min-h-screen" style={{ background: "#F8FAFC" }}>
       <div className="flex items-start justify-between flex-wrap gap-3 mb-5">
         <div>
-          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Follow-up</h1>
-          <p className="text-sm" style={{ color: "#64748B" }}>Funil, métricas de envio, lista de pessoas e templates do follow-up automático.</p>
+          <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Automações de Email</h1>
+          <p className="text-sm" style={{ color: "#64748B" }}>Fluxo de emails automáticos, estado dos envios e edição de templates</p>
         </div>
         <WebinarSwitcherBar />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-5 bg-white border" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
-          <TabsTrigger value="overview" className="text-[13px]">Visão Geral</TabsTrigger>
-          <TabsTrigger value="audit" className="text-[13px]">Pessoas & Auditoria</TabsTrigger>
-          <TabsTrigger value="templates" className="text-[13px]">Templates</TabsTrigger>
-        </TabsList>
+      {/* Pill tabs */}
+      <div className="flex gap-1 mb-5">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors"
+            style={{
+              background: activeTab === tab.key ? "#2563EB" : "transparent",
+              color: activeTab === tab.key ? "#fff" : "#64748B",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value="overview">
-          <FollowUpOverview
-            inscritos={inscritos}
-            logs={logs}
-            logsLoading={logsLoading}
-            onAlertClick={goToAudit}
-          />
-        </TabsContent>
+      {/* Tab content */}
+      {activeTab === "fluxo" && (
+        <AutomationFlowTab
+          inscritos={inscritos}
+          logs={logs}
+          logsLoading={logsLoading}
+        />
+      )}
 
-        <TabsContent value="audit">
-          {/* Inner sub-tabs: Pessoas + Envios */}
+      {activeTab === "metricas" && (
+        <FollowUpOverview
+          inscritos={inscritos}
+          logs={logs}
+          logsLoading={logsLoading}
+          onAlertClick={goToAudit}
+        />
+      )}
+
+      {activeTab === "pessoas" && (
+        <>
           <div className="flex gap-1 mb-4">
             <button
               onClick={() => setAuditSubTab("pessoas")}
@@ -167,15 +194,15 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
               onSelectInscrito={onSelectInscrito}
             />
           )}
-        </TabsContent>
+        </>
+      )}
 
-        <TabsContent value="templates">
-          <TemplatesView
-            onViewSends={handleViewSends}
-            templateSendCounts={templateSendCounts}
-          />
-        </TabsContent>
-      </Tabs>
+      {activeTab === "templates" && (
+        <TemplatesView
+          onViewSends={handleViewSends}
+          templateSendCounts={templateSendCounts}
+        />
+      )}
     </div>
   );
 }
