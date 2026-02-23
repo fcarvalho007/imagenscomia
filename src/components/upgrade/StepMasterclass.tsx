@@ -58,7 +58,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
             MASTERCLASS ONLINE
           </p>
           <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[14px] max-sm:text-[13px] text-ink-400">Pagamento único · 5 de Março</p>
+          <p className="text-[14px] max-sm:text-[13px] text-ink-400">Quinta-feira, 12 de Março · 10h–13h</p>
         </div>
         <div className="bg-amber-50 rounded-lg p-2 max-sm:p-1.5 shrink-0 max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
           <p className="font-semibold text-[14px] max-sm:text-[13px] text-amber-700">Early bird: €47 + IVA</p>
@@ -84,7 +84,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
 
       {/* Event details */}
       <div className="flex flex-wrap gap-2 mt-3">
-        {["💻 Online", "⏱ 3 horas"].map((d) => (
+        {["📅 12 de Março", "💻 Online", "⏱ 3 horas"].map((d) => (
           <span key={d} className="text-[14px] max-sm:text-[13px] text-ink-400">{d}</span>
         ))}
       </div>

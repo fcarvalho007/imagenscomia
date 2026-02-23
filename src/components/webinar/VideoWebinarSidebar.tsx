@@ -98,7 +98,7 @@ export const VideoWebinarSidebar = () => {
         price="€15 + IVA"
         accent
         benefits={[
-          { icon: <Headphones className="w-4 h-4" />, text: "Sessão extra de Q&A em grupo (30 min)" },
+          { icon: <Headphones className="w-4 h-4" />, text: "Sessão extra de Q&A em grupo (30 min) — 10 Mar, 14:30h" },
           { icon: <FileText className="w-4 h-4" />, text: "Lista das melhores ferramentas por objetivo (curadoria prática)" },
           { icon: <FileText className="w-4 h-4" />, text: "Manual de apoio ao conhecimento em vídeo (passo a passo)" },
         ]}
@@ -120,7 +120,7 @@ export const VideoWebinarSidebar = () => {
           { icon: <Video className="w-4 h-4" />, text: "Ferramentas por objetivo (gratuitas e pagas)" },
           { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
         ]}
-        dateLine="5 de Março (quinta-feira) · Online · 3 horas"
+        dateLine="12 de Março (quinta-feira) · 10h–13h · Online"
         ctaLabel="Garantir lugar na Masterclass"
         onCtaClick={() => open("premium")}
         countdownSlot={<MasterclassCountdown />}

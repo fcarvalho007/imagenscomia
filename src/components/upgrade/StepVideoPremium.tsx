@@ -22,7 +22,7 @@ const bullets = [
   },
   {
     title: "Sessão Q&A exclusiva (30 min)",
-    sub: "Dúvidas respondidas ao vivo, em grupo.",
+    sub: "Terça-feira, 10 de Março, 14:30h–15:00h · Dúvidas respondidas ao vivo, em grupo.",
   },
 ];
 

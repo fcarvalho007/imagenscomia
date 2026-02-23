@@ -199,6 +199,7 @@ const UpgradeVideo = () => {
                 <div>
                   <p className="font-semibold text-[14px] text-ink-900">Gravação + Pack de Apoio</p>
                   <p className="text-[14px] text-ink-400 mt-0.5">Acesso contínuo</p>
+                  <p className="text-[13px] text-blue-600 mt-0.5">Q&A: 10 Mar, 14:30h</p>
                 </div>
                 <p className="font-heading font-bold text-[16px] text-ink-900">€15 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
               </div>
@@ -207,7 +208,7 @@ const UpgradeVideo = () => {
               <div className="flex justify-between items-start py-3 border-b border-border">
                 <div>
                   <p className="font-semibold text-[14px] text-ink-900">Masterclass Online</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">3h · Online</p>
+                  <p className="text-[14px] text-ink-400 mt-0.5">12 Mar · 10h-13h · Online</p>
                 </div>
                 <p className="font-heading font-bold text-[14px] text-ink-900">€47 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
               </div>
@@ -216,7 +217,7 @@ const UpgradeVideo = () => {
               <div className="flex justify-between items-start py-3 border-b border-border">
                 <div>
                   <p className="font-semibold text-[14px] text-ink-900">Webinar Gratuito</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">3 Mar · 21h00</p>
+                  <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
                 </div>
                 <p className="font-heading font-bold text-[16px] text-green-600">€0</p>
               </div>

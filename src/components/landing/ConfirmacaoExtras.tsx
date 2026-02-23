@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Copy, Check, Linkedin, Twitter } from "lucide-react";
-import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
 
 const SITE_URL = import.meta.env.VITE_PUBLIC_SITE_URL || "https://imagenscomia.com";
@@ -36,7 +35,15 @@ const ConfirmacaoExtras = () => {
       {/* Passo 2 — Calendário */}
       <div className="flex items-start gap-3">
         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">2</span>
-        <WebinarCalendarButton className="flex-1" />
+        <a
+          href="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#4285F4] hover:bg-[#3367D6]"
+        >
+          <img src="/google-cal-icon.svg" alt="" className="w-5 h-5" />
+          Adicionar ao Google Calendar
+        </a>
       </div>
 
       {/* Passo 3 — Social Share Card */}
