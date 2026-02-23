@@ -70,11 +70,11 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
       <div className="w-full h-px bg-border my-4" />
 
       {/* Date box */}
-      <div className="flex items-start gap-2.5 rounded-lg p-2.5 mb-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
-        <span className="text-[18px] leading-none">📅</span>
+      <div className="flex items-start gap-2 sm:gap-2.5 rounded-lg p-2 sm:p-2.5 mb-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+        <span className="text-[16px] sm:text-[18px] leading-none">📅</span>
         <div>
-          <p className="text-[12px] font-bold" style={{ color: '#4c1d95' }}>Sessão ao vivo · 3 horas</p>
-          <p className="text-[12px]" style={{ color: '#6d28d9' }}>Quinta-feira, 12 de Março · 10h00–13h00 · Online</p>
+          <p className="text-[11px] sm:text-[12px] font-bold" style={{ color: '#4c1d95' }}>Sessão ao vivo · 3 horas</p>
+          <p className="text-[11px] sm:text-[12px]" style={{ color: '#6d28d9' }}>Quinta-feira, 12 de Março · 10h00–13h00 · Online</p>
         </div>
       </div>
 
@@ -102,8 +102,8 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
       {/* CTA */}
       <button
         onClick={() => setShowConfirm(true)}
-        className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors"
-        style={{ backgroundColor: "#7c3aed" }}
+        className="w-full mt-4 mb-4 text-white font-heading font-bold text-[15px] sm:text-[16px] py-3.5 sm:py-4 rounded-xl transition-colors min-h-[52px]"
+        style={{ backgroundColor: "#7c3aed", whiteSpace: "normal" }}
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#6d28d9")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#7c3aed")}
       >

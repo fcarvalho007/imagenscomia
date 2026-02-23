@@ -212,7 +212,7 @@ const VideoPageInner = () => {
   }, []);
 
   return (
-    <div className="min-h-screen pt-[52px]" style={{ background: DARK_950, color: "#e2e8f0" }}>
+    <div className="min-h-screen pt-[52px] overflow-x-hidden" style={{ background: DARK_950, color: "#e2e8f0" }}>
 
       {/* ═══ STICKY TOP BAR WITH COUNTDOWN ═══ */}
       <motion.div
@@ -280,7 +280,7 @@ const VideoPageInner = () => {
         <div className="relative px-5 text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 1200 }}>
           {/* Live badge pill */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
-            <span className="inline-flex items-center gap-2 font-heading text-[11px] font-semibold uppercase tracking-[2px] px-4 py-1.5 rounded-full mb-6" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
+            <span className="inline-flex items-center gap-2 font-heading text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-6 whitespace-nowrap max-w-[90vw]" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
               <span className="relative flex h-[6px] w-[6px]">
                 <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
                 <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
@@ -331,7 +331,7 @@ const VideoPageInner = () => {
             initial="hidden" animate="visible"
             variants={staggerContainer(0.1)}
             transition={{ delayChildren: 1.2 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-[700px] mx-auto"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-10 max-w-[700px] mx-auto"
           >
             {([
               { Icon: Calendar, label: "DATA", value: "5 de Março" },
@@ -358,10 +358,11 @@ const VideoPageInner = () => {
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
                 onClick={openModal}
-                className="font-heading text-white text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full"
-                style={{ background: "#16A34A", fontWeight: 700, padding: "22px 56px", borderRadius: 10, maxWidth: 500, minWidth: 300 }}
+                className="font-heading text-white text-[16px] sm:text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full whitespace-nowrap"
+                style={{ background: "#16A34A", fontWeight: 700, padding: "16px 20px", borderRadius: 10, maxWidth: 500, minWidth: 0 }}
               >
-                Sim, quero inscrever-me grátis
+                <span className="hidden sm:inline">Sim, quero inscrever-me grátis</span>
+                <span className="sm:hidden">Inscrever-me gratuitamente</span>
               </button>
             </ElectricBorder>
           </motion.div>
@@ -623,8 +624,10 @@ const VideoPageInner = () => {
             <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
               O que acontece durante a sessão
             </h2>
-            <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto">
-              3 blocos práticos. <em>Demos</em> ao vivo. Resultados no dia seguinte.
+            <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto leading-[1.7]">
+              <span className="block">3 blocos práticos.</span>
+              <span className="block italic">Demos ao vivo.</span>
+              <span className="block">Resultados no dia seguinte.</span>
             </p>
           </ScrollReveal>
 

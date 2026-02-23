@@ -267,7 +267,7 @@ const UpgradeVideo = () => {
         </aside>
 
         {/* Right content */}
-        <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen">
+        <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen overflow-x-hidden">
           <div className="px-4 pt-4 pb-24 sm:pt-6 lg:px-12 lg:pt-10 lg:pb-10">
 
             {/* Confirmation banner — after step 2 (video premium added) */}
@@ -288,7 +288,19 @@ const UpgradeVideo = () => {
                 <div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%`, transition: "width 400ms ease" }} />
               </div>
               <p className="text-right text-[14px] text-ink-400 font-medium mt-1.5">
-                Passo {step}/{totalSteps}{step === 2 && " — Gravação Vídeo (opcional)"}{step === 3 && " — Masterclass Vídeo (opcional)"}
+                Passo {step}/{totalSteps}
+                {step === 2 && (
+                  <>
+                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo (opcional)</span>
+                    <span className="min-[480px]:hidden"> — Gravação</span>
+                  </>
+                )}
+                {step === 3 && (
+                  <>
+                    <span className="hidden min-[480px]:inline"> — Masterclass Vídeo (opcional)</span>
+                    <span className="min-[480px]:hidden"> — Masterclass</span>
+                  </>
+                )}
               </p>
             </div>
 
