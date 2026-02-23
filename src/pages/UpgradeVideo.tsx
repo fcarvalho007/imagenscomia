@@ -243,7 +243,6 @@ const UpgradeVideo = () => {
                 <div>
                   <p className="font-semibold text-[14px] text-ink-900">Webinar Vídeo com IA</p>
                   <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
-                  <p className="text-[12px] mt-1" style={{ color: '#888' }}>📅 5 de Março · 10h00</p>
                 </div>
                 <p className="font-heading font-bold text-[16px] text-green-600">€0</p>
               </div>
