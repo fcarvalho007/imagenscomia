@@ -96,11 +96,11 @@ const Confirmacao = () => {
               </motion.h1>
 
               <motion.p {...fadeUp(0.2)} className="text-[15px] text-ink-500 mb-1">
-                {isFree ? "A tua inscrição foi confirmada." : "Obrigado pela confiança."}
+                {isFree ? "A sua inscrição foi confirmada." : "Obrigado pela confiança."}
               </motion.p>
 
               <motion.p {...fadeUp(0.25)} className="text-[14px] text-ink-400 mb-8">
-                {isFree ? "Adiciona ao calendário para não te esqueceres." : "Vamos aguardar a confirmação do seu pagamento."}
+                {isFree ? "Adicione ao calendário para não se esquecer." : "Vamos aguardar a confirmação do seu pagamento."}
               </motion.p>
             </>
           );
