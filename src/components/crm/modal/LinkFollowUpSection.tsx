@@ -81,8 +81,8 @@ export default function LinkFollowUpSection({ inscrito, onToggleDoNotContact }: 
           </p>
         </div>
         <div>
-          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Follow-up automático</span>
-          <p className="text-foreground font-medium">Etapa {Math.min(inscrito.followup_stage, 3)}/3</p>
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Emails automáticos</span>
+          <p className="text-foreground font-medium">A enviar sequência (email {Math.min(inscrito.followup_stage, 3)} de 3)</p>
         </div>
       </div>
 
