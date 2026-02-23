@@ -21,6 +21,7 @@ interface Props {
   inscritos: Inscrito[];
   logs: MessageLog[];
   logsLoading: boolean;
+  onOpenEditor?: (templateKey: string) => void;
 }
 
 type TagType = "IMEDIATO" | "AGENDADO" | "ENVIADO" | "MANUAL" | "ERRO";
@@ -193,10 +194,12 @@ function Timeline({
   webinar,
   inscritos,
   logs,
+  onOpenEditor,
 }: {
   webinar: WebinarKey;
   inscritos: Inscrito[];
   logs: MessageLog[];
+  onOpenEditor?: (templateKey: string) => void;
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
@@ -341,7 +344,11 @@ function Timeline({
                 )}
                 {node.type === "email" && !node.isPostWebinar && (
                   <button
-                    onClick={() => toast("Editor de email — disponível em breve")}
+                    onClick={() => {
+                      const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
+                      const tplKey = `${webinar}_${emailKey.replace("stage_0", "confirmation")}`;
+                      onOpenEditor?.(tplKey);
+                    }}
                     className="text-[12px] font-medium hover:underline"
                     style={{ color: "#2563EB" }}
                   >
@@ -351,7 +358,7 @@ function Timeline({
                 {node.isPostWebinar && (
                   <div className="flex flex-col items-end gap-1">
                     <button
-                      onClick={() => toast("Editor de email — disponível em breve")}
+                      onClick={() => onOpenEditor?.(`${webinar}_postwebinar`)}
                       className="text-[12px] font-medium hover:underline"
                       style={{ color: "#2563EB" }}
                     >
@@ -387,7 +394,7 @@ function Timeline({
 }
 
 /* ─── Main Component ─── */
-export default function AutomationFlowTab({ inscritos, logs, logsLoading }: Props) {
+export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpenEditor }: Props) {
   const { webinarContext } = useWebinarContext();
 
   if (logsLoading) {
@@ -407,13 +414,13 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading }: Prop
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               📷 Imagens IA · 18 Fev 2026
             </h3>
-            <Timeline webinar="imagens" inscritos={inscritos} logs={logs} />
+             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
           </div>
           <div>
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               🎬 Vídeo IA · 2 Mar 2026
             </h3>
-            <Timeline webinar="video" inscritos={inscritos} logs={logs} />
+            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
           </div>
         </div>
       </div>
@@ -425,7 +432,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading }: Prop
   return (
     <div>
       <StatusBar logs={logs} webinar={webinar} />
-      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} />
+      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} />
     </div>
   );
 }
