@@ -72,6 +72,23 @@ serve(async (req) => {
         console.error("E-goi sync failed for existing registration (non-blocking):", egoiError);
       }
 
+      // Video webinar: sync to E-goi with video tag (non-blocking)
+      if ((webinar || "imagens") === "video") {
+        fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/egoi-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            action: "register",
+            email: email.toLowerCase().trim(),
+            fname: (existing.first_name || "").trim(),
+            phone: existing.whatsapp ? `+351${existing.whatsapp.replace(/\D/g, "")}` : "",
+          }),
+        }).catch(err => console.error("egoi-sync (video existing) failed:", err));
+      }
+
       const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
       return new Response(
         JSON.stringify({
@@ -169,6 +186,23 @@ serve(async (req) => {
       console.log(`E-goi sync result: ${egoiResponse.status} - ${egoiResult}`);
     } catch (egoiError) {
       console.error("E-goi sync failed (non-blocking):", egoiError);
+    }
+
+    // Video webinar: sync to E-goi with video tag (non-blocking)
+    if ((webinar || "imagens") === "video") {
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/egoi-sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          action: "register",
+          email: email.toLowerCase().trim(),
+          fname: firstName.trim(),
+          phone: cleanPhone ? `+351${cleanPhone.replace(/\D/g, "")}` : "",
+        }),
+      }).catch(err => console.error("egoi-sync (video register) failed:", err));
     }
 
     // Send video confirmation email (non-blocking)

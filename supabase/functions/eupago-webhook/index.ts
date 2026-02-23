@@ -202,18 +202,27 @@ async function processPayment(data: PaymentData) {
     // ── E-Goi: attach purchase tags based on plan ──────────────────────────
     try {
       const EGOI_API_KEY = Deno.env.get("EGOI_API_KEY");
-      const TAG_PREMIUM = 32;      // premium_pass_webinar_imagens_com_ia_18_fev
-      const TAG_MASTERCLASS = 33;  // masterclass_webinar_imagens_com_ia_18_fev
 
       if (EGOI_API_KEY) {
         const { data: regForTags } = await supabase
           .from("registrations")
-          .select("email, plan_selected")
+          .select("email, plan_selected, webinar")
           .eq("id", matchedRegId)
           .maybeSingle();
 
         if (regForTags?.email && regForTags?.plan_selected) {
           const plan = regForTags.plan_selected;
+          const webinar = regForTags.webinar || "imagens";
+
+          // Normalise plan (remove "video-" prefix if present)
+          const normalizedPlan = plan.replace(/^video-/, "");
+
+          // Tag map per webinar
+          const TAG_MAP: Record<string, { premium: number; masterclass: number }> = {
+            imagens: { premium: 32, masterclass: 33 },
+            video:   { premium: 35, masterclass: 33 },
+          };
+          const tags = TAG_MAP[webinar] || TAG_MAP.imagens;
 
           // Look up contact by email
           const contactRes = await fetch(
@@ -237,11 +246,11 @@ async function processPayment(data: PaymentData) {
               console.log(`📌 E-goi attach tag ${tagId} to ${regForTags.email}: status=${res.status}, body=${text}`);
             };
 
-            if (["premium", "bundle"].includes(plan)) {
-              await attachTag(TAG_PREMIUM);
+            if (["premium", "bundle"].includes(normalizedPlan)) {
+              await attachTag(tags.premium);
             }
-            if (["masterclass", "bundle"].includes(plan)) {
-              await attachTag(TAG_MASTERCLASS);
+            if (["masterclass", "bundle"].includes(normalizedPlan)) {
+              await attachTag(tags.masterclass);
             }
           } else {
             console.warn(`⚠️ E-goi: contact not found for email=${regForTags.email}`);
