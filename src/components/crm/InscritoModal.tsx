@@ -9,6 +9,13 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji, type Gender } from "@/lib/genderDetection";
 import googleIcon from "@/assets/google_g_icon.svg";
 import { supabase } from "@/integrations/supabase/client";
+import { WEBINAR_CONFIG } from "@/config/webinarConfig";
+
+const PLAN_VALUES: Record<string, string> = {
+  premium: "15",
+  masterclass: "47",
+  bundle: "62",
+};
 
 // New sub-components
 import ClientHeader from "./modal/ClientHeader";
@@ -86,6 +93,11 @@ export default function InscritoModal({
   // Send payment modal
   const [sendPaymentOpen, setSendPaymentOpen] = useState(false);
 
+  // Cross-webinar history
+  const [crossHistory, setCrossHistory] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   // Step reached — pending confirm
   const [pendingStep, setPendingStep] = useState<number | null>(null);
   const [stepSaving, setStepSaving] = useState(false);
@@ -102,6 +114,38 @@ export default function InscritoModal({
       setPaymentEvents(evts);
     }).finally(() => setLogsLoading(false));
   }, [inscrito.id, fetchMessageLogs, fetchPaymentEvents]);
+
+  // Cross-webinar history fetch
+  useEffect(() => {
+    setHistoryLoading(true);
+    setCrossHistory([]);
+    const fetchHistory = async () => {
+      try {
+        const { data } = await supabase
+          .from("registrations")
+          .select("id, webinar, plan_selected, step_reached, created_at, paid_at")
+          .eq("email", inscrito.email)
+          .neq("id", inscrito.id)
+          .order("created_at", { ascending: false });
+        const hist = data || [];
+        setCrossHistory(hist);
+        setHistoryOpen(hist.length > 0);
+      } catch {
+        setCrossHistory([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [inscrito.id, inscrito.email]);
+
+  // Derived cross-history badges
+  const hasPaidBefore = crossHistory.some(h => !!h.paid_at);
+  const hasAttendedBefore = !hasPaidBefore && crossHistory.some(h => (h.step_reached ?? 0) >= 3);
+  const masterclassImagensRecord = crossHistory.find(
+    h => h.webinar === "imagens" && h.plan_selected === "masterclass" && h.paid_at
+  );
+  const hasMasterclassImagens = !!masterclassImagensRecord;
 
   const currentIdx = todos.findIndex((i) => i.id === inscrito.id);
   const hasPrev = currentIdx > 0;
@@ -264,6 +308,18 @@ export default function InscritoModal({
                       </div>
                     )}
                     <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
+                    {hasPaidBefore && (
+                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: "#d97706" }}>
+                        ⭐ Cliente anterior
+                      </div>
+                    )}
+                    {hasAttendedBefore && (
+                      <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                        style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "#3b82f6" }}>
+                        🔄 Inscrito anterior
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
@@ -352,6 +408,23 @@ export default function InscritoModal({
                     Inscrito em {fmtDate(inscrito.timestamp)}
                   </p>
                 </div>
+
+                {hasPaidBefore && (
+                  <div className="mt-2 flex justify-center">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                      style={{ background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", color: "#d97706" }}>
+                      ⭐ Cliente anterior
+                    </div>
+                  </div>
+                )}
+                {hasAttendedBefore && (
+                  <div className="mt-2 flex justify-center">
+                    <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                      style={{ background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)", color: "#3b82f6" }}>
+                      🔄 Inscrito anterior
+                    </div>
+                  </div>
+                )}
 
                 <div className="my-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }} />
 
@@ -524,6 +597,23 @@ export default function InscritoModal({
 
           {/* RIGHT PANEL */}
           <div className="overflow-y-auto p-4 md:p-7 bg-white">
+            {/* Smart alert: Masterclass cross-sell warning */}
+            {hasMasterclassImagens && inscrito.webinar === "video" && masterclassImagensRecord && (
+              <div className="mb-4 rounded-lg p-3.5 flex items-start gap-2.5"
+                style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}>
+                <span className="text-[16px] mt-0.5">⚠️</span>
+                <div>
+                  <p className="text-[13px] font-semibold" style={{ color: "#d97706" }}>
+                    Este inscrito já comprou a Masterclass no Webinar Imagens IA
+                    {masterclassImagensRecord.paid_at ? ` (${fmtDate(masterclassImagensRecord.paid_at)})` : ""}.
+                  </p>
+                  <p className="text-[12px] mt-0.5" style={{ color: "#d97706" }}>
+                    Não enviar pitch de Masterclass — ajustar comunicação.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Client Header (sticky summary) */}
             <ClientHeader inscrito={inscrito} />
 
@@ -632,6 +722,97 @@ export default function InscritoModal({
 
             {/* Funnel */}
             <FunnelView inscrito={inscrito} />
+
+            {/* Cross-webinar history section */}
+            <hr className="border-border my-6" />
+            <div>
+              <button onClick={() => setHistoryOpen(!historyOpen)} className="flex items-center gap-2 w-full text-left">
+                <ChevronRight size={14} className={`transition-transform text-muted-foreground ${historyOpen ? "rotate-90" : ""}`} />
+                <h3 className="font-heading font-bold text-[14px] text-foreground">
+                  Histórico de Webinars
+                </h3>
+                {crossHistory.length > 0 && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                    {crossHistory.length}
+                  </span>
+                )}
+              </button>
+
+              {historyOpen && (
+                <div className="mt-3 space-y-2">
+                  {historyLoading ? (
+                    <p className="text-[12px] text-muted-foreground">A carregar...</p>
+                  ) : crossHistory.length === 0 ? (
+                    <p className="text-[11px] italic" style={{ color: "#666" }}>
+                      Primeira vez neste ecossistema
+                    </p>
+                  ) : (
+                    crossHistory.map(h => {
+                      const wCfg = WEBINAR_CONFIG[h.webinar as keyof typeof WEBINAR_CONFIG];
+                      const isVideo = h.webinar === "video";
+                      const isFree = !h.plan_selected || h.plan_selected === "free";
+                      const isPaid = !!h.paid_at;
+
+                      let planLabel = "Inscrito gratuito";
+                      let planBg = "rgba(0,0,0,0.06)";
+                      let planColor = "#666";
+                      let statusLabel = (h.step_reached ?? 0) >= 3 ? "Completou o flow" : "Não completou o flow";
+                      let statusColor = (h.step_reached ?? 0) >= 3 ? "#16a34a" : "#d97706";
+
+                      if (!isFree && isPaid) {
+                        statusLabel = "✓ Pago";
+                        statusColor = "#16a34a";
+                        if (h.plan_selected === "premium") {
+                          planLabel = "Premium Pass €15+IVA";
+                          planBg = "rgba(30,64,175,0.15)";
+                          planColor = "#1e40af";
+                        } else if (h.plan_selected === "masterclass") {
+                          planLabel = "Masterclass €47+IVA";
+                          planBg = "rgba(124,58,237,0.15)";
+                          planColor = "#7c3aed";
+                        } else if (h.plan_selected === "bundle") {
+                          planLabel = "Bundle €62+IVA";
+                          planBg = "rgba(15,23,42,0.12)";
+                          planColor = "#0f172a";
+                        }
+                      }
+
+                      return (
+                        <div key={h.id} style={{
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(0,0,0,0.06)",
+                          borderRadius: 8, padding: "10px 14px"
+                        }}>
+                          <div className="flex items-center justify-between">
+                            <span style={{
+                              background: isVideo ? "rgba(22,163,74,0.15)" : "rgba(30,64,175,0.15)",
+                              color: isVideo ? "#16a34a" : "#1e40af",
+                              fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12
+                            }}>
+                              {isVideo ? "🎬 Vídeo IA" : "📷 Imagens IA"} · {wCfg?.date || "—"}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">{fmtDate(h.created_at)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: planBg, color: planColor }}>
+                              {planLabel}
+                            </span>
+                            <span className="text-[10px] font-medium" style={{ color: statusColor }}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                          {isPaid && (
+                            <div className="mt-1.5 text-[11px] text-muted-foreground">
+                              Valor pago: €{PLAN_VALUES[h.plan_selected] || "—"}+IVA · Pago em {fmtDate(h.paid_at)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Origem */}
             {inscrito.source.length > 0 && (
