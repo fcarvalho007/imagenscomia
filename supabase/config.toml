@@ -38,3 +38,18 @@ verify_jwt = false
 
 [functions.grant-premium-egoi]
 verify_jwt = false
+
+[functions.send-video-confirmation]
+verify_jwt = false
+
+[functions.send-video-reminder-48h]
+verify_jwt = false
+
+[functions.send-video-reminder-24h]
+verify_jwt = false
+
+[functions.send-video-reminder-1h]
+verify_jwt = false
+
+[functions.send-video-postwebinar]
+verify_jwt = false

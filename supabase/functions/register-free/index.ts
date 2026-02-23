@@ -171,6 +171,21 @@ serve(async (req) => {
       console.error("E-goi sync failed (non-blocking):", egoiError);
     }
 
+    // Send video confirmation email (non-blocking)
+    if ((webinar || "imagens") === "video") {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        fetch(`${supabaseUrl}/functions/v1/send-video-confirmation`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify({ email: email.toLowerCase().trim(), fname: firstName.trim() }),
+        }).catch((err) => console.error("Video confirmation email failed (non-blocking):", err));
+      } catch (err) {
+        console.error("Video confirmation email setup failed:", err);
+      }
+    }
+
     const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
 
     return new Response(
