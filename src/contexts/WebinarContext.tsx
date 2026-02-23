@@ -9,7 +9,7 @@ interface WebinarContextValue {
 const Ctx = createContext<WebinarContextValue | null>(null);
 
 export function WebinarProvider({ children }: { children: ReactNode }) {
-  const [webinarContext, setWebinarContext] = useState<WebinarCtxType>("imagens");
+  const [webinarContext, setWebinarContext] = useState<WebinarCtxType>("video");
   return (
     <Ctx.Provider value={{ webinarContext, setWebinarContext }}>
       {children}

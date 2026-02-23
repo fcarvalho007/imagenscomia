@@ -3,6 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Save, Eye, Loader2, History, RotateCcw, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useWebinarContext } from "@/contexts/WebinarContext";
+
+function getTemplateWebinar(key: string): "imagens" | "video" {
+  if (key.startsWith("video_")) return "video";
+  return "imagens";
+}
+
+function getTemplateBadge(key: string): { label: string; bg: string; color: string } {
+  if (key.startsWith("video_")) return { label: "🎬 Vídeo", bg: "rgba(22,163,74,0.1)", color: "#16a34a" };
+  if (key.startsWith("followup_")) return { label: "📷 Imagens · Follow-up", bg: "rgba(30,64,175,0.1)", color: "#1e40af" };
+  return { label: "📷 Imagens", bg: "rgba(30,64,175,0.1)", color: "#1e40af" };
+}
 
 interface EmailTemplate {
   id: string;
@@ -57,6 +69,7 @@ interface TemplatesViewProps {
 }
 
 export default function TemplatesView({ onViewSends, templateSendCounts }: TemplatesViewProps = {}) {
+  const { webinarContext } = useWebinarContext();
   const [allTemplates, setAllTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<EmailTemplate | null>(null);
@@ -95,12 +108,67 @@ export default function TemplatesView({ onViewSends, templateSendCounts }: Templ
     });
   }, [allTemplates]);
 
+  const filteredTemplates = useMemo(() => {
+    if (webinarContext === "imagens") return activeTemplates.filter(t => t.template_key.startsWith("imagens_") || t.template_key.startsWith("followup_"));
+    if (webinarContext === "video") return activeTemplates.filter(t => t.template_key.startsWith("video_"));
+    return activeTemplates; // consolidado
+  }, [activeTemplates, webinarContext]);
+
   // Version history for a given key
   const historyFor = (key: string) =>
     allTemplates.filter(t => t.template_key === key).sort((a, b) => b.version - a.version);
 
   const versionCount = (key: string) =>
     allTemplates.filter(t => t.template_key === key).length;
+
+  const renderRow = (tpl: EmailTemplate) => {
+    const badge = getTemplateBadge(tpl.template_key);
+    return (
+      <tr
+        key={tpl.id}
+        className="border-b border-border last:border-0 hover:bg-blue-50/40 cursor-pointer transition-colors"
+        onClick={() => openEdit(tpl)}
+      >
+        <td className="px-4 py-3">
+          <div className="text-[13px] font-medium text-ink-800">{tpl.name || tpl.template_key}</div>
+          <span className="inline-block text-[9px] font-semibold mt-[3px]" style={{ background: badge.bg, color: badge.color, padding: "2px 7px", borderRadius: 10 }}>{badge.label}</span>
+        </td>
+        <td className="px-4 py-3 text-[12px] text-ink-500 font-mono max-sm:hidden">{tpl.template_key}</td>
+        <td className="px-4 py-3 text-[13px] text-ink-600 max-w-[200px] truncate">{tpl.subject}</td>
+        <td className="px-4 py-3 text-center">
+          <span className="text-[13px] font-semibold text-blue-600">{templateSendCounts?.[tpl.template_key] || 0}</span>
+          {onViewSends && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onViewSends(tpl.template_key); }}
+              className="ml-1.5 text-[11px] text-blue-500 hover:text-blue-700 underline"
+            >
+              ver
+            </button>
+          )}
+        </td>
+        <td className="px-4 py-3 text-[12px] text-ink-500 text-center font-mono">v{tpl.version}</td>
+        <td className="px-4 py-3 text-center">
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleActive(tpl); }}
+            className={`w-9 h-5 rounded-full relative transition-colors ${tpl.is_active ? "bg-green-500" : "bg-ink-200"}`}
+          >
+            <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${tpl.is_active ? "left-[18px]" : "left-0.5"}`} />
+          </button>
+        </td>
+        <td className="px-4 py-3 text-[12px] text-ink-400 max-sm:hidden">{fmtDate(tpl.updated_at)}</td>
+        <td className="px-4 py-3 text-center">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowHistory(showHistory === tpl.template_key ? null : tpl.template_key); }}
+            className="text-ink-400 hover:text-blue-600 transition-colors"
+            title="Ver histórico de versões"
+          >
+            <History size={14} />
+            <span className="text-[10px] ml-0.5">{versionCount(tpl.template_key)}</span>
+          </button>
+        </td>
+      </tr>
+    );
+  };
 
   const openEdit = (tpl: EmailTemplate) => {
     setEditing(tpl);
@@ -215,48 +283,16 @@ export default function TemplatesView({ onViewSends, templateSendCounts }: Templ
               </tr>
             </thead>
             <tbody>
-              {activeTemplates.map((tpl) => (
-                <tr
-                  key={tpl.id}
-                  className="border-b border-border last:border-0 hover:bg-blue-50/40 cursor-pointer transition-colors"
-                  onClick={() => openEdit(tpl)}
-                >
-                  <td className="px-4 py-3 text-[13px] font-medium text-ink-800">{tpl.name || tpl.template_key}</td>
-                  <td className="px-4 py-3 text-[12px] text-ink-500 font-mono max-sm:hidden">{tpl.template_key}</td>
-                  <td className="px-4 py-3 text-[13px] text-ink-600 max-w-[200px] truncate">{tpl.subject}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-[13px] font-semibold text-blue-600">{templateSendCounts?.[tpl.template_key] || 0}</span>
-                    {onViewSends && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onViewSends(tpl.template_key); }}
-                        className="ml-1.5 text-[11px] text-blue-500 hover:text-blue-700 underline"
-                      >
-                        ver
-                      </button>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-ink-500 text-center font-mono">v{tpl.version}</td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleActive(tpl); }}
-                      className={`w-9 h-5 rounded-full relative transition-colors ${tpl.is_active ? "bg-green-500" : "bg-ink-200"}`}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${tpl.is_active ? "left-[18px]" : "left-0.5"}`} />
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-ink-400 max-sm:hidden">{fmtDate(tpl.updated_at)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setShowHistory(showHistory === tpl.template_key ? null : tpl.template_key); }}
-                      className="text-ink-400 hover:text-blue-600 transition-colors"
-                      title="Ver histórico de versões"
-                    >
-                      <History size={14} />
-                      <span className="text-[10px] ml-0.5">{versionCount(tpl.template_key)}</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {webinarContext === "consolidado" ? (
+                <>
+                  <tr><td colSpan={8} style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1.5, textTransform: "uppercase", padding: "8px 16px 4px", borderBottom: "1px solid #f0f0f0" }}>📷 WEBINAR IMAGENS IA</td></tr>
+                  {filteredTemplates.filter(t => getTemplateWebinar(t.template_key) === "imagens").map(renderRow)}
+                  <tr><td colSpan={8} style={{ fontSize: 11, fontWeight: 700, color: "#888", letterSpacing: 1.5, textTransform: "uppercase", padding: "8px 16px 4px", borderBottom: "1px solid #f0f0f0" }}>🎬 WEBINAR VÍDEO IA</td></tr>
+                  {filteredTemplates.filter(t => getTemplateWebinar(t.template_key) === "video").map(renderRow)}
+                </>
+              ) : (
+                filteredTemplates.map(renderRow)
+              )}
             </tbody>
           </table>
         </div>
