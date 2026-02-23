@@ -10,6 +10,28 @@ const corsHeaders = {
 const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 const TEMPLATE_KEY = "video_postwebinar";
 
+async function getSubscriberHistory(email: string, sb: any) {
+  try {
+    const { data } = await sb
+      .from("registrations")
+      .select("plan_selected, paid_at")
+      .eq("email", email.toLowerCase().trim())
+      .eq("webinar", "imagens")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return data?.[0] || null;
+  } catch { return null; }
+}
+
+function determineVariant(history: any): string {
+  if (!history) return "A";
+  const plan = history.plan_selected;
+  const paid = !!history.paid_at;
+  if ((plan === "masterclass" || plan === "bundle") && paid) return "D";
+  if (plan === "premium" && paid) return "C";
+  return "B";
+}
+
 function buildHtml(fname: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -53,13 +75,35 @@ function buildHtml(fname: string): string {
 </body></html>`;
 }
 
+function personaliseHtml(html: string, variant: string): string {
+  let result = html;
+
+  if (variant === "D") {
+    // Remove MC upsell block and replace with direct contact text
+    const mcBlockRegex = /<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">\s*<p[^>]*>Queres ir mais fundo\?<\/p>[\s\S]*?<\/div>\s*<\/div>/;
+    result = result.replace(mcBlockRegex, `<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
+    <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">
+      Já tens a Masterclass do nosso trabalho anterior — se quiseres explorar o tema Vídeo em profundidade, entra em contacto directamente: <a href="mailto:frederico@digitalfc.pt" style="color:#16a34a;font-weight:600;">frederico@digitalfc.pt</a>
+    </p>
+  </div>`);
+  }
+
+  if (variant === "C") {
+    // Add line before Premium Pass block
+    const premiumMarker = '<p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres acesso à gravação completa?</p>';
+    const extraLine = '<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 12px;">Já conheces o valor do Premium Pass — este cobre o Q&amp;A e gravação específicos do tema Vídeo.</p>\n    ';
+    result = result.replace(premiumMarker, extraLine + premiumMarker);
+  }
+
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth: accept cron secret OR service role bearer
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("authorization") || "";
     const isCron = cronSecret === Deno.env.get("CRON_SECRET");
@@ -111,50 +155,70 @@ serve(async (req) => {
       .eq("template_key", TEMPLATE_KEY)
       .maybeSingle();
 
-    for (const reg of toSend) {
-      try {
-        const fallbackHtml = buildHtml(reg.first_name || "");
-        const rawHtml = tpl?.html_body ?? fallbackHtml;
-        const html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
-        const emailSubject = tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir";
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: RESEND_FROM,
-            to: [reg.email],
-            subject: emailSubject,
-            html,
-          }),
-        });
-        const resendData = await resendRes.json();
+    // Process in batches of 5
+    for (let i = 0; i < toSend.length; i += 5) {
+      const batch = toSend.slice(i, i + 5);
+      const results = await Promise.all(batch.map(async (reg) => {
+        try {
+          // Check history for personalisation
+          const history = await getSubscriberHistory(reg.email, supabase);
+          const variant = determineVariant(history);
 
-        await supabase.from("message_logs").insert({
-          registration_id: reg.id,
-          template_key: TEMPLATE_KEY,
-          provider: "resend",
-          channel: "email",
-          status: resendRes.ok ? "sent" : "failed",
-          provider_message_id: resendData.id || null,
-          error: resendRes.ok ? null : JSON.stringify(resendData),
-        });
+          const fallbackHtml = buildHtml(reg.first_name || "");
+          const rawHtml = tpl?.html_body ?? fallbackHtml;
+          let html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
 
-        // Log to email_send_logs
-        await supabase.from("email_send_logs").insert({
-          webinar: "video",
-          email_key: "postwebinar",
-          recipient_email: reg.email,
-          fname: reg.first_name || "",
-          status: resendRes.ok ? "sent" : "failed",
-          resend_id: resendData.id || null,
-          error_message: resendRes.ok ? null : JSON.stringify(resendData),
-        });
+          // Personalise based on variant
+          html = personaliseHtml(html, variant);
 
-        if (resendRes.ok) sent++;
+          const emailSubject = tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir";
+          const resendRes = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              from: RESEND_FROM,
+              to: [reg.email],
+              subject: emailSubject,
+              html,
+            }),
+          });
+          const resendData = await resendRes.json();
+
+          await supabase.from("message_logs").insert({
+            registration_id: reg.id,
+            template_key: TEMPLATE_KEY,
+            provider: "resend",
+            channel: "email",
+            status: resendRes.ok ? "sent" : "failed",
+            provider_message_id: resendData.id || null,
+            error: resendRes.ok ? null : JSON.stringify(resendData),
+          });
+
+          await supabase.from("email_send_logs").insert({
+            webinar: "video",
+            email_key: "postwebinar",
+            recipient_email: reg.email,
+            fname: reg.first_name || "",
+            status: resendRes.ok ? "sent" : "failed",
+            resend_id: resendData.id || null,
+            error_message: resendRes.ok ? null : JSON.stringify(resendData),
+            metadata: JSON.stringify({
+              variant,
+              had_imagens_history: history !== null,
+              imagens_plan: history?.plan_selected || null,
+            }),
+          });
+
+          return resendRes.ok ? "sent" : "failed";
+        } catch (err) {
+          console.error(`Failed for ${reg.email}:`, err);
+          return "failed";
+        }
+      }));
+
+      for (const r of results) {
+        if (r === "sent") sent++;
         else errors++;
-      } catch (err) {
-        console.error(`Failed for ${reg.email}:`, err);
-        errors++;
       }
     }
 

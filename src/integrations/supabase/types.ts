@@ -41,6 +41,7 @@ export type Database = {
           error_message: string | null
           fname: string | null
           id: string
+          metadata: Json | null
           recipient_email: string
           resend_id: string | null
           sent_at: string | null
@@ -52,6 +53,7 @@ export type Database = {
           error_message?: string | null
           fname?: string | null
           id?: string
+          metadata?: Json | null
           recipient_email: string
           resend_id?: string | null
           sent_at?: string | null
@@ -63,6 +65,7 @@ export type Database = {
           error_message?: string | null
           fname?: string | null
           id?: string
+          metadata?: Json | null
           recipient_email?: string
           resend_id?: string | null
           sent_at?: string | null

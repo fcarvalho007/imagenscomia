@@ -22,6 +22,7 @@ interface SendLog {
   resend_id: string | null;
   error_message: string | null;
   sent_at: string;
+  metadata: string | null;
 }
 
 const EMAIL_KEY_LABELS: Record<string, string> = {
@@ -155,6 +156,7 @@ function HistoryTab({ templateKey }: { templateKey: string }) {
               <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Email</th>
               <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Nome</th>
               <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Estado</th>
+              <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>Variante</th>
               <th style={{ textAlign: "left", padding: "8px 6px", color: "#64748B", fontWeight: 600, fontSize: 11 }}>ID Resend</th>
             </tr>
           </thead>
@@ -177,6 +179,28 @@ function HistoryTab({ templateKey }: { templateKey: string }) {
                       Falhou
                     </span>
                   )}
+                </td>
+                <td style={{ padding: "8px 6px" }}>
+                  {(() => {
+                    const meta = (() => {
+                      try { return log.metadata ? JSON.parse(log.metadata) : null; }
+                      catch { return null; }
+                    })();
+                    const v = meta?.variant || null;
+                    if (!v) return <span style={{ color: "#ccc" }}>—</span>;
+                    const cfg: Record<string, { bg: string; color: string; tip: string }> = {
+                      A: { bg: "#f1f5f9", color: "#64748b", tip: "Novo inscrito — email standard" },
+                      B: { bg: "#dbeafe", color: "#2563eb", tip: "Inscrito anterior (gratuito) — PS de reconhecimento" },
+                      C: { bg: "#ede9fe", color: "#7c3aed", tip: "Cliente Premium anterior — PS orientado para Q&A Vídeo" },
+                      D: { bg: "#fff7ed", color: "#d97706", tip: "Cliente Masterclass anterior — MC suprimida" },
+                    };
+                    const c = cfg[v] || cfg.A;
+                    return (
+                      <span title={c.tip} style={{ background: c.bg, color: c.color, fontSize: 10, padding: "2px 8px", borderRadius: 12, fontWeight: 600, cursor: "help" }}>
+                        {v}
+                      </span>
+                    );
+                  })()}
                 </td>
                 <td style={{ padding: "8px 6px" }}>
                   {log.resend_id ? (
