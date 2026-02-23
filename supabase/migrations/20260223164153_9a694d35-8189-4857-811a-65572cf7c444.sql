@@ -1,0 +1,1 @@
+ALTER TABLE public.registrations ADD COLUMN IF NOT EXISTS attended_live_at timestamptz DEFAULT NULL;

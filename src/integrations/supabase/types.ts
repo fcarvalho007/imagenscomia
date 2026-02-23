@@ -253,6 +253,7 @@ export type Database = {
       }
       registrations: {
         Row: {
+          attended_live_at: string | null
           created_at: string | null
           do_not_contact: boolean
           duvida: string | null
@@ -294,6 +295,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          attended_live_at?: string | null
           created_at?: string | null
           do_not_contact?: boolean
           duvida?: string | null
@@ -335,6 +337,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          attended_live_at?: string | null
           created_at?: string | null
           do_not_contact?: boolean
           duvida?: string | null

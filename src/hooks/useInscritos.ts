@@ -12,9 +12,8 @@ const PLAN_VALUES: Record<string, number> = {
 
 function mapRegistration(r: any): Inscrito {
   // Show plan_selected even without payment confirmation
-  const plan = r.paid_at
-    ? (r.plan_selected || "free")
-    : (r.plan_selected || "free");
+  const rawPlan = r.plan_selected || "free";
+  const plan = rawPlan.replace(/^video-/, ""); // normalize "video-free" -> "free"
   
   // Determine payment status (3 states)
   const payment_status: Inscrito["payment_status"] = r.paid_at
