@@ -1,4 +1,4 @@
-import { MapPin, Camera, Video, User, Check, Minus, Circle, ChevronRight } from "lucide-react";
+import { MapPin, Camera, Video, User, Check, Circle, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { WEBINAR_CONFIG } from "@/config/webinarConfig";
@@ -19,7 +19,7 @@ function fmtDate(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-const STEP_NAMES = ["Inscrição", "Origem", "Dúvida", "Premium", "Masterclass", "Conclusão"];
+const STEP_NAMES: Record<number, string> = { 1: "Inscrição", 2: "Origem", 3: "Dúvida", 4: "Premium", 5: "Masterclass" };
 
 interface TabResumoProps {
   inscrito: Inscrito;
@@ -36,7 +36,7 @@ export default function TabResumo({ inscrito, crossHistory, historyLoading, hasM
   const wCfg = WEBINAR_CONFIG[inscrito.webinar as keyof typeof WEBINAR_CONFIG];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Smart alert: Masterclass cross-sell */}
       {hasMasterclassImagens && inscrito.webinar === "video" && masterclassImagensRecord && (
         <div className="rounded-lg p-3 flex items-start gap-2.5" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)" }}>
@@ -50,106 +50,118 @@ export default function TabResumo({ inscrito, crossHistory, historyLoading, hasM
         </div>
       )}
 
-      {/* ROW 1 — 3 info cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg p-2.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <MapPin size={12} className="text-muted-foreground" />
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Origem</span>
+      {/* ROW 1 — Origem + Webinar (2 cols) */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl p-3.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <MapPin size={14} className="text-muted-foreground" />
+            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Origem</span>
           </div>
-          <p className="text-[14px] font-semibold" style={{ color: "#111" }}>
+          <p className="text-[16px] font-bold" style={{ color: "#111" }}>
             {inscrito.source.length > 0 ? abbreviateSource(inscrito.source[0]) : "—"}
           </p>
-          <p className="text-[11px]" style={{ color: "#aaa" }}>Como chegou</p>
+          <p className="text-[12px] mt-0.5" style={{ color: "#aaa" }}>Como chegou</p>
         </div>
-        <div className="rounded-lg p-2.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            {inscrito.webinar === "video" ? <Video size={12} className="text-muted-foreground" /> : <Camera size={12} className="text-muted-foreground" />}
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Webinar</span>
+        <div className="rounded-xl p-3.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {inscrito.webinar === "video" ? <Video size={14} className="text-muted-foreground" /> : <Camera size={14} className="text-muted-foreground" />}
+            <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Webinar</span>
           </div>
-          <p className="text-[14px] font-semibold" style={{ color: "#111" }}>
-            {inscrito.webinar === "video" ? "Vídeo IA" : "Imagens IA"} · {wCfg?.date || "—"}
+          <p className="text-[16px] font-bold" style={{ color: "#111" }}>
+            {inscrito.webinar === "video" ? "Vídeo IA" : "Imagens IA"}
           </p>
-          <p className="text-[11px]" style={{ color: "#aaa" }}>Evento inscrito</p>
-        </div>
-        <div className="rounded-lg p-2.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-          <div className="flex items-center gap-1.5 mb-1">
-            <User size={12} className="text-muted-foreground" />
-            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Qualificação</span>
-          </div>
-          <p className="text-[14px] font-semibold" style={{ color: "#111" }}>
-            {inscrito.role || "Não preenchido"}
-          </p>
-          <p className="text-[11px]" style={{ color: "#aaa" }}>{inscrito.team_size || ""}</p>
+          <p className="text-[12px] mt-0.5" style={{ color: "#aaa" }}>{wCfg?.date || "—"}</p>
         </div>
       </div>
 
-      {/* ROW 2 — Dúvida */}
+      {/* ROW 2 — Qualificação full width */}
+      <div className="rounded-xl p-3.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <User size={14} className="text-muted-foreground" />
+          <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#888" }}>Qualificação</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider mb-0.5" style={{ color: "#aaa" }}>Função</p>
+            <p className="text-[15px] font-semibold" style={{ color: "#111" }}>{inscrito.role || "Não preenchido"}</p>
+          </div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wider mb-0.5" style={{ color: "#aaa" }}>Equipa</p>
+            <p className="text-[15px] font-semibold" style={{ color: "#111" }}>{inscrito.team_size || "—"}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ROW 3 — Dúvida */}
       <div>
-        <span className="text-[10px] font-bold uppercase tracking-[1.5px] block mb-1.5" style={{ color: "#888" }}>
+        <span className="text-[11px] font-bold uppercase tracking-[1.5px] block mb-2" style={{ color: "#888" }}>
           Dúvida / Objectivo
         </span>
         {inscrito.duvida ? (
-          <div className="rounded-lg p-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-            <p className="text-[14px] italic leading-relaxed" style={{ color: "#333" }}>{inscrito.duvida}</p>
+          <div className="rounded-xl p-3.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+            <p className="text-[15px] italic leading-relaxed" style={{ color: "#333" }}>{inscrito.duvida}</p>
           </div>
         ) : (
           <p className="text-[13px] italic" style={{ color: "#999" }}>Saltou esta pergunta</p>
         )}
       </div>
 
-      {/* ROW 3 — Horizontal funnel */}
+      {/* ROW 4 — Funnel with progress bar */}
       <div>
-        <span className="text-[10px] font-bold uppercase tracking-[1.5px] block mb-2" style={{ color: "#888" }}>
-          Funil
+        <span className="text-[11px] font-bold uppercase tracking-[1.5px] block mb-2.5" style={{ color: "#888" }}>
+          Progresso no Funil
         </span>
-        <div className="flex items-center gap-1">
-          {[1, 2, 3, 4, 5].map((s, idx) => {
+        {/* Progress bar */}
+        <div className="flex gap-0.5 mb-2.5 rounded-full overflow-hidden h-[6px]" style={{ background: "#e2e8f0" }}>
+          {[1, 2, 3, 4, 5].map(s => (
+            <div key={s} className="flex-1" style={{ background: s <= step ? "#16a34a" : "transparent" }} />
+          ))}
+        </div>
+        {/* Step pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {[1, 2, 3, 4, 5].map((s) => {
             const completed = s <= step;
             const isExit = s === step && step < 5;
             return (
               <div key={s} className="flex items-center gap-1">
-                <div
-                  className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium"
+                <span
+                  className="text-[12px] font-medium px-2.5 py-1 rounded-full"
                   style={{
-                    background: completed ? "rgba(22,163,74,0.1)" : "rgba(0,0,0,0.04)",
-                    border: completed ? "1px solid rgba(22,163,74,0.2)" : "1px solid #e2e8f0",
-                    color: completed ? "#16a34a" : "#999",
+                    background: completed ? "rgba(22,163,74,0.1)" : "#f1f5f9",
+                    border: completed ? "1px solid rgba(22,163,74,0.25)" : "1px solid #e2e8f0",
+                    color: completed ? "#16a34a" : "#94a3b8",
                   }}
                 >
-                  {completed ? <Check size={10} /> : <Circle size={8} />}
-                  <span className="hidden sm:inline">{STEP_NAMES[s]}</span>
-                  <span className="sm:hidden">{s}</span>
-                </div>
-                {isExit && idx < 4 && (
-                  <span className="text-[8px] font-bold px-1" style={{ color: "#ef4444" }}>SAIU</span>
-                )}
+                  {completed ? <Check size={11} className="inline -mt-0.5 mr-0.5" /> : <Circle size={9} className="inline -mt-0.5 mr-0.5" />}
+                  {STEP_NAMES[s]}
+                </span>
+                {isExit && <span className="text-[10px] font-bold" style={{ color: "#ef4444" }}>SAIU</span>}
               </div>
             );
           })}
-          <span className="ml-auto text-[12px] font-semibold" style={{ color: "#666" }}>{pct}% ({step}/5)</span>
+          <span className="ml-auto text-[13px] font-bold" style={{ color: "#333" }}>{pct}%</span>
         </div>
       </div>
 
-      {/* ROW 4 — Cross-webinar history */}
+      {/* ROW 5 — Cross-webinar history */}
       <div>
         <button onClick={() => setHistoryOpen(!historyOpen)} className="flex items-center gap-2 w-full text-left">
           <ChevronRight size={14} className={`transition-transform text-muted-foreground ${historyOpen ? "rotate-90" : ""}`} />
-          <span className="text-[10px] font-bold uppercase tracking-[1.5px]" style={{ color: "#888" }}>
+          <span className="text-[11px] font-bold uppercase tracking-[1.5px]" style={{ color: "#888" }}>
             Histórico de Webinars
           </span>
           {crossHistory.length > 0 && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+            <span className="text-[12px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
               {crossHistory.length}
             </span>
           )}
         </button>
         {historyOpen && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2.5 space-y-2.5">
             {historyLoading ? (
-              <p className="text-[12px] text-muted-foreground">A carregar...</p>
+              <p className="text-[13px] text-muted-foreground">A carregar...</p>
             ) : crossHistory.length === 0 ? (
-              <p className="text-[11px] italic" style={{ color: "#666" }}>Primeira vez neste ecossistema</p>
+              <p className="text-[12px] italic" style={{ color: "#666" }}>Primeira vez neste ecossistema</p>
             ) : (
               crossHistory.map(h => {
                 const isVideo = h.webinar === "video";
@@ -168,19 +180,19 @@ export default function TabResumo({ inscrito, crossHistory, historyLoading, hasM
                   else if (h.plan_selected === "bundle") { planLabel = "Bundle €62+IVA"; planBg = "rgba(15,23,42,0.12)"; planColor = "#0f172a"; }
                 }
                 return (
-                  <div key={h.id} className="rounded-lg p-2.5" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                  <div key={h.id} className="rounded-xl p-3" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
                     <div className="flex items-center justify-between">
-                      <span style={{ background: isVideo ? "rgba(22,163,74,0.15)" : "rgba(30,64,175,0.15)", color: isVideo ? "#16a34a" : "#1e40af", fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12 }}>
+                      <span style={{ background: isVideo ? "rgba(22,163,74,0.15)" : "rgba(30,64,175,0.15)", color: isVideo ? "#16a34a" : "#1e40af", fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 12 }}>
                         {isVideo ? "🎬 Vídeo IA" : "📷 Imagens IA"} · {hCfg?.date || "—"}
                       </span>
-                      <span className="text-[11px]" style={{ color: "#aaa" }}>{fmtDate(h.created_at)}</span>
+                      <span className="text-[12px]" style={{ color: "#aaa" }}>{fmtDate(h.created_at)}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: planBg, color: planColor }}>{planLabel}</span>
-                      <span className="text-[10px] font-medium" style={{ color: statusColor }}>{statusLabel}</span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[12px] font-medium px-2.5 py-0.5 rounded-full" style={{ background: planBg, color: planColor }}>{planLabel}</span>
+                      <span className="text-[11px] font-medium" style={{ color: statusColor }}>{statusLabel}</span>
                     </div>
                     {isPaid && (
-                      <p className="mt-1 text-[11px]" style={{ color: "#aaa" }}>
+                      <p className="mt-1.5 text-[12px]" style={{ color: "#aaa" }}>
                         Valor: €{PLAN_VALUES[h.plan_selected] || "—"}+IVA · Pago em {fmtDate(h.paid_at)}
                       </p>
                     )}
