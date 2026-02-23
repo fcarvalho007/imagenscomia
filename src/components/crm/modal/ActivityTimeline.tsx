@@ -36,6 +36,7 @@ interface TimelineItem {
   eupago_ref?: string;
   event_type?: string;
   paymentUrl?: string | null;
+  templateKey?: string;
 }
 
 interface ActivityTimelineProps {
@@ -50,6 +51,18 @@ const STATUS_STYLES: Record<string, { className: string }> = {
   sent: { className: "bg-green-50 text-green-700" },
   delivered: { className: "bg-green-50 text-green-700" },
   failed: { className: "bg-red-50 text-red-700" },
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "A aguardar",
+  sent: "Enviado",
+  delivered: "Enviado",
+  failed: "Falhou",
+  resolved: "Resolvido",
+  created: "Criado",
+  processing: "A processar",
+  processed: "Processado",
+  queued: "Em fila",
 };
 
 export default function ActivityTimeline({ messageLogs, paymentEvents, loading, inscrito }: ActivityTimelineProps) {
@@ -91,6 +104,7 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       isLegacy: log.provider === "internal",
       isManual: MANUAL_KEYS.includes(log.template_key),
       paymentUrl: log.payment_url || null,
+      templateKey: log.template_key,
     }));
 
     const paymentItems: TimelineItem[] = paymentEvents.map((evt) => ({
@@ -196,19 +210,25 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
                     <div className="flex items-start gap-1.5 mb-1">
                       <Icon size={13} className={`mt-0.5 shrink-0 ${iconColor}`} />
                       <span className="text-[13px] font-semibold text-foreground">{item.title}</span>
+                      {item.templateKey?.includes("backlog") && (
+                        <span title="Inscrito que não interagiu com o link de pagamento há mais de 36h" style={{ cursor: "help" }} className="text-[11px]">ℹ️</span>
+                      )}
                     </div>
 
                     {/* Badges */}
                     <div className="flex flex-wrap items-center gap-1.5 text-[11px] mb-1">
                       {item.status && (
                         <span className={`font-medium px-1.5 py-0.5 rounded-full text-[10px] ${(STATUS_STYLES[item.status] || STATUS_STYLES.queued).className}`}>
-                          {item.status}
+                          {STATUS_LABELS[item.status] || item.status}
                         </span>
                       )}
                       {item.provider && (
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
-                          item.isLegacy ? "bg-muted text-muted-foreground" : "bg-blue-50 text-blue-700"
-                        }`}>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                            item.isLegacy ? "bg-muted text-muted-foreground" : "bg-blue-50 text-blue-700"
+                          }`}
+                          title={item.provider === "Resend" ? "Plataforma de envio de emails (sistema automático)" : undefined}
+                        >
                           {item.provider}
                         </span>
                       )}

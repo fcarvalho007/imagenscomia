@@ -1,16 +1,16 @@
 export const TEMPLATE_LABELS: Record<string, string> = {
   // Followup automático
-  followup_stage_0: "Etapa 0 — Confirmação de acesso",
-  followup_stage_1: "Etapa 1 — Reforço (6h)",
-  followup_stage_2: "Etapa 2 — Última chamada (24h)",
-  followup_backlog_checkin: "Backlog — Check-in",
-  followup_backlog_weak: "Backlog — Sinal fraco",
-  followup_final_before_event: "Final — Antes do webinar",
+  followup_stage_0: "Email de follow-up — Etapa inicial",
+  followup_stage_1: "Email de follow-up — 2ª tentativa",
+  followup_stage_2: "Email de follow-up — Última chamada",
+  followup_backlog_checkin: "Email de check-in (reactivação)",
+  followup_backlog_weak: "Email de follow-up fraco (sem clique)",
+  followup_final_before_event: "Email — última oportunidade antes do webinar",
   // Lembretes e manuais
   reminder_manual: "Lembrete manual",
   // Pagamento
   manual_payment_link_sent: "Link de pagamento enviado (manual)",
-  payment_confirmed_customer: "Confirmação de pagamento",
+  payment_confirmed_customer: "Email de confirmação de pagamento",
   payment_link_regenerated: "Link de pagamento regenerado",
   payment_failed: "Falha de pagamento",
   // Eventos EuPago
@@ -26,10 +26,19 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   crm_premium_granted: "Acesso Premium concedido (Oferta)",
   // Voucher
   voucher_redeemed: "Voucher aplicado (Acesso gratuito)",
+  // Resolve / Link
+  resolve_attempt: "Tentativa de resolver pagamento",
+  link_created: "Link de pagamento gerado",
+  // Confirmação vídeo
+  video_confirmation: "Email de confirmação enviado",
+  // Fatura
+  invoice_notification: "Email de notificação de fatura",
 };
 
 export function getTemplateLabel(key: string): string {
-  return TEMPLATE_LABELS[key] || key;
+  if (TEMPLATE_LABELS[key]) return TEMPLATE_LABELS[key];
+  const humanised = key.replace(/_/g, " ");
+  return humanised.charAt(0).toUpperCase() + humanised.slice(1);
 }
 
 export function fmtTimeAgo(iso: string): string {

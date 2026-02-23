@@ -69,7 +69,7 @@ export default function SidebarActions({
 
   const handleBacklog = async () => {
     if (!sendBacklogCheckin) return;
-    if (!confirm(`Enviar check-in backlog para ${inscrito.nome}?`)) return;
+    if (!confirm(`Enviar email de reactivação para ${inscrito.nome}?`)) return;
     setBacklogSending(true);
     try {
       await sendBacklogCheckin(inscrito.id, "followup_backlog_checkin");
@@ -120,10 +120,11 @@ export default function SidebarActions({
             onClick={handleBacklog}
             disabled={backlogSending || backlogSent}
             className={btnBase}
+            title="Envia um email para inscritos que estão há mais de 36h sem interagir com o link de pagamento"
             style={{ background: backlogSent ? "rgba(34,197,94,0.15)" : "rgba(59,130,246,0.12)", color: backlogSent ? "#22c55e" : "rgba(255,255,255,0.70)" }}
           >
             {backlogSending ? <Loader2 size={13} className="animate-spin" /> : backlogSent ? <Check size={13} /> : <Bell size={13} />}
-            {backlogSent ? "Check-in enviado ✓" : "Enviar check-in backlog"}
+            {backlogSent ? "Email de reactivação enviado ✓" : "Enviar email de reactivação"}
           </button>
         )}
       </div>
