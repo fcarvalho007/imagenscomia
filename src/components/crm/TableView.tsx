@@ -216,10 +216,10 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
   const exportCSV = (ids?: Set<string>) => {
     const BOM = "\uFEFF";
-    const header = "Primeiro Nome;Resto do Nome;Email;WhatsApp;Plano;Valor;Passo;Dúvida;Inscrição;Notas";
+    const header = "Primeiro Nome;Resto do Nome;Email;WhatsApp;Plano;Valor;Passo;Função;Equipa;Dúvida;Inscrição;Notas";
     const source = ids ? filtered.filter((i) => ids.has(i.id)) : filtered;
     const rows = source.map((i) =>
-      [i.primeiro_nome, i.resto_nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
+      [i.primeiro_nome, i.resto_nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.role || ""}"`, `"${i.team_size || ""}"`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
     );
     const csv = BOM + header + "\n" + rows.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -379,6 +379,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     {col.label}<SortIcon col={col.key} />
                   </th>
                 ))}
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">Função</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">Equipa</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[80px] max-lg:hidden">Origem</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">Dúvida</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[110px] cursor-pointer select-none" onClick={() => toggleSort("timestamp")}>
@@ -519,6 +521,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                           </div>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-3 max-lg:hidden">
+                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.role || "—"}>{i.role || "—"}</span>
+                    </td>
+                    <td className="px-4 py-3 max-lg:hidden">
+                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.team_size || "—"}>{i.team_size || "—"}</span>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${i.registration_source === "gravacao" ? "bg-ink-100 text-ink-700" : "bg-surface text-ink-400"}`}>

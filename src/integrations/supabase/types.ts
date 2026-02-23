@@ -246,8 +246,10 @@ export type Database = {
           referral_code: string
           referred_by: string | null
           registration_source: string
+          role: string | null
           sources: string | null
           step_reached: number | null
+          team_size: string | null
           upgrade_clicked_at: string | null
           webinar: string
           whatsapp: string | null
@@ -285,8 +287,10 @@ export type Database = {
           referral_code: string
           referred_by?: string | null
           registration_source?: string
+          role?: string | null
           sources?: string | null
           step_reached?: number | null
+          team_size?: string | null
           upgrade_clicked_at?: string | null
           webinar?: string
           whatsapp?: string | null
@@ -324,8 +328,10 @@ export type Database = {
           referral_code?: string
           referred_by?: string | null
           registration_source?: string
+          role?: string | null
           sources?: string | null
           step_reached?: number | null
+          team_size?: string | null
           upgrade_clicked_at?: string | null
           webinar?: string
           whatsapp?: string | null

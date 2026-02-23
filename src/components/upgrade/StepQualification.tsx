@@ -10,6 +10,21 @@ const SOURCE_OPTIONS = [
   "Podcast Marketing por Idiotas (RFM)",
 ];
 
+const ROLE_OPTIONS = [
+  "Gestor/a de marketing numa empresa",
+  "Empresário/a ou PME — faço o meu próprio marketing",
+  "Freelancer ou consultor/a de marketing",
+  "Criador/a de conteúdo",
+  "Outra função",
+];
+
+const TEAM_SIZE_OPTIONS = [
+  "Só eu",
+  "2 a 5 pessoas",
+  "6 a 20 pessoas",
+  "Mais de 20 pessoas",
+];
+
 interface Props {
   sources: string[];
   setSources: (s: string[]) => void;
@@ -18,10 +33,14 @@ interface Props {
   onNext: () => void;
   onSkip: () => void;
   userName?: string;
+  role?: string | null;
+  setRole?: (r: string | null) => void;
+  teamSize?: string | null;
+  setTeamSize?: (t: string | null) => void;
 }
 
 export const StepQualification = forwardRef<HTMLDivElement, Props>(
-  ({ sources, setSources, otherSource, setOtherSource, onNext, onSkip, userName }, ref) => {
+  ({ sources, setSources, otherSource, setOtherSource, onNext, onSkip, userName, role, setRole, teamSize, setTeamSize }, ref) => {
     const [showOther, setShowOther] = useState(sources.includes("Outro"));
     const firstName = userName?.trim().split(" ")[0] || "";
 
@@ -43,7 +62,7 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
     return (
       <div ref={ref} className="max-w-[560px]">
         <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
-          {firstName ? `${firstName}, só` : "Só"} 2 perguntas muito rápidas
+          {firstName ? `${firstName}, só` : "Só"} algumas perguntas rápidas
         </h2>
         <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-7">
           Para garantir que o webinar cobre o que precisas.
@@ -115,6 +134,83 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
             />
           )}
         </div>
+
+        {/* Divider */}
+        {setRole && (
+          <>
+            <div className="w-full" style={{ height: 1, background: "#e5e7eb", margin: "24px 0" }} />
+
+            {/* Question 1 — Role */}
+            <p className="font-semibold text-[17px] text-ink-900 mb-4">
+              Qual é o teu papel principal?
+            </p>
+            <p className="text-[14px] text-ink-400 mb-3">(selecciona uma opção)</p>
+
+            <div className="space-y-2.5">
+              {ROLE_OPTIONS.map((opt) => {
+                const selected = role === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setRole(selected ? null : opt)}
+                    className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
+                    style={{
+                      borderColor: selected ? "hsl(var(--blue-600))" : "hsl(var(--border))",
+                      backgroundColor: selected ? "hsl(var(--blue-50))" : "hsl(var(--background))",
+                    }}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                      style={{
+                        border: selected ? "2px solid hsl(var(--blue-600))" : "2px solid hsl(var(--border))",
+                      }}
+                    >
+                      {selected && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--blue-600))" }} />}
+                    </div>
+                    <span className="text-[15px] text-ink-700">{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Question 2 — Team Size */}
+            <div className="mt-4">
+              <p className="font-semibold text-[17px] text-ink-900 mb-4">
+                Quantas pessoas trabalham em marketing na tua organização?
+              </p>
+              <p className="text-[14px] text-ink-400 mb-3">(selecciona uma opção)</p>
+
+              <div className="space-y-2.5">
+                {TEAM_SIZE_OPTIONS.map((opt) => {
+                  const selected = teamSize === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setTeamSize?.(selected ? null : opt)}
+                      className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
+                      style={{
+                        borderColor: selected ? "hsl(var(--blue-600))" : "hsl(var(--border))",
+                        backgroundColor: selected ? "hsl(var(--blue-50))" : "hsl(var(--background))",
+                      }}
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                        style={{
+                          border: selected ? "2px solid hsl(var(--blue-600))" : "2px solid hsl(var(--border))",
+                        }}
+                      >
+                        {selected && <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "hsl(var(--blue-600))" }} />}
+                      </div>
+                      <span className="text-[15px] text-ink-700">{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
 
         <button
           onClick={onNext}

@@ -713,6 +713,65 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       </div>
 
+      {/* Perfil dos Inscritos — Role + Team Size */}
+      {(() => {
+        const withRole = filteredInscritos.filter((i) => i.role);
+        const withTeam = filteredInscritos.filter((i) => i.team_size);
+        const hasEnough = withRole.length >= 5;
+        const roleCounts: Record<string, number> = {};
+        withRole.forEach((i) => { roleCounts[i.role!] = (roleCounts[i.role!] || 0) + 1; });
+        const teamCounts: Record<string, number> = {};
+        withTeam.forEach((i) => { teamCounts[i.team_size!] = (teamCounts[i.team_size!] || 0) + 1; });
+        const roleSorted = Object.entries(roleCounts).sort((a, b) => b[1] - a[1]);
+        const teamSorted = Object.entries(teamCounts).sort((a, b) => b[1] - a[1]);
+        const maxRole = roleSorted[0]?.[1] || 1;
+        const maxTeam = teamSorted[0]?.[1] || 1;
+        return (
+          <div className="bg-white border border-border rounded-xl p-5 mb-5">
+            <h3 className="font-heading font-bold text-sm text-ink-900">Perfil dos Inscritos</h3>
+            <p className="text-xs text-ink-400 mb-4">Função e tamanho de equipa</p>
+            {!hasEnough ? (
+              <p className="text-sm text-ink-400 italic">Dados disponíveis após mais inscrições</p>
+            ) : (
+              <div className="grid grid-cols-2 max-md:grid-cols-1 gap-6">
+                <div>
+                  <p className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider mb-3">Função</p>
+                  <div className="space-y-2">
+                    {roleSorted.map(([name, count]) => (
+                      <div key={name}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-[12px] font-medium text-ink-700 truncate max-w-[180px]" title={name}>{name}</span>
+                          <span className="font-heading font-bold text-[12px] text-blue-600 shrink-0 ml-2">{count}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-surface">
+                          <div className="h-full rounded-full bg-blue-600" style={{ width: `${(count / maxRole) * 100}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[12px] font-semibold text-ink-500 uppercase tracking-wider mb-3">Equipa</p>
+                  <div className="space-y-2">
+                    {teamSorted.map(([name, count]) => (
+                      <div key={name}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-[12px] font-medium text-ink-700">{name}</span>
+                          <span className="font-heading font-bold text-[12px] text-blue-600 shrink-0 ml-2">{count}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-surface">
+                          <div className="h-full rounded-full bg-blue-600" style={{ width: `${(count / maxTeam) * 100}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Gender Stats */}
       <div className="bg-white border border-border rounded-xl p-5 mb-5">
         <h3 className="font-heading font-bold text-sm text-ink-900">Género (estimativa por nome)</h3>

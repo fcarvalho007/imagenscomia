@@ -34,6 +34,8 @@ const UpgradeVideo = () => {
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
+  const [role, setRole] = useState<string | null>(null);
+  const [teamSize, setTeamSize] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -270,13 +272,17 @@ const UpgradeVideo = () => {
                     setSources={setSources}
                     otherSource={otherSource}
                     setOtherSource={setOtherSource}
+                    role={role}
+                    setRole={setRole}
+                    teamSize={teamSize}
+                    setTeamSize={setTeamSize}
                     onNext={() => {
                       const srcText = sources.length > 0 ? sources.join(", ") : "SKIPPED";
-                      saveStepData(2, { sources: srcText });
+                      saveStepData(2, { sources: srcText, role: role || null, team_size: teamSize || null });
                       advanceStep(2);
                     }}
                     onSkip={() => {
-                      saveStepData(2, { sources: "SKIPPED" });
+                      saveStepData(2, { sources: "SKIPPED", role: null, team_size: null });
                       advanceStep(2);
                     }}
                     userName={userData.nome}
