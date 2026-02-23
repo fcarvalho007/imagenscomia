@@ -10,14 +10,14 @@ const corsHeaders = {
 const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 
 const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Webinar+V%C3%ADdeo+com+IA+para+marketing&dates=20260305T100000Z/20260305T113000Z&details=Link+de+acesso:+https://imagenscomia.com/live-video&location=https://imagenscomia.com/live-video";
+  "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cria+V%C3%ADdeo+Profissional+com+IA&dates=20260305T100000Z/20260305T110000Z&details=Link+de+acesso:+https://imagenscomia.com/live-video&location=https://imagenscomia.com/live-video";
 
 const ICS_CONTENT = `BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
 DTSTART:20260305T100000Z
-DTEND:20260305T113000Z
-SUMMARY:Webinar Vídeo com IA para marketing
+DTEND:20260305T110000Z
+SUMMARY:Cria Vídeo Profissional com IA
 DESCRIPTION:Link de acesso: https://imagenscomia.com/live-video
 LOCATION:https://imagenscomia.com/live-video
 END:VEVENT
