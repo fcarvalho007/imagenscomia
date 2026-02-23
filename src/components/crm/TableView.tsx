@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send, FileCheck } from "lucide-react";
+import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send, FileCheck, Mail } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
@@ -367,7 +368,21 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                   { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
                   { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
                   { key: "whatsapp" as SortKey, label: "WhatsApp", cls: "min-w-[140px] max-md:hidden" },
-                  { key: "plan" as SortKey, label: "Plano", cls: "min-w-[100px]" },
+                  { key: "plan" as SortKey, label: "Plano", cls: "min-w-[80px]" },
+                ] as const).map((col) => (
+                  <th
+                    key={col.key}
+                    className={`px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider cursor-pointer select-none ${col.cls}`}
+                    onClick={() => toggleSort(col.key)}
+                  >
+                    {col.label}<SortIcon col={col.key} />
+                  </th>
+                ))}
+                <th className="px-3 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[120px]">Estado</th>
+                <th className="px-2 py-3 text-center font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider w-[40px]" title="Último email enviado">
+                  <Mail size={13} className="inline text-ink-400" />
+                </th>
+                {([
                   { key: "valor" as SortKey, label: "Valor", cls: "min-w-[80px]" },
                   { key: "step_reached" as SortKey, label: "Passo", cls: "min-w-[80px]" },
                 ] as const).map((col) => (
@@ -416,65 +431,69 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
                     <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>
+                    {/* PLANO — single badge only */}
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap items-center gap-1">
-                        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: badge.bg, color: badge.color }}>
-                          {badge.label}
-                        </span>
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: badge.bg, color: badge.color }}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    {/* ESTADO — payment status + pending time + follow-up inline */}
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-1.5 flex-nowrap">
                         {i.payment_status === "selected" && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
-                            Seleccionou e saiu
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 whitespace-nowrap">
+                            Seleccionou
                           </span>
                         )}
                         {i.payment_status === "awaiting_payment" && (
                           <>
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200 whitespace-nowrap">
                               Aguarda pgto
                             </span>
                             {(() => {
                               const pt = pendingTimeLabel(i.upgrade_clicked_at, i.timestamp);
-                              return pt ? (
-                                <span className="text-[10px] font-semibold" style={{ color: pt.color }}>{pt.text}</span>
-                              ) : null;
+                              return pt ? <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: pt.color }}>{pt.text}</span> : null;
                             })()}
                           </>
                         )}
                         {i.payment_status === "paid" && i.plan !== "free" && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 whitespace-nowrap">
                             Pago
                           </span>
                         )}
-                        {/* Follow-up badges */}
-                        {showFollowupBadges && (
-                          <>
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface text-ink-500 border border-border">
-                              Follow-up {Math.min(i.followup_stage, 3)}/3
-                            </span>
-                            {nextRel && (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface text-ink-400 border border-border">
-                                Próx. {nextRel}
-                              </span>
-                            )}
-                          </>
+                        {i.payment_status === "free" && (
+                          <span className="text-[10px] text-ink-400 whitespace-nowrap">—</span>
                         )}
-                        {/* Last email badge */}
-                        {lastEmailMap && (() => {
-                          const info = lastEmailMap.get(i.id);
-                          if (!info) return null;
-                          const isConfirmed = info.provider === "resend" && info.provider_message_id;
-                          const isFailed = info.status === "failed";
-                          return (
-                            <span className="flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full border" style={{
-                              background: isConfirmed ? "rgba(16,185,129,0.08)" : isFailed ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.08)",
-                              borderColor: isConfirmed ? "rgba(16,185,129,0.2)" : isFailed ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)",
-                              color: isConfirmed ? "#059669" : isFailed ? "#DC2626" : "#D97706",
-                            }}>
-                              {isConfirmed ? <CheckCircle2 size={9} /> : isFailed ? <AlertTriangle size={9} /> : <Clock size={9} />}
-                              {getTemplateLabel(info.template_key).split("—")[0].trim()} · {fmtTimeAgo(info.created_at)}
-                            </span>
-                          );
-                        })()}
+                        {showFollowupBadges && (
+                          <span className="text-[10px] text-ink-400 whitespace-nowrap">· F{Math.min(i.followup_stage, 3)}/3{nextRel ? ` ${nextRel}` : ""}</span>
+                        )}
                       </div>
+                    </td>
+                    {/* EMAIL icon — tooltip with last email details */}
+                    <td className="px-2 py-3 text-center">
+                      {lastEmailMap && (() => {
+                        const info = lastEmailMap.get(i.id);
+                        if (!info) return <span className="text-ink-200"><Mail size={14} /></span>;
+                        const isConfirmed = info.provider === "resend" && info.provider_message_id;
+                        const isFailed = info.status === "failed";
+                        const dotColor = isConfirmed ? "#059669" : isFailed ? "#DC2626" : "#D97706";
+                        const tooltipText = `${getTemplateLabel(info.template_key).split("—")[0].trim()} · ${fmtTimeAgo(info.created_at)}`;
+                        return (
+                          <TooltipProvider delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="relative inline-flex cursor-help">
+                                  <Mail size={14} style={{ color: dotColor }} />
+                                  <span className="absolute -top-0.5 -right-0.5 w-[6px] h-[6px] rounded-full" style={{ background: dotColor }} />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[240px]">
+                                {tooltipText}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-heading font-bold text-[13px]" style={{ color: VALOR_COLORS[i.valor] || "hsl(var(--ink-400))" }}>
