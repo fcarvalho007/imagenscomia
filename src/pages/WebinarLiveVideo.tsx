@@ -16,7 +16,7 @@ const WebinarLiveVideo = () => {
   });
 
   return (
-    <RegistrationModalProvider subtitle="Terça-feira, 3 de Março, 21h">
+    <RegistrationModalProvider subtitle="Quarta-feira, 5 de Março, 10h">
       <div className="min-h-screen bg-[#FAFBFC] font-sans">
         <header className="border-b border-border bg-white/80 backdrop-blur-sm sticky top-0 z-30">
           <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">

@@ -5,7 +5,7 @@ import { Check, Loader2, XCircle, ArrowLeft, Mail, Calendar, MessageCircle } fro
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import WebinarCalendarButton from "@/components/webinar/AddToCalendarButton";
+
 
 const WHATSAPP_URL = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
 
@@ -146,7 +146,15 @@ const UpgradeSucesso = () => {
             </motion.div>
 
             <motion.div {...fadeUp(0.4)} className="w-full flex justify-center mb-6">
-              <WebinarCalendarButton />
+              <a
+                href="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 px-6 rounded-xl transition-colors bg-[#4285F4] hover:bg-[#3367D6]"
+              >
+                <img src="/google-cal-icon.svg" alt="" className="w-5 h-5" />
+                Adicionar ao Google Calendar
+              </a>
             </motion.div>
 
             <motion.div {...fadeUp(0.45)} className="w-full">
