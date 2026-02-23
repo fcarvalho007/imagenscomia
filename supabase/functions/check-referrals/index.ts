@@ -31,6 +31,8 @@ serve(async (req) => {
       .from("registrations")
       .select("referral_code, premium_unlocked, name")
       .eq("email", email.toLowerCase().trim())
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (!reg) {

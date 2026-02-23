@@ -42,8 +42,10 @@ serve(async (req) => {
     // Check if email already exists
     const { data: existing } = await supabase
       .from("registrations")
-      .select("referral_code, premium_unlocked, first_name, last_name, whatsapp")
+      .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
       .eq("email", email.toLowerCase().trim())
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (existing) {
@@ -102,7 +104,7 @@ serve(async (req) => {
             + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
           const videoOrderId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
-          await supabase.from("registrations").insert({
+          const { error: insertErr } = await supabase.from("registrations").insert({
             name: `${existing.first_name || ""} ${existing.last_name || ""}`.trim(),
             first_name: existing.first_name || firstName.trim(),
             last_name: existing.last_name || (lastName || "").trim(),
@@ -116,7 +118,11 @@ serve(async (req) => {
             registration_source: registrationSource || "webinar",
             webinar: "video",
           });
-          console.log(`Created video registration for existing user: ${email}`);
+          if (insertErr) {
+            console.error("Failed to create video registration:", insertErr);
+          } else {
+            console.log(`Created video registration for existing user: ${email}`);
+          }
         }
       }
 

@@ -46,6 +46,8 @@ Deno.serve(async (req) => {
       .from("registrations")
       .select("id, edit_token, paid_at, is_gift, email")
       .eq("email", email.toLowerCase().trim())
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (fetchErr || !reg) {

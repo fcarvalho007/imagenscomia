@@ -87,6 +87,8 @@ serve(async (req) => {
       .from("registrations")
       .select("id")
       .eq("email", email)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     // Update eupago_ref + payment link metadata in DB
