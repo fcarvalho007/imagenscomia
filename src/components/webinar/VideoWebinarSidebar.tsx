@@ -6,23 +6,21 @@ import { useCountdown } from "@/hooks/useCountdown";
 const OfferCard = ({
   title,
   price,
+  dateBox,
   benefits,
-  dateLine,
   ctaLabel,
   onCtaClick,
   priceNote,
   accent = false,
-  countdownSlot,
 }: {
   title: string;
   price: string;
+  dateBox?: React.ReactNode;
   benefits: { icon: React.ReactNode; text: string }[];
-  dateLine?: string;
   ctaLabel: string;
   onCtaClick: () => void;
   priceNote: React.ReactNode;
   accent?: boolean;
-  countdownSlot?: React.ReactNode;
 }) => (
   <div
     className={`rounded-xl border p-5 ${
@@ -36,6 +34,8 @@ const OfferCard = ({
       <span className="font-heading font-bold text-[17px] text-ink-900 whitespace-nowrap">{price}</span>
     </div>
 
+    {dateBox && <div className="mb-4">{dateBox}</div>}
+
     <ul className="space-y-2 mb-4">
       {benefits.map((b, i) => (
         <li key={i} className="flex items-start gap-2.5">
@@ -44,15 +44,6 @@ const OfferCard = ({
         </li>
       ))}
     </ul>
-
-    {dateLine && (
-      <p className="text-[13px] text-ink-400 mb-3 flex items-center gap-1.5">
-        <CalendarDays className="w-3.5 h-3.5" />
-        {dateLine}
-      </p>
-    )}
-
-    {countdownSlot && <div className="mb-3">{countdownSlot}</div>}
 
     <button
       onClick={onCtaClick}
@@ -66,8 +57,8 @@ const OfferCard = ({
   </div>
 );
 
-const MasterclassCountdown = () => {
-  const countdown = useCountdown(VIDEO_WEBINAR_CONFIG.masterclassDate);
+const CountdownInline = ({ targetDate }: { targetDate: Date }) => {
+  const countdown = useCountdown(targetDate);
 
   if (countdown.isExpired) {
     return (
@@ -78,11 +69,35 @@ const MasterclassCountdown = () => {
   }
 
   return (
-    <span className="text-[13px] font-medium text-blue-600">
-      Começa em: {countdown.days}d {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}m
-    </span>
+    <p className="text-[13px] font-medium text-blue-600 mt-1.5">
+      Faltam {countdown.days}d {String(countdown.hours).padStart(2, "0")}h {String(countdown.minutes).padStart(2, "0")}m
+    </p>
   );
 };
+
+const DateBox = ({
+  label,
+  date,
+  time,
+  targetDate,
+}: {
+  label: string;
+  date: string;
+  time: string;
+  targetDate: Date;
+}) => (
+  <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3">
+    <p className="text-[11px] uppercase tracking-wider font-semibold text-blue-600/70 mb-1">{label}</p>
+    <p className="text-[14px] font-semibold text-ink-900 flex items-center gap-2">
+      <CalendarDays className="w-4 h-4 text-blue-600" />
+      {date}
+    </p>
+    <p className="text-[13px] text-ink-500 ml-6">{time}</p>
+    <div className="ml-6">
+      <CountdownInline targetDate={targetDate} />
+    </div>
+  </div>
+);
 
 export const VideoWebinarSidebar = () => {
   const { open } = useRegistrationModal();
@@ -97,8 +112,16 @@ export const VideoWebinarSidebar = () => {
         title="Premium Pass"
         price="€15 + IVA"
         accent
+        dateBox={
+          <DateBox
+            label="Sessão Q&A em grupo"
+            date="Terça-feira, 10 de Março"
+            time="14:30h — 15:00h (Portugal)"
+            targetDate={new Date("2026-03-10T14:30:00Z")}
+          />
+        }
         benefits={[
-          { icon: <Headphones className="w-4 h-4" />, text: "Sessão extra de Q&A em grupo (30 min) — 10 Mar, 14:30h" },
+          { icon: <Headphones className="w-4 h-4" />, text: "Sessão extra de Q&A em grupo (30 min)" },
           { icon: <FileText className="w-4 h-4" />, text: "Lista das melhores ferramentas por objetivo (curadoria prática)" },
           { icon: <FileText className="w-4 h-4" />, text: "Manual de apoio ao conhecimento em vídeo (passo a passo)" },
         ]}
@@ -115,15 +138,21 @@ export const VideoWebinarSidebar = () => {
       <OfferCard
         title="Masterclass Imagem → Vídeo"
         price="€47 + IVA"
+        dateBox={
+          <DateBox
+            label="Masterclass ao vivo"
+            date="Quinta-feira, 12 de Março"
+            time="10h — 13h · Online"
+            targetDate={VIDEO_WEBINAR_CONFIG.masterclassDate}
+          />
+        }
         benefits={[
           { icon: <Sparkles className="w-4 h-4" />, text: "Fluxo imagem → vídeo (clip utilizável)" },
           { icon: <Video className="w-4 h-4" />, text: "Ferramentas por objetivo (gratuitas e pagas)" },
           { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
         ]}
-        dateLine="12 de Março (quinta-feira) · 10h–13h · Online"
         ctaLabel="Garantir lugar na Masterclass"
         onCtaClick={() => open("premium")}
-        countdownSlot={<MasterclassCountdown />}
         priceNote={
           <>
             <span className="block">Early bird: €47 + IVA</span>
