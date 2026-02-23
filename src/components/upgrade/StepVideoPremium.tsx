@@ -32,7 +32,7 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
   <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
-      Adicionar Gravação da Sessão (opcional)
+      Gravação do Webinar Vídeo (opcional)
     </h2>
     <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
       Para aplicar o método com mais tranquilidade, ao teu ritmo.
@@ -46,12 +46,15 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         boxShadow: "0 4px 20px rgba(37,99,235,0.12)",
       }}
     >
+      {/* Eyebrow badges */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[1px]" style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.2)', color: '#16a34a' }}>🎬 WEBINAR VÍDEO COM IA</span>
+        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-bold tracking-[1px]" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534' }}>GRAVAÇÃO + PACK</span>
+      </div>
+
       {/* Price row */}
       <div className="flex max-sm:flex-col justify-between items-start mb-4 gap-3">
         <div>
-          <p className="font-heading font-semibold text-[14px] text-blue-600 uppercase tracking-[0.08em]">
-            GRAVAÇÃO + PACK
-          </p>
           <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
           <p className="text-[14px] text-ink-400">Sem depender do direto. Ao teu ritmo.</p>
         </div>
@@ -62,6 +65,15 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
       </div>
 
       <div className="w-full h-px bg-border my-4" />
+
+      {/* Date box */}
+      <div className="flex items-start gap-2.5 rounded-lg p-2.5 mb-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+        <span className="text-[18px] leading-none">📅</span>
+        <div>
+          <p className="text-[12px] font-bold" style={{ color: '#14532d' }}>Sessão Q&A em grupo</p>
+          <p className="text-[12px]" style={{ color: '#166534' }}>Terça-feira, 10 de Março · 14h30–15h00</p>
+        </div>
+      </div>
 
       <div className="space-y-3">
         {bullets.map((b) => (
@@ -82,7 +94,7 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
         onClick={() => setShowConfirm(true)}
         className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors shadow-blue"
       >
-        Garantir Gravação + Pack →
+        Garantir Gravação do Vídeo + Pack →
       </button>
       <p className="text-[13px] text-ink-400 text-center mt-2">
         Recomendado para quem quer rever e aplicar sem pressa.
@@ -103,6 +115,9 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
     >
       Continuar com inscrição gratuita →
     </button>
+    <p className="text-[11px] text-center mt-1" style={{ color: '#aaa' }}>
+      A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
+    </p>
     
   </div>
 

@@ -191,7 +191,9 @@ const UpgradeVideo = () => {
         <aside className="hidden lg:flex flex-col sticky top-0 h-screen bg-background border-r border-border overflow-hidden" style={{ padding: "40px 24px" }}>
           <div>
             <p className="font-heading font-bold text-[16px] text-ink-900">Frederico Carvalho</p>
-            <p className="text-[14px] text-ink-400">Formação em IA</p>
+            <div className="inline-flex items-center gap-1.5 mt-1 rounded-full px-2.5 py-0.5" style={{ background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.25)' }}>
+              <span className="text-[11px] font-bold" style={{ color: '#16a34a' }}>🎬 Vídeo com IA</span>
+            </div>
           </div>
           <div className="w-full h-px bg-border mt-5 mb-6" />
           <p className="font-heading font-semibold text-[14px] text-ink-400 uppercase tracking-[0.08em] mb-4">A SUA COMPRA</p>
@@ -218,12 +220,18 @@ const UpgradeVideo = () => {
             {!orderState.videoPremium && !orderState.masterclass && (
               <div className="flex justify-between items-start py-3 border-b border-border">
                 <div>
-                  <p className="font-semibold text-[14px] text-ink-900">Webinar Gratuito</p>
+                  <p className="font-semibold text-[14px] text-ink-900">Webinar Vídeo com IA</p>
                   <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
+                  <p className="text-[12px] mt-1" style={{ color: '#888' }}>📅 5 de Março · 10h00</p>
                 </div>
                 <p className="font-heading font-bold text-[16px] text-green-600">€0</p>
               </div>
             )}
+            {/* Context note */}
+            <div className="my-3" style={{ borderTop: '1px solid #e5e7eb' }} />
+            <p className="text-[11px] leading-[1.5]" style={{ color: '#888' }}>
+              Este é um webinar diferente — focado em <strong style={{ color: '#333' }}>vídeo curto para marketing</strong>, não em imagens estáticas.
+            </p>
           </div>
           <div className="mt-4 pt-4" style={{ borderTop: "2px solid hsl(var(--ink-900))" }}>
             <div className="flex justify-between items-center">
@@ -259,7 +267,7 @@ const UpgradeVideo = () => {
                 <div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%`, transition: "width 400ms ease" }} />
               </div>
               <p className="text-right text-[14px] text-ink-400 font-medium mt-1.5">
-                Passo {step}/{totalSteps}{step === 2 && " — Gravação (opcional)"}{step === 3 && " — Masterclass (opcional)"}
+                Passo {step}/{totalSteps}{step === 2 && " — Gravação Vídeo (opcional)"}{step === 3 && " — Masterclass Vídeo (opcional)"}
               </p>
             </div>
 

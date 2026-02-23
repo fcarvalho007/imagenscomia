@@ -12,7 +12,7 @@ interface Props {
 
 const bullets = [
   {
-    title: "Imagem → vídeo: do estático ao clip",
+    title: "Sistema completo de produção de vídeo curto",
     sub: "Fluxo prático para gerar vídeo utilizável.",
   },
   {
@@ -24,7 +24,7 @@ const bullets = [
     sub: "Estruturas para consistência e controlo.",
   },
   {
-    title: "Acesso à sessão incluído",
+    title: "Gravação da Masterclass incluída — revê quando precisares",
     sub: "Rever e replicar quando necessário.",
   },
 ];
@@ -35,26 +35,27 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
   <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[18px] text-ink-900">
-      Transformar imagens em vídeo com IA — ao vivo
+      Masterclass Vídeo com IA — sistema completo ao vivo
     </h2>
     <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
-      O webinar ensina o método. A Masterclass mostra como o usar para gerar vídeo — com ferramentas certas, prompts prontos e um fluxo replicável.
+      O webinar cobre o essencial. A Masterclass aprofunda o sistema completo — 3 horas ao vivo com casos reais, fluxos replicáveis e ferramentas testadas.
     </p>
 
     {/* Masterclass Card */}
     <div
       className="bg-background rounded-2xl p-6 max-sm:p-4 max-w-[560px]"
-      style={{ border: "2px solid hsl(var(--ink-700))" }}
+      style={{ border: "2px solid #7c3aed" }}
     >
-      {/* Tag */}
-      <span className="inline-block text-[12px] max-sm:text-[11px] font-bold tracking-[0.1em] uppercase px-2.5 max-sm:px-2 py-1 rounded-md bg-ink-100 text-ink-700 mb-3">
-        IMAGEM → VÍDEO
-      </span>
+      {/* Eyebrow badges */}
+      <div className="flex items-center gap-2 mb-2">
+        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[1px]" style={{ background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', color: '#7c3aed' }}>🎬 MASTERCLASS VÍDEO COM IA</span>
+        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-bold tracking-[1px]" style={{ background: '#faf5ff', border: '1px solid #e9d5ff', color: '#6d28d9' }}>SESSÃO AVANÇADA</span>
+      </div>
 
       {/* Price row */}
       <div className="flex max-sm:flex-col justify-between items-start mb-4 gap-3">
         <div>
-          <p className="font-heading font-semibold text-[14px] text-ink-500 uppercase tracking-[0.08em]">
+          <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em]" style={{ color: '#7c3aed' }}>
             MASTERCLASS ONLINE
           </p>
           <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-ink-900 leading-none whitespace-nowrap">€47 <span className="text-[16px] font-bold">+ IVA</span></p>
@@ -68,10 +69,19 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
 
       <div className="w-full h-px bg-border my-4" />
 
+      {/* Date box */}
+      <div className="flex items-start gap-2.5 rounded-lg p-2.5 mb-3" style={{ background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+        <span className="text-[18px] leading-none">📅</span>
+        <div>
+          <p className="text-[12px] font-bold" style={{ color: '#4c1d95' }}>Sessão ao vivo · 3 horas</p>
+          <p className="text-[12px]" style={{ color: '#6d28d9' }}>Quinta-feira, 12 de Março · 10h00–13h00 · Online</p>
+        </div>
+      </div>
+
       <div className="space-y-3">
         {bullets.map((b) => (
           <div key={b.title} className="flex gap-2.5">
-            <div className="w-5 h-5 rounded-full bg-ink-700 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: '#7c3aed' }}>
               <Check className="w-2.5 h-2.5 text-white" />
             </div>
             <div>
@@ -93,11 +103,11 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
       <button
         onClick={() => setShowConfirm(true)}
         className="w-full mt-4 text-white font-heading font-bold text-[16px] py-4 max-sm:py-3 rounded-xl transition-colors"
-        style={{ backgroundColor: "hsl(var(--ink-900))" }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#1e293b")}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "hsl(var(--ink-900))")}
+        style={{ backgroundColor: "#7c3aed" }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#6d28d9")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#7c3aed")}
       >
-        Garantir lugar na Masterclass →
+        Garantir lugar na Masterclass Vídeo →
       </button>
       <p className="text-[13px] text-ink-400 text-center mt-2">
         Grupo limitado para garantir acompanhamento.
@@ -118,6 +128,9 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
     >
       Continuar com inscrição gratuita →
     </button>
+    <p className="text-[11px] text-center mt-1" style={{ color: '#aaa' }}>
+      A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
+    </p>
     
   </div>
 
@@ -131,7 +144,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Cancelar</AlertDialogCancel>
-        <AlertDialogAction onClick={onAddMasterclass} style={{ backgroundColor: "hsl(var(--ink-900))" }}>
+        <AlertDialogAction onClick={onAddMasterclass} style={{ backgroundColor: "#7c3aed" }}>
           Sim, adicionar ao checkout
         </AlertDialogAction>
       </AlertDialogFooter>
