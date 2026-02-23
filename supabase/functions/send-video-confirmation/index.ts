@@ -25,6 +25,43 @@ END:VCALENDAR`;
 
 const ICS_DATA_URI = `data:text/calendar;charset=utf-8,${encodeURIComponent(ICS_CONTENT)}`;
 
+async function getSubscriberHistory(email: string, sb: any) {
+  try {
+    const { data } = await sb
+      .from("registrations")
+      .select("plan_selected, paid_at")
+      .eq("email", email.toLowerCase().trim())
+      .eq("webinar", "imagens")
+      .order("created_at", { ascending: false })
+      .limit(1);
+    return data?.[0] || null;
+  } catch { return null; }
+}
+
+function determineVariant(history: any): string {
+  if (!history) return "A";
+  const plan = history.plan_selected;
+  const paid = !!history.paid_at;
+  if ((plan === "masterclass" || plan === "bundle") && paid) return "D";
+  if (plan === "premium" && paid) return "C";
+  return "B"; // gratuito or any non-paid
+}
+
+function buildPsBlock(variant: string): string {
+  if (variant === "A") return "";
+
+  const texts: Record<string, string> = {
+    B: "Já nos conhecemos do webinar de Imagens com IA — obrigado por voltares.<br><br>Este webinar cobre um tema diferente: vídeo curto para marketing, com um sistema de delegação que podes aplicar no dia seguinte.",
+    C: "Já és cliente do webinar de Imagens com IA — obrigado pela confiança.<br><br>Como já conheces o formato e a qualidade do trabalho, o Premium Pass deste webinar (€15+IVA) pode fazer sentido para teres também a gravação e o Q&amp;A ao vivo do tema Vídeo.",
+    D: "Já és cliente da Masterclass do webinar de Imagens com IA — obrigado pela confiança contínua.<br><br>Neste webinar vais ver como o sistema de vídeo se integra com o que já aprendeste sobre imagem. São dois lados do mesmo processo de produção de conteúdo.",
+  };
+
+  return `<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
+  <p style="color:#333;font-size:14px;font-weight:700;margin:0 0 8px;">PÓS-ESCRITO</p>
+  <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">${texts[variant]}</p>
+</div>`;
+}
+
 function buildHtml(fname: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -83,20 +120,35 @@ serve(async (req) => {
 
     const resendKey = Deno.env.get("RESEND_API_KEY")!;
 
-    // Fetch template from DB (fallback to hardcoded)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Fetch template from DB (fallback to hardcoded)
     const { data: tpl } = await supabaseAdmin
       .from("email_templates")
       .select("subject, html_body")
       .eq("template_key", "video_confirmation")
       .maybeSingle();
 
+    // Check subscriber history for personalisation
+    const history = await getSubscriberHistory(email, supabaseAdmin);
+    const variant = determineVariant(history);
+
     const emailSubject = tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing";
     const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
-    const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
+    let html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
+
+    // Insert PS block before footer for variants B/C/D
+    if (variant !== "A") {
+      const psBlock = buildPsBlock(variant);
+      const footerMarker = '<div style="border-top:1px solid #eee;padding-top:16px;margin-top:32px;">';
+      const footerIdx = html.lastIndexOf(footerMarker);
+      if (footerIdx !== -1) {
+        html = html.slice(0, footerIdx) + psBlock + html.slice(footerIdx);
+      }
+    }
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -112,22 +164,16 @@ serve(async (req) => {
     const resendData = await resendRes.json();
     console.log("Resend response:", JSON.stringify(resendData));
 
-    // Log to message_logs
+    // Log to message_logs + email_send_logs
     try {
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
-
-      // Find registration
-      const { data: reg } = await supabase
+      const { data: reg } = await supabaseAdmin
         .from("registrations")
         .select("id")
         .eq("email", email.toLowerCase().trim())
         .maybeSingle();
 
       if (reg) {
-        await supabase.from("message_logs").insert({
+        await supabaseAdmin.from("message_logs").insert({
           registration_id: reg.id,
           template_key: "video_confirmation",
           provider: "resend",
@@ -137,8 +183,7 @@ serve(async (req) => {
           error: resendRes.ok ? null : JSON.stringify(resendData),
         });
 
-        // Log to email_send_logs
-        await supabase.from("email_send_logs").insert({
+        await supabaseAdmin.from("email_send_logs").insert({
           webinar: "video",
           email_key: "confirmation",
           recipient_email: email.toLowerCase().trim(),
@@ -146,6 +191,11 @@ serve(async (req) => {
           status: resendRes.ok ? "sent" : "failed",
           resend_id: resendData.id || null,
           error_message: resendRes.ok ? null : JSON.stringify(resendData),
+          metadata: JSON.stringify({
+            variant,
+            had_imagens_history: history !== null,
+            imagens_plan: history?.plan_selected || null,
+          }),
         });
       }
     } catch (logErr) {
