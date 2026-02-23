@@ -1,113 +1,113 @@
 
 
-# Alteracoes na pagina /video
+# Actualizacao de datas e informacao em /confirmacao, /upgrade-video e /live-video
 
 ## Resumo
 
-20 alteracoes de copy, datas e pequenos ajustes visuais na pagina /video. Nenhuma alteracao estrutural — apenas texto, datas e remocao de elementos.
+Corrigir datas incorrectas, substituir o botao de calendario generico por link directo ao Google Calendar do Frederico, e tornar toda a informacao de datas/eventos transparente e consistente nas 3 paginas.
 
 ---
 
-## Ficheiros a modificar
+## Problemas encontrados
 
-**`src/pages/Video.tsx`** (todas as alteracoes) e **`src/components/webinar/videoWebinarConfig.ts`** (datas)
+### /confirmacao (ConfirmacaoExtras.tsx)
+- Usa `WebinarCalendarButton` generico (add-to-calendar-button-react) em vez do link directo ao Google Calendar do Frederico
+
+### /upgrade-video (UpgradeVideo.tsx)
+- Linha 219: "3 Mar . 21h00" -- data e hora erradas (deve ser 5 Mar, 10h)
+- Sidebar Premium: nao menciona Q&A dia 10 Mar 14:30h
+- Sidebar Masterclass: nao menciona data correcta
+
+### /upgrade-video (StepVideoPremium.tsx)
+- Nao menciona Q&A dia 10 de Marco, 14:30h-15:00h
+
+### /upgrade-video (StepMasterclass.tsx)
+- Linha 61: "Pagamento unico . 5 de Marco" -- data errada (Masterclass e 12 de Marco)
+- Nao especifica horario (10h-13h)
+
+### /live-video (WebinarLiveVideo.tsx)
+- Linha 19: subtitle "Terca-feira, 3 de Marco, 21h" -- data e hora erradas
+- VideoWebinarSidebar linha 123: "5 de Marco (quinta-feira)" -- data errada para Masterclass (deve ser 12 de Marco)
+- Premium Pass no sidebar: nao menciona Q&A dia 10 Mar
+
+### /upgrade/sucesso (UpgradeSucesso.tsx)
+- Usa `WebinarCalendarButton` generico -- deve usar link Google Calendar do Frederico (mesmo que /confirmacao)
+- Titulo meta referencia "Imagens" mas pode ser acedido apos compra de Video
+
+---
+
+## Alteracoes por ficheiro
+
+### 1. `src/components/landing/ConfirmacaoExtras.tsx`
+
+**Passo 2 -- Calendario**: Substituir `<WebinarCalendarButton>` por link directo ao Google Calendar:
+```
+<a href="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com"
+   target="_blank" rel="noopener noreferrer"
+   class="botao estilizado com icone Google Calendar">
+   Adicionar ao Google Calendar
+</a>
+```
+Remover import de `WebinarCalendarButton`.
+
+### 2. `src/pages/UpgradeVideo.tsx`
+
+- Linha 219: trocar "3 Mar . 21h00" por "5 Mar . 10h00"
+- Sidebar Premium (linha 201): acrescentar sub-linha "Q&A: 10 Mar, 14:30h"
+- Sidebar Masterclass (linha 210): trocar sub "3h . Online" por "12 Mar . 10h-13h . Online"
+
+### 3. `src/components/upgrade/StepVideoPremium.tsx`
+
+- Adicionar bullet ou sub-texto no Q&A: "Terca-feira, 10 de Marco, 14:30h-15:00h"
+- Actualizar subtitulo do bullet existente "Sessao Q&A exclusiva (30 min)" para incluir a data
+
+### 4. `src/components/upgrade/StepMasterclass.tsx`
+
+- Linha 61: trocar "Pagamento unico . 5 de Marco" por "Quinta-feira, 12 de Marco . 10h-13h"
+- Nos event details (linha 87-89): adicionar "📅 12 de Marco" ao array
+
+### 5. `src/components/webinar/VideoWebinarSidebar.tsx`
+
+- Premium Pass: acrescentar benefit ou dateLine com "Q&A: Terca, 10 Mar, 14:30h"
+- Masterclass dateLine (linha 123): trocar "5 de Marco (quinta-feira)" por "12 de Marco (quinta-feira) . 10h-13h"
+
+### 6. `src/pages/WebinarLiveVideo.tsx`
+
+- Linha 19: trocar subtitle de "Terca-feira, 3 de Marco, 21h" por "Quarta-feira, 5 de Marco, 10h"
+
+### 7. `src/pages/UpgradeSucesso.tsx`
+
+- Substituir `<WebinarCalendarButton />` (linha 149) por link directo ao Google Calendar do Frederico (mesmo URL que /confirmacao)
+- Remover import de `WebinarCalendarButton`
+
+### 8. `src/components/webinar/VideoWebinarVideoArea.tsx`
+
+- O GOOGLE_CAL_URL generico (linhas 14-21) ja esta correcto para 5 de Marco -- manter
 
 ---
 
-## Lista completa de alteracoes
+## Datas de referencia (fonte de verdade)
 
-### Datas e config (videoWebinarConfig.ts)
-
-- Webinar: 3 Mar -> **5 Mar** (`startDate: new Date("2026-03-05T10:00:00+00:00")`)
-- Masterclass: 5 Mar -> **12 Mar** (`masterclassDate: new Date("2026-03-12T10:00:00+00:00")`)
-- `metaLine`: "Quarta-feira, 5 de Marco . 10h00 (Portugal)"
-
-### Sticky top bar (linhas 218-246)
-
-1. Countdown mover para o lado esquerdo (antes do texto "AO VIVO")
-2. Remover a data "3 MAR" do texto — trocar "AO VIVO . 3 MAR . 10H00" por "AO VIVO . 10H00"
-3. Actualizar countdown target para `new Date("2026-03-05T10:00:00")`
-
-### Hero — badge pill (linha 288)
-
-4. Reforcar badge: trocar `WEBINAR GRATUITO . AO VIVO` por `WEBINAR GRATUITO . AO VIVO . 5 MARCO, 10H`
-
-### Hero — titulo (linhas 297-322)
-
-5. Remover "para marketing" (linhas 315-322 — o `motion.span` com "para marketing")
-
-### Hero — subtitulo (linhas 326-333)
-
-6. Trocar "Sais com um sistema, ferramentas" por "Adquires um sistema, ferramentas"
-
-### Hero — sub-subtitulo (linhas 336-343)
-
-7. Remover a linha "Sessao pratica para gestores e profissionais de marketing" (eliminar o `motion.p` inteiro)
-
-### Hero — info boxes (linhas 352-369)
-
-8. Actualizar DATA de "3 de Marco" para "5 de Marco"
-
-### Logo Marquee (usado via componente LogoMarquee)
-
-9. Nao alterar o componente partilhado — trocar inline no Video.tsx. Problema: usa `<LogoMarquee />` importado. Solucao: alterar o texto "Plataformas a considerar" para "Plataformas de referencia para o tema" directamente no `LogoMarquee.tsx` OU passar como prop. Como o componente e partilhado com Index, a melhor opcao e aceitar uma prop `label` no LogoMarquee com default "Plataformas a considerar", e na pagina Video passar `label="Plataformas de referencia para o tema"`.
-
-### Seccao "Para quem e" (linhas 585-637)
-
-10. Trocar titulo "Para quem nao e" (linha 612) por **"Nao e para..."**
-11. Remover conteudo das labels dentro dos cards: apagar "Certo para" (linha 596-598) e "Nao e para" (linha 614-616) — remover os `<p>` com esses textos
-12. No array `forWhom` (linha 127): trocar "Quem faz paid media e precisa de criativos com variacoes rapidas." por "Quem faz paid media e precisa de gerar videos diferentes e de forma rapida."
-13. No array `notFor` (linha 134): trocar "Quem procura «milagre» sem processo." por "Quem procura «milagre» sem processos."
-
-### Agenda (linhas 640-700)
-
-14. No array `videoAgenda`, bullet "Lista curada para guardar nos favoritos" -> "Lista pronta para guardar nos favoritos"
-15. Na descricao geral da agenda (linha 651): "Demos ao vivo" -> "*Demos* ao vivo" — colocar "Demos" em italico usando `<em>` inline
-
-### Bio/Speaker (linhas 702-769)
-
-16. No array `speakerCredentials` (linha 178), ultimo item: trocar sub de "DIGITALFC consultoria com auditoria digital a mais de 700+ empresas. L'Oreal. BMW. 3M" por "DIGITALFC: consultoria, formacao e auditoria digital para mais de 700 empresas com resultados comprovados"
-
-### FAQs (linhas 181-187)
-
-17. FAQ 1 ("Preciso de experiencia com IA?"): trocar "De todo." por "Nao, de todo."
-18. FAQ 2 ("Funciona para B2B e B2C?"): trocar resposta por "Sim! O metodo aplica-se a ambos -- anuncios, demos de produto, prova social, conteudo para redes sociais. Vais ver exemplos dos dois casos."
-19. FAQ 4 ("Existe algo mais aprofundado sobre video?"): trocar pergunta por "Existe alguma formacao mais aprofundada sobre video?" e resposta por "Sim. Alem do webinar gratuito, havera uma Masterclass de 3 horas dedicada a video com IA -- com ferramentas, templates e acompanhamento proximo. Podes garantir o teu acesso ja, durante o processo de inscricao neste webinar, ou inscrever-te depois."
-
-### Final CTA (linhas 849-894)
-
-20. Trocar "Sem compromisso. Evento ao vivo em 3 de Marco de 2026, as 10h." por "Sem compromisso. Evento ao vivo, a 5 de marco de 2026, as 10h."
-21. Remover "Lugares limitados para o directo." (linha 891-893)
-
-### Seccao "mercado exige" (linhas 428-583)
-
-22. Trocar titulo "Video e o formato que o mercado exige" por "O mercado exige Video." — com "Video" a manter o efeito glitch. Ajustar `data-text` do span glitch para "Video."
-
-### RegistrationModalProvider (linha 905)
-
-23. Actualizar `subtitle` de "Terca-feira, 3 de Marco, 10h" para "Quarta-feira, 5 de Marco, 10h"
-
-### Premium Pass — Q&A
-
-24. Nota: o pedido menciona "acrescentar ao Premium 15EUR o Q&A dia 10 de Marco, as 14:30h > 15h". Isto afecta o modal de registo/upgrade (PurchaseModal ou RegistrationModal), nao a landing page directamente. Sera implementado como texto adicional na descricao do Premium Pass nos componentes de upgrade.
-
-### usePageMeta (linha 199)
-
-25. Actualizar titulo meta de "3 Marco 2026" para "5 Marco 2026"
-
----
+| Evento | Data | Hora | Dia da semana |
+|--------|------|------|---------------|
+| Webinar Video | 5 Marco 2026 | 10h00-11h00 | Quarta-feira |
+| Q&A Premium | 10 Marco 2026 | 14:30h-15:00h | Terca-feira |
+| Masterclass | 12 Marco 2026 | 10h00-13h00 | Quinta-feira |
 
 ## Ficheiros a modificar
 
 | Ficheiro | Alteracoes |
 |----------|-----------|
-| `src/components/webinar/videoWebinarConfig.ts` | Datas: webinar 5 Mar, masterclass 12 Mar |
-| `src/pages/Video.tsx` | Todos os pontos 1-23 e 25 acima |
-| `src/components/landing/LogoMarquee.tsx` | Aceitar prop `label` opcional |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Substituir WebinarCalendarButton por link Google Calendar |
+| `src/pages/UpgradeVideo.tsx` | Corrigir datas no sidebar (3 instancias) |
+| `src/components/upgrade/StepVideoPremium.tsx` | Adicionar data do Q&A ao bullet |
+| `src/components/upgrade/StepMasterclass.tsx` | Corrigir data para 12 Marco + horario |
+| `src/components/webinar/VideoWebinarSidebar.tsx` | Corrigir Masterclass date + adicionar Q&A info |
+| `src/pages/WebinarLiveVideo.tsx` | Corrigir subtitle do RegistrationModalProvider |
+| `src/pages/UpgradeSucesso.tsx` | Substituir WebinarCalendarButton por link Google Calendar |
 
 ## Notas
 
-- Todas as alteracoes sao de copy/texto — sem mudancas estruturais
-- O efeito glitch no titulo sera ajustado para "Video." em vez de "mercado exige"
-- A sugestao sobre "ferramentas gratuitas/pagas" e "exemplos de output" na agenda sera considerada como bloco adicional apos a agenda actual
-
+- Nenhuma alteracao de BD ou edge functions
+- O link do Google Calendar do Frederico e estatico (pre-criado) -- nao depende de config
+- As alteracoes sao puramente de copy/datas
