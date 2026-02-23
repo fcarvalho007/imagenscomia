@@ -1,10 +1,10 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw, Youtube, Eye, Clock, TrendingUp as Peak, ThumbsUp, UserPlus } from "lucide-react";
+import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw, Youtube, Eye, Clock, TrendingUp as Peak, ThumbsUp, UserPlus, Send } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
-import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
+import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
@@ -864,8 +864,82 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       {/* Leaderboard de Convites */}
       <LeaderboardConvites />
 
+      {/* Acções Manuais — Video only, after webinar */}
+      {webinarContext === "video" && VIDEO_WEBINAR_DATE.getTime() < Date.now() && (
+        <PostWebinarAction />
+      )}
+
       {/* Para Fazer Hoje */}
       <ParaFazerHoje inscritos={inscritos} onSelectInscrito={onSelectInscrito} />
+    </div>
+  );
+}
+
+/* ── Post-Webinar Manual Action ── */
+function PostWebinarAction() {
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async () => {
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-video-postwebinar", {
+        body: { manual: true },
+      });
+      if (error) throw error;
+      const result = data as { sent?: number; errors?: number };
+      alert(`✅ Email pós-webinar enviado com sucesso — ${result.sent || 0} enviados, ${result.errors || 0} erros`);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erro ao enviar — tenta novamente");
+    } finally {
+      setSending(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5 mb-5">
+      <h3 className="font-heading font-bold text-[14px] text-ink-900 mb-1">Acções Manuais</h3>
+      <p className="text-[12px] text-ink-400 mb-4">Envios manuais para inscritos do Vídeo IA</p>
+
+      <div className="border border-border rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-[14px] text-ink-800 flex items-center gap-2">
+              <Mail size={16} className="text-green-600" /> Email Pós-Webinar
+            </p>
+            <p className="text-[12px] text-ink-400 mt-0.5">Envia o email pós-webinar a todos os inscritos confirmados no Vídeo IA</p>
+          </div>
+          {!confirming ? (
+            <button
+              onClick={() => setConfirming(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-2 transition-colors"
+              style={{ borderColor: "#16a34a", color: "#16a34a" }}
+            >
+              <Send size={14} /> Enviar email pós-webinar
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-ink-500">Tens a certeza?</span>
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white transition-colors"
+                style={{ background: "#16a34a" }}
+              >
+                {sending ? "A enviar…" : "Sim, enviar agora"}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                className="px-3 py-2 rounded-lg text-[13px] font-medium text-ink-500 bg-surface hover:bg-ink-100 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

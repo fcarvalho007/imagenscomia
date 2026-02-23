@@ -24,6 +24,14 @@ export const WEBINAR_CONFIG = {
 
 export const CONSOLIDADO_COLOR = "#7c3aed";
 
+/** Video webinar dates & URLs */
+export const VIDEO_WEBINAR_DATE = new Date("2026-03-05T10:00:00Z");
+export const VIDEO_QA_DATE = new Date("2026-03-10T14:30:00Z");
+export const VIDEO_MASTERCLASS_DATE = new Date("2026-03-12T10:00:00Z");
+export const LIVE_URL_VIDEO = "https://imagenscomia.com/live-video";
+export const UPGRADE_URL_VIDEO = "https://imagenscomia.com/upgrade-video";
+export const INVITES_URL = "https://imagenscomia.com/convites";
+
 /** Dashboard-specific constants per webinar */
 export const WEBINAR_DASHBOARD_CONFIG = {
   imagens: {
