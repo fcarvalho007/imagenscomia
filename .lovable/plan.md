@@ -1,37 +1,33 @@
 
-# Corrigir links de calendario no email de confirmacao do webinar video
+# Corrigir data duplicada na sidebar do Upgrade Video
 
-## Problemas encontrados
+## Problema
 
-No ficheiro `supabase/functions/send-video-confirmation/index.ts`:
+Na sidebar desktop do `/upgrade-video`, quando nenhum addon esta seleccionado, a data e hora do webinar aparecem duas vezes:
 
-### 1. Hora de fim errada no Google Calendar URL (linha 13)
-- Actual: `20260305T113000Z` (11:30 = 90 minutos)
-- Correcto: `20260305T110000Z` (11:00 = 60 minutos, conforme `videoWebinarConfig.ts`)
+- Linha 245: `5 Mar · 10h00`
+- Linha 246: `📅 5 de Março · 10h00`
 
-### 2. Titulo do evento no Google Calendar URL nao corresponde ao titulo oficial
-- Actual: `Webinar+Video+com+IA+para+marketing`
-- Correcto: `Cria+Video+Profissional+com+IA` (conforme `videoWebinarConfig.ts`)
+## Solucao
 
-### 3. Hora de fim errada no ficheiro ICS (linha 19)
-- Actual: `DTEND:20260305T113000Z`
-- Correcto: `DTEND:20260305T110000Z`
+Remover a linha 246 (a segunda ocorrencia com o icone de calendario) e manter apenas a linha 245 com o formato curto `5 Mar · 10h00`, que e consistente com o estilo das outras linhas da sidebar (ex: `12 Mar · 10h-13h`).
 
-### 4. Titulo do evento no ICS nao corresponde (linha 20)
-- Actual: `Webinar Video com IA para marketing`
-- Correcto: `Cria Video Profissional com IA`
+## Alteracao
 
-## Alteracoes
+**Ficheiro:** `src/pages/UpgradeVideo.tsx`
 
-| Linha | Antes | Depois |
-|---|---|---|
-| 13 | `...text=Webinar+V%C3%ADdeo+com+IA+para+marketing&dates=20260305T100000Z/20260305T113000Z...` | `...text=Cria+V%C3%ADdeo+Profissional+com+IA&dates=20260305T100000Z/20260305T110000Z...` |
-| 19 | `DTEND:20260305T113000Z` | `DTEND:20260305T110000Z` |
-| 20 | `SUMMARY:Webinar Video com IA para marketing` | `SUMMARY:Cria Video Profissional com IA` |
-| 21 | `DESCRIPTION:Link de acesso: https://imagenscomia.com/live-video` | Manter (correcto) |
+Remover a linha 246:
+```
+<p className="text-[12px] mt-1" style={{ color: '#888' }}>📅 5 de Março · 10h00</p>
+```
 
-## Ficheiro afectado
+Resultado final do bloco (linhas 243-249):
+```
+<div>
+  <p className="font-semibold text-[14px] text-ink-900">Webinar Vídeo com IA</p>
+  <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
+</div>
+<p className="font-heading font-bold text-[16px] text-green-600">€0</p>
+```
 
-`supabase/functions/send-video-confirmation/index.ts` -- 4 correcoes em 3 linhas.
-
-Os restantes links no email (live-video, convites) estao correctos.
+1 ficheiro, 1 linha removida. Nenhuma alteracao em mobile (a barra mobile nao mostra esta informacao).
