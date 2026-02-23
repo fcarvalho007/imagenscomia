@@ -313,7 +313,7 @@ const UpgradeVideo = () => {
                         advanceStep(4);
                       } else {
                         // Nothing selected — redirect to confirmation page or just close
-                        window.location.href = "/confirmacao";
+                        window.location.href = "/confirmacao?webinar=video";
                       }
                     }}
                   />

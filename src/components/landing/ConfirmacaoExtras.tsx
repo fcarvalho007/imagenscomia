@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Copy, Check, Linkedin, Twitter } from "lucide-react";
 import { WEBINAR_CONFIG } from "@/components/webinar/webinarConfig";
+import { VIDEO_WEBINAR_CONFIG } from "@/components/webinar/videoWebinarConfig";
 
 const SITE_URL = import.meta.env.VITE_PUBLIC_SITE_URL || "https://imagenscomia.com";
-const SHARE_TEXT = `Vou assistir ao webinar gratuito "${WEBINAR_CONFIG.title}" com Frederico Carvalho! 🚀`;
 
-const ConfirmacaoExtras = () => {
+interface ConfirmacaoExtrasProps {
+  webinar?: "imagens" | "video";
+}
+
+const ConfirmacaoExtras = ({ webinar }: ConfirmacaoExtrasProps) => {
+  const config = webinar === "video" ? VIDEO_WEBINAR_CONFIG : WEBINAR_CONFIG;
+  const SHARE_TEXT = `Vou assistir ao webinar gratuito "${config.title}" com Frederico Carvalho! 🚀`;
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {
@@ -57,10 +63,10 @@ const ConfirmacaoExtras = () => {
           {/* Mini social card preview */}
           <div className="rounded-lg bg-ink-50 border border-ink-100 p-3 mb-3">
             <p className="font-heading font-bold text-[14px] text-ink-800 leading-tight">
-              {WEBINAR_CONFIG.title}
+              {config.title}
             </p>
             <p className="text-[12px] text-ink-400 mt-1">
-              {WEBINAR_CONFIG.metaLine} · Frederico Carvalho
+              {config.metaLine} · Frederico Carvalho
             </p>
           </div>
 

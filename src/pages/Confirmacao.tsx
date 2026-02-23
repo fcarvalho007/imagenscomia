@@ -20,11 +20,18 @@ const fadeUp = (delay: number) => ({
 });
 
 const Confirmacao = () => {
-  usePageMeta({ title: "Inscrição Confirmada — Webinar Imagens com IA", description: "A tua inscrição foi confirmada. Adiciona ao calendário e partilha." });
   const [searchParams] = useSearchParams();
   const userName = searchParams.get("name") || "";
   const plan = searchParams.get("plan") || "";
   const email = searchParams.get("email") || "";
+  const webinar = searchParams.get("webinar") === "video" ? "video" : "imagens";
+
+  usePageMeta({
+    title: webinar === "video"
+      ? "Inscrição Confirmada — Webinar Vídeo com IA"
+      : "Inscrição Confirmada — Webinar Imagens com IA",
+    description: "A tua inscrição foi confirmada. Adiciona ao calendário e partilha.",
+  });
   const [pixelFired, setPixelFired] = useState(false);
 
   // Only fire Purchase pixel if paid_at is confirmed in DB
@@ -96,7 +103,7 @@ const Confirmacao = () => {
           <h2 className="font-heading font-bold text-lg uppercase tracking-wider text-ink-700 mb-5">
             Próximos Passos
           </h2>
-          <ConfirmacaoExtras />
+          <ConfirmacaoExtras webinar={webinar} />
         </motion.div>
 
         {/* Footer */}
