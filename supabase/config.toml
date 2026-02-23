@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.send-video-postwebinar]
 verify_jwt = false
+
+[functions.egoi-sync]
+verify_jwt = false

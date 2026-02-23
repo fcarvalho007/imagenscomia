@@ -33,6 +33,9 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   video_confirmation: "Email de confirmação enviado",
   // Fatura
   invoice_notification: "Email de notificação de fatura",
+  // E-goi sync
+  egoi_sync: "Sincronizado com E-goi",
+  egoi_tag: "Tag E-goi aplicada",
 };
 
 export function getTemplateLabel(key: string): string {

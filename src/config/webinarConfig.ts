@@ -74,3 +74,13 @@ export function webinarBadgeStyle(webinar: string): { bg: string; color: string;
   if (webinar === "video") return { bg: "#16a34a", color: "#fff", label: "VID" };
   return { bg: "#1e40af", color: "#fff", label: "IMG" };
 }
+
+export const EGOI_CONFIG = {
+  baseUrl: "https://api.egoiapp.com",
+  listId: 5,
+  tags: {
+    videoWebinar: 34,     // webinar_video_com_ia_5_marco
+    premiumPass: 35,      // premium_pass_webinar_video
+    masterclass: 33,      // masterclass (partilhada)
+  }
+} as const;
