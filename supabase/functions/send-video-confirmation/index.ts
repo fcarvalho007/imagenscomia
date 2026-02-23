@@ -82,7 +82,21 @@ serve(async (req) => {
     }
 
     const resendKey = Deno.env.get("RESEND_API_KEY")!;
-    const html = buildHtml(fname || "");
+
+    // Fetch template from DB (fallback to hardcoded)
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: tpl } = await supabaseAdmin
+      .from("email_templates")
+      .select("subject, html_body")
+      .eq("template_key", "video_confirmation")
+      .maybeSingle();
+
+    const emailSubject = tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing";
+    const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
+    const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -90,7 +104,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: RESEND_FROM,
         to: [email],
-        subject: "Inscrição confirmada ✅ — Vídeo com IA para marketing",
+        subject: emailSubject,
         html,
       }),
     });

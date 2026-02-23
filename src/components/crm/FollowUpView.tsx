@@ -5,6 +5,7 @@ import FollowUpAudit from "./FollowUpAudit";
 import FollowUpPessoas from "./FollowUpPessoas";
 import TemplatesView from "./TemplatesView";
 import AutomationFlowTab from "./AutomationFlowTab";
+import EmailEditorPanel, { type EmailTemplate } from "./EmailEditorPanel";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { CalendarDays } from "lucide-react";
@@ -48,6 +49,11 @@ const TABS = [
 
 type TabKey = typeof TABS[number]["key"];
 
+const TEMPLATE_KEYS = [
+  "video_confirmation", "video_reminder_48h", "video_reminder_24h", "video_reminder_1h", "video_postwebinar",
+  "imagens_confirmation", "imagens_reminder_48h", "imagens_reminder_24h", "imagens_reminder_1h", "imagens_postwebinar",
+];
+
 export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("fluxo");
   const [auditFilter, setAuditFilter] = useState<AuditFilter>({});
@@ -55,6 +61,10 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const [logs, setLogs] = useState<MessageLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const { webinarContext } = useWebinarContext();
+
+  // Email templates state
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
 
   const fetchLogs = useCallback(async () => {
     setLogsLoading(true);
@@ -68,6 +78,17 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   }, []);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  // Fetch email templates
+  useEffect(() => {
+    supabase
+      .from("email_templates")
+      .select("template_key, name, subject, html_body, updated_at, updated_by")
+      .in("template_key", TEMPLATE_KEYS)
+      .then(({ data }) => {
+        if (data) setEmailTemplates(data as EmailTemplate[]);
+      });
+  }, []);
 
   const templateSendCounts = useMemo(() => {
     const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -89,6 +110,16 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const handleViewSends = useCallback((templateKey: string) => {
     goToAudit({ templateKey, provider: "resend", confirmedOnly: true, subTab: "envios" });
   }, [goToAudit]);
+
+  const handleOpenEditor = useCallback((templateKey: string) => {
+    const tpl = emailTemplates.find((t) => t.template_key === templateKey);
+    if (tpl) setSelectedTemplate(tpl);
+  }, [emailTemplates]);
+
+  const handleEditorSaved = useCallback((updated: EmailTemplate) => {
+    setEmailTemplates((prev) => prev.map((t) => (t.template_key === updated.template_key ? updated : t)));
+    setSelectedTemplate(updated);
+  }, []);
 
   // Empty state for video with no subscribers
   if (webinarContext === "video" && inscritos.filter(i => i.status === "activo").length === 0) {
@@ -140,6 +171,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           inscritos={inscritos}
           logs={logs}
           logsLoading={logsLoading}
+          onOpenEditor={handleOpenEditor}
         />
       )}
 
@@ -203,6 +235,13 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           templateSendCounts={templateSendCounts}
         />
       )}
+
+      {/* Email Editor Panel */}
+      <EmailEditorPanel
+        template={selectedTemplate}
+        onClose={() => setSelectedTemplate(null)}
+        onSaved={handleEditorSaved}
+      />
     </div>
   );
 }

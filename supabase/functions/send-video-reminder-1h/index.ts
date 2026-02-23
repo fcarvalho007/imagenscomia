@@ -105,16 +105,26 @@ serve(async (req) => {
     let sent = 0;
     let errors = 0;
 
+    // Fetch template from DB
+    const { data: tpl } = await supabase
+      .from("email_templates")
+      .select("subject, html_body")
+      .eq("template_key", TEMPLATE_KEY)
+      .maybeSingle();
+
     for (const reg of toSend) {
       try {
-        const html = buildHtml(reg.first_name || "");
+        const fallbackHtml = buildHtml(reg.first_name || "");
+        const rawHtml = tpl?.html_body ?? fallbackHtml;
+        const html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const emailSubject = tpl?.subject ?? "⏰ Começa em 1 hora — link de acesso";
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             from: RESEND_FROM,
             to: [reg.email],
-            subject: "⏰ Começa em 1 hora — link de acesso",
+            subject: emailSubject,
             html,
           }),
         });
