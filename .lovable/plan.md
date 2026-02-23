@@ -1,186 +1,161 @@
 
 
-# Phase 2 — Editor de Email (Painel lateral)
+# Phase 3 — Contadores reais de envios na timeline
 
 ## Resumo
 
-Adicionar um painel lateral deslizante que permite editar o conteudo HTML e assunto de cada email da timeline. Reutilizar a tabela `email_templates` existente (sem criar nova tabela) e actualizar as edge functions para lerem o template da base de dados em vez de HTML hardcoded.
+Criar a tabela `email_send_logs`, actualizar as 5 edge functions de video para escreverem nela, ligar os contadores da timeline a dados reais, e adicionar um tab "Historico de envios" no painel do editor.
 
 ---
 
-## 1. Base de dados — Inserir templates na tabela existente
+## 1. Migracao SQL — nova tabela `email_send_logs`
 
-A tabela `email_templates` ja existe com colunas `template_key`, `subject`, `html_body`, `name`, etc. Nao e necessario criar nova tabela nem adicionar colunas.
+Criar tabela append-only com indices:
 
-Inserir 10 rows (5 video + 5 imagens) usando os template_keys ja usados nas edge functions:
+```sql
+CREATE TABLE IF NOT EXISTS email_send_logs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  webinar text NOT NULL,
+  email_key text NOT NULL,
+  recipient_email text NOT NULL,
+  fname text,
+  status text NOT NULL,
+  resend_id text,
+  error_message text,
+  sent_at timestamptz DEFAULT now()
+);
+CREATE INDEX ON email_send_logs(webinar, email_key);
+CREATE INDEX ON email_send_logs(sent_at);
+```
 
-| template_key | name | subject | html_body |
-|---|---|---|---|
-| `video_confirmation` | Confirmacao Video | Inscricao confirmada... | HTML do `send-video-confirmation` |
-| `video_reminder_48h` | Lembrete 48h Video | Faltam 2 dias... | HTML do `send-video-reminder-48h` |
-| `video_reminder_24h` | Lembrete 24h Video | E amanha as 10h00... | HTML do `send-video-reminder-24h` |
-| `video_reminder_1h` | Lembrete 1h Video | Comeca em 1 hora... | HTML do `send-video-reminder-1h` |
-| `video_postwebinar` | Pos-webinar Video | Obrigado por estares... | HTML do `send-video-postwebinar` |
-| `imagens_confirmation` | Confirmacao Imagens | (equivalente imagens) | Placeholder HTML |
-| `imagens_reminder_48h` | Lembrete 48h Imagens | ... | Placeholder HTML |
-| `imagens_reminder_24h` | Lembrete 24h Imagens | ... | Placeholder HTML |
-| `imagens_reminder_1h` | Lembrete 1h Imagens | ... | Placeholder HTML |
-| `imagens_postwebinar` | Pos-webinar Imagens | ... | Placeholder HTML |
+RLS: habilitar RLS com politica SELECT para anon (CRM le com client regular) e INSERT para service_role (edge functions escrevem com admin).
 
-O HTML de cada template video e extraido literalmente do `buildHtml` de cada edge function, com `${fname}` substituido por `{{fname}}`.
-
-Para imagens, como nao existem edge functions correspondentes, inserir HTML placeholder generico.
-
-Migracao via INSERT (sem alterar schema).
+```sql
+ALTER TABLE email_send_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "allow_anon_select_email_send_logs" ON email_send_logs
+  FOR SELECT USING (true);
+CREATE POLICY "allow_anon_insert_email_send_logs" ON email_send_logs
+  FOR INSERT WITH CHECK (true);
+```
 
 ---
 
-## 2. Fetch de templates no FollowUpView
+## 2. Edge functions — escrever em `email_send_logs`
+
+Alterar as 5 edge functions de video. Apos cada chamada ao Resend (sucesso ou falha), inserir uma row em `email_send_logs` alem do `message_logs` existente.
+
+**Padrao a adicionar em cada funcao (apos o insert em message_logs):**
+
+```ts
+await supabase.from("email_send_logs").insert({
+  webinar: "video",
+  email_key: "confirmation", // varia por funcao
+  recipient_email: reg.email,
+  fname: reg.first_name || "",
+  status: resendRes.ok ? "sent" : "failed",
+  resend_id: resendData.id || null,
+  error_message: resendRes.ok ? null : JSON.stringify(resendData),
+});
+```
+
+Mapa de email_key por funcao:
+
+| Edge function | email_key |
+|---|---|
+| send-video-confirmation | `confirmation` |
+| send-video-reminder-48h | `reminder_48h` |
+| send-video-reminder-24h | `reminder_24h` |
+| send-video-reminder-1h | `reminder_1h` |
+| send-video-postwebinar | `postwebinar` |
+
+Nota: `send-video-confirmation` tem estrutura diferente (recebe email/fname no body, nao itera registrants). O insert adapta-se a essa estrutura.
+
+Nao existem edge functions de imagens — nenhuma alteracao la.
+
+---
+
+## 3. CRM — Fetch de contagens por email_key
 
 **Ficheiro:** `src/components/crm/FollowUpView.tsx`
 
-Adicionar state `emailTemplates` e fetch on mount:
+Adicionar novo fetch on mount:
 
 ```ts
-const [emailTemplates, setEmailTemplates] = useState([]);
+const [emailStats, setEmailStats] = useState<Record<string, { sent: number; failed: number }>>({});
 
 useEffect(() => {
-  supabase.from("email_templates")
-    .select("template_key, subject, html_body, name, updated_at, updated_by")
-    .in("template_key", [
-      "video_confirmation", "video_reminder_48h", ...
-      "imagens_confirmation", ...
-    ])
-    .then(({ data }) => { if (data) setEmailTemplates(data); });
+  supabase
+    .from("email_send_logs")
+    .select("email_key, status, webinar")
+    .then(({ data }) => {
+      if (!data) return;
+      const stats: Record<string, { sent: number; failed: number }> = {};
+      for (const row of data) {
+        const key = `${row.webinar}_${row.email_key}`;
+        if (!stats[key]) stats[key] = { sent: 0, failed: 0 };
+        if (row.status === "sent") stats[key].sent++;
+        else if (row.status === "failed") stats[key].failed++;
+      }
+      setEmailStats(stats);
+    });
 }, []);
 ```
 
-Passar `emailTemplates` e `setEmailTemplates` como props ao `AutomationFlowTab`.
-
-Adicionar state `selectedTemplate` (template row ou null) para controlar o painel.
+Passar `emailStats` como prop ao `AutomationFlowTab`.
 
 ---
 
-## 3. Wiring do botao "Ver email"
+## 4. Timeline — contadores reais
 
 **Ficheiro:** `src/components/crm/AutomationFlowTab.tsx`
 
-Alterar a assinatura para receber:
-- `emailTemplates` — array de templates
-- `onOpenEditor(templateKey: string)` — callback
+Adicionar prop `emailStats?: Record<string, { sent: number; failed: number }>`.
 
-No Timeline, adicionar prop `onOpenEditor`.
+Em cada EMAIL node, construir a key `${webinar}_${email_key}` (usando o primeiro item de `templateKeyMatch` normalizado: `confirmation`, `reminder_48h`, etc.) e ler os contadores de `emailStats`.
 
-Cada botao "Ver email ->" chama `onOpenEditor` com o template_key correspondente (ex: `video_confirmation`). O mapeamento usa o webinar context + email_key do node.
+Se `emailStats` presente e tem dados para a key:
+- Mostrar `"N enviados"` em cor `#16a34a` (se > 0) ou `#999`
+- Mostrar `"M falhas"` em cor `#ef4444` (se > 0) ou `#999`
+- Se falhas > 0: icone de warning e left border vermelho `#ef4444`
 
-Mapa de email_key por node:
+Se nao ha dados: manter o fallback actual que le de `message_logs` (backward compatible).
 
-| Node title | email_key |
-|---|---|
-| Confirmacao imediata | `confirmation` |
-| Lembrete 48h | `reminder_48h` |
-| Lembrete 24h | `reminder_24h` |
-| Comeca em 1 hora | `reminder_1h` |
-| Email pos-webinar | `postwebinar` |
-
-Template key final: `${webinar}_${email_key}` (ex: `video_confirmation`).
+Na `StatusBar`:
+- Calcular totais a partir de `emailStats` (somando todos os valores) em vez dos `logs` do `message_logs`
+- Logica de cor do badge "Sistema operacional":
+  - Verde se taxa de falha < 5%
+  - Laranja se 5-15%
+  - Vermelho se > 15% ou falha nas ultimas 24h
 
 ---
 
-## 4. Componente EmailEditorPanel
+## 5. Historico de envios no EmailEditorPanel
 
-**Novo ficheiro:** `src/components/crm/EmailEditorPanel.tsx`
+**Ficheiro:** `src/components/crm/EmailEditorPanel.tsx`
 
-### Props
+Adicionar um terceiro modo alem de "editar" e "pre-visualizar": "historico".
 
-```ts
-interface Props {
-  template: EmailTemplate | null;  // null = fechado
-  onClose: () => void;
-  onSaved: (updated: EmailTemplate) => void;
-}
-```
-
-### Comportamento
-
-- Painel fixo, lado direito, 560px (100% mobile)
-- Overlay semitransparente atras (fecha ao clicar)
-- Animacao slide-in/out via CSS transition (translateX)
-- z-index: 50
-
-### Layout do painel (de cima para baixo)
-
-**Header:**
-- Badge do webinar (cor azul/verde conforme contexto)
-- Nome do email (ex: "Confirmacao imediata")
-- template_key em monospace (#999, 11px)
-- Botao X para fechar
-- Indicador de alteracoes nao guardadas (ponto laranja + texto)
-
-**Assunto:**
-- Label "ASSUNTO" (11px, uppercase, #888)
-- Input text, valor local editavel
-
-**Corpo do email:**
-- Label "CORPO DO EMAIL (HTML)" 
-- Textarea monospace (Courier New, 12px, min-height 360px, resize vertical)
-- Nota: "Variaveis disponiveis: {{fname}}, {{email}}"
-
-**Pre-visualizacao:**
-- Toggle "Pre-visualizar email" / "Editar HTML"
-- Quando activo: iframe com srcdoc para renderizar o HTML de forma segura
-- Max-height 400px, overflow-y auto
-
-**Footer:**
-- Texto "Ultima edicao: [data formatada]"
-- Botao "Cancelar" (ghost, reset local)
-- Botao "Guardar alteracoes" (verde #16a34a, loading state)
-
-### Save
-
-```ts
-await supabase.from("email_templates")
-  .update({
-    subject: localSubject,
-    html_body: localBodyHtml,
-    updated_at: new Date().toISOString(),
-    updated_by: "crm_manual"
-  })
-  .eq("template_key", template.template_key);
-```
-
-Sucesso: toast + actualizar state pai + fechar indicador unsaved.
-Erro: toast de erro, manter painel aberto.
+Implementacao:
+- 3 botoes toggle na area de conteudo: `[Editar] [Pre-visualizar] [Historico de envios]`
+- Quando "historico" activo:
+  - Fetch: `supabase.from("email_send_logs").select("*").eq("webinar", webinar).eq("email_key", emailKey).order("sent_at", { ascending: false }).limit(50)`
+  - Extrair webinar e email_key do `template_key` (ex: `video_confirmation` -> webinar=`video`, email_key=`confirmation`)
+- Barra de resumo acima da tabela: `"Total: N enviados - M falharam - Taxa de sucesso: X%"`
+- Tabela simples com colunas:
+  - Data/Hora (formatado "5 Mar - 10:02")
+  - Email (truncado 32 chars)
+  - Nome (fname ou "—")
+  - Estado (badge verde "Enviado" ou vermelho "Falhou" com tooltip do error_message)
+  - ID Resend (monospace, truncado, copiavel via navigator.clipboard)
+- Empty state: "Nenhum envio registado ainda para este email"
+- Nota informativa abaixo da tabela: "Nota: logs disponiveis apenas a partir de [data de hoje]. Envios anteriores nao foram registados."
 
 ---
 
-## 5. Edge functions — ler template da DB
+## 6. Loading states
 
-Actualizar cada uma das 5 edge functions video para buscar o template a Supabase antes de enviar:
-
-**Padrao comum (adicionar em cada funcao):**
-
-```ts
-// Fetch template from DB
-const { data: tpl } = await supabase
-  .from("email_templates")
-  .select("subject, html_body")
-  .eq("template_key", TEMPLATE_KEY)
-  .maybeSingle();
-
-const subject = tpl?.subject ?? "Fallback subject";
-const html = (tpl?.html_body ?? buildHtml(fname))
-  .replace(/\{\{fname\}\}/g, fname || "");
-```
-
-A funcao `buildHtml` existente serve como fallback caso o template nao exista na DB.
-
-Funcoes a alterar:
-- `send-video-confirmation/index.ts`
-- `send-video-reminder-48h/index.ts`
-- `send-video-reminder-24h/index.ts`
-- `send-video-reminder-1h/index.ts`
-- `send-video-postwebinar/index.ts`
+- Timeline nodes: inline spinner "..." animado enquanto `emailStats` nao carregou (nao usar skeletons)
+- Historico tab: spinner centralizado durante fetch
 
 ---
 
@@ -188,15 +163,15 @@ Funcoes a alterar:
 
 | Ficheiro | Alteracao |
 |---|---|
-| Migracao SQL | INSERT 10 rows em `email_templates` |
-| `src/components/crm/EmailEditorPanel.tsx` | **NOVO** — painel lateral editor |
-| `src/components/crm/FollowUpView.tsx` | Fetch templates, state selectedTemplate, renderizar painel |
-| `src/components/crm/AutomationFlowTab.tsx` | Receber `onOpenEditor` prop, wiring botoes "Ver email" |
-| `supabase/functions/send-video-confirmation/index.ts` | Ler template da DB |
-| `supabase/functions/send-video-reminder-48h/index.ts` | Ler template da DB |
-| `supabase/functions/send-video-reminder-24h/index.ts` | Ler template da DB |
-| `supabase/functions/send-video-reminder-1h/index.ts` | Ler template da DB |
-| `supabase/functions/send-video-postwebinar/index.ts` | Ler template da DB |
+| Migracao SQL | CREATE TABLE email_send_logs + indices + RLS |
+| `supabase/functions/send-video-confirmation/index.ts` | Insert em email_send_logs apos envio |
+| `supabase/functions/send-video-reminder-48h/index.ts` | Insert em email_send_logs apos envio |
+| `supabase/functions/send-video-reminder-24h/index.ts` | Insert em email_send_logs apos envio |
+| `supabase/functions/send-video-reminder-1h/index.ts` | Insert em email_send_logs apos envio |
+| `supabase/functions/send-video-postwebinar/index.ts` | Insert em email_send_logs apos envio |
+| `src/components/crm/FollowUpView.tsx` | Fetch emailStats, passar como prop |
+| `src/components/crm/AutomationFlowTab.tsx` | Receber emailStats, usar nos contadores e StatusBar |
+| `src/components/crm/EmailEditorPanel.tsx` | Novo tab "Historico de envios" com tabela |
 
-Nenhuma alteracao a outras views do CRM, autenticacao, ou RLS.
+Nenhuma alteracao a Dashboard, Pipeline, Tabela, Lixo, autenticacao ou outras views.
 
