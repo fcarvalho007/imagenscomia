@@ -84,9 +84,40 @@ serve(async (req) => {
             action: "register",
             email: email.toLowerCase().trim(),
             fname: (existing.first_name || "").trim(),
-            phone: existing.whatsapp ? `+351${existing.whatsapp.replace(/\D/g, "")}` : "",
+            phone: existing.whatsapp || "",
           }),
         }).catch(err => console.error("egoi-sync (video existing) failed:", err));
+
+        // Check if a video-specific registration already exists; if not, create one
+        const { data: existingVideo } = await supabase
+          .from("registrations")
+          .select("id, referral_code")
+          .eq("email", email.toLowerCase().trim())
+          .eq("webinar", "video")
+          .maybeSingle();
+
+        if (!existingVideo) {
+          const videoReferralCode = generateCode();
+          const videoEditToken = crypto.randomUUID().replace(/-/g, "")
+            + crypto.randomUUID().replace(/-/g, "").slice(0, 8);
+          const videoOrderId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+
+          await supabase.from("registrations").insert({
+            name: `${existing.first_name || ""} ${existing.last_name || ""}`.trim(),
+            first_name: existing.first_name || firstName.trim(),
+            last_name: existing.last_name || (lastName || "").trim(),
+            email: email.toLowerCase().trim(),
+            whatsapp: existing.whatsapp || cleanPhone || null,
+            referral_code: videoReferralCode,
+            referred_by: referredBy || null,
+            edit_token: videoEditToken,
+            edit_token_created_at: new Date().toISOString(),
+            order_id: videoOrderId,
+            registration_source: registrationSource || "webinar",
+            webinar: "video",
+          });
+          console.log(`Created video registration for existing user: ${email}`);
+        }
       }
 
       const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
@@ -200,7 +231,7 @@ serve(async (req) => {
           action: "register",
           email: email.toLowerCase().trim(),
           fname: firstName.trim(),
-          phone: cleanPhone ? `+351${cleanPhone.replace(/\D/g, "")}` : "",
+          phone: cleanPhone || "",
         }),
       }).catch(err => console.error("egoi-sync (video register) failed:", err));
     }
