@@ -86,6 +86,8 @@ serve(async (req) => {
         .from("registrations")
         .select("eupago_ref, upgrade_clicked_at, paid_at, last_payment_link")
         .eq("email", email)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (reg && reg.eupago_ref && !reg.paid_at && reg.upgrade_clicked_at) {
@@ -117,6 +119,8 @@ serve(async (req) => {
         .from("registrations")
         .select("id, edit_token, order_id")
         .eq("email", email)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (regLookup) {
         regId = regLookup.id;
