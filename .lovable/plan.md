@@ -1,143 +1,119 @@
 
 
-# Fluxo Tab — Clickable Send Counts + Pending Indicator + Consolidated Split
+# CRM Subscriber Modal — Replace Technical Jargon with Human Labels
 
 ## Summary
 
-Three changes to the Automacoes > Fluxo tab: (1) make "N enviados" clickable to open a drawer listing recipients, (2) add pending/scheduled indicator below counts, (3) split totals by webinar in consolidado mode.
+Text-only changes across 3 files to replace technical event names, status badges, and button labels with clear Portuguese language. No layout or functionality changes.
 
 ---
 
-## Files to modify/create
+## Files to modify
 
-| File | Action |
+| File | Changes |
 |---|---|
-| `src/components/crm/AutomationFlowTab.tsx` | Add drawer state, clickable counts, pending indicator, consolidated status bar split |
-| `src/components/crm/modal/EmailRecipientsDrawer.tsx` | **New** — slide-in drawer showing who received an email |
+| `src/components/crm/templateLabels.ts` | Expand TEMPLATE_LABELS with new human-readable entries; update fallback function to format unknown keys |
+| `src/components/crm/modal/ActivityTimeline.tsx` | Add status label map; add tooltip to "Resend" badge; add info icon for backlog events |
+| `src/components/crm/modal/SidebarActions.tsx` | Rename backlog button + add tooltip; update confirm dialog text |
+| `src/components/crm/modal/LinkFollowUpSection.tsx` | Rename "Follow-up automatico" label and value text |
 
 ---
 
-## CHANGE 1 — Clickable sent count + Recipients Drawer
+## CHANGE 1 — templateLabels.ts: expand labels + smart fallback
 
-### New component: EmailRecipientsDrawer.tsx
+Add/update entries in TEMPLATE_LABELS:
 
-A right-side drawer (using the existing `Sheet` component from `src/components/ui/sheet.tsx`) that displays recipients for a specific email.
-
-**Props:**
-- `open: boolean`
-- `onClose: () => void`
-- `emailKey: string` (e.g. "confirmation", "reminder_48h")
-- `webinar: WebinarKey | "consolidado"`
-- `emailTitle: string` (e.g. "Lembrete 48h")
-
-**Data fetching:**
-On open, query `email_send_logs`:
-```sql
-SELECT fname, recipient_email, status, error_message, sent_at, webinar
-FROM email_send_logs
-WHERE email_key = [emailKey]
-  AND (webinar = [webinar] OR consolidado -> both)
-ORDER BY sent_at DESC
+```
+resolve_attempt: "Tentativa de resolver pagamento"
+link_created: "Link de pagamento gerado"
+video_confirmation: "Email de confirmacao enviado"
+followup_stage_0: "Email de follow-up — Etapa inicial"
+followup_stage_1: "Email de follow-up — 2a tentativa"
+followup_stage_2: "Email de follow-up — Ultima chamada"
+followup_backlog_checkin: "Email de check-in (reactivacao)"
+followup_backlog_weak: "Email de follow-up fraco (sem clique)"
+followup_final_before_event: "Email — ultima oportunidade antes do webinar"
+payment_confirmed_customer: "Email de confirmacao de pagamento"
+invoice_notification: "Email de notificacao de fatura"
 ```
 
-**Layout:**
-- Header: "[Email name] . Enviados" + subtitle "Lista de inscritos que receberam este email"
-- Scrollable list of recipients:
-  - Avatar with initials (first letter of fname, or first letter of email)
-  - Name (bold, 13px) + email (grey, 12px)
-  - Timestamp: relative ("ha 3h") or absolute ("23 Fev . 12:15") using date-fns
-  - Webinar badge (IMG/VID) — only in consolidado context
-  - Status dot: green circle for sent, red for failed
-- Failures section: collapsible "Falhas (N)" section at bottom, collapsed by default. Each failed row shows error_message on expand.
-- Footer bar: "[N] enviados . [M] falharam . Taxa: X%"
-- Export CSV button: generates and downloads a CSV with columns: name, email, status, sent_at, error
-- Close: X button (built into Sheet)
-
-### AutomationFlowTab.tsx changes
-
-Add state for drawer:
+Update `getTemplateLabel` fallback (line 31-33): instead of returning raw key, replace underscores with spaces and capitalise first letter:
 ```typescript
-const [drawerOpen, setDrawerOpen] = useState(false);
-const [drawerEmailKey, setDrawerEmailKey] = useState("");
-const [drawerTitle, setDrawerTitle] = useState("");
-const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
-```
-
-Pass `onClickSentCount` callback to Timeline component.
-
-In the Timeline email node right-side stats (lines 393-402), change the sent count `<span>` to a `<button>`:
-- Style: `color: #2563eb`, `text-decoration: underline`, `cursor: pointer`, font-size 12px
-- On click: set drawer state with the node's email_key and webinar, open drawer
-- Only clickable if `counts.sent > 0`; otherwise keep as plain text
-
-Render `<EmailRecipientsDrawer>` once at the bottom of the component.
-
----
-
-## CHANGE 2 — Pending recipients indicator
-
-In each email node, below the sent/failed counts, add a "pending" line.
-
-**Logic (computed in `nodeCounts` memo or separate memo):**
-
-For each email node, derive pending count:
-- `pending = inscritosCount - counts.sent - counts.failed`
-- If the email's scheduled send date has NOT passed yet AND pending > 0: show "-> [N] por receber" in blue (#3b82f6, 11px)
-- If the send date HAS passed and counts.sent > 0 and pending <= 0: show "checkmark Todos receberam" in green (#16a34a, 11px)
-- If inscritosCount === 0: show "-- Sem inscritos ainda" in grey (#aaa, 11px)
-
-**Send date determination:**
-- Confirmation: immediate (always "passed" — no pending indicator needed, skip)
-- Reminder 48h: webinar start date minus 48h
-- Reminder 24h: webinar start date minus 24h
-- Reminder 1h: webinar start date minus 1h
-- Post-webinar: webinar start date plus 3h (or manual, so skip pending for this too)
-
-Use `WEBINAR_CONFIG[webinar].startDate` to compute these thresholds.
-
-**Render location:** Inside the right-side `<div>` of email nodes, after the sent/failed counts block (after line 402), before the "Ver email" button.
-
----
-
-## CHANGE 3 — Status bar split by webinar in consolidado
-
-In the `StatusBar` component (lines 132-200), when `webinar` is undefined (consolidado mode):
-
-Currently shows: "📧 74 emails enviados"
-
-Change to compute per-webinar counts from emailStats:
-```typescript
-let imgSent = 0, imgFailed = 0, vidSent = 0, vidFailed = 0;
-for (const [key, val] of Object.entries(emailStats)) {
-  if (key.startsWith("imagens_") || key.startsWith("followup_")) {
-    imgSent += val.sent; imgFailed += val.failed;
-  } else if (key.startsWith("video_")) {
-    vidSent += val.sent; vidFailed += val.failed;
-  }
+export function getTemplateLabel(key: string): string {
+  if (TEMPLATE_LABELS[key]) return TEMPLATE_LABELS[key];
+  // Humanise unknown keys: replace _ with space, capitalise first letter
+  const humanised = key.replace(/_/g, " ");
+  return humanised.charAt(0).toUpperCase() + humanised.slice(1);
 }
 ```
 
-Display:
-- "📧 [total] enviados ([imgSent] IMG . [vidSent] VID)"
-- "❌ [total] falhas ([imgFailed] IMG . [vidFailed] VID)"
+---
 
-In single-webinar context: keep current format unchanged.
+## CHANGE 2 — ActivityTimeline.tsx: status labels + tooltips
+
+### Status badge labels (line 204-206)
+
+Add a STATUS_LABELS map and use it instead of raw status string:
+
+```typescript
+const STATUS_LABELS: Record<string, string> = {
+  pending: "A aguardar",
+  sent: "Enviado",
+  delivered: "Enviado",
+  failed: "Falhou",
+  resolved: "Resolvido",
+  created: "Criado",
+  processing: "A processar",
+  processed: "Processado",
+  queued: "Em fila",
+};
+```
+
+Replace `{item.status}` (line 205) with `{STATUS_LABELS[item.status] || item.status}`.
+
+### Resend badge tooltip (line 208-213)
+
+Add `title="Plataforma de envio de emails (sistema automatico)"` to the Resend provider badge span.
+
+### Backlog info icon (line 196-199)
+
+After the title `<span>`, if the item's underlying template_key contains "backlog", append a small info icon:
+```
+<span title="Inscrito que nao interagiu com o link de pagamento ha mais de 36h" style={{ cursor: "help" }}>
+  ℹ️
+</span>
+```
+
+To detect backlog keys, pass `template_key` through from `messageLogs` into `TimelineItem` as a new optional field `templateKey`.
 
 ---
 
-## Technical details
+## CHANGE 3 — SidebarActions.tsx: backlog button rename
 
-1. The `email_key` values in `email_send_logs` match the raw key (e.g. "confirmation", "reminder_48h") — the template_key prefix (`video_`, `imagens_`) is stored in the `webinar` column separately.
+Line 126: Change `"Enviar check-in backlog"` to `"Enviar email de reactivacao"`.
 
-2. The drawer uses the existing `Sheet` / `SheetContent` from `src/components/ui/sheet.tsx` (right side, width 400px via className).
+Line 126: Change `"Check-in enviado"` to `"Email de reactivacao enviado"`.
 
-3. CSV export: build in-memory string, create Blob, trigger download via temporary anchor element. No server call needed.
+Line 119-127: Add `title="Envia um email para inscritos que estao ha mais de 36h sem interagir com o link de pagamento"` to the backlog button element.
 
-4. The `Collapsible` component from `src/components/ui/collapsible.tsx` is used for the failures section in the drawer.
+Line 72: Update confirm dialog text from `"Enviar check-in backlog para"` to `"Enviar email de reactivacao para"`.
 
-5. Avatar initials: take first character of `fname` if available, otherwise first character of `recipient_email`, uppercase. Same circular avatar style as used in Pipeline cards.
+---
 
-6. Relative time formatting: use `formatDistanceToNow` from date-fns with `{ addSuffix: true, locale: pt }` or manual formatting like "ha Xh".
+## CHANGE 4 — LinkFollowUpSection.tsx: rename follow-up label
 
-7. No changes to any other tabs, views, or data persistence logic.
+Line 84: Change label from `"Follow-up automatico"` to `"EMAILS AUTOMATICOS"` (already uppercase via CSS, just change the text content).
+
+Line 85: Change value from `"Etapa {n}/3"` to `"A enviar sequencia (email {n} de 3)"`.
+
+---
+
+## What does NOT change
+
+- Data queries, Supabase calls, or any functionality
+- Resend message IDs (remain visible for support debugging)
+- EuPago reference numbers
+- Layout, navigation, authentication
+- Any other CRM view or modal tab
+- Filter tabs (already clear)
 
