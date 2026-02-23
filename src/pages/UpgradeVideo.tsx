@@ -356,7 +356,7 @@ const UpgradeVideo = () => {
                         advanceStep(4);
                       } else {
                         // Nothing selected — redirect to confirmation page or just close
-                        window.location.href = "/confirmacao?webinar=video";
+                        window.location.href = `/confirmacao?webinar=video&name=${encodeURIComponent(userData.nome)}&email=${encodeURIComponent(userData.email)}&plan=video-free`;
                       }
                     }}
                   />

@@ -481,7 +481,8 @@ serve(async (req) => {
       .is("paid_at", null)
       .eq("do_not_contact", false)
       .not("plan_selected", "is", null)
-      .neq("plan_selected", "free");
+      .neq("plan_selected", "free")
+      .neq("plan_selected", "video-free");
 
     if (fetchError) {
       console.error("Fetch error:", fetchError);

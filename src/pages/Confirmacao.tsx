@@ -82,20 +82,29 @@ const Confirmacao = () => {
           <Check className="w-8 h-8 text-green-600" strokeWidth={3} />
         </motion.div>
 
-        <motion.h1
-          {...fadeUp(0.15)}
-          className="font-heading font-extrabold text-2xl md:text-3xl text-ink-900 mb-2"
-        >
-          {userName ? `Upgrade Realizado, ${userName}!` : "Upgrade Realizado!"}
-        </motion.h1>
+        {(() => {
+          const isFree = !plan || plan === "free" || plan === "video-free";
+          return (
+            <>
+              <motion.h1
+                {...fadeUp(0.15)}
+                className="font-heading font-extrabold text-2xl md:text-3xl text-ink-900 mb-2"
+              >
+                {isFree
+                  ? (userName ? `O seu lugar está reservado, ${userName}!` : "O seu lugar está reservado!")
+                  : (userName ? `Upgrade Realizado, ${userName}!` : "Upgrade Realizado!")}
+              </motion.h1>
 
-        <motion.p {...fadeUp(0.2)} className="text-[15px] text-ink-500 mb-1">
-          Obrigado pela confiança.
-        </motion.p>
+              <motion.p {...fadeUp(0.2)} className="text-[15px] text-ink-500 mb-1">
+                {isFree ? "A tua inscrição foi confirmada." : "Obrigado pela confiança."}
+              </motion.p>
 
-        <motion.p {...fadeUp(0.25)} className="text-[14px] text-ink-400 mb-8">
-          Vamos aguardar a confirmação do seu pagamento.
-        </motion.p>
+              <motion.p {...fadeUp(0.25)} className="text-[14px] text-ink-400 mb-8">
+                {isFree ? "Adiciona ao calendário para não te esqueceres." : "Vamos aguardar a confirmação do seu pagamento."}
+              </motion.p>
+            </>
+          );
+        })()}
 
         {/* Próximos Passos */}
         <motion.div {...fadeUp(0.35)} className="w-full">

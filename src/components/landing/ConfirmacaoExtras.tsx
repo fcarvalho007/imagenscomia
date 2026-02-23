@@ -41,15 +41,23 @@ const ConfirmacaoExtras = ({ webinar }: ConfirmacaoExtrasProps) => {
       {/* Passo 2 — Calendário */}
       <div className="flex items-start gap-3">
         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">2</span>
-        <a
-          href="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#4285F4] hover:bg-[#3367D6]"
-        >
-          <img src="/google-cal-icon.svg" alt="" className="w-5 h-5" />
-          Adicionar ao Google Calendar
-        </a>
+        {(() => {
+          const start = config.startDate;
+          const end = new Date(start.getTime() + config.durationMinutes * 60000);
+          const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+          const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(config.title)}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent(config.summary)}`;
+          return (
+            <a
+              href={calUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 rounded-[10px] transition-colors bg-[#4285F4] hover:bg-[#3367D6]"
+            >
+              <img src="/google-cal-icon.svg" alt="" className="w-5 h-5" />
+              Adicionar ao Google Calendar
+            </a>
+          );
+        })()}
       </div>
 
       {/* Passo 3 — Social Share Card */}
