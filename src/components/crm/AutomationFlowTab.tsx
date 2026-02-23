@@ -6,6 +6,7 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, VIDEO_WEBINAR_DATE, type WebinarKey } from "@/config/webinarConfig";
 import type { Inscrito } from "@/pages/crm/mockData";
 import type { EmailStats } from "./FollowUpView";
+import EmailRecipientsDrawer from "./modal/EmailRecipientsDrawer";
 
 interface MessageLog {
   id: string;
@@ -50,8 +51,10 @@ interface NodeDef {
   title: string;
   subtitle: string;
   templateKeyMatch: string[];
-  conditionLabel?: string; // label ABOVE this node (between prev and this)
+  conditionLabel?: string;
   isPostWebinar?: boolean;
+  /** Hours offset from webinar start for send schedule. Negative = before, positive = after. null = immediate/skip pending */
+  sendOffsetHours?: number | null;
 }
 
 function getNodes(webinar: WebinarKey): NodeDef[] {
@@ -70,6 +73,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       title: "Confirmação imediata",
       subtitle: "Enviado automaticamente · segundos após inscrição",
       templateKeyMatch: ["confirmation", "stage_0"],
+      sendOffsetHours: null, // immediate, skip pending
     },
     {
       type: "email",
@@ -77,6 +81,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       subtitle: "Enviado automaticamente · 48h antes do webinar",
       templateKeyMatch: ["reminder-48h", "reminder_48h"],
       conditionLabel: "48H ANTES DO WEBINAR",
+      sendOffsetHours: -48,
     },
     {
       type: "email",
@@ -84,6 +89,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       subtitle: "Enviado automaticamente · 24h antes do webinar",
       templateKeyMatch: ["reminder-24h", "reminder_24h"],
       conditionLabel: "24H ANTES DO WEBINAR",
+      sendOffsetHours: -24,
     },
     {
       type: "email",
@@ -91,6 +97,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       subtitle: "Enviado automaticamente · 60 min antes do webinar",
       templateKeyMatch: ["reminder-1h", "reminder_1h"],
       conditionLabel: "1H ANTES DO WEBINAR",
+      sendOffsetHours: -1,
     },
     {
       type: "email",
@@ -99,6 +106,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       templateKeyMatch: ["postwebinar", "post-webinar", "post_webinar"],
       conditionLabel: "APÓS O WEBINAR",
       isPostWebinar: true,
+      sendOffsetHours: null, // manual, skip pending
     },
     {
       type: "end",
@@ -131,17 +139,25 @@ function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webin
 
 /* ─── Status Bar ─── */
 function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?: WebinarKey; emailStats?: EmailStats }) {
-  // Prefer emailStats (from email_send_logs) if available, fallback to message_logs
   const hasStats = emailStats && Object.keys(emailStats).length > 0;
+  const isConsolidado = !webinar;
 
   let totalSent = 0;
   let totalFailed = 0;
+  let imgSent = 0, imgFailed = 0, vidSent = 0, vidFailed = 0;
 
   if (hasStats) {
     for (const [key, val] of Object.entries(emailStats)) {
       if (webinar && !key.startsWith(webinar)) continue;
       totalSent += val.sent;
       totalFailed += val.failed;
+      if (isConsolidado) {
+        if (key.startsWith("imagens_") || key.startsWith("followup_")) {
+          imgSent += val.sent; imgFailed += val.failed;
+        } else if (key.startsWith("video_")) {
+          vidSent += val.sent; vidFailed += val.failed;
+        }
+      }
     }
   } else {
     totalSent = logs.filter((l) => l.provider === "resend" && l.status === "sent").length;
@@ -166,8 +182,7 @@ function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?
       : "⏰ Próximo envio: Lembrete 48h · 3 Mar às 10h00";
   }
 
-  // Badge color based on fail rate
-  let badgeColor = "#16a34a"; // green
+  let badgeColor = "#16a34a";
   let badgeLabel = "🟢 Sistema operacional";
   if (failRate > 0.15) {
     badgeColor = "#ef4444";
@@ -176,6 +191,13 @@ function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?
     badgeColor = "#f59e0b";
     badgeLabel = "🟠 Atenção requerida";
   }
+
+  const sentLabel = isConsolidado
+    ? `📧 ${totalSent} enviados (${imgSent} IMG · ${vidSent} VID)`
+    : `📧 ${totalSent} emails enviados`;
+  const failLabel = isConsolidado
+    ? `❌ ${totalFailed} falhas (${imgFailed} IMG · ${vidFailed} VID)`
+    : `❌ ${totalFailed} falhas`;
 
   return (
     <div
@@ -190,9 +212,9 @@ function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?
     >
       <span style={{ color: badgeColor }}>{badgeLabel}</span>
       <span style={{ color: "#94A3B8" }}>·</span>
-      <span>📧 {totalSent} emails enviados</span>
+      <span>{sentLabel}</span>
       <span style={{ color: "#94A3B8" }}>·</span>
-      <span style={{ color: totalFailed > 0 ? "#ef4444" : undefined }}>❌ {totalFailed} falhas</span>
+      <span style={{ color: totalFailed > 0 ? "#ef4444" : undefined }}>{failLabel}</span>
       <span style={{ color: "#94A3B8" }}>·</span>
       <span>{statusText}</span>
     </div>
@@ -228,6 +250,7 @@ function Timeline({
   onOpenEditor,
   emailStats,
   emailStatsLoading,
+  onClickSentCount,
 }: {
   webinar: WebinarKey;
   inscritos: Inscrito[];
@@ -235,6 +258,7 @@ function Timeline({
   onOpenEditor?: (templateKey: string) => void;
   emailStats?: EmailStats;
   emailStatsLoading?: boolean;
+  onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
@@ -392,13 +416,40 @@ function Timeline({
                 )}
                 {node.type === "email" && !emailStatsLoading && counts && (
                   <div className="flex flex-col items-end gap-0.5">
-                    <span style={{ fontSize: 12, color: counts.sent > 0 ? "#16a34a" : "#999" }}>
-                      {counts.sent} enviados
-                    </span>
+                    {counts.sent > 0 ? (
+                      <button
+                        onClick={() => {
+                          const rawKey = node.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
+                          onClickSentCount?.(rawKey, node.title, webinar);
+                        }}
+                        className="text-[12px] font-medium hover:underline cursor-pointer"
+                        style={{ color: "#2563EB", textDecoration: "underline" }}
+                      >
+                        {counts.sent} enviados
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 12, color: "#999" }}>0 enviados</span>
+                    )}
                     <span className="flex items-center gap-1" style={{ fontSize: 12, color: counts.failed > 0 ? "#ef4444" : "#999" }}>
                       {counts.failed > 0 && <AlertTriangle size={11} />}
                       {counts.failed} falhas
                     </span>
+                    {/* Pending indicator */}
+                    {node.sendOffsetHours != null && (() => {
+                      const sendDate = new Date(WEBINAR_CONFIG[webinar].startDate.getTime() + node.sendOffsetHours! * 60 * 60 * 1000);
+                      const sendPassed = Date.now() > sendDate.getTime();
+                      const pending = inscritosCount - counts.sent - counts.failed;
+                      if (inscritosCount === 0) {
+                        return <span style={{ fontSize: 11, color: "#aaa" }}>— Sem inscritos ainda</span>;
+                      }
+                      if (!sendPassed && pending > 0) {
+                        return <span style={{ fontSize: 11, color: "#3b82f6" }}>→ {pending} por receber</span>;
+                      }
+                      if (sendPassed && pending <= 0 && counts.sent > 0) {
+                        return <span style={{ fontSize: 11, color: "#16a34a" }}>✓ Todos receberam</span>;
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
                 {node.type === "email" && !node.isPostWebinar && (
@@ -455,6 +506,17 @@ function Timeline({
 /* ─── Main Component ─── */
 export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpenEditor, emailStats, emailStatsLoading }: Props) {
   const { webinarContext } = useWebinarContext();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerEmailKey, setDrawerEmailKey] = useState("");
+  const [drawerTitle, setDrawerTitle] = useState("");
+  const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
+
+  const handleClickSentCount = (emailKey: string, title: string, webinar: WebinarKey) => {
+    setDrawerEmailKey(emailKey);
+    setDrawerTitle(title);
+    setDrawerWebinar(webinarContext === "consolidado" ? "consolidado" : webinar);
+    setDrawerOpen(true);
+  };
 
   if (logsLoading) {
     return (
@@ -463,6 +525,16 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
       </div>
     );
   }
+
+  const drawer = (
+    <EmailRecipientsDrawer
+      open={drawerOpen}
+      onClose={() => setDrawerOpen(false)}
+      emailKey={drawerEmailKey}
+      webinar={drawerWebinar}
+      emailTitle={drawerTitle}
+    />
+  );
 
   if (webinarContext === "consolidado") {
     return (
@@ -473,15 +545,16 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               📷 Imagens IA · 18 Fev 2026
             </h3>
-             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
+             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
           </div>
           <div>
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               🎬 Vídeo IA · 2 Mar 2026
             </h3>
-            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
+            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
           </div>
         </div>
+        {drawer}
       </div>
     );
   }
@@ -491,7 +564,8 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   return (
     <div>
       <StatusBar logs={logs} webinar={webinar} emailStats={emailStats} />
-      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} />
+      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
+      {drawer}
     </div>
   );
 }
