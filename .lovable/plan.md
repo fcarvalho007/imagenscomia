@@ -1,49 +1,138 @@
 
-# Substituir video de fundo do Hero na pagina /video
+
+# Adicionar perguntas de qualificacao (Role + Team Size) ao upgrade video
 
 ## Resumo
 
-Substituir o ficheiro de video de fundo na seccao Hero ("O mercado exige Video.") pelo novo video enviado pelo utilizador. Cortar ligeiramente a parte inferior do video para esconder a marca "veo" no canto inferior direito.
+Adicionar duas novas perguntas opcionais ("Qual e o teu papel principal?" e "Quantas pessoas trabalham em marketing?") ao Step 1 do fluxo `/upgrade-video`, persistir os dados na tabela `registrations`, e mostra-los no CRM (TableView + DashboardView).
 
 ---
 
-## Alteracoes
+## 1. Migracao de base de dados
 
-### 1. Copiar o novo video para o projecto
+Adicionar duas novas colunas a tabela `registrations`:
 
-Copiar `user-uploads://Animar_em_loop_202602231226_6c6lv.mp4` para `public/videos/hero-vidro.mp4`, substituindo o ficheiro existente. Isto evita qualquer alteracao de codigo — o componente ja referencia este caminho.
-
-### 2. Esconder a marca "veo" no canto inferior direito
-
-Em `src/pages/Video.tsx` (linha 268), ajustar o estilo do elemento `<video>` para cortar ligeiramente a parte inferior:
-
-- Remover `object-cover` e substituir por estilos inline que ampliam o video ~5% para esconder o rodape
-- Usar `object-fit: cover` com `object-position: center top` para empurrar o fundo (onde esta "veo") para fora da area visivel
-- Alternativa mais robusta: escalar o video com `transform: scale(1.08)` para que os ~4% inferiores fiquem fora do overflow hidden do container
-
-Implementacao concreta na tag video (linha 268):
-
+```sql
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS role text;
+ALTER TABLE registrations ADD COLUMN IF NOT EXISTS team_size text;
 ```
-<video
-  autoPlay loop muted playsInline
-  className="absolute inset-0 w-full h-full"
-  style={{
-    zIndex: 0,
-    opacity: 0.35,
-    objectFit: "cover",
-    objectPosition: "center 40%",
-    transform: "scale(1.06)",
-  }}
->
-```
-
-O `scale(1.06)` amplia ligeiramente o video e o `objectPosition: "center 40%"` desloca o ponto focal para cima, escondendo o rodape com "veo" fora do `overflow-hidden` do container pai.
 
 ---
 
-## Ficheiros afectados
+## 2. StepQualification — novas props e UI
+
+**Ficheiro:** `src/components/upgrade/StepQualification.tsx`
+
+- Adicionar novas props ao interface:
+  - `role: string | null`
+  - `setRole: (r: string | null) => void`
+  - `teamSize: string | null`
+  - `setTeamSize: (t: string | null) => void`
+
+- Actualizar o titulo de "so 2 perguntas muito rapidas" para "so algumas perguntas rapidas"
+
+- Apos a seccao de sources (incluindo "Outro"), adicionar:
+
+  **Divider:** `<div className="w-full" style={{ height: 1, background: "#e5e7eb", margin: "24px 0" }} />`
+
+  **Pergunta 1 — Papel principal:**
+  - Label: "Qual e o teu papel principal?"
+  - Sub-label: "(selecciona uma opcao)"
+  - Radio-style single select com 5 opcoes (mesmo estilo visual das pill buttons existentes, mas com circulo radio em vez de checkbox quadrado)
+  - Opcoes: "Gestor/a de marketing numa empresa", "Empresario/a ou PME — faco o meu proprio marketing", "Freelancer ou consultor/a de marketing", "Criador/a de conteudo", "Outra funcao"
+
+  **Pergunta 2 — Tamanho de equipa (16px spacing abaixo):**
+  - Label: "Quantas pessoas trabalham em marketing na tua organizacao?"
+  - Sub-label: "(selecciona uma opcao)"
+  - 4 opcoes: "So eu", "2 a 5 pessoas", "6 a 20 pessoas", "Mais de 20 pessoas"
+
+- Estilo identico ao existente: pill buttons full-width, borda `hsl(var(--border))`, seleccionado com `hsl(var(--blue-600))` border + `hsl(var(--blue-50))` fundo, circulo radio em vez de check square
+
+---
+
+## 3. UpgradeVideo — state e persistencia
+
+**Ficheiro:** `src/pages/UpgradeVideo.tsx`
+
+- Adicionar state:
+  ```
+  const [role, setRole] = useState<string | null>(null);
+  const [teamSize, setTeamSize] = useState<string | null>(null);
+  ```
+
+- Passar `role`, `setRole`, `teamSize`, `setTeamSize` ao `StepQualification`
+
+- No `onNext` do step 1, incluir `role` e `team_size` no `saveStepData`:
+  ```
+  saveStepData(2, { sources: srcText, role: role || null, team_size: teamSize || null });
+  ```
+
+- No `onSkip`, salvar null para ambos:
+  ```
+  saveStepData(2, { sources: "SKIPPED", role: null, team_size: null });
+  ```
+
+---
+
+## 4. Inscrito type — novos campos
+
+**Ficheiro:** `src/pages/crm/mockData.ts`
+
+Adicionar ao type `Inscrito`:
+```
+role: string | null;
+team_size: string | null;
+```
+
+---
+
+## 5. useInscritos — mapear novos campos
+
+**Ficheiro:** `src/hooks/useInscritos.ts`
+
+Na funcao `mapRegistration`, adicionar:
+```
+role: (r as any).role || null,
+team_size: (r as any).team_size || null,
+```
+
+---
+
+## 6. CRM TableView — novas colunas
+
+**Ficheiro:** `src/components/crm/TableView.tsx`
+
+Adicionar duas colunas ao header da tabela (apos "Passo"):
+- "Funcao" — mostra `i.role || "—"`
+- "Equipa" — mostra `i.team_size || "—"`
+
+Incluir no CSV export.
+
+---
+
+## 7. CRM DashboardView — widget "Perfil dos Inscritos"
+
+**Ficheiro:** `src/components/crm/DashboardView.tsx`
+
+Abaixo do card "Distribuicao por Plano", adicionar um novo card:
+- Titulo: "Perfil dos Inscritos"
+- Condicao: so renderizar barras se >= 5 inscritos tiverem `role` preenchido; caso contrario mostrar "Dados disponiveis apos mais inscricoes"
+- Dois mini graficos de barras horizontais:
+  1. Distribuicao por `role` (contagem por opcao)
+  2. Distribuicao por `team_size` (contagem por opcao)
+- Estilo: barras horizontais simples com label a esquerda, barra azul, contagem a direita (mesmo padrao visual dos graficos existentes no dashboard)
+
+---
+
+## Ficheiros a modificar
 
 | Ficheiro | Alteracao |
 |----------|-----------|
-| `public/videos/hero-vidro.mp4` | Substituido pelo novo video |
-| `src/pages/Video.tsx` | Ajuste de estilo no elemento video (linha 268) para cortar rodape |
+| Migracao SQL | `ALTER TABLE` para `role` e `team_size` |
+| `src/components/upgrade/StepQualification.tsx` | Novas props, titulo, divider, 2 perguntas radio |
+| `src/pages/UpgradeVideo.tsx` | State + persistencia de `role` e `team_size` |
+| `src/pages/crm/mockData.ts` | Novos campos no type `Inscrito` |
+| `src/hooks/useInscritos.ts` | Mapear `role` e `team_size` |
+| `src/components/crm/TableView.tsx` | 2 novas colunas + CSV |
+| `src/components/crm/DashboardView.tsx` | Widget "Perfil dos Inscritos" |
+
