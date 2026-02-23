@@ -1,102 +1,94 @@
 
 
-# UX/UI Improvements for /upgrade-video — Video Differentiation
+# Templates Tab — Filtro por Webinar + Badges
 
-## Summary
+## Resumo
 
-Apply visual and text changes to clearly differentiate the Video webinar upgrade flow from the Imagens webinar. Changes span 3 files with no logic, pricing, or data modifications.
+3 alteracoes cirurgicas: filtrar templates pelo webinarContext, adicionar badge de webinar a cada linha, e mudar o default de "imagens" para "video".
 
 ---
 
-## Files to modify
+## Ficheiros a modificar
 
-| File | Changes |
+| Ficheiro | Alteracao |
 |---|---|
-| `src/pages/UpgradeVideo.tsx` | Sidebar identity, product line, context note, progress bar labels |
-| `src/components/upgrade/StepVideoPremium.tsx` | Header text, eyebrow badges, date box, CTA text, skip note |
-| `src/components/upgrade/StepMasterclass.tsx` | Header/subtitle, eyebrow badges, date box, benefit wording, CTA color/text, skip note |
+| `src/components/crm/TemplatesView.tsx` | Import useWebinarContext, filtrar activeTemplates, adicionar badges, render com grupos no modo consolidado |
+| `src/contexts/WebinarContext.tsx` | Mudar useState default de "imagens" para "video" |
 
 ---
 
-## CHANGE 1 — Sidebar (UpgradeVideo.tsx)
+## 1. WebinarContext.tsx — mudar default
 
-**Header area (lines 193-194)**:
-- Replace `<p>Formacao em IA</p>` with a green webinar badge: "🎬 Video com IA" pill (green background, rounded, 11px bold)
-
-**Product line — free state (lines 218-226)**:
-- Change "Webinar Gratuito" to "Webinar Video com IA"
-- Add date line below: "📅 5 de Marco . 10h00" in 12px, color #888
-
-**Context note below product line (after line 226)**:
-- Add thin divider + context paragraph: "Este e um webinar diferente — focado em video curto para marketing, nao em imagens estaticas."
-- Always shown (since URL param detection is unreliable for all cases)
-
-**Progress bar labels (line 262)**:
-- "Gravacao (opcional)" becomes "Gravacao Video (opcional)"
-- "Masterclass (opcional)" becomes "Masterclass Video (opcional)"
+Linha 12: mudar `useState<WebinarCtxType>("imagens")` para `useState<WebinarCtxType>("video")`.
 
 ---
 
-## CHANGE 2 — StepVideoPremium.tsx
+## 2. TemplatesView.tsx — import e filtragem
 
-**Step header (line 34-35)**:
-- Title: "Gravacao do Webinar Video (opcional)" (was "Adicionar Gravacao da Sessao")
-- Subtitle: unchanged
+Adicionar import no topo:
+```
+import { useWebinarContext } from "@/contexts/WebinarContext";
+```
 
-**Card header (line 52-53)**:
-- Replace single "GRAVACAO + PACK" text with 2 inline eyebrow badges:
-  - "🎬 WEBINAR VIDEO COM IA" (green border/text)
-  - "GRAVACAO + PACK" (light green bg)
+Dentro do componente, chamar o hook:
+```
+const { webinarContext } = useWebinarContext();
+```
 
-**Date box (insert between divider at line 64 and benefits at line 66)**:
-- Green-themed date card: "Sessao Q&A em grupo / Terca-feira, 10 de Marco . 14h30-15h00"
+Criar helper para classificar templates:
+```
+function getTemplateWebinar(key: string): "imagens" | "video" {
+  if (key.startsWith("video_")) return "video";
+  return "imagens"; // followup_ and imagens_ both belong to imagens
+}
+```
 
-**CTA text (line 85)**:
-- "Garantir Gravacao do Video + Pack ->"
-
-**Skip note (after line 105)**:
-- Add: "A inscricao gratuita no Webinar Video fica confirmada de qualquer forma." (11px, #aaa, centered)
-
----
-
-## CHANGE 3 — StepMasterclass.tsx
-
-**Step header (lines 37-41)**:
-- Title: "Masterclass Video com IA — sistema completo ao vivo"
-- Subtitle: "O webinar cobre o essencial. A Masterclass aprofunda o sistema completo — 3 horas ao vivo com casos reais, fluxos replicaveis e ferramentas testadas."
-
-**Card eyebrow (lines 50-52)**:
-- Replace single "IMAGEM -> VIDEO" tag with 2 inline badges:
-  - "🎬 MASTERCLASS VIDEO COM IA" (purple border/text)
-  - "SESSAO AVANCADA" (light purple bg)
-
-**Date box (insert between divider at line 69 and benefits at line 71)**:
-- Purple-themed date card: "Sessao ao vivo . 3 horas / Quinta-feira, 12 de Marco . 10h00-13h00 . Online"
-
-**Benefits wording (lines 13-29)**:
-- Bullet 1 title: "Sistema completo de producao de video curto" (was "Imagem -> video: do estatico ao clip")
-- Bullet 2: unchanged
-- Bullet 3: unchanged
-- Bullet 4 title: "Gravacao da Masterclass incluida — reve quando precisares" (was "Acesso a sessao incluido")
-
-**CTA button (lines 93-101)**:
-- Color: change from black (`ink-900`) to purple `#7c3aed` (hover: `#6d28d9`)
-- Text: "Garantir lugar na Masterclass Video ->"
-
-**Confirmation dialog button (line 134)**:
-- Background: `#7c3aed` instead of `ink-900`
-
-**Skip note (after line 120)**:
-- Add same note as Premium step: "A inscricao gratuita no Webinar Video fica confirmada de qualquer forma."
+Criar memo `filteredTemplates` derivado de `activeTemplates`:
+- Se `webinarContext === "imagens"`: filtrar onde `key.startsWith("imagens_") || key.startsWith("followup_")`
+- Se `webinarContext === "video"`: filtrar onde `key.startsWith("video_")`
+- Se `webinarContext === "consolidado"`: manter todos (agrupamento visual no render)
 
 ---
 
-## What does NOT change
+## 3. TemplatesView.tsx — badges na coluna Nome
 
-- Step count, navigation, or progress bar logic
-- Pricing (EUR15, EUR47, EUR27, EUR97)
-- Early bird badges
-- Data persistence / Supabase calls
-- Step 1 (qualification) or Step 4 (confirmation)
-- Any other page or component
+Na celula `<td>` do Nome (linha 224), abaixo do nome do template, adicionar badge inline:
+
+- `video_*`: Badge "🎬 Video" — `background: rgba(22,163,74,0.1)`, `color: #16a34a`
+- `imagens_*`: Badge "📷 Imagens" — `background: rgba(30,64,175,0.1)`, `color: #1e40af`
+- `followup_*`: Badge "📷 Imagens . Follow-up" — mesma cor azul
+
+Estilo do badge: `font-size: 9px`, `padding: 2px 7px`, `border-radius: 10px`, `font-weight: 600`, `display: inline-block`, `margin-top: 3px`
+
+---
+
+## 4. TemplatesView.tsx — render com grupos no modo consolidado
+
+No tbody:
+
+Se `webinarContext !== "consolidado"`: render simples das `filteredTemplates` (como actualmente, mas com badge).
+
+Se `webinarContext === "consolidado"`: render em 2 grupos:
+
+**Grupo 1** — header row com colspan total:
+- "📷 WEBINAR IMAGENS IA"
+- Estilo: `font-size: 11px`, `font-weight: 700`, `color: #888`, `letter-spacing: 1.5px`, `text-transform: uppercase`, `padding: 8px 16px`, `border-bottom: 1px solid #f0f0f0`
+- Seguido das rows de templates `imagens_*` e `followup_*`
+
+**Grupo 2** — header row:
+- "🎬 WEBINAR VIDEO IA"
+- Mesmo estilo
+- Seguido das rows de templates `video_*`
+
+Os group headers sao `<tr>` com um unico `<td colSpan={8}>`.
+
+---
+
+## O que NAO muda
+
+- Logica de edicao, save, versioning, restore, toggle active
+- Modal de edicao (permanece identico)
+- Historico de versoes inline
+- Nenhuma outra tab de Automacoes (Fluxo, Metricas, Pessoas)
+- Nenhuma outra view do CRM
 
