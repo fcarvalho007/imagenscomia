@@ -43,7 +43,7 @@ function mapRegistration(r: any): Inscrito {
     status: "activo",
     follow_up: false,
     gender,
-    plan_selected: r.plan_selected || null,
+    plan_selected: r.plan_selected ? r.plan_selected.replace(/^video-/, "") : null,
     sources_text: r.sources || null,
     duvida_text: r.duvida || null,
     upgrade_clicked_at: r.upgrade_clicked_at || null,
