@@ -136,6 +136,17 @@ serve(async (req) => {
           provider_message_id: resendData.id || null,
           error: resendRes.ok ? null : JSON.stringify(resendData),
         });
+
+        // Log to email_send_logs
+        await supabase.from("email_send_logs").insert({
+          webinar: "video",
+          email_key: "confirmation",
+          recipient_email: email.toLowerCase().trim(),
+          fname: fname || "",
+          status: resendRes.ok ? "sent" : "failed",
+          resend_id: resendData.id || null,
+          error_message: resendRes.ok ? null : JSON.stringify(resendData),
+        });
       }
     } catch (logErr) {
       console.error("Logging failed (non-blocking):", logErr);
