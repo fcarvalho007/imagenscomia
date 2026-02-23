@@ -41,6 +41,8 @@ export type Inscrito = {
   premium_granted_at: string | null;
   premium_granted_by: string | null;
   webinar: "imagens" | "video";
+  role: string | null;
+  team_size: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];

@@ -63,6 +63,8 @@ function mapRegistration(r: any): Inscrito {
     premium_granted_at: (r as any).premium_granted_at || null,
     premium_granted_by: (r as any).premium_granted_by || null,
     webinar: (r.webinar === "video" ? "video" : "imagens") as "imagens" | "video",
+    role: (r as any).role || null,
+    team_size: (r as any).team_size || null,
   };
 }
 
