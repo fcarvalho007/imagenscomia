@@ -1,53 +1,34 @@
 
+# Refinamentos mobile para /upgrade-video
 
-# Ajustes ao funil /upgrade-video (Passos 1, 2 e 4)
+Apos revisao completa do funil em 375px (iPhone), o estado actual esta bastante solido. Identifiquei ajustes menores que melhoram a experiencia mobile:
 
-## Passo 1 — StepQualification
+## Problemas encontrados
 
-### Titulo e subtitulo
-- Titulo grande: `"{firstName}, espera..."` (em vez de "ESPERE...")
-- Subtitulo simplificado: `"So duas perguntas rapidas."`
+### 1. Botao WhatsApp sobrepoe conteudo no passo 4
+No passo 4 (duvida), o botao WhatsApp (fixed bottom-right) sobrepoe parcialmente o botao "Finalizar" e a opcao "Saltar". Em ecras de 375px, o conteudo termina perto do fundo e o FAB verde fica por cima.
 
-### "Outra funcao" com campo de texto
-- Quando o utilizador selecciona "Outra funcao", aparece um campo de texto obrigatorio por baixo
-- Nao pode avancar sem preencher esse campo
-- O valor e guardado directamente na coluna `role` da BD (ex: "Outra funcao: Designer grafico")
-- Sem necessidade de nova coluna — o texto fica concatenado ao valor da opcao
+**Solucao:** Adicionar `pb-24` (padding-bottom extra) ao conteudo do StepDuvida para garantir espaco abaixo dos botoes de accao, evitando a sobreposicao.
 
-### Validacao
-- `canProceed` passa a verificar: role seleccionado E (se role === "Outra funcao", campo de texto nao vazio) E teamSize seleccionado
+### 2. Campo "Outra funcao" cortado em mobile
+No passo 1, quando se selecciona "Outra funcao", o campo de texto usa `ml-8` e `maxWidth: calc(100% - 2rem)` o que o empurra para a direita. Em 375px, o campo fica ligeiramente estreito e desalinhado.
 
-**Ficheiro:** `src/components/upgrade/StepQualification.tsx`
+**Solucao:** Remover `ml-8` e o estilo `maxWidth` inline em mobile, usando apenas `w-full` com um `pl-8` para manter o alinhamento visual com as opcoes acima sem cortar o campo.
 
----
+### 3. Campo "Outro" no StepDuvida com o mesmo problema
+Identico ao anterior: o campo de texto para "Outro" usa `ml-8` e fica cortado.
 
-## Passo 2 — StepMasterclass
+**Solucao:** Mesma abordagem — trocar `ml-8` + `maxWidth` inline por `w-full pl-8` para que o campo ocupe a largura disponivel.
 
-### Hierarquia de titulos
-- Titulo principal: **"Vais gostar desta opcao adicional"**
-- Subtitulo (ligeiramente maior, ~20px, bold): **"Masterclass Video com IA (3 horas)"**
-- Sub-subtitulo (cinzento, como esta): "O webinar cobre o essencial. A Masterclass aprofunda o sistema completo em 3 horas de conteudo util."
+### 4. Etiqueta da progress bar no passo 2 podia ser mais curta em mobile
+A etiqueta mostra "Passo 2/5 — Masterclass" em mobile (<480px) e "Passo 2/5 — Masterclass Video (opcional)" em desktop. Esta bem mas pode ser encurtada para apenas "Masterclass" omitindo o "(opcional)" tambem em desktop, ja que o botao "Continuar com inscricao gratuita" ja transmite a opcionalidade.
 
-**Ficheiro:** `src/components/upgrade/StepMasterclass.tsx` (linhas 37-42)
+**Solucao:** Simplificar as labels da progress bar — mobile: apenas o nome curto; desktop: com "(opcional)".
 
----
+### 5. Mobile sticky footer para reduzir abandono nos passos 2 e 3
+Nos passos de upsell (2 e 3), o botao "Continuar com inscricao gratuita" so aparece no fundo da pagina, obrigando a fazer scroll em mobile. Um utilizador que nao quer comprar pode abandonar sem ver a opcao de skip.
 
-## Passo 4 — StepDuvida com checkboxes
-
-### Estrutura nova
-Substituir o textarea unico por:
-1. 3 opcoes checkbox pre-definidas (multi-seleccao):
-   - "Como criar videos curtos sem filmar"
-   - "Que ferramentas de IA usar para video"
-   - "Como integrar video na estrategia de marketing"
-2. Opcao "Outro" com checkbox — ao activar, mostra campo de texto aberto
-3. Botao "Finalizar" e link "Saltar" mantidos
-
-### Persistencia
-- Os valores seleccionados sao guardados concatenados na coluna `duvida` (texto livre, ja existente)
-- Formato: `"Como criar videos curtos sem filmar; Que ferramentas de IA usar para video; Outro: texto personalizado"`
-
-**Ficheiro:** `src/components/upgrade/StepDuvida.tsx`
+**Solucao:** Adicionar um sticky footer mobile (apenas em `lg:hidden`) nos passos 2 e 3 com o texto "Continuar com inscricao gratuita" — semelhante a barra de resumo do topo, mas no fundo.
 
 ---
 
@@ -55,9 +36,8 @@ Substituir o textarea unico por:
 
 | Ficheiro | Alteracao |
 |---|---|
-| `StepQualification.tsx` | Titulo "{nome}, espera...", subtitulo curto, campo texto para "Outra funcao" com validacao |
-| `StepMasterclass.tsx` | Nova hierarquia de 3 niveis no titulo |
-| `StepDuvida.tsx` | 3 checkboxes + "Outro" com textarea, persistencia concatenada no campo `duvida` |
+| `src/components/upgrade/StepQualification.tsx` | Campo "Outra funcao": trocar `ml-8` + `maxWidth` por `w-full pl-8` |
+| `src/components/upgrade/StepDuvida.tsx` | Campo "Outro": mesma correcao + adicionar `pb-20` ao container para evitar sobreposicao com WhatsApp FAB |
+| `src/pages/UpgradeVideo.tsx` | Adicionar sticky footer mobile nos passos 2 e 3 com "Continuar com inscricao gratuita"; simplificar labels da progress bar |
 
-Nenhuma migracao de BD necessaria — todos os campos ja existem.
-
+Nenhuma migracao de BD necessaria.
