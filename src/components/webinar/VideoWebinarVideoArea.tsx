@@ -12,13 +12,7 @@ const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
 );
 
 const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/render" +
-  "?action=TEMPLATE" +
-  "&text=" + encodeURIComponent("Webinar gratuito — Vídeo com IA") +
-  "&dates=20260305T100000/20260305T110000" +
-  "&details=" + encodeURIComponent("Sessão gratuita ao vivo. Após inscrição, o acesso e informações serão enviados por email.") +
-  "&location=Online" +
-  "&ctz=Europe/Lisbon";
+  "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
 
 export const VideoWebinarVideoArea = () => {
   const countdown = useCountdown(VIDEO_WEBINAR_CONFIG.startDate);

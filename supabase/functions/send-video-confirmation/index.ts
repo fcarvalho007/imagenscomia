@@ -10,7 +10,7 @@ const corsHeaders = {
 const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 
 const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cria+V%C3%ADdeo+Profissional+com+IA&dates=20260305T100000Z/20260305T110000Z&details=Link+de+acesso:+https://imagenscomia.com/live-video&location=https://imagenscomia.com/live-video";
+  "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
 
 const ICS_CONTENT = `BEGIN:VCALENDAR
 VERSION:2.0
