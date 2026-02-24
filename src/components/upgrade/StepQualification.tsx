@@ -35,8 +35,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
   ({ sources, setSources, otherSource, setOtherSource, onNext, userName, role, setRole, teamSize, setTeamSize, videoMode }, ref) => {
     const [showOther, setShowOther] = useState(sources?.includes("Outro") ?? false);
     const [attempted, setAttempted] = useState(false);
+    const [otherRole, setOtherRole] = useState("");
     const firstName = userName?.trim().split(" ")[0] || "";
-    const canProceed = !!(role && teamSize);
+    const isOtherRole = role === "Outra função";
+    const canProceed = !!(role && teamSize && (!isOtherRole || otherRole.trim()));
 
     const toggle = (val: string) => {
       if (!sources || !setSources) return;
@@ -72,10 +74,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
         {videoMode ? (
           <>
             <h2 className="font-heading font-extrabold text-[42px] max-sm:text-[32px] text-ink-900 leading-tight tracking-tight">
-              ESPERE...
+              {firstName ? `${firstName}, espera...` : "Espera..."}
             </h2>
             <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-3 mb-7">
-              {firstName ? `${firstName}, antes` : "Antes"} de finalizar, só duas perguntas rápidas para garantir que o webinar cobre o que precisas.
+              Só duas perguntas rápidas.
             </p>
           </>
         ) : (
@@ -179,7 +181,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
                   <button
                     key={opt}
                     type="button"
-                    onClick={() => setRole(selected ? null : opt)}
+                    onClick={() => {
+                      setRole(selected ? null : opt);
+                      if (opt !== "Outra função") setOtherRole("");
+                    }}
                     className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
                     style={{
                       borderColor: selected ? "hsl(var(--blue-600))" : "hsl(var(--border))",
@@ -198,6 +203,17 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
                   </button>
                 );
               })}
+
+              {isOtherRole && (
+                <input
+                  type="text"
+                  value={otherRole}
+                  onChange={(e) => setOtherRole(e.target.value)}
+                  placeholder="Descreve a tua função..."
+                  className="w-full border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600 ml-8"
+                  style={{ maxWidth: "calc(100% - 2rem)" }}
+                />
+              )}
             </div>
 
             {/* Question 2 — Team Size */}
@@ -247,6 +263,10 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
         <button
           onClick={() => {
             if (canProceed) {
+              // If "Outra função" selected, concatenate the custom text into the role value
+              if (isOtherRole && otherRole.trim() && setRole) {
+                setRole(`Outra função: ${otherRole.trim()}`);
+              }
               onNext();
             } else {
               setAttempted(true);
