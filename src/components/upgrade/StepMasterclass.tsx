@@ -35,10 +35,13 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
   <>
   <div className="max-w-[620px]">
     <h2 className="font-heading font-bold text-[24px] max-sm:text-[18px] text-ink-900">
-      Masterclass Vídeo com IA — sistema completo ao vivo
+      Vais gostar desta opção adicional
     </h2>
-    <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
-      O webinar cobre o essencial. A Masterclass aprofunda o sistema completo — 3 horas ao vivo com casos reais, fluxos replicáveis e ferramentas testadas.
+    <p className="font-heading font-bold text-[20px] max-sm:text-[17px] text-ink-900 mt-3">
+      Masterclass Vídeo com IA (3 horas)
+    </p>
+    <p className="text-[16px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
+      O webinar cobre o essencial. A Masterclass aprofunda o sistema completo em 3 horas de conteúdo útil.
     </p>
 
     {/* Masterclass Card */}
