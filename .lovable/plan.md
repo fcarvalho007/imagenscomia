@@ -1,34 +1,37 @@
 
-# Refinamentos mobile para /upgrade-video
+# 4 Correcoes em /upgrade-video, /video, /confirmacao e /live-video
 
-Apos revisao completa do funil em 375px (iPhone), o estado actual esta bastante solido. Identifiquei ajustes menores que melhoram a experiencia mobile:
+## 1. Scroll to top ao mudar de passo (/upgrade-video)
 
-## Problemas encontrados
+O `advanceStep` ja faz `window.scrollTo({ top: 0 })`, mas a animacao framer-motion pode causar que o scroll nao aconteca antes do render. Vou adicionar um `useEffect` que detecta mudancas no `step` e forca scroll to top, garantindo que cada passo comeca de cima.
 
-### 1. Botao WhatsApp sobrepoe conteudo no passo 4
-No passo 4 (duvida), o botao WhatsApp (fixed bottom-right) sobrepoe parcialmente o botao "Finalizar" e a opcao "Saltar". Em ecras de 375px, o conteudo termina perto do fundo e o FAB verde fica por cima.
+**Ficheiro:** `src/pages/UpgradeVideo.tsx`
+- Adicionar `useEffect` com dependencia em `step` que faz `window.scrollTo({ top: 0, behavior: "instant" })`
 
-**Solucao:** Adicionar `pb-24` (padding-bottom extra) ao conteudo do StepDuvida para garantir espaco abaixo dos botoes de accao, evitando a sobreposicao.
+## 2. Countdown centrado em mobile (/video)
 
-### 2. Campo "Outra funcao" cortado em mobile
-No passo 1, quando se selecciona "Outra funcao", o campo de texto usa `ml-8` e `maxWidth: calc(100% - 2rem)` o que o empurra para a direita. Em 375px, o campo fica ligeiramente estreito e desalinhado.
+Na sticky top bar da pagina /video, o countdown esta alinhado a esquerda (`flex items-center justify-between`). Em mobile, o botao CTA esta `hidden sm:block`, sobrando espaco a direita. Vou centrar o countdown em mobile adicionando `max-sm:mx-auto` ou `max-sm:justify-center` ao container.
 
-**Solucao:** Remover `ml-8` e o estilo `maxWidth` inline em mobile, usando apenas `w-full` com um `pl-8` para manter o alinhamento visual com as opcoes acima sem cortar o campo.
+**Ficheiro:** `src/pages/Video.tsx` (linhas 224-225)
+- Mudar o container flex para centralizar o countdown em mobile: adicionar `max-sm:justify-center` ao div pai
 
-### 3. Campo "Outro" no StepDuvida com o mesmo problema
-Identico ao anterior: o campo de texto para "Outro" usa `ml-8` e fica cortado.
+## 3. Corrigir botoes sociais na confirmacao
 
-**Solucao:** Mesma abordagem — trocar `ml-8` + `maxWidth` inline por `w-full pl-8` para que o campo ocupe a largura disponivel.
+O LinkedIn share URL actual usa `sharing/share-offsite` que funciona. Mas o pedido e: remover X/Twitter e adicionar WhatsApp. O botao WhatsApp usara `https://wa.me/?text=...` para partilha directa.
 
-### 4. Etiqueta da progress bar no passo 2 podia ser mais curta em mobile
-A etiqueta mostra "Passo 2/5 — Masterclass" em mobile (<480px) e "Passo 2/5 — Masterclass Video (opcional)" em desktop. Esta bem mas pode ser encurtada para apenas "Masterclass" omitindo o "(opcional)" tambem em desktop, ja que o botao "Continuar com inscricao gratuita" ja transmite a opcionalidade.
+**Ficheiro:** `src/components/landing/ConfirmacaoExtras.tsx`
+- Remover import `Twitter` de lucide-react
+- Remover o botao X/Twitter
+- Adicionar botao WhatsApp com URL `https://wa.me/?text={SHARE_TEXT + URL}` e cor verde (#25D366)
+- Manter LinkedIn e Copiar link
 
-**Solucao:** Simplificar as labels da progress bar — mobile: apenas o nome curto; desktop: com "(opcional)".
+## 4. Adicionar WhatsApp Support Button a /video
 
-### 5. Mobile sticky footer para reduzir abandono nos passos 2 e 3
-Nos passos de upsell (2 e 3), o botao "Continuar com inscricao gratuita" so aparece no fundo da pagina, obrigando a fazer scroll em mobile. Um utilizador que nao quer comprar pode abandonar sem ver a opcao de skip.
+A pagina /video nao tem o `WhatsAppSupportButton`. As paginas /upgrade-video e /live-video ja o tem. Basta adicionar o import e o componente antes do fecho do div principal.
 
-**Solucao:** Adicionar um sticky footer mobile (apenas em `lg:hidden`) nos passos 2 e 3 com o texto "Continuar com inscricao gratuita" — semelhante a barra de resumo do topo, mas no fundo.
+**Ficheiro:** `src/pages/Video.tsx`
+- Adicionar `import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton"`
+- Adicionar `<WhatsAppSupportButton />` antes do `<RegistrationModal />`
 
 ---
 
@@ -36,8 +39,6 @@ Nos passos de upsell (2 e 3), o botao "Continuar com inscricao gratuita" so apar
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/upgrade/StepQualification.tsx` | Campo "Outra funcao": trocar `ml-8` + `maxWidth` por `w-full pl-8` |
-| `src/components/upgrade/StepDuvida.tsx` | Campo "Outro": mesma correcao + adicionar `pb-20` ao container para evitar sobreposicao com WhatsApp FAB |
-| `src/pages/UpgradeVideo.tsx` | Adicionar sticky footer mobile nos passos 2 e 3 com "Continuar com inscricao gratuita"; simplificar labels da progress bar |
-
-Nenhuma migracao de BD necessaria.
+| `src/pages/UpgradeVideo.tsx` | useEffect para scroll to top ao mudar step |
+| `src/pages/Video.tsx` | Countdown centrado em mobile + WhatsApp FAB |
+| `src/components/landing/ConfirmacaoExtras.tsx` | Remover Twitter, adicionar WhatsApp share |
