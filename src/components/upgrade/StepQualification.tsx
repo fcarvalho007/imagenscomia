@@ -210,8 +210,7 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
                   value={otherRole}
                   onChange={(e) => setOtherRole(e.target.value)}
                   placeholder="Descreve a tua função..."
-                  className="w-full border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600 ml-8"
-                  style={{ maxWidth: "calc(100% - 2rem)" }}
+                  className="w-full pl-8 border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600"
                 />
               )}
             </div>

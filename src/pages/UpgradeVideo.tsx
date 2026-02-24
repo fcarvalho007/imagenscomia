@@ -302,13 +302,13 @@ const UpgradeVideo = () => {
                 Passo {step}/{totalSteps}
                 {step === 2 && (
                   <>
-                    <span className="hidden min-[480px]:inline"> — Masterclass Vídeo (opcional)</span>
+                    <span className="hidden min-[480px]:inline"> — Masterclass Vídeo</span>
                     <span className="min-[480px]:hidden"> — Masterclass</span>
                   </>
                 )}
                 {step === 3 && (
                   <>
-                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo (opcional)</span>
+                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo</span>
                     <span className="min-[480px]:hidden"> — Gravação</span>
                   </>
                 )}
@@ -412,6 +412,27 @@ const UpgradeVideo = () => {
             </AnimatePresence>
           </div>
         </div>
+
+        {/* Mobile sticky footer — skip link for upsell steps */}
+        {(step === 2 || step === 3) && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 text-center">
+            <button
+              onClick={() => {
+                if (step === 2) {
+                  advanceStep(3);
+                } else if (step === 3) {
+                  if (!orderState.masterclass) {
+                    saveStepData(4, { plan_selected: "video-free" });
+                  }
+                  advanceStep(4);
+                }
+              }}
+              className="text-[14px] text-ink-500 hover:text-ink-700 transition-colors underline underline-offset-2"
+            >
+              Continuar com inscrição gratuita →
+            </button>
+          </div>
+        )}
       </div>
 
       <WhatsAppSupportButton />

@@ -65,7 +65,7 @@ export const StepDuvida = forwardRef<HTMLDivElement, Props>(
     };
 
     return (
-      <div ref={ref} className="max-w-[560px]">
+      <div ref={ref} className="max-w-[560px] pb-24 lg:pb-0">
         <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
           {firstName ? `${firstName}, uma` : "Uma"} última pergunta
         </h2>
@@ -134,8 +134,7 @@ export const StepDuvida = forwardRef<HTMLDivElement, Props>(
               value={otherText}
               onChange={(e) => handleOtherText(e.target.value)}
               placeholder="Escreve a tua dúvida..."
-              className="w-full border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600 ml-8"
-              style={{ maxWidth: "calc(100% - 2rem)" }}
+              className="w-full pl-8 border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600"
             />
           )}
         </div>
