@@ -1,68 +1,63 @@
 
 
-# Reestruturar o funil /upgrade-video
+# Ajustes ao funil /upgrade-video (Passos 1, 2 e 4)
 
-## Problema 1: Erro de acesso
+## Passo 1 — StepQualification
 
-Quando se acede a `/upgrade-video` sem parametros de email no URL, aparece o ecra de recuperacao. Funciona correctamente — basta introduzir o email. O erro na consola (ref warning no WhatsAppSupportButton) e apenas um aviso de React, nao impede o funcionamento. Vou corrigi-lo tambem.
+### Titulo e subtitulo
+- Titulo grande: `"{firstName}, espera..."` (em vez de "ESPERE...")
+- Subtitulo simplificado: `"So duas perguntas rapidas."`
 
-## Problema 2: Nova ordem dos passos
+### "Outra funcao" com campo de texto
+- Quando o utilizador selecciona "Outra funcao", aparece um campo de texto obrigatorio por baixo
+- Nao pode avancar sem preencher esse campo
+- O valor e guardado directamente na coluna `role` da BD (ex: "Outra funcao: Designer grafico")
+- Sem necessidade de nova coluna — o texto fica concatenado ao valor da opcao
 
-### Fluxo actual (4 passos)
-1. Qualificacao (sources + role + team)
-2. Upsell gravacao 15 EUR
-3. Upsell masterclass 47 EUR
-4. Confirmacao/pagamento
+### Validacao
+- `canProceed` passa a verificar: role seleccionado E (se role === "Outra funcao", campo de texto nao vazio) E teamSize seleccionado
 
-### Novo fluxo pedido (5 passos)
-
-| Passo | Conteudo |
-|---|---|
-| 1 | Titulo grande "ESPERE..." + perguntas de role e equipa (sem a pergunta "como soubeste") |
-| 2 | Upsell masterclass **47 EUR** (troca de ordem) |
-| 3 | Upsell gravacao **15 EUR** (troca de ordem) |
-| 4 | Pergunta aberta: "Qual a maior duvida que este webinar pode ajudar a resolver?" (campo `duvida` ja existe na BD) |
-| 5 | Confirmacao/pagamento (se algo foi seleccionado) |
-
-Se no passo 2 e 3 nao seleccionar nada, o passo 4 (duvida) continua a aparecer e depois redireciona para a confirmacao gratuita.
+**Ficheiro:** `src/components/upgrade/StepQualification.tsx`
 
 ---
 
-## Alteracoes tecnicas
+## Passo 2 — StepMasterclass
 
-### 1. `src/components/upgrade/StepQualification.tsx`
-- Remover a seccao "Como soubeste desta formacao?" (sources) — fica so role + team
-- Mudar o titulo para "ESPERE..." em tamanho grande, com subtitulo explicativo
-- Manter role e team_size obrigatorios
+### Hierarquia de titulos
+- Titulo principal: **"Vais gostar desta opcao adicional"**
+- Subtitulo (ligeiramente maior, ~20px, bold): **"Masterclass Video com IA (3 horas)"**
+- Sub-subtitulo (cinzento, como esta): "O webinar cobre o essencial. A Masterclass aprofunda o sistema completo em 3 horas de conteudo util."
 
-### 2. `src/pages/UpgradeVideo.tsx`
-- Mudar `totalSteps` de 4 para 5
-- Nova sequencia:
-  - Passo 1: StepQualification (role + team, sem sources)
-  - Passo 2: StepMasterclass (47 EUR) — era passo 3
-  - Passo 3: StepVideoPremium (15 EUR) — era passo 2
-  - Passo 4: Novo componente StepDuvida (pergunta aberta)
-  - Passo 5: VideoConfirmation (pagamento)
-- Actualizar labels da progress bar para reflectir a nova ordem
-- Actualizar logica de `saveStepData` e `plan_selected` para a nova sequencia
-- Actualizar a logica de recovery (restaurar step correcto)
-- Remover props `sources`/`setSources`/`otherSource`/`setOtherSource` do StepQualification (ja nao sao necessarias neste fluxo)
+**Ficheiro:** `src/components/upgrade/StepMasterclass.tsx` (linhas 37-42)
 
-### 3. Novo componente `src/components/upgrade/StepDuvida.tsx`
-- Campo textarea com a pergunta "Qual a maior duvida que este webinar pode ajudar a resolver?"
-- Botao "Seguinte" (campo opcional — pode saltar)
-- Guarda na coluna `duvida` da tabela `registrations`
+---
 
-### 4. `src/components/landing/WhatsAppSupportButton.tsx`
-- Corrigir o warning de ref: o componente `WhatsAppIcon` nao aceita refs — nao precisa de alteracao porque o warning vem do framer-motion/React tentando passar ref. Basta garantir que nao ha ref leak.
+## Passo 4 — StepDuvida com checkboxes
 
-### 5. Sidebar do desktop (`UpgradeVideo.tsx`)
-- Actualizar os banners de confirmacao para reflectir que a masterclass (47 EUR) aparece primeiro
+### Estrutura nova
+Substituir o textarea unico por:
+1. 3 opcoes checkbox pre-definidas (multi-seleccao):
+   - "Como criar videos curtos sem filmar"
+   - "Que ferramentas de IA usar para video"
+   - "Como integrar video na estrategia de marketing"
+2. Opcao "Outro" com checkbox — ao activar, mostra campo de texto aberto
+3. Botao "Finalizar" e link "Saltar" mantidos
 
-### Logica de skip actualizada
+### Persistencia
+- Os valores seleccionados sao guardados concatenados na coluna `duvida` (texto livre, ja existente)
+- Formato: `"Como criar videos curtos sem filmar; Que ferramentas de IA usar para video; Outro: texto personalizado"`
 
-- Passo 2 (masterclass): skip → avanca para passo 3
-- Passo 3 (gravacao): skip → avanca para passo 4
-- Passo 4 (duvida): skip → se tem algo no carrinho, avanca para passo 5; se nao, redireciona para confirmacao gratuita
-- Passo 5: pagamento
+**Ficheiro:** `src/components/upgrade/StepDuvida.tsx`
+
+---
+
+## Resumo tecnico
+
+| Ficheiro | Alteracao |
+|---|---|
+| `StepQualification.tsx` | Titulo "{nome}, espera...", subtitulo curto, campo texto para "Outra funcao" com validacao |
+| `StepMasterclass.tsx` | Nova hierarquia de 3 niveis no titulo |
+| `StepDuvida.tsx` | 3 checkboxes + "Outro" com textarea, persistencia concatenada no campo `duvida` |
+
+Nenhuma migracao de BD necessaria — todos os campos ja existem.
 
