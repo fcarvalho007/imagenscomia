@@ -1,39 +1,68 @@
 
-# Corrigir bug: plan_selected "video-free" tratado como plano pago
 
-## Problema
+# Reestruturar o funil /upgrade-video
 
-Os registos do webinar video guardam `plan_selected` com prefixo `video-` (ex: `"video-free"`, `"video-premium"`). O campo `plan` e normalizado correctamente (remove o prefixo), mas `plan_selected` mantem o valor original.
+## Problema 1: Erro de acesso
 
-Varios locais no CRM comparam `plan_selected !== "free"` para identificar intencao de pagamento. Como `"video-free" !== "free"` e `true`, os inscritos gratuitos do webinar video aparecem incorrectamente como:
-- "Seleccionou e saiu" no Pipeline
-- Contados nos quick filters "Aguarda pgto" na Tabela
-- Incluidos nos filtros de backlog
+Quando se acede a `/upgrade-video` sem parametros de email no URL, aparece o ecra de recuperacao. Funciona correctamente — basta introduzir o email. O erro na consola (ref warning no WhatsAppSupportButton) e apenas um aviso de React, nao impede o funcionamento. Vou corrigi-lo tambem.
 
-## Registos afectados (actualmente na BD)
+## Problema 2: Nova ordem dos passos
 
-5 registos com `plan_selected = "video-free"` estao a ser tratados como intencao de compra quando sao de facto gratuitos.
+### Fluxo actual (4 passos)
+1. Qualificacao (sources + role + team)
+2. Upsell gravacao 15 EUR
+3. Upsell masterclass 47 EUR
+4. Confirmacao/pagamento
 
-## Solucao
+### Novo fluxo pedido (5 passos)
 
-Normalizar `plan_selected` no `mapRegistration` da mesma forma que `plan`, removendo o prefixo `video-`:
-
-**Ficheiro:** `src/hooks/useInscritos.ts`
-
-Na funcao `mapRegistration`, linha 46:
-
-| Antes | Depois |
+| Passo | Conteudo |
 |---|---|
-| `plan_selected: r.plan_selected \|\| null` | `plan_selected: r.plan_selected ? r.plan_selected.replace(/^video-/, "") : null` |
+| 1 | Titulo grande "ESPERE..." + perguntas de role e equipa (sem a pergunta "como soubeste") |
+| 2 | Upsell masterclass **47 EUR** (troca de ordem) |
+| 3 | Upsell gravacao **15 EUR** (troca de ordem) |
+| 4 | Pergunta aberta: "Qual a maior duvida que este webinar pode ajudar a resolver?" (campo `duvida` ja existe na BD) |
+| 5 | Confirmacao/pagamento (se algo foi seleccionado) |
 
-Isto garante que `plan_selected` fica `"free"`, `"premium"`, `"masterclass"` ou `"bundle"` independentemente do webinar, alinhando com as comparacoes existentes em todo o CRM (TableView, PipelineView, StatusBlock, TabResumo, TabHistorico).
+Se no passo 2 e 3 nao seleccionar nada, o passo 4 (duvida) continua a aparecer e depois redireciona para a confirmacao gratuita.
 
-## Impacto
+---
 
-- Pipeline: os 5 inscritos video-free deixam de aparecer como "Seleccionou e saiu" e voltam a coluna "Inscrito"
-- Tabela: quick filters corrigidos (awaiting, backlog, no_resend)
-- Modal: StatusBlock ja normaliza por si, sem impacto
+## Alteracoes tecnicas
 
-## Ficheiro afectado
+### 1. `src/components/upgrade/StepQualification.tsx`
+- Remover a seccao "Como soubeste desta formacao?" (sources) — fica so role + team
+- Mudar o titulo para "ESPERE..." em tamanho grande, com subtitulo explicativo
+- Manter role e team_size obrigatorios
 
-`src/hooks/useInscritos.ts` -- 1 linha alterada.
+### 2. `src/pages/UpgradeVideo.tsx`
+- Mudar `totalSteps` de 4 para 5
+- Nova sequencia:
+  - Passo 1: StepQualification (role + team, sem sources)
+  - Passo 2: StepMasterclass (47 EUR) — era passo 3
+  - Passo 3: StepVideoPremium (15 EUR) — era passo 2
+  - Passo 4: Novo componente StepDuvida (pergunta aberta)
+  - Passo 5: VideoConfirmation (pagamento)
+- Actualizar labels da progress bar para reflectir a nova ordem
+- Actualizar logica de `saveStepData` e `plan_selected` para a nova sequencia
+- Actualizar a logica de recovery (restaurar step correcto)
+- Remover props `sources`/`setSources`/`otherSource`/`setOtherSource` do StepQualification (ja nao sao necessarias neste fluxo)
+
+### 3. Novo componente `src/components/upgrade/StepDuvida.tsx`
+- Campo textarea com a pergunta "Qual a maior duvida que este webinar pode ajudar a resolver?"
+- Botao "Seguinte" (campo opcional — pode saltar)
+- Guarda na coluna `duvida` da tabela `registrations`
+
+### 4. `src/components/landing/WhatsAppSupportButton.tsx`
+- Corrigir o warning de ref: o componente `WhatsAppIcon` nao aceita refs — nao precisa de alteracao porque o warning vem do framer-motion/React tentando passar ref. Basta garantir que nao ha ref leak.
+
+### 5. Sidebar do desktop (`UpgradeVideo.tsx`)
+- Actualizar os banners de confirmacao para reflectir que a masterclass (47 EUR) aparece primeiro
+
+### Logica de skip actualizada
+
+- Passo 2 (masterclass): skip → avanca para passo 3
+- Passo 3 (gravacao): skip → avanca para passo 4
+- Passo 4 (duvida): skip → se tem algo no carrinho, avanca para passo 5; se nao, redireciona para confirmacao gratuita
+- Passo 5: pagamento
+
