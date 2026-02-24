@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,9 +114,13 @@ const UpgradeVideo = () => {
 
   const advanceStep = useCallback((next: number) => {
     setStep(next);
-    if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "smooth" });
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
+  // Force scroll to top whenever step changes (after framer-motion render)
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+  }, [step]);
 
   const handlePayment = useCallback(async (plan: string) => {
     if (!userData.email) {

@@ -17,6 +17,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
 import { FooterSection } from "@/components/landing/FooterSection";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
 import { LogoMarquee } from "@/components/landing/LogoMarquee";
 
@@ -221,7 +222,7 @@ const VideoPageInner = () => {
         className="fixed top-0 left-0 right-0 z-50"
         style={{ background: "linear-gradient(90deg, #020617 0%, rgba(37,99,235,0.15) 50%, #1e3a8a 100%)" }}
       >
-        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3 max-sm:gap-2">
+        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between max-sm:justify-center gap-3 max-sm:gap-2">
           <div className="flex items-center gap-1.5">
             <CountdownBlock value={days} label="dias" />
             <span className="text-white/60 font-bold text-sm">:</span>
@@ -872,6 +873,7 @@ const VideoPageInner = () => {
 
       {/* ═══ FOOTER ═══ */}
       <FooterSection />
+      <WhatsAppSupportButton />
       <RegistrationModal />
     </div>
   );
