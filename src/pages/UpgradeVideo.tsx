@@ -7,6 +7,7 @@ import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButto
 import { StepQualification } from "@/components/upgrade/StepQualification";
 import { StepVideoPremium } from "@/components/upgrade/StepVideoPremium";
 import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
+import { StepDuvida } from "@/components/upgrade/StepDuvida";
 import { VideoConfirmation, type VideoOrderState, getVideoTotal, formatVideoPrice } from "@/components/upgrade/VideoConfirmation";
 import { toast } from "sonner";
 import { Mail, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
@@ -32,10 +33,9 @@ const UpgradeVideo = () => {
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
-  const [sources, setSources] = useState<string[]>([]);
-  const [otherSource, setOtherSource] = useState("");
   const [role, setRole] = useState<string | null>(null);
   const [teamSize, setTeamSize] = useState<string | null>(null);
+  const [duvida, setDuvida] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -54,7 +54,7 @@ const UpgradeVideo = () => {
     try {
       const { data, error } = await supabase
         .from("registrations")
-        .select("id, name, first_name, last_name, edit_token, sources, role, team_size, step_reached, plan_selected")
+        .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected")
         .eq("email", trimmed)
         .maybeSingle();
 
@@ -76,14 +76,11 @@ const UpgradeVideo = () => {
       // Restore qualification data if available
       if ((data as any).role) setRole((data as any).role);
       if ((data as any).team_size) setTeamSize((data as any).team_size);
-      if ((data as any).sources && (data as any).sources !== "SKIPPED") {
-        setSources((data as any).sources.split(", "));
-      }
 
       // If step 1 already completed with required data, restore step
       const sr = (data as any).step_reached;
       if (sr && sr >= 2 && (data as any).role && (data as any).team_size) {
-        const targetStep = sr > 4 ? 4 : sr;
+        const targetStep = sr > 5 ? 5 : sr;
         setStep(targetStep);
         const plan = (data as any).plan_selected;
         if (plan?.includes("premium") || plan?.includes("bundle")) {
@@ -133,7 +130,6 @@ const UpgradeVideo = () => {
         .from("registrations")
         .update({
           plan_selected: plan,
-          sources: sources.join(", "),
           upgrade_clicked_at: new Date().toISOString(),
         } as any)
         .eq("email", userData.email);
@@ -151,9 +147,13 @@ const UpgradeVideo = () => {
       setError("Erro ao processar pagamento. Tente novamente.");
       setLoading(false);
     }
-  }, [userData, sources]);
+  }, [userData]);
 
-  const totalSteps = 4;
+  const goToFreeConfirmation = useCallback(() => {
+    window.location.href = `/confirmacao?webinar=video&name=${encodeURIComponent(userData.nome)}&email=${encodeURIComponent(userData.email)}&plan=video-free`;
+  }, [userData]);
+
+  const totalSteps = 5;
   const progress = (step / totalSteps) * 100;
 
   if (needsRecovery) {
@@ -219,6 +219,15 @@ const UpgradeVideo = () => {
           <div className="w-full h-px bg-border mt-5 mb-6" />
           <p className="font-heading font-semibold text-[14px] text-ink-400 uppercase tracking-[0.08em] mb-4">A SUA COMPRA</p>
           <div className="flex-1">
+            {orderState.masterclass && (
+              <div className="flex justify-between items-start py-3 border-b border-border">
+                <div>
+                  <p className="font-semibold text-[14px] text-ink-900">Masterclass Online</p>
+                  <p className="text-[14px] text-ink-400 mt-0.5">12 Mar · 10h-13h · Online</p>
+                </div>
+                <p className="font-heading font-bold text-[14px] text-ink-900">€47 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
+              </div>
+            )}
             {orderState.videoPremium && (
               <div className="flex justify-between items-start py-3 border-b border-border">
                 <div>
@@ -227,15 +236,6 @@ const UpgradeVideo = () => {
                   <p className="text-[13px] text-blue-600 mt-0.5">Q&A: 10 Mar, 14:30h</p>
                 </div>
                 <p className="font-heading font-bold text-[16px] text-ink-900">€15 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
-              </div>
-            )}
-            {orderState.masterclass && (
-              <div className="flex justify-between items-start py-3 border-b border-border">
-                <div>
-                  <p className="font-semibold text-[14px] text-ink-900">Masterclass Online</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">12 Mar · 10h-13h · Online</p>
-                </div>
-                <p className="font-heading font-bold text-[14px] text-ink-900">€47 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
               </div>
             )}
             {!orderState.videoPremium && !orderState.masterclass && (
@@ -269,8 +269,20 @@ const UpgradeVideo = () => {
         <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen overflow-x-hidden">
           <div className="px-4 pt-4 pb-24 sm:pt-6 lg:px-12 lg:pt-10 lg:pb-10">
 
-            {/* Confirmation banner — after step 2 (video premium added) */}
-            {step >= 3 && orderState.videoPremium && (
+            {/* Confirmation banner — after step 2 (masterclass added) */}
+            {step >= 3 && orderState.masterclass && (
+              <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
+                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-[15px] text-green-800">Masterclass garantida</p>
+                  <p className="text-[13px] text-green-700 mt-0.5">12 Mar · 10h-13h · 47 € + IVA</p>
+                  <p className="text-[13px] text-green-600 mt-1">Esta página é opcional: serve apenas para adicionar extras.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation banner — after step 3 (video premium added) */}
+            {step >= 4 && orderState.videoPremium && !orderState.masterclass && (
               <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
                 <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
                 <div>
@@ -290,16 +302,17 @@ const UpgradeVideo = () => {
                 Passo {step}/{totalSteps}
                 {step === 2 && (
                   <>
-                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo (opcional)</span>
-                    <span className="min-[480px]:hidden"> — Gravação</span>
-                  </>
-                )}
-                {step === 3 && (
-                  <>
                     <span className="hidden min-[480px]:inline"> — Masterclass Vídeo (opcional)</span>
                     <span className="min-[480px]:hidden"> — Masterclass</span>
                   </>
                 )}
+                {step === 3 && (
+                  <>
+                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo (opcional)</span>
+                    <span className="min-[480px]:hidden"> — Gravação</span>
+                  </>
+                )}
+                {step === 4 && " — A tua dúvida"}
               </p>
             </div>
 
@@ -308,17 +321,13 @@ const UpgradeVideo = () => {
               {step === 1 && (
                 <motion.div key="s1" variants={stepVariants} initial="initial" animate="animate" exit="exit">
                   <StepQualification
-                    sources={sources}
-                    setSources={setSources}
-                    otherSource={otherSource}
-                    setOtherSource={setOtherSource}
+                    videoMode
                     role={role}
                     setRole={setRole}
                     teamSize={teamSize}
                     setTeamSize={setTeamSize}
                     onNext={() => {
-                      const srcText = sources.length > 0 ? sources.join(", ") : "SKIPPED";
-                      saveStepData(2, { sources: srcText, role: role || null, team_size: teamSize || null });
+                      saveStepData(2, { role: role || null, team_size: teamSize || null });
                       advanceStep(2);
                     }}
                     userName={userData.nome}
@@ -327,48 +336,72 @@ const UpgradeVideo = () => {
               )}
               {step === 2 && (
                 <motion.div key="s2" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepVideoPremium
-                    onAddPremium={() => {
-                      setOrderState((s) => ({ ...s, videoPremium: true }));
-                      saveStepData(3, { plan_selected: "video-premium" });
+                  <StepMasterclass
+                    onAddMasterclass={() => {
+                      setOrderState((s) => ({ ...s, masterclass: true }));
+                      saveStepData(3, { plan_selected: "video-masterclass" });
                       advanceStep(3);
                     }}
                     onSkip={() => {
-                      saveStepData(3, { plan_selected: "video-free" });
                       advanceStep(3);
                     }}
-                    userName={userData.nome}
                   />
                 </motion.div>
               )}
               {step === 3 && (
                 <motion.div key="s3" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepMasterclass
-                    onAddMasterclass={() => {
-                      setOrderState((s) => ({ ...s, masterclass: true }));
-                      saveStepData(4, { plan_selected: orderState.videoPremium ? "video-bundle" : "video-masterclass" });
+                  <StepVideoPremium
+                    onAddPremium={() => {
+                      setOrderState((s) => ({ ...s, videoPremium: true }));
+                      const newPlan = orderState.masterclass ? "video-bundle" : "video-premium";
+                      saveStepData(4, { plan_selected: newPlan });
                       advanceStep(4);
                     }}
                     onSkip={() => {
-                      if (orderState.videoPremium) {
-                        saveStepData(4, { plan_selected: "video-premium" });
-                        advanceStep(4);
-                      } else {
-                        // Nothing selected — redirect to confirmation page or just close
-                        window.location.href = `/confirmacao?webinar=video&name=${encodeURIComponent(userData.nome)}&email=${encodeURIComponent(userData.email)}&plan=video-free`;
+                      if (!orderState.masterclass) {
+                        saveStepData(4, { plan_selected: "video-free" });
                       }
+                      advanceStep(4);
                     }}
+                    userName={userData.nome}
                   />
                 </motion.div>
               )}
               {step === 4 && (
                 <motion.div key="s4" variants={stepVariants} initial="initial" animate="animate" exit="exit">
+                  <StepDuvida
+                    duvida={duvida}
+                    setDuvida={setDuvida}
+                    onNext={() => {
+                      const hasOrder = orderState.videoPremium || orderState.masterclass;
+                      saveStepData(5, { duvida: duvida || null });
+                      if (hasOrder) {
+                        advanceStep(5);
+                      } else {
+                        goToFreeConfirmation();
+                      }
+                    }}
+                    onSkip={() => {
+                      const hasOrder = orderState.videoPremium || orderState.masterclass;
+                      saveStepData(5, { duvida: null });
+                      if (hasOrder) {
+                        advanceStep(5);
+                      } else {
+                        goToFreeConfirmation();
+                      }
+                    }}
+                    userName={userData.nome}
+                  />
+                </motion.div>
+              )}
+              {step === 5 && (
+                <motion.div key="s5" variants={stepVariants} initial="initial" animate="animate" exit="exit">
                   <VideoConfirmation
                     orderState={orderState}
                     loading={loading}
                     error={error}
                     onPay={handlePayment}
-                    onBack={() => setStep(3)}
+                    onBack={() => setStep(4)}
                     userName={userData.nome}
                     userEmail={userData.email}
                     registrationId={registrationId || undefined}
