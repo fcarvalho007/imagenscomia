@@ -19,10 +19,11 @@ function mapRegistration(r: any): Inscrito {
   const payment_status: Inscrito["payment_status"] = r.paid_at
     ? "paid"
     : (r.upgrade_clicked_at || r.eupago_ref)
-      ? "awaiting_payment"
-      : r.plan_selected && r.plan_selected !== "free"
+       ? "awaiting_payment"
+       : r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free")
         ? "selected"
         : "free";
+
 
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
