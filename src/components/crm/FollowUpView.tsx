@@ -208,6 +208,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           logs={logs}
           logsLoading={logsLoading}
           onAlertClick={goToAudit}
+          webinarContext={webinarContext}
         />
       )}
 

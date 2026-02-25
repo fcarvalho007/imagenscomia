@@ -46,6 +46,9 @@ const PLAN_VALUES: Record<string, string> = {
   premium: "15€",
   masterclass: "47€",
   bundle: "57€",
+  "video-premium": "15€",
+  "video-masterclass": "47€",
+  "video-bundle": "57€",
 };
 
 export default function FollowUpPessoas({ inscritos, logs, logsLoading, initialFilter, onSelectInscrito }: Props) {
@@ -77,8 +80,10 @@ export default function FollowUpPessoas({ inscritos, logs, logsLoading, initialF
   const nowISO = new Date().toISOString();
   const h48ago = new Date(Date.now() - 48 * 3600000).toISOString();
 
+  const isFree = (plan: string | null) => !plan || plan === "free" || plan === "video-free";
+
   const pipeline = useMemo(() =>
-    inscritos.filter(i => i.plan_selected && i.plan_selected !== "free" && !i.paid_at),
+    inscritos.filter(i => !isFree(i.plan_selected) && !i.paid_at),
     [inscritos]
   );
 
