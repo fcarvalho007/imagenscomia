@@ -76,6 +76,9 @@ serve(async (req) => {
       );
     }
 
+    // Derive webinar from plan prefix
+    const webinar = plan.startsWith("video-") ? "video" : "imagens";
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -86,6 +89,7 @@ serve(async (req) => {
         .from("registrations")
         .select("eupago_ref, upgrade_clicked_at, paid_at, last_payment_link")
         .eq("email", email)
+        .eq("webinar", webinar)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -119,6 +123,7 @@ serve(async (req) => {
         .from("registrations")
         .select("id, edit_token, order_id")
         .eq("email", email)
+        .eq("webinar", webinar)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -198,7 +203,8 @@ serve(async (req) => {
             last_payment_link: paymentLink || null,
             payment_link_created_at: new Date().toISOString(),
           })
-          .eq("email", email);
+          .eq("email", email)
+          .eq("webinar", webinar);
 
         console.log(`✅ Saved transactionID=${transactionID} for ${email}`);
 
@@ -226,7 +232,7 @@ serve(async (req) => {
       JSON.stringify({ paymentLink, reference }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error creating payment:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(
