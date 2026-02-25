@@ -197,8 +197,9 @@ const DARK_BORDER = "rgba(255,255,255,0.08)";
 const VideoPageInner = () => {
   const { open } = useRegistrationModal();
   usePageMeta({
-    title: "Webinar Gratuito · Vídeo com IA para Marketing · 5 Março 2026",
-    description: "Sessão prática ao vivo para gestores e profissionais de marketing. Sistema mínimo de delegação: briefing + checklist + critérios de qualidade. Gratuito.",
+    title: "Cria Vídeo Profissional com IA — Webinar Gratuito 5 Março 10h",
+    description: "Sessão prática ao vivo: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Março, 10h.",
+    ogUrl: "https://imagenscomia.com/video",
   });
 
   const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-05T10:00:00"));
