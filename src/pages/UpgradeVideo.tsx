@@ -106,7 +106,8 @@ const UpgradeVideo = () => {
       await supabase
         .from("registrations")
         .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email);
+        .eq("email", userData.email)
+        .eq("webinar", "video");
     } catch (err) {
       console.error("Error saving step data:", err);
     }
