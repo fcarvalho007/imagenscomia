@@ -1,64 +1,63 @@
 
 
-# Corrigir inconsistencias nas tabs Metricas e Pessoas das Automacoes
+# Corrigir funil do Dashboard e Progresso no Funil por contexto de webinar
 
-## Problemas identificados
+## Problema
 
-Apos analise do codigo e dos dados reais, encontrei **5 problemas** que causam numeros incorrectos:
+Os dois webinars tem sequencias de passos diferentes, mas o CRM mostra sempre os labels do webinar de imagens:
 
-### 1. Pipeline inclui planos "video-free" (CRITICO)
+| step_reached | Imagens | Video |
+|---|---|---|
+| 1 | Inscricao | Inscricao |
+| 2 | Origem | Qualificacao (Role/Equipa) |
+| 3 | Duvida | Masterclass |
+| 4 | Premium | Premium/Gravacao |
+| 5 | Masterclass/Conclusao | Duvida/Conclusao |
 
-O pipeline em `FollowUpOverview` e `FollowUpPessoas` filtra por `plan_selected !== "free"`, mas os planos do webinar video usam o prefixo `video-` (ex: `video-free`, `video-premium`). Isto significa que **29 inscritos video-free + 9 inscritos video-free no webinar imagens** estao a ser contados como pipeline pendente quando sao apenas inscritos gratuitos.
+Isto afecta:
+- O funil no **Dashboard** (a) — labels errados no contexto video
+- O **Progresso no Funil** na ficha de cliente (b) — labels errados para inscritos video
 
-**Dados reais:** Existem 38 registos com `plan_selected = "video-free"` que estao a inflar o funil.
+## Componentes afectados (4 ficheiros)
 
-**Correccao:** Alterar o filtro para excluir tanto `"free"` como `"video-free"`:
-```
-plan_selected !== "free" && plan_selected !== "video-free" && !paid_at
-```
+### 1. `DashboardView.tsx` — Funil de Inscricao (linhas 254-262)
 
-### 2. Data do evento hardcoded para 18 Fev (CRITICO)
+`funnelSteps` esta hardcoded com "Origem", "Duvida", "Premium", "Masterclass". Quando `webinarContext === "video"`, os labels devem ser:
+- Passo 1 — Qualificacao
+- Passo 2 — Masterclass (€47)
+- Passo 3 — Gravacao (€15)
+- Passo 4 — Duvida
 
-`FollowUpOverview` tem `EVENT_DATE = new Date("2026-02-18T10:00:00Z")` hardcoded. No contexto "video", o countdown deveria mostrar a data do webinar de video (2 Mar ou 5 Mar). Actualmente mostra "Evento em curso!" e "ate ao evento (18 Fev 10:00)" independentemente do contexto.
+Usar condicional baseada em `webinarContext` para alternar entre os dois conjuntos de labels e sublabels.
 
-**Correccao:** Receber o webinar context como prop e usar a data correspondente de `WEBINAR_CONFIG`.
+### 2. `FunnelView.tsx` — buildFunnelSteps (linhas 31-118)
 
-### 3. Logs (message_logs) nao filtrados por webinar
+Funcao `buildFunnelSteps` hardcoded para imagens. Para inscritos com `webinar === "video"`, a logica deve ser:
+- Passo 1 (step >= 1): Qualificacao — mostrar role/team_size se preenchidos
+- Passo 2 (step >= 2): Masterclass — verificar plan includes masterclass/bundle (prefixo video-)
+- Passo 3 (step >= 3): Premium/Gravacao — verificar plan includes premium/bundle (prefixo video-)
+- Passo 4 (step >= 4): Duvida — mostrar duvida text
+- Passo 5 (step >= 5): Conclusao
 
-As metricas de email (Resend 7d, Falhas, Historico legado) e a Cobertura Resend usam `logs` da tabela `message_logs` sem filtro de webinar. No contexto "video", os 51 emails Resend mostrados incluem emails do webinar de imagens (followup_stage_0, etc.).
+Nota: a logica de "interested"/"completed" para Premium/Masterclass precisa incluir prefixos `video-` (ex: `video-premium`, `video-bundle`).
 
-**Dados reais:** A tabela `message_logs` tem 132 registos, todos relativos ao webinar de imagens. O webinar video so tem 28 envios na tabela `email_send_logs`.
+### 3. `TabResumo.tsx` — STEP_NAMES (linha 22)
 
-**Correccao:** Filtrar os logs pelo `registration_id` dos inscritos do webinar activo, ou cruzar com a tabela de registrations. Como os `inscritos` ja vem filtrados por webinar, podemos criar um Set de IDs e filtrar os logs por `registration_id`.
+`STEP_NAMES` hardcoded como `{1: "Inscricao", 2: "Origem", 3: "Duvida", 4: "Premium", 5: "Masterclass"}`. Para video, deve ser `{1: "Inscricao", 2: "Qualificacao", 3: "Masterclass", 4: "Premium", 5: "Duvida"}`.
 
-### 4. PLAN_VALUES incompleto na tab Pessoas
+Condicionar com base em `inscrito.webinar`.
 
-`FollowUpPessoas` tem `PLAN_VALUES` com apenas `premium: "15EUR"`, `masterclass: "47EUR"`, `bundle: "57EUR"`. Faltam os equivalentes video (`video-premium`, `video-bundle`).
+### 4. `SidebarFunnel.tsx` — STEPS (linhas 3-9)
 
-**Correccao:** Adicionar as entradas para planos video.
-
-### 5. Template labels incompleto no FollowUpAudit (Envios)
-
-`FollowUpAudit` tem `TEMPLATE_LABELS` sem os templates do webinar video (`video_confirmation`, etc.). Estes aparecem como chaves tecnicas em vez de nomes legiveis.
-
-**Correccao:** Adicionar labels para templates video.
+`STEPS` hardcoded para imagens. Receber `webinar` como prop e alternar labels.
 
 ## Plano tecnico
 
 | Ficheiro | Alteracao |
 |---|---|
-| `FollowUpOverview.tsx` | 1. Receber `webinarContext` como prop; 2. Usar data do evento correcta; 3. Filtrar logs por registration IDs dos inscritos; 4. Excluir `video-free` do pipeline |
-| `FollowUpPessoas.tsx` | 1. Excluir `video-free` do pipeline; 2. Adicionar PLAN_VALUES para planos video |
-| `FollowUpAudit.tsx` | 1. Filtrar logs por registration IDs; 2. Adicionar TEMPLATE_LABELS para templates video |
-| `FollowUpView.tsx` | Passar `webinarContext` como prop ao FollowUpOverview |
+| `DashboardView.tsx` | Condicionar `funnelSteps` por `webinarContext` (video vs imagens) com labels e sublabels correctos |
+| `FunnelView.tsx` | Criar `buildVideoFunnelSteps` alternativo; seleccionar com base em `inscrito.webinar`; incluir prefixos `video-` na logica de planos |
+| `TabResumo.tsx` | Condicionar `STEP_NAMES` por `inscrito.webinar` |
+| `SidebarFunnel.tsx` | Receber prop `webinar` e alternar array de steps; actualizar chamadas no componente pai |
 
-### Logica de filtragem de logs
-
-Para alinhar logs com o contexto de webinar sem alterar a query SQL:
-```text
-inscritoIds = Set(inscritos.map(i => i.id))
-filteredLogs = logs.filter(l => inscritoIds.has(l.registration_id))
-```
-
-Como `inscritos` ja vem filtrado por webinar a partir do `CRM.tsx`, isto garante que os logs mostrados correspondem apenas ao webinar activo.
-
+No modo **consolidado** do Dashboard, o funil agrega ambos os webinars — como os step numbers representam coisas diferentes, sera necessario escolher uma abordagem: ou mostrar o funil generico ("Passo 1", "Passo 2"...) sem labels especificos, ou mostrar dois funis lado a lado. A abordagem mais simples: no modo consolidado, usar labels genericos ("Passo 1", "Passo 2", etc.) com uma nota visual a indicar que os passos diferem entre webinars.
