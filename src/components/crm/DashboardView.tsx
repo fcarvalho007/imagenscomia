@@ -251,7 +251,26 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
   const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} · ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
-  const funnelSteps = [
+  const isVideo = webinarContext === "video";
+  const isConsolidado = webinarContext === "consolidado";
+
+  const funnelSteps = isVideo ? [
+    { label: "Submeteu inscrição",                    value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                       separator: false, isConversion: false },
+    { label: "Chegou ao Passo 1 — Qualificação",     value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                       separator: false, isConversion: false },
+    { label: "Viu oferta Masterclass (Passo 2)",     value: stats.step3,          color: "#7C3AED",               note: null,                           sublabel: "Viu a oferta de €47+IVA",  separator: true,  isConversion: true  },
+    { label: "Viu oferta Gravação (Passo 3)",        value: stats.step4,          color: "hsl(var(--amber-500))", note: null,                           sublabel: "Viu a oferta de €15+IVA",  separator: false, isConversion: true  },
+    { label: "Chegou ao Passo 4 — Dúvida",           value: stats.step5,          color: "#0891B2",               note: null,                           sublabel: null,                       separator: false, isConversion: false },
+    { label: "Clicou para pagar",                     value: stats.clickedToPay,   color: "hsl(var(--amber-500))", note: "preenche dados de faturação",   sublabel: null,                       separator: false, isConversion: true  },
+    { label: "Pagamento confirmado",                  value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",       separator: false, isConversion: true  },
+  ] : isConsolidado ? [
+    { label: "Submeteu inscrição",               value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                    separator: false, isConversion: false },
+    { label: "Chegou ao Passo 1",                value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: "Origem / Qualificação", separator: false, isConversion: false },
+    { label: "Chegou ao Passo 2",                value: stats.step3,          color: "#0891B2",               note: null,                           sublabel: "Dúvida / Masterclass",  separator: false, isConversion: false },
+    { label: "Chegou ao Passo 3",                value: stats.step4,          color: "hsl(var(--amber-500))", note: null,                           sublabel: "Premium / Gravação",    separator: true,  isConversion: true  },
+    { label: "Chegou ao Passo 4",                value: stats.step5,          color: "#7C3AED",               note: null,                           sublabel: "Masterclass / Dúvida",  separator: false, isConversion: true  },
+    { label: "Clicou para pagar",                value: stats.clickedToPay,   color: "hsl(var(--amber-500))", note: "preenche dados de faturação",   sublabel: null,                    separator: false, isConversion: true  },
+    { label: "Pagamento confirmado",             value: stats.paidConfirmed,  color: "hsl(var(--green-600))", note: null,                           sublabel: "Receita confirmada",    separator: false, isConversion: true  },
+  ] : [
     { label: "Submeteu inscrição",               value: stats.step1,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                    separator: false, isConversion: false },
     { label: "Chegou ao Passo 1 — Origem",       value: stats.step2,          color: "hsl(var(--blue-600))",  note: null,                           sublabel: null,                    separator: false, isConversion: false },
     { label: "Chegou ao Passo 2 — Dúvida",       value: stats.step3,          color: "#0891B2",               note: null,                           sublabel: null,                    separator: false, isConversion: false },
