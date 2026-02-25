@@ -31,6 +31,18 @@ const TEMPLATE_LABELS: Record<string, string> = {
   followup_backlog_weak: "Backlog — Fraco",
   followup_final_before_event: "Final pré-evento",
   reminder_manual: "Lembrete manual",
+  video_confirmation: "Confirmação (Vídeo)",
+  video_reminder_48h: "Lembrete 48h (Vídeo)",
+  video_reminder_24h: "Lembrete 24h (Vídeo)",
+  video_reminder_1h: "Lembrete 1h (Vídeo)",
+  video_postwebinar: "Pós-webinar (Vídeo)",
+  imagens_confirmation: "Confirmação (Imagens)",
+  imagens_reminder_48h: "Lembrete 48h (Imagens)",
+  imagens_reminder_24h: "Lembrete 24h (Imagens)",
+  imagens_reminder_1h: "Lembrete 1h (Imagens)",
+  imagens_postwebinar: "Pós-webinar (Imagens)",
+  manual_payment_link_sent: "Link pagamento (manual)",
+  payment_confirmed_customer: "Confirmação pagamento",
 };
 
 function fmtDate(iso: string) {
@@ -68,7 +80,10 @@ function ProviderBadge({ provider }: { provider: string }) {
   );
 }
 
-export default function FollowUpAudit({ inscritos, logs, logsLoading, initialFilter, onSelectInscrito }: Props) {
+export default function FollowUpAudit({ inscritos, logs: rawLogs, logsLoading, initialFilter, onSelectInscrito }: Props) {
+  // Filter logs to only include registrations from the current webinar context
+  const inscritoIds = useMemo(() => new Set(inscritos.map(i => i.id)), [inscritos]);
+  const logs = useMemo(() => rawLogs.filter(l => inscritoIds.has(l.registration_id)), [rawLogs, inscritoIds]);
   const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "all">(initialFilter.timeRange || "7d");
   const [provider, setProvider] = useState<"resend" | "internal" | "all">(initialFilter.provider || "all");

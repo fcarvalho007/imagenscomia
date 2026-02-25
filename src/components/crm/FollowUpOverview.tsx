@@ -3,6 +3,8 @@ import { Users, Mail, AlertTriangle, Clock, LinkIcon, CheckCircle2, XCircle, Ser
 import { Progress } from "@/components/ui/progress";
 import type { Inscrito } from "@/pages/crm/mockData";
 import type { AuditFilter } from "./FollowUpView";
+import type { WebinarContext } from "@/config/webinarConfig";
+import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 
 interface MessageLog {
   id: string;
@@ -20,6 +22,7 @@ interface Props {
   logs: MessageLog[];
   logsLoading: boolean;
   onAlertClick: (filter: AuditFilter) => void;
+  webinarContext: WebinarContext;
 }
 
 function MetricCard({ label, value, sub, icon: Icon, muted }: { label: string; value: number; sub?: string; icon: any; muted?: boolean }) {
@@ -44,27 +47,33 @@ function MetricCard({ label, value, sub, icon: Icon, muted }: { label: string; v
   );
 }
 
-export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlertClick }: Props) {
+export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlertClick, webinarContext }: Props) {
   const now = Date.now();
   const h24 = new Date(now - 24 * 60 * 60 * 1000).toISOString();
   const d7 = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  // Filter logs to only include registrations from the current webinar context
+  const inscritoIds = useMemo(() => new Set(inscritos.map(i => i.id)), [inscritos]);
+  const filteredLogs = useMemo(() => logs.filter(l => inscritoIds.has(l.registration_id)), [logs, inscritoIds]);
+
+  const isFree = (plan: string | null) => !plan || plan === "free" || plan === "video-free";
+
   // Pipeline
   const pipeline = useMemo(() =>
-    inscritos.filter(i => i.plan_selected && i.plan_selected !== "free" && !i.paid_at),
+    inscritos.filter(i => !isFree(i.plan_selected) && !i.paid_at),
     [inscritos]
   );
 
   // Resend confirmed IDs
   const resendIds = useMemo(() =>
-    new Set(logs.filter(l => l.provider === "resend" && l.status === "sent" && l.provider_message_id).map(l => l.registration_id)),
-    [logs]
+    new Set(filteredLogs.filter(l => l.provider === "resend" && l.status === "sent" && l.provider_message_id).map(l => l.registration_id)),
+    [filteredLogs]
   );
 
   // Failed IDs (24h)
   const failedIds24 = useMemo(() =>
-    new Set(logs.filter(l => l.status === "failed" && l.created_at >= h24).map(l => l.registration_id)),
-    [logs, h24]
+    new Set(filteredLogs.filter(l => l.status === "failed" && l.created_at >= h24).map(l => l.registration_id)),
+    [filteredLogs, h24]
   );
 
   // Funnel
@@ -81,15 +90,15 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
 
   // Email metrics
   const metrics = useMemo(() => {
-    const resendConfirmed = (cutoff: string) => logs.filter(l => l.provider === "resend" && l.status === "sent" && l.provider_message_id && l.created_at >= cutoff).length;
-    const failed = (cutoff: string) => logs.filter(l => l.status === "failed" && l.created_at >= cutoff).length;
-    const internal = (cutoff: string) => logs.filter(l => l.provider === "internal" && l.status === "sent" && l.created_at >= cutoff).length;
+    const resendConfirmed = (cutoff: string) => filteredLogs.filter(l => l.provider === "resend" && l.status === "sent" && l.provider_message_id && l.created_at >= cutoff).length;
+    const failed = (cutoff: string) => filteredLogs.filter(l => l.status === "failed" && l.created_at >= cutoff).length;
+    const internal = (cutoff: string) => filteredLogs.filter(l => l.provider === "internal" && l.status === "sent" && l.created_at >= cutoff).length;
     return {
       resend24: resendConfirmed(h24), resend7d: resendConfirmed(d7),
       failed24: failed(h24), failed7d: failed(d7),
       internal24: internal(h24), internal7d: internal(d7),
     };
-  }, [logs, h24, d7]);
+  }, [filteredLogs, h24, d7]);
 
   // Coverage KPI
   const coverage = useMemo(() => {
@@ -130,13 +139,13 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
   // Per-template breakdown (7d, Resend confirmed)
   const templateBreakdown = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const l of logs) {
+    for (const l of filteredLogs) {
       if (l.provider === "resend" && l.provider_message_id && l.created_at >= d7) {
         counts[l.template_key] = (counts[l.template_key] || 0) + 1;
       }
     }
     return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [logs, d7]);
+  }, [filteredLogs, d7]);
   const maxTemplateCount = templateBreakdown.length > 0 ? templateBreakdown[0][1] : 1;
 
   // Protocol alerts
@@ -166,12 +175,25 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
     { label: "Em atraso", count: alerts.overdue, icon: Clock, filter: { subTab: "pessoas" as const, emAtraso: true } },
   ];
 
-  // Event countdown
-  const EVENT_DATE = new Date("2026-02-18T10:00:00Z");
+  // Event countdown — dynamic per webinar context
+  const eventDate = useMemo(() => {
+    if (webinarContext === "video") return WEBINAR_CONFIG.video.startDate;
+    if (webinarContext === "imagens") return WEBINAR_CONFIG.imagens.startDate;
+    // consolidado: use the next upcoming event
+    const now = new Date();
+    return WEBINAR_CONFIG.video.startDate > now ? WEBINAR_CONFIG.video.startDate : WEBINAR_CONFIG.imagens.startDate;
+  }, [webinarContext]);
+
+  const eventLabel = useMemo(() => {
+    if (webinarContext === "video") return WEBINAR_CONFIG.video.date;
+    if (webinarContext === "imagens") return WEBINAR_CONFIG.imagens.date;
+    return WEBINAR_CONFIG.video.date;
+  }, [webinarContext]);
+
   const [countdownText, setCountdownText] = useState("");
   useEffect(() => {
     const update = () => {
-      const diff = EVENT_DATE.getTime() - Date.now();
+      const diff = eventDate.getTime() - Date.now();
       if (diff <= 0) { setCountdownText("Evento em curso!"); return; }
       const hours = Math.floor(diff / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
@@ -180,7 +202,7 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
     update();
     const iv = setInterval(update, 60000);
     return () => clearInterval(iv);
-  }, []);
+  }, [eventDate]);
 
   // Countdown alerts
   const countdown48noResend = useMemo(() => {
@@ -203,7 +225,7 @@ export default function FollowUpOverview({ inscritos, logs, logsLoading, onAlert
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[28px] font-bold font-heading text-white">{countdownText}</p>
-            <p className="text-[12px] text-white/50">até ao evento (18 Fev 10:00)</p>
+            <p className="text-[12px] text-white/50">até ao evento ({eventLabel})</p>
           </div>
           <div className="flex flex-col gap-1 text-[12px]">
             {countdown48noResend > 0 && (
