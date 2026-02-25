@@ -28,26 +28,25 @@ interface FunnelStep {
   detail?: string;
 }
 
-function buildFunnelSteps(i: Inscrito): FunnelStep[] {
+/* ── Helpers for plan matching ── */
+function includesPremium(p: string | null) {
+  return p === "premium" || p === "bundle" || p === "video-premium" || p === "video-bundle";
+}
+function includesMasterclass(p: string | null) {
+  return p === "masterclass" || p === "bundle" || p === "video-masterclass" || p === "video-bundle";
+}
+
+/* ── Build steps for IMAGENS webinar ── */
+function buildImagensFunnelSteps(i: Inscrito): FunnelStep[] {
   const steps: FunnelStep[] = [];
 
   // 1. Inscrição — always completed
-  steps.push({
-    label: "Inscrição",
-    sublabel: "Registo",
-    state: "completed",
-    detail: fmtDate(i.timestamp),
-  });
+  steps.push({ label: "Inscrição", sublabel: "Registo", state: "completed", detail: fmtDate(i.timestamp) });
 
   // 2. Origem (Passo 1)
   if (i.step_reached >= 1) {
     const hasSources = i.source.length > 0;
-    steps.push({
-      label: "Origem",
-      sublabel: "Passo 1",
-      state: hasSources ? "completed" : "skipped",
-      detail: hasSources ? i.source.map(abbreviateSource).join(", ") : "Saltou",
-    });
+    steps.push({ label: "Origem", sublabel: "Passo 1", state: hasSources ? "completed" : "skipped", detail: hasSources ? i.source.map(abbreviateSource).join(", ") : "Saltou" });
   } else {
     steps.push({ label: "Origem", sublabel: "Passo 1", state: "not_reached" });
   }
@@ -55,67 +54,103 @@ function buildFunnelSteps(i: Inscrito): FunnelStep[] {
   // 3. Dúvida (Passo 2)
   if (i.step_reached >= 2) {
     const hasDuvida = !!i.duvida;
-    steps.push({
-      label: "Dúvida",
-      sublabel: "Passo 2",
-      state: hasDuvida ? "completed" : "skipped",
-      detail: hasDuvida ? `"${i.duvida.slice(0, 60)}${i.duvida.length > 60 ? "…" : ""}"` : "Saltou",
-    });
+    steps.push({ label: "Dúvida", sublabel: "Passo 2", state: hasDuvida ? "completed" : "skipped", detail: hasDuvida ? `"${i.duvida.slice(0, 60)}${i.duvida.length > 60 ? "…" : ""}"` : "Saltou" });
   } else {
     steps.push({ label: "Dúvida", sublabel: "Passo 2", state: "not_reached" });
   }
 
   // 4. Premium (Passo 3)
   if (i.step_reached >= 3) {
-    const includesPremium = (p: string | null) => p === "premium" || p === "bundle";
     const paid = !!i.paid_at && includesPremium(i.plan);
     const clicked = !!i.upgrade_clicked_at && includesPremium(i.plan_selected);
     const selected = includesPremium(i.plan_selected);
-    if (paid) {
-      steps.push({ label: "Premium", sublabel: "Passo 3", state: "completed", detail: "Pago · €15" });
-    } else if (clicked) {
-      steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Clicou para pagar" });
-    } else if (selected) {
-      steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Seleccionou plano" });
-    } else {
-      steps.push({ label: "Premium", sublabel: "Passo 3", state: "skipped", detail: "Não converteu" });
-    }
+    if (paid) steps.push({ label: "Premium", sublabel: "Passo 3", state: "completed", detail: "Pago · €15" });
+    else if (clicked) steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Clicou para pagar" });
+    else if (selected) steps.push({ label: "Premium", sublabel: "Passo 3", state: "interested", detail: "Seleccionou plano" });
+    else steps.push({ label: "Premium", sublabel: "Passo 3", state: "skipped", detail: "Não converteu" });
   } else {
     steps.push({ label: "Premium", sublabel: "Passo 3", state: "not_reached" });
   }
 
   // 5. Masterclass (Passo 4)
   if (i.step_reached >= 4) {
-    const includesMasterclass = (p: string | null) => p === "masterclass" || p === "bundle";
     const paid = !!i.paid_at && includesMasterclass(i.plan);
     const clicked = !!i.upgrade_clicked_at && includesMasterclass(i.plan_selected);
     const selected = includesMasterclass(i.plan_selected);
-    if (paid) {
-      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "completed", detail: "Pago · €57.81" });
-    } else if (clicked) {
-      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Clicou para pagar" });
-    } else if (selected) {
-      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Seleccionou plano" });
-    } else {
-      steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "skipped", detail: "Não converteu" });
-    }
+    if (paid) steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "completed", detail: "Pago · €57.81" });
+    else if (clicked) steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Clicou para pagar" });
+    else if (selected) steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "interested", detail: "Seleccionou plano" });
+    else steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "skipped", detail: "Não converteu" });
   } else {
     steps.push({ label: "Masterclass", sublabel: "Passo 4", state: "not_reached" });
   }
 
   // 6. Conclusão (Passo 5)
-  if (i.step_reached >= 5) {
-    steps.push({
-      label: "Conclusão",
-      sublabel: "Passo 5",
-      state: "completed",
-      detail: "Concluiu o flow",
-    });
-  } else {
-    steps.push({ label: "Conclusão", sublabel: "Passo 5", state: "not_reached" });
-  }
+  if (i.step_reached >= 5) steps.push({ label: "Conclusão", sublabel: "Passo 5", state: "completed", detail: "Concluiu o flow" });
+  else steps.push({ label: "Conclusão", sublabel: "Passo 5", state: "not_reached" });
 
   return steps;
+}
+
+/* ── Build steps for VIDEO webinar ── */
+function buildVideoFunnelSteps(i: Inscrito): FunnelStep[] {
+  const steps: FunnelStep[] = [];
+
+  // 1. Inscrição — always completed
+  steps.push({ label: "Inscrição", sublabel: "Registo", state: "completed", detail: fmtDate(i.timestamp) });
+
+  // 2. Qualificação (Passo 1) — role/team_size
+  if (i.step_reached >= 1) {
+    const hasQual = !!i.role || !!i.team_size;
+    const detail = hasQual ? [i.role, i.team_size].filter(Boolean).join(" · ") : "Saltou";
+    steps.push({ label: "Qualificação", sublabel: "Passo 1", state: hasQual ? "completed" : "skipped", detail });
+  } else {
+    steps.push({ label: "Qualificação", sublabel: "Passo 1", state: "not_reached" });
+  }
+
+  // 3. Masterclass (Passo 2) — €47
+  if (i.step_reached >= 2) {
+    const paid = !!i.paid_at && includesMasterclass(i.plan);
+    const clicked = !!i.upgrade_clicked_at && includesMasterclass(i.plan_selected);
+    const selected = includesMasterclass(i.plan_selected);
+    if (paid) steps.push({ label: "Masterclass", sublabel: "Passo 2", state: "completed", detail: "Pago · €47+IVA" });
+    else if (clicked) steps.push({ label: "Masterclass", sublabel: "Passo 2", state: "interested", detail: "Clicou para pagar" });
+    else if (selected) steps.push({ label: "Masterclass", sublabel: "Passo 2", state: "interested", detail: "Seleccionou plano" });
+    else steps.push({ label: "Masterclass", sublabel: "Passo 2", state: "skipped", detail: "Não converteu" });
+  } else {
+    steps.push({ label: "Masterclass", sublabel: "Passo 2", state: "not_reached" });
+  }
+
+  // 4. Premium / Gravação (Passo 3) — €15
+  if (i.step_reached >= 3) {
+    const paid = !!i.paid_at && includesPremium(i.plan);
+    const clicked = !!i.upgrade_clicked_at && includesPremium(i.plan_selected);
+    const selected = includesPremium(i.plan_selected);
+    if (paid) steps.push({ label: "Gravação", sublabel: "Passo 3", state: "completed", detail: "Pago · €15+IVA" });
+    else if (clicked) steps.push({ label: "Gravação", sublabel: "Passo 3", state: "interested", detail: "Clicou para pagar" });
+    else if (selected) steps.push({ label: "Gravação", sublabel: "Passo 3", state: "interested", detail: "Seleccionou plano" });
+    else steps.push({ label: "Gravação", sublabel: "Passo 3", state: "skipped", detail: "Não converteu" });
+  } else {
+    steps.push({ label: "Gravação", sublabel: "Passo 3", state: "not_reached" });
+  }
+
+  // 5. Dúvida (Passo 4)
+  if (i.step_reached >= 4) {
+    const hasDuvida = !!i.duvida;
+    steps.push({ label: "Dúvida", sublabel: "Passo 4", state: hasDuvida ? "completed" : "skipped", detail: hasDuvida ? `"${i.duvida.slice(0, 60)}${i.duvida.length > 60 ? "…" : ""}"` : "Saltou" });
+  } else {
+    steps.push({ label: "Dúvida", sublabel: "Passo 4", state: "not_reached" });
+  }
+
+  // 6. Conclusão (Passo 5)
+  if (i.step_reached >= 5) steps.push({ label: "Conclusão", sublabel: "Passo 5", state: "completed", detail: "Concluiu o flow" });
+  else steps.push({ label: "Conclusão", sublabel: "Passo 5", state: "not_reached" });
+
+  return steps;
+}
+
+function buildFunnelSteps(i: Inscrito): FunnelStep[] {
+  return i.webinar === "video" ? buildVideoFunnelSteps(i) : buildImagensFunnelSteps(i);
 }
 
 function StepIcon({ state }: { state: StepState }) {
@@ -140,7 +175,6 @@ function StepIcon({ state }: { state: StepState }) {
       </div>
     );
   }
-  // not_reached
   return (
     <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: "hsl(var(--surface))", border: "2px dashed hsl(var(--ink-200))" }}>
       <Circle size={10} style={{ color: "hsl(var(--ink-200))" }} />
@@ -159,13 +193,9 @@ export default function FunnelView({ inscrito }: Props) {
   const steps = buildFunnelSteps(inscrito);
   const progressPct = Math.round((inscrito.step_reached / 5) * 100);
 
-  // Find the last reached step to place "SAIU AQUI" marker
   let lastReachedIdx = 0;
   for (let i = steps.length - 1; i >= 0; i--) {
-    if (steps[i].state !== "not_reached") {
-      lastReachedIdx = i;
-      break;
-    }
+    if (steps[i].state !== "not_reached") { lastReachedIdx = i; break; }
   }
   const showDropoff = inscrito.step_reached < 5;
 
@@ -180,7 +210,6 @@ export default function FunnelView({ inscrito }: Props) {
 
           return (
             <div key={idx}>
-              {/* Step row */}
               <div className="flex items-start gap-3 py-2">
                 <div className="flex flex-col items-center">
                   <StepIcon state={step.state} />
@@ -199,7 +228,6 @@ export default function FunnelView({ inscrito }: Props) {
                 </div>
               </div>
 
-              {/* Drop-off marker */}
               {isDropoffPoint && (
                 <div className="flex items-center gap-2 my-1 ml-[14px]">
                   <div className="flex-1 h-px" style={{ background: "hsl(var(--destructive))" }} />
@@ -210,7 +238,6 @@ export default function FunnelView({ inscrito }: Props) {
                 </div>
               )}
 
-              {/* Connector line */}
               {idx < steps.length - 1 && !isDropoffPoint && (
                 <div className="ml-[13px] h-2" style={{ borderLeft: `2px solid ${step.state === "not_reached" ? "hsl(var(--ink-100))" : "hsl(var(--ink-200))"}` }} />
               )}
@@ -219,7 +246,6 @@ export default function FunnelView({ inscrito }: Props) {
         })}
       </div>
 
-      {/* Progress bar */}
       <div className="mt-4 pt-4" style={{ borderTop: "1px solid hsl(var(--border))" }}>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[11px] font-medium text-ink-400">Progresso</span>

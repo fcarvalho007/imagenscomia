@@ -19,7 +19,8 @@ function fmtDate(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-const STEP_NAMES: Record<number, string> = { 1: "Inscrição", 2: "Origem", 3: "Dúvida", 4: "Premium", 5: "Masterclass" };
+const STEP_NAMES_IMAGENS: Record<number, string> = { 1: "Inscrição", 2: "Origem", 3: "Dúvida", 4: "Premium", 5: "Masterclass" };
+const STEP_NAMES_VIDEO: Record<number, string> = { 1: "Inscrição", 2: "Qualificação", 3: "Masterclass", 4: "Premium", 5: "Dúvida" };
 
 interface TabResumoProps {
   inscrito: Inscrito;
@@ -34,6 +35,7 @@ export default function TabResumo({ inscrito, crossHistory, historyLoading, hasM
   const step = inscrito.step_reached || 1;
   const pct = Math.round((step / 5) * 100);
   const wCfg = WEBINAR_CONFIG[inscrito.webinar as keyof typeof WEBINAR_CONFIG];
+  const STEP_NAMES = inscrito.webinar === "video" ? STEP_NAMES_VIDEO : STEP_NAMES_IMAGENS;
 
   return (
     <div className="space-y-5">

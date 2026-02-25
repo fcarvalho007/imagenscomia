@@ -1,6 +1,6 @@
 import { Check, ArrowRight, Circle } from "lucide-react";
 
-const STEPS = [
+const STEPS_IMAGENS = [
   { num: 1, name: "Origem" },
   { num: 2, name: "Dúvida" },
   { num: 3, name: "Premium" },
@@ -8,11 +8,22 @@ const STEPS = [
   { num: 5, name: "Conclusão" },
 ];
 
+const STEPS_VIDEO = [
+  { num: 1, name: "Qualificação" },
+  { num: 2, name: "Masterclass" },
+  { num: 3, name: "Gravação" },
+  { num: 4, name: "Dúvida" },
+  { num: 5, name: "Conclusão" },
+];
+
 interface SidebarFunnelProps {
   stepReached: number;
+  webinar?: "imagens" | "video";
 }
 
-export default function SidebarFunnel({ stepReached }: SidebarFunnelProps) {
+export default function SidebarFunnel({ stepReached, webinar }: SidebarFunnelProps) {
+  const STEPS = webinar === "video" ? STEPS_VIDEO : STEPS_IMAGENS;
+
   return (
     <div className="space-y-0.5">
       {STEPS.map((step, idx) => {
