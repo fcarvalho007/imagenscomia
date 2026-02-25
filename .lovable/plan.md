@@ -1,80 +1,59 @@
 
 
-# Corrigir Dashboard CRM: Emails, Pipeline e Duvidas por contexto
+# Corrigir Social Card do /video para LinkedIn e crawlers sociais
 
-## 3 Problemas identificados
+## Problema raiz
 
-### 1. "Emails de Follow-up Resend" mostra 0/0 no contexto video
+Os crawlers sociais (LinkedIn, Facebook, WhatsApp) **nao executam JavaScript**. Leem apenas o HTML inicial. Como a app e uma SPA, todas as rotas servem o mesmo `index.html` com os meta tags do webinar de **Imagens**. O hook `usePageMeta` funciona no browser mas e invisivel para crawlers.
 
-O painel de emails faz queries directas ao Supabase (`message_logs`) sem filtrar por webinar. Como o cutoffDate do video e `null`, a query e abortada e mostra zeros. Mesmo que nao fosse null, a query nao filtra por `registration_id` dos inscritos do webinar activo.
+## Solucao proposta
 
-**Dados reais:** Existem 35 logs associados ao webinar video (30 confirmacoes + 5 follow-ups). No entanto, o campo `provider` destes e "resend", entao deviam aparecer.
+Criar uma **backend function** (`og-meta`) que funciona como proxy inteligente:
 
-**Correccao:** Filtrar as queries de email por `registration_id` dos inscritos do webinar activo. Quando `cutoffDate` e null (video), nao aplicar cutoff temporal.
+1. Quando um crawler social (LinkedIn, Facebook, Twitter, WhatsApp) acede a `/video`, a function devolve um HTML minimo com as meta tags correctas do webinar de video
+2. Quando e um utilizador normal, faz redirect para a pagina real
 
-### 2. "Pipeline Pendente" e "Pendentes ha +6h" incluem 31 inscritos video-free (CRITICO)
+No entanto, esta abordagem requer que o dominio `imagenscomia.com` encaminhe pedidos para a function — o que pode nao ser possivel directamente com a arquitectura actual.
 
-A causa raiz esta em `useInscritos.ts` na funcao `mapRegistration`. O calculo de `payment_status` verifica `plan_selected !== "free"`, mas `video-free` nao e igual a `"free"` — logo 31 inscritos gratuitos sao classificados como `"selected"`, inflando o pipeline para 33 e o valor para 134EUR.
+### Alternativa mais simples e imediata
 
-**Valores reais:** Apenas 2 inscritos video tem intencao de compra real (1 video-bundle + 1 video-masterclass). O pipeline deveria mostrar ~134EUR reduzido para os valores destes 2.
+Como o site tem apenas 2 paginas principais e o `/video` e a pagina que precisa de correcao urgente, a abordagem mais pratica e:
 
-**Correccao:** Na funcao `mapRegistration`, alterar a condicao para excluir tambem planos terminados em `-free`:
-```
-r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free")
-```
+**Criar um ficheiro `public/video/index.html`** que serve como entry point alternativo para a rota `/video`. O Vite serve ficheiros estaticos do `public/` directamente, e se existir `public/video/index.html`, ele sera servido quando o path `/video` for acedido — antes de qualquer JavaScript executar.
 
-### 3. "Dificuldades Mais Comuns" e "Duvidas dos Inscritos" usam opcoes do webinar errado
+Este ficheiro tera:
+- As meta tags OG correctas para o webinar de video (titulo, descricao, imagem, url)
+- O mesmo `<div id="root">` e script para carregar a SPA normalmente
+- Os crawlers leem as meta tags e param; os utilizadores carregam a app React normalmente
 
-O array `PREDEFINED_DUVIDAS` e `PREDEFINED_DIFFICULTIES` estao hardcoded com as opcoes do webinar de imagens ("Nao sei descrever o estilo visual...", "Resultados genericos..."). O webinar de video usa opcoes diferentes:
-- "Como criar videos curtos sem filmar"
-- "Que ferramentas de IA usar para video"
-- "Como integrar video na estrategia de marketing"
+## Detalhe tecnico
 
-Logo, no contexto video, as barras aparecem todas com 0 e as duvidas nao sao correctamente parseadas.
+### Ficheiro: `public/video/index.html`
 
-**Correccao:** Condicionar os arrays por `webinarContext` e actualizar os labels de resumo.
+Copia do `index.html` principal mas com as meta tags alteradas para o webinar de video:
 
-## Plano tecnico
-
-| Ficheiro | Alteracao |
+| Meta tag | Valor |
 |---|---|
-| `src/hooks/useInscritos.ts` | Corrigir `payment_status` em `mapRegistration` para excluir planos `*-free` do estado "selected" |
-| `src/components/crm/DashboardView.tsx` | 1. Filtrar queries de email por webinar (usando IDs dos inscritos); 2. Condicionar `PREDEFINED_DUVIDAS`/`PREDEFINED_DIFFICULTIES` e respectivos `diffLabels` por `webinarContext`; 3. Actualizar subtitulos ("Passo 2" para imagens, "Passo 4" para video) |
+| `<title>` | Cria Video Profissional com IA — Webinar Gratuito 5 Marco 10h |
+| `og:title` | Cria Video Profissional com IA — Webinar Gratuito 5 Marco 10h |
+| `og:description` | Sessao pratica ao vivo: de briefing a clip publicavel em minutos. Gratuito, 5 de Marco, 10h. |
+| `og:url` | https://imagenscomia.com/video |
+| `og:image` | https://imagenscomia.com/guia-essencial-seo.png (ou imagem dedicada quando disponivel) |
+| `og:type` | website |
+| `twitter:title` | (mesmo que og:title) |
+| `twitter:description` | (mesmo que og:description) |
+| `twitter:image` | (mesmo que og:image) |
+| `description` | Sessao pratica ao vivo: de briefing a clip publicavel em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Marco, 10h. |
+| Schema.org JSON-LD | Evento actualizado para o webinar de video (5 Marco 2026) |
+| `canonical` | https://imagenscomia.com/video |
 
-### Detalhe da correccao em mapRegistration
+O ficheiro incluira o mesmo `<script type="module" src="/src/main.tsx">` para que a SPA carregue normalmente para utilizadores reais.
 
-```text
-// Antes (buggy):
-r.plan_selected && r.plan_selected !== "free" ? "selected" : "free"
+### Ficheiro: `index.html` (principal)
 
-// Depois (correcto):
-r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free") ? "selected" : "free"
-```
+Sem alteracoes — continua a servir os meta tags do webinar de Imagens para a rota raiz `/`.
 
-Esta correccao resolve automaticamente o Pipeline, os Pendentes ha +6h, e os contadores de "seleccionaram produto" — porque o estado "selected" deixa de ser atribuido incorrectamente.
+### Nota importante
 
-### Detalhe da correccao de emails
-
-Para o painel "Emails de Follow-up Resend", a query actual usa `cutoffDate` que e `null` para video, cancelando a query. A correccao:
-- Quando `cutoffDate` e null, nao aplicar filtro temporal de cutoff (mostrar todos)
-- Adicionar filtro `.in("registration_id", inscritoIds)` para alinhar com o webinar activo
-
-### Detalhe das duvidas por contexto
-
-Definir dois conjuntos:
-```text
-VIDEO_DUVIDAS = [
-  "Como criar videos curtos sem filmar",
-  "Que ferramentas de IA usar para video",
-  "Como integrar video na estrategia de marketing"
-]
-
-VIDEO_DIFF_LABELS = {
-  "Como criar videos curtos sem filmar": "Videos sem filmar",
-  "Que ferramentas de IA usar para video": "Ferramentas de IA",
-  "Como integrar video na estrategia de marketing": "Estrategia de marketing"
-}
-```
-
-No contexto consolidado, combinar ambos os conjuntos.
+O `usePageMeta` no `Video.tsx` continua a funcionar e a actualizar as tags no browser — nao ha conflito. Os crawlers leem o HTML estatico; os utilizadores reais veem as tags actualizadas pelo React.
 
