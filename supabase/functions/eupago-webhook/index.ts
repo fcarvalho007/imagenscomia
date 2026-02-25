@@ -141,22 +141,36 @@ async function processPayment(data: PaymentData) {
     console.log(`🔎 Strategy 3 (legacy): extracted email="${email}" from identifier="${identifier}"`);
 
     if (email) {
-      const { data: updatedRows, error } = await supabase
+      // Safe approach: SELECT the most recent unpaid registration for this email, then UPDATE by id
+      const { data: legacyReg } = await supabase
         .from("registrations")
-        .update({
-          paid_at: new Date().toISOString(),
-          eupago_ref: reference || identifier,
-          eupago_transaction_id: transactionID || null,
-        })
+        .select("id, email, webinar")
         .eq("email", email)
-        .select("id, email");
+        .is("paid_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) {
-        console.error("Strategy 3 DB error:", error);
-      } else if (updatedRows && updatedRows.length > 0) {
-        console.log(`✅ Strategy 3: matched by email=${email}`);
-        matched = true;
-        matchedRegId = updatedRows[0].id;
+      if (legacyReg) {
+        const { data: updatedRows, error } = await supabase
+          .from("registrations")
+          .update({
+            paid_at: new Date().toISOString(),
+            eupago_ref: reference || identifier,
+            eupago_transaction_id: transactionID || null,
+          })
+          .eq("id", legacyReg.id)
+          .select("id, email");
+
+        if (error) {
+          console.error("Strategy 3 DB error:", error);
+        } else if (updatedRows && updatedRows.length > 0) {
+          console.log(`✅ Strategy 3: matched by id=${legacyReg.id} (email=${email}, webinar=${legacyReg.webinar})`);
+          matched = true;
+          matchedRegId = updatedRows[0].id;
+        }
+      } else {
+        console.warn(`⚠️ Strategy 3: no unpaid registration found for email=${email}`);
       }
     }
   }

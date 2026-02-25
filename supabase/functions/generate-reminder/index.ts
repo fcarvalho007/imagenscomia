@@ -22,7 +22,8 @@ serve(async (req) => {
     const EUPAGO_API_KEY = Deno.env.get("EUPAGO_API_KEY");
     if (!EUPAGO_API_KEY) throw new Error("EUPAGO_API_KEY not configured");
 
-    const { email, plan, nome } = await req.json();
+    const { email, plan, nome, webinar: rawWebinar } = await req.json();
+    const webinar = rawWebinar || "imagens";
     if (!email || !plan || !nome) {
       return new Response(
         JSON.stringify({ error: "email, plan e nome são obrigatórios" }),
@@ -87,6 +88,7 @@ serve(async (req) => {
       .from("registrations")
       .select("id")
       .eq("email", email)
+      .eq("webinar", webinar)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -101,7 +103,8 @@ serve(async (req) => {
           payment_link_created_at: new Date().toISOString(),
           last_payment_link_sent_at: new Date().toISOString(),
         })
-        .eq("email", email);
+        .eq("email", email)
+        .eq("webinar", webinar);
 
       console.log(`✅ Updated eupago_ref=${transactionID} for ${email}`);
     }

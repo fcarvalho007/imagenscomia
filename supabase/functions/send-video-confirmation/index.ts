@@ -170,6 +170,7 @@ serve(async (req) => {
         .from("registrations")
         .select("id")
         .eq("email", email.toLowerCase().trim())
+        .eq("webinar", "video")
         .maybeSingle();
 
       if (reg) {
