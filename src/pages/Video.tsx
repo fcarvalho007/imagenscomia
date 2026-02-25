@@ -199,6 +199,7 @@ const VideoPageInner = () => {
   usePageMeta({
     title: "Cria Vídeo Profissional com IA — Webinar Gratuito 5 Março 10h",
     description: "Sessão prática ao vivo: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Março, 10h.",
+    ogImage: "https://imagenscomia.com/video-social-card.jpg",
     ogUrl: "https://imagenscomia.com/video",
   });
 
