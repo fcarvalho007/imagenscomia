@@ -1,48 +1,80 @@
 
 
-# SEO e Social Card para a página /video
+# Corrigir Dashboard CRM: Emails, Pipeline e Duvidas por contexto
 
-## Situacao actual
+## 3 Problemas identificados
 
-A pagina `/video` ja define `<title>` e `<meta description>` via `usePageMeta`, mas as meta tags Open Graph (og:title, og:description, og:image) e Twitter Card ficam com os valores hardcoded no `index.html` — que sao do webinar de **Imagens**. Quando alguem partilha o link `/video` no LinkedIn, WhatsApp ou Facebook, aparece o titulo e descricao do webinar errado e sem imagem social.
+### 1. "Emails de Follow-up Resend" mostra 0/0 no contexto video
 
-## O que vamos fazer
+O painel de emails faz queries directas ao Supabase (`message_logs`) sem filtrar por webinar. Como o cutoffDate do video e `null`, a query e abortada e mostra zeros. Mesmo que nao fosse null, a query nao filtra por `registration_id` dos inscritos do webinar activo.
 
-### 1. Expandir o hook `usePageMeta` para suportar OG tags
+**Dados reais:** Existem 35 logs associados ao webinar video (30 confirmacoes + 5 follow-ups). No entanto, o campo `provider` destes e "resend", entao deviam aparecer.
 
-Adicionar suporte para actualizar dinamicamente:
-- `og:title` e `twitter:title`
-- `og:description` e `twitter:description`
-- `og:image` e `twitter:image` (social card)
-- `og:url`
+**Correccao:** Filtrar as queries de email por `registration_id` dos inscritos do webinar activo. Quando `cutoffDate` e null (video), nao aplicar cutoff temporal.
 
-O hook vai aceitar parametros opcionais (`ogTitle`, `ogDescription`, `ogImage`, `ogUrl`) e actualizar/criar as meta tags correspondentes no DOM.
+### 2. "Pipeline Pendente" e "Pendentes ha +6h" incluem 31 inscritos video-free (CRITICO)
 
-### 2. Actualizar a pagina `/video` com os valores correctos
+A causa raiz esta em `useInscritos.ts` na funcao `mapRegistration`. O calculo de `payment_status` verifica `plan_selected !== "free"`, mas `video-free` nao e igual a `"free"` — logo 31 inscritos gratuitos sao classificados como `"selected"`, inflando o pipeline para 33 e o valor para 134EUR.
 
-No `VideoPageInner` em `src/pages/Video.tsx`, passar:
-- **Titulo**: "Cria Video Profissional com IA — Webinar Gratuito 5 Marco 10h"
-- **Descricao**: "Sessao pratica ao vivo: de briefing a clip publicavel em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Marco, 10h."
-- **OG Image**: usar a imagem existente ou um placeholder (o projeto nao tem uma social card especifica para video — sera necessario definir um URL de imagem)
-- **OG URL**: "https://imagenscomia.com/video"
+**Valores reais:** Apenas 2 inscritos video tem intencao de compra real (1 video-bundle + 1 video-masterclass). O pipeline deveria mostrar ~134EUR reduzido para os valores destes 2.
 
-### 3. Adicionar meta tags OG por defeito no `index.html`
+**Correccao:** Na funcao `mapRegistration`, alterar a condicao para excluir tambem planos terminados em `-free`:
+```
+r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free")
+```
 
-Adicionar `og:image` e `twitter:image` no `index.html` para que a pagina principal (Imagens) tambem tenha social card definido. Se nao houver imagem de social card carregada para o webinar video, o hook ira partilhar a mesma imagem base.
+### 3. "Dificuldades Mais Comuns" e "Duvidas dos Inscritos" usam opcoes do webinar errado
 
-## Detalhe tecnico
+O array `PREDEFINED_DUVIDAS` e `PREDEFINED_DIFFICULTIES` estao hardcoded com as opcoes do webinar de imagens ("Nao sei descrever o estilo visual...", "Resultados genericos..."). O webinar de video usa opcoes diferentes:
+- "Como criar videos curtos sem filmar"
+- "Que ferramentas de IA usar para video"
+- "Como integrar video na estrategia de marketing"
+
+Logo, no contexto video, as barras aparecem todas com 0 e as duvidas nao sao correctamente parseadas.
+
+**Correccao:** Condicionar os arrays por `webinarContext` e actualizar os labels de resumo.
+
+## Plano tecnico
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/usePageMeta.ts` | Aceitar `ogTitle`, `ogDescription`, `ogImage`, `ogUrl` opcionais. Para cada um, criar ou actualizar a meta tag correspondente e restaurar no cleanup. |
-| `src/pages/Video.tsx` | Passar valores OG especificos do webinar de video ao `usePageMeta`. |
-| `index.html` | Adicionar `og:url` e `og:image` / `twitter:image` com valores por defeito (webinar imagens). |
+| `src/hooks/useInscritos.ts` | Corrigir `payment_status` em `mapRegistration` para excluir planos `*-free` do estado "selected" |
+| `src/components/crm/DashboardView.tsx` | 1. Filtrar queries de email por webinar (usando IDs dos inscritos); 2. Condicionar `PREDEFINED_DUVIDAS`/`PREDEFINED_DIFFICULTIES` e respectivos `diffLabels` por `webinarContext`; 3. Actualizar subtitulos ("Passo 2" para imagens, "Passo 4" para video) |
 
-### Nota sobre og:image
+### Detalhe da correccao em mapRegistration
 
-Como o projecto nao tem um ficheiro de social card dedicado ao webinar de video, temos duas opcoes:
-- Usar uma imagem ja existente no projecto (ex: `hero-bg.jpeg` ou `frederico-carvalho.jpg`)
-- Usar um URL externo se ja existir uma imagem de social card hospedada
+```text
+// Antes (buggy):
+r.plan_selected && r.plan_selected !== "free" ? "selected" : "free"
 
-A imagem ideal para social card deve ter 1200x630px. Se nao existir, o hook ficara preparado para quando for adicionada.
+// Depois (correcto):
+r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free") ? "selected" : "free"
+```
+
+Esta correccao resolve automaticamente o Pipeline, os Pendentes ha +6h, e os contadores de "seleccionaram produto" — porque o estado "selected" deixa de ser atribuido incorrectamente.
+
+### Detalhe da correccao de emails
+
+Para o painel "Emails de Follow-up Resend", a query actual usa `cutoffDate` que e `null` para video, cancelando a query. A correccao:
+- Quando `cutoffDate` e null, nao aplicar filtro temporal de cutoff (mostrar todos)
+- Adicionar filtro `.in("registration_id", inscritoIds)` para alinhar com o webinar activo
+
+### Detalhe das duvidas por contexto
+
+Definir dois conjuntos:
+```text
+VIDEO_DUVIDAS = [
+  "Como criar videos curtos sem filmar",
+  "Que ferramentas de IA usar para video",
+  "Como integrar video na estrategia de marketing"
+]
+
+VIDEO_DIFF_LABELS = {
+  "Como criar videos curtos sem filmar": "Videos sem filmar",
+  "Que ferramentas de IA usar para video": "Ferramentas de IA",
+  "Como integrar video na estrategia de marketing": "Estrategia de marketing"
+}
+```
+
+No contexto consolidado, combinar ambos os conjuntos.
 
