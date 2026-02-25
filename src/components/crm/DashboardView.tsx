@@ -27,7 +27,7 @@ function getPeriodStart(period: Period): Date | null {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
-const PREDEFINED_DUVIDAS = [
+const IMAGENS_DUVIDAS = [
   "Não sei descrever o estilo visual que quero",
   "Os resultados ficam sempre genéricos, sem identidade",
   "Não percebo que ferramenta usar (ChatGPT, Google, outros...)",
@@ -35,10 +35,23 @@ const PREDEFINED_DUVIDAS = [
   "Tenho dificuldade em editar ou refinar as imagens geradas",
 ];
 
-function parseDuvidaParts(duvida: string): string[] {
+const VIDEO_DUVIDAS = [
+  "Como criar videos curtos sem filmar",
+  "Que ferramentas de IA usar para video",
+  "Como integrar video na estrategia de marketing",
+];
+
+function getPredefinedDuvidas(ctx: WebinarCtxType) {
+  if (ctx === "video") return VIDEO_DUVIDAS;
+  if (ctx === "consolidado") return [...IMAGENS_DUVIDAS, ...VIDEO_DUVIDAS];
+  return IMAGENS_DUVIDAS;
+}
+
+function parseDuvidaParts(duvida: string, ctx: WebinarCtxType): string[] {
+  const predefined = getPredefinedDuvidas(ctx);
   const parts: string[] = [];
   let remaining = duvida;
-  PREDEFINED_DUVIDAS.forEach((pd) => {
+  predefined.forEach((pd) => {
     if (remaining.includes(pd)) {
       parts.push(pd);
       remaining = remaining.replace(pd, "");
@@ -108,23 +121,29 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
   useEffect(() => {
     const cutoff = dashConfig.cutoffDate;
-    if (!cutoff) { setResendSent24h(0); setResendSent7d(0); setEmailFailed24h(0); setEmailFailed7d(0); return; }
+    const inscritoIds = inscritos.map((i) => i.id);
+    if (inscritoIds.length === 0) { setResendSent24h(0); setResendSent7d(0); setEmailFailed24h(0); setEmailFailed7d(0); return; }
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const cutoffISO = cutoff.toISOString();
+
+    const buildQuery = (base: ReturnType<typeof supabase.from>) => {
+      let q = base;
+      if (cutoff) q = q.lte("created_at", cutoff.toISOString());
+      return q.in("registration_id", inscritoIds);
+    };
 
     Promise.all([
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo).lte("created_at", cutoffISO),
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo).lte("created_at", cutoffISO),
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo).lte("created_at", cutoffISO),
-      supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo).lte("created_at", cutoffISO),
+      buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo)),
+      buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", sevenDaysAgo)),
+      buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo)),
+      buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo)),
     ]).then(([resend24, resend7d, failed24, failed7d]) => {
       setResendSent24h(resend24.count || 0);
       setResendSent7d(resend7d.count || 0);
       setEmailFailed24h(failed24.count || 0);
       setEmailFailed7d(failed7d.count || 0);
     });
-  }, [dashConfig.cutoffDate]);
+  }, [dashConfig.cutoffDate, inscritos]);
 
   // Period-filtered inscritos + cutoff date
   const filteredInscritos = useMemo(() => {
@@ -195,13 +214,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const genderCounts = { M: 0, F: 0, U: 0 };
     active.forEach((i) => { genderCounts[i.gender]++; });
 
-    const PREDEFINED_DIFFICULTIES = [
-      "Não sei descrever o estilo visual que quero",
-      "Os resultados ficam sempre genéricos, sem identidade",
-      "Não percebo que ferramenta usar (ChatGPT, Google, outros...)",
-      "Quero criar imagens para a minha marca mas não sei por onde começar",
-      "Tenho dificuldade em editar ou refinar as imagens geradas",
-    ];
+    const PREDEFINED_DIFFICULTIES = getPredefinedDuvidas(webinarContext);
     const diffCounts: Record<string, number> = {};
     PREDEFINED_DIFFICULTIES.forEach((d) => { diffCounts[d] = 0; });
     let outroCount = 0;
@@ -224,9 +237,12 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       "Não percebo que ferramenta usar (ChatGPT, Google, outros...)": "Ferramenta certa",
       "Quero criar imagens para a minha marca mas não sei por onde começar": "Começar do zero",
       "Tenho dificuldade em editar ou refinar as imagens geradas": "Editar / refinar",
+      "Como criar videos curtos sem filmar": "Vídeos sem filmar",
+      "Que ferramentas de IA usar para video": "Ferramentas de IA",
+      "Como integrar video na estrategia de marketing": "Estratégia de marketing",
     };
     const difficulties = [
-      ...PREDEFINED_DIFFICULTIES.map((d) => ({ label: diffLabels[d], count: diffCounts[d] })),
+      ...PREDEFINED_DIFFICULTIES.map((d) => ({ label: diffLabels[d] || d, count: diffCounts[d] })),
       { label: "Outro (texto livre)", count: outroCount },
     ].sort((a, b) => b.count - a.count);
     const maxDiff = difficulties[0]?.count || 1;
@@ -245,7 +261,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     });
 
     return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, clickedToPay, paidConfirmed, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
-  }, [filteredInscritos]);
+  }, [filteredInscritos, webinarContext]);
 
   const now = new Date();
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -836,7 +852,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       {/* Difficulties Chart */}
       <div className="bg-white border border-border rounded-xl p-5 mb-5">
         <h3 className="font-heading font-bold text-sm text-ink-900">Dificuldades Mais Comuns</h3>
-        <p className="text-xs text-ink-400 mb-4">Opções seleccionadas no Passo 2 (escolha múltipla)</p>
+        <p className="text-xs text-ink-400 mb-4">Opções seleccionadas no {isVideo ? "Passo 4" : "Passo 2"} (escolha múltipla)</p>
         <div className="space-y-3">
           {stats.difficulties.map((d) => {
             const pct = stats.maxDiff ? (d.count / stats.maxDiff) * 100 : 0;
@@ -867,7 +883,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-heading font-bold text-sm text-ink-900">Dúvidas dos Inscritos</h3>
-            <p className="text-xs text-ink-400">Respostas ao Passo 2 do flow de inscrição</p>
+            <p className="text-xs text-ink-400">Respostas ao {isVideo ? "Passo 4" : "Passo 2"} do flow de inscrição</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
@@ -939,7 +955,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
                     </div>
                   ) : (
                     <div className="mt-1.5 space-y-1">
-                      {parseDuvidaParts(i.duvida).map((part, idx) => (
+                      {parseDuvidaParts(i.duvida, webinarContext).map((part, idx) => (
                         <p key={idx} className="text-[13px] text-ink-600 leading-relaxed">• {part}</p>
                       ))}
                     </div>
