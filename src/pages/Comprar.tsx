@@ -1,24 +1,31 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Calendar } from "lucide-react";
+import { Check, Calendar, Lock, CreditCard } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
 import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
+import { useIsMobile } from "@/hooks/use-mobile";
 
-type Plan = "masterclass" | "gravacao";
+type Plan = "masterclass" | "bundle" | "gravacao";
 
 const PLANS: Record<Plan, {
   title: string;
   price: string;
+  priceStrike?: string;
+  savingsBadge?: string;
+  ivaNote?: string;
   earlyBird?: string;
   benefits: string[];
   dateBox?: string;
   ctaLabel: string;
   ctaColor: string;
   planLabel: string;
+  featured?: boolean;
+  checkColor: string;
 }> = {
   masterclass: {
     title: "Masterclass Vídeo com IA",
-    price: "€47 + IVA",
+    price: "€47",
+    ivaNote: "+ IVA",
     earlyBird: "Preço early bird · sobe após o webinar",
     benefits: [
       "3 horas ao vivo com o Frederico",
@@ -26,10 +33,32 @@ const PLANS: Record<Plan, {
       "Prompts reutilizáveis para a tua empresa",
       "Gravação incluída para reverem depois",
     ],
-    dateBox: "📅 12 de Março · 10h00–13h00",
+    dateBox: "12 de Março · 10h00–13h00",
     ctaLabel: "Garantir lugar na Masterclass →",
     ctaColor: "#7c3aed",
     planLabel: "Masterclass Vídeo com IA · €47 + IVA",
+    checkColor: "#7c3aed",
+  },
+  bundle: {
+    title: "Masterclass + Gravação",
+    price: "€57",
+    priceStrike: "€62",
+    savingsBadge: "Poupa €5",
+    ivaNote: "+ IVA",
+    benefits: [
+      "3 horas ao vivo — Masterclass 12 de Março",
+      "Sistema completo + prompts reutilizáveis",
+      "Gravação da Masterclass incluída",
+      "Gravação HD do Webinar Vídeo com IA",
+      "Pack de apoio completo (checklists + templates)",
+      "Sessão Q&A em grupo · 10 de Março · 14h30",
+    ],
+    dateBox: "12 de Março · 10h00–13h00",
+    ctaLabel: "Garantir Bundle completo →",
+    ctaColor: "#7c3aed",
+    planLabel: "Masterclass + Gravação · €57 + IVA",
+    featured: true,
+    checkColor: "#7c3aed",
   },
   gravacao: {
     title: "Gravação + Pack de Apoio",
@@ -42,45 +71,130 @@ const PLANS: Record<Plan, {
     ctaLabel: "Garantir gravação →",
     ctaColor: "#1e40af",
     planLabel: "Gravação + Pack de Apoio · €15",
+    checkColor: "#1e40af",
   },
 };
 
+const DESKTOP_ORDER: Plan[] = ["masterclass", "bundle", "gravacao"];
+const MOBILE_ORDER: Plan[] = ["bundle", "masterclass", "gravacao"];
+
 function PlanCard({ plan, onSelect, hideButton }: { plan: Plan; onSelect: () => void; hideButton?: boolean }) {
   const cfg = PLANS[plan];
+  const isFeatured = cfg.featured;
+
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 flex flex-col gap-4 flex-1 min-w-[220px]">
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
-        <p className="text-2xl font-extrabold text-gray-900 mt-1">{cfg.price}</p>
+    <div
+      className="relative flex flex-col gap-4 flex-1 min-w-[220px] bg-white transition-shadow duration-200"
+      style={{
+        borderRadius: 16,
+        padding: "28px 24px",
+        border: isFeatured ? "2px solid #7c3aed" : "1px solid #e5e7eb",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        transform: isFeatured ? "scale(1.03)" : undefined,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; }}
+    >
+      {/* MAIS POPULAR badge */}
+      {isFeatured && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 top-0"
+          style={{
+            background: "#7c3aed",
+            color: "white",
+            fontSize: 9,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+            borderRadius: "0 0 8px 8px",
+            padding: "4px 14px",
+          }}
+        >
+          MAIS POPULAR
+        </div>
+      )}
+
+      <div className={isFeatured ? "mt-4" : ""}>
+        <h2 className="text-lg font-bold" style={{ color: "#111827" }}>{cfg.title}</h2>
+        <div className="flex items-baseline gap-2 mt-1">
+          <span style={{ fontSize: 32, fontWeight: 700, color: "#111827" }}>{cfg.price}</span>
+          {cfg.ivaNote && <span style={{ fontSize: 14, color: "#6b7280", fontWeight: 400 }}>{cfg.ivaNote}</span>}
+          {cfg.priceStrike && (
+            <span style={{ fontSize: 14, color: "#9ca3af", textDecoration: "line-through" }}>{cfg.priceStrike}</span>
+          )}
+          {cfg.savingsBadge && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#16a34a",
+                background: "#dcfce7",
+                borderRadius: 99,
+                padding: "2px 8px",
+              }}
+            >
+              {cfg.savingsBadge}
+            </span>
+          )}
+        </div>
       </div>
 
       {cfg.earlyBird && (
-        <span className="inline-block self-start rounded-full bg-amber-100 text-amber-800 text-[11px] font-semibold px-2.5 py-0.5">
+        <span
+          className="inline-block self-start"
+          style={{
+            borderRadius: 99,
+            background: "#fef3c7",
+            color: "#92400e",
+            fontSize: 11,
+            fontWeight: 600,
+            padding: "2px 10px",
+          }}
+        >
           {cfg.earlyBird}
         </span>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {cfg.benefits.map((b) => (
-          <li key={b} className="flex items-start gap-2 text-sm text-gray-700">
-            <Check className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
+          <li key={b} className="flex items-start gap-2" style={{ fontSize: 13, color: "#374151" }}>
+            <span
+              className="mt-1 shrink-0 rounded-full flex items-center justify-center"
+              style={{ width: 16, height: 16, background: cfg.checkColor }}
+            >
+              <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+            </span>
             <span>{b}</span>
           </li>
         ))}
       </ul>
 
       {cfg.dateBox && (
-        <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2 text-sm text-gray-700">
+        <div
+          className="flex items-center gap-2"
+          style={{
+            background: "#f5f3ff",
+            borderRadius: 8,
+            padding: "10px 14px",
+            fontSize: 12,
+            color: "#7c3aed",
+          }}
+        >
           <Calendar className="w-4 h-4 shrink-0" />
-          <span>{cfg.dateBox.replace("📅 ", "")}</span>
+          <span>{cfg.dateBox}</span>
         </div>
       )}
 
       {!hideButton && (
         <button
           onClick={onSelect}
-          className="mt-auto w-full rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-          style={{ backgroundColor: cfg.ctaColor }}
+          className="mt-auto w-full font-semibold text-white transition-opacity hover:opacity-90"
+          style={{
+            backgroundColor: cfg.ctaColor,
+            borderRadius: 10,
+            height: 48,
+            fontSize: 14,
+          }}
         >
           {cfg.ctaLabel}
         </button>
@@ -93,12 +207,12 @@ export default function Comprar() {
   const [searchParams] = useSearchParams();
   const urlPlan = searchParams.get("plan") as Plan | null;
   const validPlan = urlPlan && urlPlan in PLANS ? urlPlan : null;
+  const isMobile = useIsMobile();
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(validPlan);
   const [modalOpen, setModalOpen] = useState(false);
   const [groupMode, setGroupMode] = useState(false);
 
-  // Auto-open modal when plan is in URL (single mode only)
   useEffect(() => {
     if (validPlan && !groupMode) {
       setSelectedPlan(validPlan);
@@ -106,15 +220,34 @@ export default function Comprar() {
     }
   }, [validPlan, groupMode]);
 
-  const activePlan: Plan = selectedPlan || "masterclass";
-  const showGroupToggle = activePlan === "masterclass" || validPlan === "masterclass";
+  const activePlan: Plan = selectedPlan || "bundle";
+  const showGroupToggle =
+    activePlan === "masterclass" || activePlan === "bundle" ||
+    validPlan === "masterclass" || validPlan === "bundle";
+
+  const cardOrder = isMobile ? MOBILE_ORDER : DESKTOP_ORDER;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: "#f9fafb" }}>
-      <div className="w-full max-w-[480px] flex flex-col items-center gap-6">
-        {/* Badge */}
-        <p className="text-[11px] text-gray-500 tracking-wide">
-          🎬 Webinar Vídeo com IA · 5 de Março
+      <div className="w-full max-w-[900px] flex flex-col items-center gap-6">
+        {/* Header badge */}
+        <div
+          style={{
+            background: "white",
+            borderRadius: 20,
+            padding: "6px 16px",
+            border: "1px solid #e5e7eb",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+            fontSize: 12,
+            color: "#374151",
+          }}
+        >
+          🎬 Webinar Vídeo com IA · 5 de Março · 10h00
+        </div>
+
+        {/* Trust line */}
+        <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", marginBottom: 8 }}>
+          Acesso garantido em segundos após confirmação de pagamento
         </p>
 
         {/* Cards */}
@@ -130,23 +263,23 @@ export default function Comprar() {
             hideButton={groupMode}
           />
         ) : (
-          <div className="flex flex-col sm:flex-row gap-4 w-full">
-            {(Object.keys(PLANS) as Plan[]).map((p) => (
+          <div className="flex flex-col sm:flex-row gap-4 w-full items-stretch">
+            {cardOrder.map((p) => (
               <PlanCard
                 key={p}
                 plan={p}
                 onSelect={() => {
                   setSelectedPlan(p);
-                  if (p === "masterclass" && groupMode) return;
+                  if ((p === "masterclass" || p === "bundle") && groupMode) return;
                   setModalOpen(true);
                 }}
-                hideButton={p === "masterclass" && groupMode}
+                hideButton={(p === "masterclass" || p === "bundle") && groupMode}
               />
             ))}
           </div>
         )}
 
-        {/* Group mode toggle — masterclass only */}
+        {/* Group mode toggle */}
         {showGroupToggle && (
           <div className="w-full">
             <button
@@ -157,18 +290,18 @@ export default function Comprar() {
               className="flex items-center gap-2.5 w-full"
             >
               <div
-                className="relative w-10 h-[22px] rounded-full transition-colors shrink-0"
-                style={{ backgroundColor: groupMode ? "#7c3aed" : "#d1d5db" }}
+                className="relative w-10 shrink-0 transition-colors"
+                style={{ height: 22, borderRadius: 11, backgroundColor: groupMode ? "#7c3aed" : "#d1d5db" }}
               >
                 <div
                   className="absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform"
-                  style={{ left: groupMode ? "20px" : "3px" }}
+                  style={{ left: groupMode ? 20 : 3 }}
                 />
               </div>
-              <span className="text-[13px] text-gray-700">Inscrever várias pessoas?</span>
+              <span style={{ fontSize: 13, color: "#374151" }}>Inscrever várias pessoas?</span>
             </button>
             {groupMode && (
-              <p className="text-[12px] mt-1.5 ml-[50px]" style={{ color: "#7c3aed" }}>
+              <p className="ml-[50px] mt-1.5" style={{ color: "#7c3aed", fontSize: 12 }}>
                 Modo grupo activo — adiciona os participantes abaixo
               </p>
             )}
@@ -176,20 +309,22 @@ export default function Comprar() {
         )}
 
         {/* Group checkout form */}
-        {groupMode && activePlan === "masterclass" && (
+        {groupMode && (activePlan === "masterclass" || activePlan === "bundle") && (
           <GroupCheckoutForm />
         )}
 
-        {/* Reassurance */}
+        {/* Footer */}
         {!groupMode && (
-          <>
-            <p className="text-[11px] text-gray-400 text-center leading-relaxed max-w-[360px]">
-              A tua inscrição no Webinar Vídeo (gratuita) fica confirmada de qualquer forma após o pagamento.
+          <div className="w-full flex flex-col items-center gap-3 mt-2">
+            <div style={{ width: "100%", maxWidth: 360, height: 1, background: "#e5e7eb" }} />
+            <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#9ca3af" }}>
+              <Lock className="w-3.5 h-3.5" />
+              <span>Pagamento seguro via EuPago</span>
+            </div>
+            <p style={{ fontSize: 11, color: "#9ca3af" }}>
+              Cartão de crédito · MB WAY · Multibanco
             </p>
-            <p className="text-[11px] text-gray-400 text-center">
-              Pagamento seguro via EuPago · Cartão, MB WAY ou Multibanco
-            </p>
-          </>
+          </div>
         )}
       </div>
 
