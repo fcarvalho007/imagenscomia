@@ -1,90 +1,63 @@
 
-# Fixes focados nos Steps 3 e 4 do /upgrade-video
 
-## FIX 1 -- Reduzir top spacing nos steps 3 e 4
+# Fixes focados nos Steps 3 e 4 -- spacing e mobile polish
 
-No `UpgradeVideo.tsx` (linha 462), o wrapper actual usa `py-6 sm:py-10` com `pt-8` para steps 3/4. Alterar para:
+## Estado actual
 
-- Steps 3, 4: `pt-2 sm:pt-4` (8px mobile, 16px desktop) em vez de `pt-8`
-- Manter `py-6 sm:py-10` para os outros steps
+A maioria das alteracoes anteriores ja esta aplicada:
+- Sticky bottom bar: OK (ambos componentes)
+- Inline pill "Masterclass": OK (StepVideoPremium)
+- Mobile header 44px: OK
+- Progress label curto em mobile: OK
+- `pt-2 sm:pt-4` para steps 3/4: OK
 
-Implementacao: condicional no className:
+## O que falta corrigir
+
+### 1. Reduzir card padding interno nos steps 3/4
+
+**Ficheiro:** `src/pages/UpgradeVideo.tsx` (linhas 462-469)
+
+O card tem `padding: "48px 40px"` para todos os steps. Para steps 3 e 4, o padding-top de 48px cria um gap grande entre o progress bar e o conteudo visivel.
+
+**Alteracao:** Tornar o padding condicional:
+- Steps 3, 4: `padding: "24px 40px"` desktop, `20px 20px` mobile
+- Outros steps: manter `padding: "48px 40px"` desktop, `32px 20px` mobile
+
+Implementacao: mudar o style inline para usar uma variavel:
 ```text
-[3, 4].includes(step) ? "items-start pt-2 sm:pt-4 pb-6" : "items-start sm:items-center py-6 sm:py-10"
+padding: [3, 4].includes(step) ? "24px 40px" : "48px 40px"
 ```
 
-## FIX 2 -- Restyle "Masterclass garantida" no Step 4
+E actualizar o CSS mobile override para tambem ser condicional (ou adicionar uma classe extra para steps 3/4).
 
-No `StepVideoPremium.tsx`:
+Abordagem pratica: adicionar uma classe condicional `upgrade-card-compact` para steps 3/4 e adicionar regra CSS correspondente.
 
-**Remover** o banner verde (linhas 28-32): o bloco `{masterclassSelected && (<div className="mb-4 rounded-lg...">...</div>)}`.
+### 2. Mobile card border-radius (16px top, 0 bottom)
 
-**Alterar** a linha do step label (linha 35) para incluir o pill inline:
+**Ficheiro:** `src/pages/UpgradeVideo.tsx` (linhas 472-481)
+
+Actualmente o CSS mobile override faz `border-radius: 0 !important`. Alterar para:
 ```text
-<p style={{ fontSize: 12, color: "#9ca3af" }}>
-  Passo 4 de 5 — Gravacao Video
-  {masterclassSelected && (
-    <span style={{
-      fontSize: 10, fontWeight: 600, color: "#16a34a",
-      background: "#f0fdf4", border: "1px solid #bbf7d0",
-      borderRadius: 20, padding: "2px 8px", marginLeft: 8,
-      verticalAlign: "middle", display: "inline-block",
-    }}>
-      checkmark Masterclass
-    </span>
-  )}
-</p>
+border-radius: 16px 16px 0 0 !important;
 ```
 
-Mesma condicao (`masterclassSelected`), apenas muda a apresentacao visual.
+Isto aplica-se a todos os steps em mobile, o que e aceitavel.
 
-## FIX 3 -- Mobile audit para steps 3 e 4
+### 3. Back arrow posicionamento nos steps 3/4
 
-### 3a. Header bar mobile (UpgradeVideo.tsx linhas 440-443)
+**Ficheiro:** `src/pages/UpgradeVideo.tsx` (linhas 485-494)
 
-Ja esta compacto: `"emoji Webinar Video . 5 Mar checkmark"` a 12px. Ajustar height mobile para 44px:
-
-Adicionar classe mobile ao header: `className="... h-[44px] sm:h-[56px]"` em vez do `style={{ height: 56 }}` fixo.
-
-### 3b. Progress bar label mobile (linhas 451-452)
-
-Ja esta implementado: mobile mostra `"Passo X/5"` sem subtitulo, desktop mostra com subtitulo. Sem alteracao necessaria.
-
-### 3c. Pricing card mobile -- StepMasterclass.tsx e StepVideoPremium.tsx
-
-Aplicar estas classes mobile adicionais:
-
-**Price font**: `max-sm:text-[36px]` (ja tem `max-sm:text-[38px]`, reduzir para 36px)
-
-**Badge font**: `max-sm:text-[8px]` nos badges (actualmente 9px fixo)
-
-**Benefits list mobile**: adicionar `max-sm:text-[13px]` nos titulos e `max-sm:w-4 max-sm:h-4` nos icones check, `max-sm:space-y-1.5` no wrapper
-
-**Date box mobile**: `max-sm:p-[10px_12px]` e `max-sm:text-[12px]` no subtitulo
-
-**Early bird badge mobile**: `max-sm:text-[10px]` (actualmente 11px)
-
-### 3d. Sticky bar mobile -- ambos componentes
-
-**CTA font mobile**: `max-sm:text-[15px]` no botao primario
-
-**Secondary text mobile**: `max-sm:text-[12px]` no link "ou continuar..."
-
-### 3e. Back arrow (UpgradeVideo.tsx linhas 487-494)
-
-Ja tem `width: 44, height: 44` -- tap target correcto. Sem alteracao.
+O back arrow tem `mb-4` (16px margin-bottom). Com o padding reduzido, isto mantem-se correcto. Sem alteracao necessaria.
 
 ## Ficheiros alterados
 
-1. **`src/pages/UpgradeVideo.tsx`** -- FIX 1 (top spacing condicional), FIX 3a (header height mobile)
-2. **`src/components/upgrade/StepMasterclass.tsx`** -- FIX 3c/3d (mobile sizing)
-3. **`src/components/upgrade/StepVideoPremium.tsx`** -- FIX 2 (pill badge), FIX 3c/3d (mobile sizing)
+1. **`src/pages/UpgradeVideo.tsx`** -- card padding condicional para steps 3/4, mobile border-radius 16px top
 
 ## O que NAO muda
 
+- StepMasterclass.tsx (ja esta correcto)
+- StepVideoPremium.tsx (ja esta correcto)
 - Steps 1, 2, 5, 6, 7
-- Logica de pagamento EuPago
-- Supabase writes/reads
-- AlertDialog/confirmation flow
-- Callbacks onAddMasterclass, onAddPremium, onSkip
-- Nenhum outro ficheiro
+- Logica de pagamento, Supabase, email triggers
+- Sticky bar, pill badge, mobile header (ja implementados)
+
