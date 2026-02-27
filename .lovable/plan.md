@@ -1,122 +1,116 @@
 
+# Group Email Improvements in eupago-webhook
 
-# Checkout Modal Fixes — PurchaseModal + GroupCheckoutForm
+## What Changes
 
-Three files changed. No page cards, copy, payment logic, or other pages touched.
+Only one file is modified: `supabase/functions/eupago-webhook/index.ts` (Strategy GROUP block, lines 147-244).
 
----
-
-## FIX 1 — Modal width + scroll + close button
-
-**File: `src/components/webinar/PurchaseModal.tsx`** (line 118)
-
-Change DialogContent class from:
-```
-sm:max-w-[400px] p-0 overflow-hidden gap-0 border-0 max-h-[90vh] overflow-y-auto
-```
-To:
-```
-w-[95vw] mx-auto sm:max-w-2xl p-0 gap-0 border-0 max-h-[90vh] overflow-y-auto
-```
-
-The close button (X) already exists in the dark header (line 134-138). No change needed there.
+Additionally, a new row is inserted into the `email_templates` table for `video_group_confirmation_payer`.
 
 ---
 
-## FIX 2 — Group toggle on ALL plans (including Gravacao)
+## Current Behavior (lines 147-244)
 
-**File: `src/components/webinar/PurchaseModal.tsx`** (line 54)
+1. **Every** attendee (including the buyer) receives `video_payment_masterclass` email
+2. The buyer (first row in group) receives a `video_group_payment_summary` email with an attendee list
+3. Result: the buyer gets **2 emails** (individual + summary)
 
-Change:
-```typescript
-const showGroupToggle = plan === "masterclass" || plan === "bundle";
-```
-To:
-```typescript
-const showGroupToggle = plan === "masterclass" || plan === "bundle" || plan === "gravacao";
-```
+## New Behavior
 
-**File: `src/components/webinar/PurchaseModal.tsx`** — pass `plan` prop to GroupCheckoutForm (line 221-224):
-```tsx
-<GroupCheckoutForm
-  buyerFirstName={firstName}
-  buyerLastName={lastName}
-  buyerEmail={email}
-  plan={plan}
-/>
-```
-
-**File: `src/components/webinar/GroupCheckoutForm.tsx`** — accept `plan` prop and use plan-aware pricing/labels:
-
-Add `plan` to interface:
-```typescript
-interface GroupCheckoutFormProps {
-  buyerFirstName: string;
-  buyerLastName: string;
-  buyerEmail: string;
-  plan?: "masterclass" | "bundle" | "gravacao" | "premium";
-}
-```
-
-Replace hardcoded `PRICE_PER_PERSON = 57.81` with a plan-based lookup:
-```typescript
-const PRICES: Record<string, number> = {
-  masterclass: 57.81,
-  bundle: 76.26,
-  gravacao: 15.00,
-};
-const PLAN_LABELS: Record<string, string> = {
-  masterclass: "Masterclass Video com IA",
-  bundle: "Masterclass + Gravacao",
-  gravacao: "Gravacao HD + Pack de Apoio",
-};
-```
-
-Use `PRICES[plan] || 57.81` as the per-person price throughout.
-
-Update the summary line (line 218) from hardcoded "Masterclass Video com IA" to `PLAN_LABELS[plan]`.
-
-Update the `handleSubmit` body (line 90) to pass `plan` instead of hardcoded `"masterclass"`:
-```typescript
-plan: plan === "bundle" ? "masterclass" : plan,
-```
-
-For gravacao, `plan_selected` in the edge function will receive `"gravacao"` -- but note the backend gap below.
+1. The **buyer** receives ONE email (`video_group_confirmation_payer`) with:
+   - Subject: "A tua inscricao esta confirmada"
+   - Body: list of all participants (name + email), plan name, total paid
+   - Note: "Cada participante recebeu o seu proprio email de confirmacao."
+2. Each **other participant** (email differs from buyer) receives their individual `video_payment_masterclass` email (unchanged)
+3. If buyer's email matches a participant, they get ONLY the summary -- the individual email is skipped for them
 
 ---
 
-## FIX 3 — Mobile layout (375px)
+## Code Changes in eupago-webhook
 
-**File: `src/components/webinar/GroupCheckoutForm.tsx`**
+### 1. Identify the buyer email
 
-Attendee row fields (line 151): change from `flex items-center gap-2` to `flex flex-col sm:flex-row items-stretch sm:items-center gap-2` so inputs stack vertically on mobile.
+After `updatedGroupRows` is fetched (line 138), determine the buyer email. The buyer is the first registration in the group (line 216 already assumes this). We keep this convention.
 
-The "Adicionar outra pessoa" button (line 185) is already `w-full`. No change needed.
+```typescript
+const buyerAttendee = updatedGroupRows[0];
+const buyerEmail = buyerAttendee?.email;
+```
 
-The sticky CTA wrapper (line 241) already has `sticky bottom-0 z-10 bg-white pt-1 pb-[env(safe-area-inset-bottom)]`. No change needed.
+### 2. Skip buyer in the individual email loop
 
-The toggle label (PurchaseModal line 212): add `flex-wrap` to the parent button class so the label wraps gracefully on 375px.
+In the `for (const attendee of updatedGroupRows)` loop (line 150), add a condition:
+
+```typescript
+// Skip buyer -- they get the summary email instead
+if (attendee.email === buyerEmail) continue;
+```
+
+This means the buyer no longer receives the individual `video_payment_masterclass` email.
+
+### 3. Enhance the buyer summary email
+
+Replace the current summary block (lines 215-243) with an improved version:
+
+- Load template from `email_templates` with key `video_group_confirmation_payer` (fallback to hardcoded)
+- Compute total: `count * 57.81 * (count >= 3 ? 0.9 : 1.0)` (matching create-group-payment pricing)
+- Build attendee list HTML with name + email
+- Include plan label, total paid (Portuguese decimals), and the note about individual emails
+- Subject: `A tua inscricao esta confirmada` (with checkmark)
+- Template key for logging: `video_group_confirmation_payer`
+
+### 4. Idempotency
+
+The existing idempotency checks remain:
+- Individual emails: check `message_logs` for `video_payment_masterclass` per attendee
+- Buyer summary: check `message_logs` for `video_group_confirmation_payer` per buyer registration
 
 ---
 
-## Backend Gap (informational -- no code change)
+## Database: Insert email template row
 
-The `create-group-payment` edge function is hardcoded for masterclass pricing (EUR 57.81/person). When gravacao groups are submitted, the edge function will charge 57.81/person instead of 15.00/person. This is a **critical gap** that requires an edge function update to support `gravacao` group payments with the correct pricing.
+Insert a new row into `email_templates`:
 
-**Recommendation:** Before enabling gravacao group purchases in production, update `create-group-payment` to accept a `plan` parameter and use plan-specific pricing. Until then, the UI will show the correct gravacao price but the actual charge would be incorrect.
+| Field | Value |
+|---|---|
+| template_key | `video_group_confirmation_payer` |
+| name | Confirmacao Grupo (Pagador) |
+| subject | `A tua inscricao esta confirmada` |
+| html_body | Full HTML with `{{fname}}`, `{{attendee_list}}`, `{{plan_label}}`, `{{total}}` placeholders |
+| channel | email |
+| is_active | true |
+| variables | `["fname", "attendee_list", "plan_label", "total"]` |
 
-**Options:**
-1. Ship the UI now with a note that gravacao group mode needs backend work (toggle visible but backend charges wrong price)
-2. Keep the toggle restricted to masterclass/bundle only until the backend is updated
-
-I will implement the UI changes as requested but flag this clearly. The toggle will show for all plans per the request.
+The edge function will replace these variables at send time. If the template is missing or html_body is NULL, the hardcoded fallback is used.
 
 ---
 
-## Summary of files changed
+## Hardcoded Fallback HTML for buyer summary
+
+```html
+<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6">
+  <h2>A tua inscricao esta confirmada</h2>
+  <p>Ola {{fname}},</p>
+  <p>O pagamento do grupo foi confirmado com sucesso.</p>
+  <h3>Resumo</h3>
+  <p><strong>Plano:</strong> {{plan_label}}</p>
+  <p><strong>Total pago:</strong> EUR{{total}}</p>
+  <h3>Participantes confirmados</h3>
+  <ul>{{attendee_list}}</ul>
+  <p style="font-size:13px;color:#64748b">Cada participante recebeu o seu proprio email de confirmacao.</p>
+  <hr/>
+  <p>Suporte: WhatsApp +351 915 015 508</p>
+  <p>Frederico Carvalho</p>
+</div>
+```
+
+---
+
+## Files changed
 
 | File | Change |
 |---|---|
-| `src/components/webinar/PurchaseModal.tsx` | Wider modal (max-w-2xl), group toggle for all plans, pass plan prop |
-| `src/components/webinar/GroupCheckoutForm.tsx` | Plan-aware pricing/labels, mobile-stacked attendee rows, flex-wrap toggle |
+| `supabase/functions/eupago-webhook/index.ts` | Skip buyer in individual loop; enhance summary email with plan/total/template |
+| `email_templates` table (data insert) | New row for `video_group_confirmation_payer` |
 
+No other files or edge functions are modified.
