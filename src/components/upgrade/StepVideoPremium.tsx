@@ -9,12 +9,13 @@ interface Props {
   onAddPremium: () => void;
   onSkip: () => void;
   userName?: string;
+  masterclassSelected?: boolean;
 }
 
 const bullets = [
   {
     title: "Gravação HD (acesso contínuo)",
-    sub: "Rever ao seu ritmo, sem depender do direto.",
+    sub: "Rever ao teu ritmo, sem depender do directo.",
   },
   {
     title: "Pack de apoio completo",
@@ -22,122 +23,173 @@ const bullets = [
   },
   {
     title: "Sessão Q&A exclusiva (30 min)",
-    sub: "Terça-feira, 10 de Março, 14:30h–15:00h · Dúvidas respondidas ao vivo, em grupo.",
+    sub: "Terça-feira, 10 de Março · 14h30–15h00 · Dúvidas respondidas ao vivo, em grupo.",
   },
 ];
 
-export const StepVideoPremium = ({ onAddPremium, onSkip, userName }: Props) => {
+export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSelected }: Props) => {
   const [showConfirm, setShowConfirm] = useState(false);
+
   return (
-  <>
-  <div className="max-w-[620px]">
-    <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
-      Gravação do Webinar Vídeo (opcional)
-    </h2>
-    <p className="text-[17px] max-sm:text-[14px] text-ink-500 mt-2 mb-6">
-      Para aplicar o método com mais tranquilidade, ao teu ritmo.
-    </p>
+    <>
+      <div className="text-center">
+        {/* Masterclass confirmed note */}
+        {masterclassSelected && (
+          <div className="mb-4 rounded-lg text-left" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px 14px" }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#16a34a" }}>✓ Masterclass garantida.</p>
+          </div>
+        )}
 
-    {/* Premium Card */}
-    <div
-      className="bg-background rounded-2xl p-6 max-sm:p-4 max-w-[560px]"
-      style={{
-        border: "2px solid hsl(var(--blue-600))",
-        boxShadow: "0 4px 20px rgba(37,99,235,0.12)",
-      }}
-    >
-      {/* Eyebrow badges */}
-      <div className="flex items-center gap-2 mb-1.5">
-        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-[1px]" style={{ background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.2)', color: '#16a34a' }}>🎬 WEBINAR VÍDEO COM IA</span>
-        <span className="inline-block rounded px-2 py-0.5 text-[9px] font-bold tracking-[1px]" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534' }}>GRAVAÇÃO + PACK</span>
-      </div>
+        {/* Step label */}
+        <p style={{ fontSize: 12, color: "#9ca3af" }}>Passo 4 de 5 — Gravação Vídeo</p>
 
-      {/* Price row */}
-      <div className="flex max-sm:flex-col justify-between items-start mb-4 gap-3">
-        <div>
-          <p className="font-heading font-black text-[36px] max-sm:text-[28px] text-blue-600 leading-none whitespace-nowrap">€15 <span className="text-[16px] font-bold">+ IVA</span></p>
-          <p className="text-[14px] text-ink-400">Sem depender do direto. Ao teu ritmo.</p>
-        </div>
-        <div className="bg-amber-50 rounded-lg p-2 max-sm:p-1.5 min-w-[150px] max-sm:w-full whitespace-nowrap" style={{ border: "1px solid hsl(var(--amber-500) / 0.5)" }}>
-          <p className="font-semibold text-[14px] max-sm:text-[13px] text-amber-700">Early bird: €15 + IVA</p>
-          <p className="text-[14px] max-sm:text-[13px] text-amber-600">Depois: €27 + IVA</p>
-        </div>
-      </div>
+        <div style={{ height: 24 }} />
 
-      <div className="w-full h-px bg-border my-4" />
+        {/* Headline */}
+        <h2 style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0, display: "inline" }}>
+          Gravação do Webinar Vídeo{" "}
+        </h2>
+        <span style={{ fontSize: 28, fontWeight: 400, color: "#9ca3af" }}>(opcional)</span>
 
-      {/* Date box */}
-      <div className="flex items-start gap-2 sm:gap-2.5 rounded-lg p-2 sm:p-2.5 mb-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-        <span className="text-[16px] sm:text-[18px] leading-none">📅</span>
-        <div>
-          <p className="text-[11px] sm:text-[12px] font-bold" style={{ color: '#14532d' }}>Sessão Q&A em grupo</p>
-          <p className="text-[11px] sm:text-[12px]" style={{ color: '#166534' }}>Terça-feira, 10 de Março · 14h30–15h00</p>
-        </div>
-      </div>
+        <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
+          Para aplicar o método com mais tranquilidade, ao teu ritmo.
+        </p>
 
-      <div className="space-y-3">
-        {bullets.map((b) => (
-          <div key={b.title} className="flex gap-2.5">
-            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-              <Check className="w-2.5 h-2.5 text-white" />
+        <div style={{ height: 28 }} />
+
+        {/* ── Pricing card ── */}
+        <div
+          style={{
+            border: "2px solid #1e40af",
+            borderRadius: 20,
+            padding: "28px 24px",
+            background: "white",
+            boxShadow: "0 4px 16px rgba(30,64,175,0.08)",
+            textAlign: "left",
+          }}
+          className="sm:p-7 max-sm:!p-[20px_16px]"
+        >
+          {/* Badges */}
+          <div className="flex flex-wrap items-center gap-1.5 mb-4">
+            <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#1e40af", borderRadius: 6, padding: "3px 8px", letterSpacing: "0.5px" }}>
+              🎬 WEBINAR VÍDEO COM IA
+            </span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#1e40af", background: "#eff6ff", borderRadius: 6, padding: "3px 8px", letterSpacing: "0.5px" }}>
+              GRAVAÇÃO + PACK
+            </span>
+          </div>
+
+          {/* Price row */}
+          <div className="flex max-sm:flex-col justify-between items-start gap-3 mb-4">
+            <div className="flex items-baseline gap-1">
+              <span className="max-sm:text-[40px]" style={{ fontSize: 48, fontWeight: 800, color: "#111827", lineHeight: 1 }}>€15</span>
+              <span style={{ fontSize: 16, fontWeight: 400, color: "#6b7280" }}>+ IVA</span>
             </div>
-            <div>
-              <p className="font-semibold text-[15px] text-ink-900">{b.title}</p>
-              <p className="text-[14px] text-ink-500 leading-[1.5]">{b.sub}</p>
+            <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "6px 10px" }} className="max-sm:w-full">
+              <p style={{ fontSize: 11, fontWeight: 600, color: "#854d0e" }}>Early bird: €15 + IVA</p>
+              <p style={{ fontSize: 11, fontWeight: 400, color: "#854d0e" }}>Depois: €27 + IVA</p>
             </div>
           </div>
-        ))}
+
+          {/* Date box */}
+          <div className="flex items-start gap-2.5 rounded-[10px] p-3 mb-5" style={{ background: "#eff6ff" }}>
+            <span className="text-[16px] leading-none mt-0.5">📅</span>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#1e40af" }}>Sessão Q&A em grupo</p>
+              <p style={{ fontSize: 12, color: "#6b7280" }}>Terça-feira, 10 de Março · 14h30–15h00</p>
+            </div>
+          </div>
+
+          {/* Benefits */}
+          <div className="space-y-3.5">
+            {bullets.map((b) => (
+              <div key={b.title} className="flex gap-3">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "#1e40af" }}>
+                  <Check className="w-2.5 h-2.5 text-white" />
+                </div>
+                <div>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{b.title}</p>
+                  <p className="max-sm:text-[12px]" style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{b.sub}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary CTA */}
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="w-full mt-6 text-white font-bold transition-colors"
+            style={{
+              background: "#1e40af",
+              height: 52,
+              borderRadius: 28,
+              fontSize: 16,
+              fontWeight: 700,
+              border: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#1e3a8a")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#1e40af")}
+          >
+            Garantir Gravação do Vídeo + Pack →
+          </button>
+
+          {/* Social proof */}
+          <p className="text-center mt-3" style={{ fontSize: 12, color: "#9ca3af" }}>
+            Recomendado para quem quer rever e aplicar sem pressa.
+          </p>
+        </div>
+
+        {/* Separator */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
+          <span style={{ fontSize: 12, color: "#9ca3af", background: "white", padding: "0 12px" }}>ou</span>
+          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
+        </div>
+
+        {/* Secondary CTA */}
+        <button
+          onClick={onSkip}
+          className="w-full transition-colors"
+          style={{
+            height: 48,
+            borderRadius: 28,
+            border: "1.5px solid #e5e7eb",
+            background: "white",
+            color: "#374151",
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+        >
+          Continuar com inscrição gratuita →
+        </button>
+
+        {/* Reassurance */}
+        <p className="mt-2" style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
+          A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
+        </p>
       </div>
 
-      {/* CTA */}
-      <button
-        onClick={() => setShowConfirm(true)}
-        className="w-full mt-4 mb-4 bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-[15px] sm:text-[16px] py-3.5 sm:py-4 rounded-xl transition-colors shadow-blue min-h-[52px]"
-        style={{ whiteSpace: "normal" }}
-      >
-        Garantir Gravação do Vídeo + Pack →
-      </button>
-      <p className="text-[13px] text-ink-400 text-center mt-2">
-        Recomendado para quem quer rever e aplicar sem pressa.
-      </p>
-    </div>
-
-    {/* Separator */}
-    <div className="flex items-center gap-3 my-4">
-      <div className="flex-grow h-px bg-border" />
-      <span className="text-[14px] text-ink-300">ou</span>
-      <div className="flex-grow h-px bg-border" />
-    </div>
-
-    {/* Skip button */}
-    <button
-      onClick={onSkip}
-      className="w-full py-3 rounded-xl border border-ink-200 text-ink-500 hover:bg-ink-50 font-medium text-[14px] transition-colors"
-    >
-      Continuar com inscrição gratuita →
-    </button>
-    <p className="text-[11px] text-center mt-1" style={{ color: '#aaa' }}>
-      A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
-    </p>
-    
-  </div>
-
-  <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-    <AlertDialogContent className="max-w-md">
-      <AlertDialogHeader>
-        <AlertDialogTitle className="font-heading text-[20px]">Boa escolha!</AlertDialogTitle>
-        <AlertDialogDescription className="text-[15px] text-ink-500">
-          Vais adicionar a Gravação + Pack ao teu checkout. No próximo passo podes rever tudo antes de pagar.
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-        <AlertDialogAction onClick={onAddPremium} className="bg-blue-600 hover:bg-blue-700">
-          Sim, adicionar ao checkout
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-  </>
+      {/* Confirmation dialog */}
+      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading text-[20px]">Boa escolha!</AlertDialogTitle>
+            <AlertDialogDescription className="text-[15px]" style={{ color: "#6b7280" }}>
+              Vais adicionar a Gravação + Pack ao teu checkout. No próximo passo podes rever tudo antes de pagar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={onAddPremium} style={{ backgroundColor: "#1e40af" }}>
+              Sim, adicionar ao checkout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
