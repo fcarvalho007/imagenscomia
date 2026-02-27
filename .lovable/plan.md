@@ -1,56 +1,27 @@
 
 
-# Fix register-free + Backfill missing video_confirmation emails
+# Update 3 email templates
 
-## Overview
+Run 3 UPDATE statements against `email_templates` to fix content/layout issues. No code or edge function changes.
 
-Two changes: fix the root cause in the register-free edge function, then create a one-time backfill system to send the 18 missing confirmation emails.
+## Updates
 
----
-
-## 1. Fix register-free edge function
-
-In `supabase/functions/register-free/index.ts`, after the video registration is successfully created for an existing user (line 124), add the same `send-video-confirmation` call that new users get (lines 246-258).
-
-The call will go inside the `if (!existingVideo)` block, right after the successful insert (after line 124), using `existing.first_name` as the fname parameter.
-
----
-
-## 2. Create backfill edge function
-
-New file: `supabase/functions/backfill-video-confirmations/index.ts`
-
-Logic:
-- Uses `SUPABASE_SERVICE_ROLE_KEY` for DB access
-- Queries all `registrations` where `webinar = 'video'`
-- For each, checks `email_send_logs` for an existing row with `email_key = 'confirmation'` and `webinar = 'video'` for that email
-- If no log exists, calls `send-video-confirmation` for that person
-- Tracks sent/failed/skipped counts
-- Returns `{ sent, failed, skipped }` summary
-
-Add `verify_jwt = false` to `supabase/config.toml` for this function.
-
----
-
-## 3. Add backfill button to CRM Automacoes
-
-In `src/components/crm/FollowUpView.tsx`, add a state variable `backfillDone` and a button in the header area (next to the WebinarSwitcherBar) that:
-
-- Only shows when `webinarContext === 'video'` and `!backfillDone`
-- Styled as secondary/outline, small, with a warning icon
-- On click: shows `window.confirm()` dialog with the message about sending to missing people
-- On confirm: calls `supabase.functions.invoke('backfill-video-confirmations')`
-- On success: shows toast with sent/failed counts, sets `backfillDone = true`
-- When done: button text changes to "Backfill concluido" and is disabled
-
----
-
-## Files changed
-
-| File | Change |
+| Template Key | What changes |
 |---|---|
-| `supabase/functions/register-free/index.ts` | Add send-video-confirmation call in existing-user video branch |
-| `supabase/functions/backfill-video-confirmations/index.ts` | New edge function |
-| `supabase/config.toml` | Add verify_jwt config for new function |
-| `src/components/crm/FollowUpView.tsx` | Add backfill button in header |
+| `video_followup_prewebinar` | New subject + full HTML replacement (fix wrong date, wrong benefits, layout) |
+| `video_postwebinar_day1` | Full HTML replacement (change from "join today" reminder to post-webinar sales email) |
+| `video_postwebinar_closing` | Replace header background `#1e293b` with purple gradient to match other templates |
+
+## Steps
+
+1. UPDATE `video_followup_prewebinar` — set `subject` and `html_body` using the exact HTML provided
+2. UPDATE `video_postwebinar_day1` — set `subject` and `html_body` using the exact HTML provided
+3. UPDATE `video_postwebinar_closing` — use `REPLACE()` to swap header background color only
+4. Verify all 3 templates have correct layout and char count > 1500
+
+## Scope
+
+- Only the `email_templates` table is touched
+- Only active versions of these 3 template keys are updated
+- No edge functions, pages, or other templates modified
 
