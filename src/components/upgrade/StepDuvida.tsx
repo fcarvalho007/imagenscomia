@@ -19,7 +19,6 @@ export const StepDuvida = forwardRef<HTMLDivElement, Props>(
   ({ duvida, setDuvida, onNext, onSkip, userName }, ref) => {
     const firstName = userName?.trim().split(" ")[0] || "";
 
-    // Parse existing duvida back into state
     const [selected, setSelected] = useState<string[]>(() => {
       if (!duvida) return [];
       return duvida.split("; ").filter((s) => DUVIDA_OPTIONS.includes(s));
@@ -64,91 +63,154 @@ export const StepDuvida = forwardRef<HTMLDivElement, Props>(
       setDuvida(buildDuvida(selected, showOther, val));
     };
 
+    const CheckboxIcon = ({ checked }: { checked: boolean }) => (
+      <div
+        className="w-5 h-5 shrink-0 flex items-center justify-center transition-colors"
+        style={{
+          borderRadius: 6,
+          backgroundColor: checked ? "#1e40af" : "white",
+          border: checked ? "2px solid #1e40af" : "2px solid #d1d5db",
+        }}
+      >
+        {checked && <Check className="w-3 h-3 text-white" />}
+      </div>
+    );
+
+    const OptionRow = ({
+      label,
+      checked,
+      onClick,
+    }: {
+      label: string;
+      checked: boolean;
+      onClick: () => void;
+    }) => (
+      <button
+        type="button"
+        onClick={onClick}
+        className="w-full flex items-center gap-3 cursor-pointer transition-all text-left"
+        style={{
+          minHeight: 52,
+          border: checked ? "1.5px solid #1e40af" : "1.5px solid #e5e7eb",
+          borderRadius: 12,
+          padding: "14px 16px",
+          background: checked ? "#eff6ff" : "white",
+        }}
+      >
+        <CheckboxIcon checked={checked} />
+        <span
+          style={{
+            fontSize: 15,
+            fontWeight: checked ? 600 : 500,
+            color: checked ? "#1e40af" : "#374151",
+          }}
+        >
+          {label}
+        </span>
+      </button>
+    );
+
     return (
-      <div ref={ref} className="max-w-[560px] pb-24 lg:pb-0">
-        <h2 className="font-heading font-bold text-[24px] max-sm:text-[20px] text-ink-900">
+      <div ref={ref} className="text-center">
+        {/* Step label */}
+        <p style={{ fontSize: 12, color: "#9ca3af" }}>Passo 5 de 5 — A tua dúvida</p>
+
+        <div style={{ height: 24 }} />
+
+        {/* Headline */}
+        <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
           {firstName ? `${firstName}, uma` : "Uma"} última pergunta
         </h2>
-        <p className="text-[17px] max-sm:text-[15px] text-ink-500 mt-2 mb-7">
+        <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
           Isto ajuda-nos a preparar o conteúdo para ti.
         </p>
 
-        <p className="font-semibold text-[17px] text-ink-900 mb-4">
-          Qual a maior dúvida que este webinar pode ajudar a resolver?
-        </p>
-        <p className="text-[14px] text-ink-400 mb-3">(pode seleccionar mais de uma)</p>
+        <div className="max-sm:h-6" style={{ height: 32 }} />
 
-        <div className="space-y-2.5">
-          {DUVIDA_OPTIONS.map((opt) => {
-            const isSelected = selected.includes(opt);
-            return (
-              <button
+        {/* Question */}
+        <div className="text-left">
+          <p style={{ fontSize: 17, fontWeight: 600, color: "#111827", marginBottom: 4 }}>
+            Qual a maior dúvida que este webinar pode ajudar a resolver?
+          </p>
+          <p style={{ fontSize: 13, color: "#9ca3af", fontStyle: "italic", marginBottom: 16 }}>
+            (pode seleccionar mais de uma)
+          </p>
+
+          <div className="space-y-2.5">
+            {DUVIDA_OPTIONS.map((opt) => (
+              <OptionRow
                 key={opt}
-                type="button"
+                label={opt}
+                checked={selected.includes(opt)}
                 onClick={() => toggle(opt)}
-                className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
-                style={{
-                  borderColor: isSelected ? "hsl(var(--blue-600))" : "hsl(var(--border))",
-                  backgroundColor: isSelected ? "hsl(var(--blue-50))" : "hsl(var(--background))",
-                }}
-              >
-                <div
-                  className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
-                  style={{
-                    backgroundColor: isSelected ? "hsl(var(--blue-600))" : "transparent",
-                    border: isSelected ? "none" : "2px solid hsl(var(--border))",
-                  }}
-                >
-                  {isSelected && <Check className="w-3 h-3 text-white" />}
-                </div>
-                <span className="text-[15px] text-ink-700">{opt}</span>
-              </button>
-            );
-          })}
+              />
+            ))}
 
-          {/* Outro option */}
-          <button
-            type="button"
-            onClick={toggleOther}
-            className="w-full flex items-center gap-3 p-3.5 bg-background border rounded-xl cursor-pointer transition-all text-left"
-            style={{
-              borderColor: showOther ? "hsl(var(--blue-600))" : "hsl(var(--border))",
-              backgroundColor: showOther ? "hsl(var(--blue-50))" : "hsl(var(--background))",
-            }}
-          >
-            <div
-              className="w-5 h-5 rounded flex items-center justify-center shrink-0 transition-colors"
-              style={{
-                backgroundColor: showOther ? "hsl(var(--blue-600))" : "transparent",
-                border: showOther ? "none" : "2px solid hsl(var(--border))",
-              }}
-            >
-              {showOther && <Check className="w-3 h-3 text-white" />}
-            </div>
-            <span className="text-[15px] text-ink-700">Outro</span>
-          </button>
-
-          {showOther && (
-            <input
-              type="text"
-              value={otherText}
-              onChange={(e) => handleOtherText(e.target.value)}
-              placeholder="Escreve a tua dúvida..."
-              className="w-full pl-8 border border-border rounded-xl p-3.5 text-[14px] text-ink-700 bg-background focus:outline-none focus:border-blue-600"
+            <OptionRow
+              label="Outro"
+              checked={showOther}
+              onClick={toggleOther}
             />
-          )}
+
+            {showOther && (
+              <input
+                type="text"
+                value={otherText}
+                onChange={(e) => handleOtherText(e.target.value)}
+                placeholder="Escreve a tua dúvida..."
+                className="w-full focus:outline-none"
+                style={{
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  fontSize: 16,
+                  color: "#374151",
+                  background: "white",
+                }}
+              />
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-5">
+        <div className="max-sm:h-6" style={{ height: 32 }} />
+
+        {/* Buttons */}
+        <div className="flex items-center gap-5 max-sm:flex-col max-sm:gap-3">
           <button
             onClick={onNext}
-            className="font-heading font-bold text-[16px] py-3 px-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            className="font-bold text-white transition-colors max-sm:w-full"
+            style={{
+              background: "#1e40af",
+              height: 52,
+              borderRadius: 28,
+              fontSize: 16,
+              fontWeight: 700,
+              minWidth: 160,
+              paddingLeft: 32,
+              paddingRight: 32,
+              border: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#1e3a8a")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#1e40af")}
           >
             Finalizar →
           </button>
           <button
             onClick={onSkip}
-            className="text-[14px] text-ink-400 hover:text-ink-600 transition-colors underline underline-offset-2"
+            className="transition-colors max-sm:py-3"
+            style={{
+              fontSize: 14,
+              color: "#9ca3af",
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+              textUnderlineOffset: 3,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#6b7280")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#9ca3af")}
           >
             Saltar
           </button>

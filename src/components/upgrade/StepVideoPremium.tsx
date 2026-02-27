@@ -46,7 +46,7 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
         <div style={{ height: 24 }} />
 
         {/* Headline */}
-        <h2 style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0, display: "inline" }}>
+        <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0, display: "inline" }}>
           Gravação do Webinar Vídeo{" "}
         </h2>
         <span style={{ fontSize: 28, fontWeight: 400, color: "#9ca3af" }}>(opcional)</span>
@@ -82,7 +82,7 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
           {/* Price row */}
           <div className="flex max-sm:flex-col justify-between items-start gap-3 mb-4">
             <div className="flex items-baseline gap-1">
-              <span className="max-sm:text-[40px]" style={{ fontSize: 48, fontWeight: 800, color: "#111827", lineHeight: 1 }}>€15</span>
+              <span className="max-sm:text-[38px]" style={{ fontSize: 48, fontWeight: 800, color: "#111827", lineHeight: 1 }}>€15</span>
               <span style={{ fontSize: 16, fontWeight: 400, color: "#6b7280" }}>+ IVA</span>
             </div>
             <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "6px 10px" }} className="max-sm:w-full">

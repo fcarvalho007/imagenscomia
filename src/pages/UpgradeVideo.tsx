@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -11,9 +11,9 @@ import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepDuvida } from "@/components/upgrade/StepDuvida";
 import { VideoConfirmation, type VideoOrderState } from "@/components/upgrade/VideoConfirmation";
 import { toast } from "sonner";
-import { Mail, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
+import { Mail, Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
 
-/* ── CSS for step transitions ── */
+/* ── CSS for step transitions + confirmation animation ── */
 const transitionStyles = `
 @keyframes stepEnterRight {
   from { opacity: 0; transform: translateX(20px); }
@@ -23,8 +23,18 @@ const transitionStyles = `
   from { opacity: 0; transform: translateX(-20px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+@keyframes confirmFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes confirmScaleIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
 .step-enter-right { animation: stepEnterRight 250ms ease both; }
 .step-enter-left  { animation: stepEnterLeft 250ms ease both; }
+.confirm-fade-in  { animation: confirmFadeIn 400ms ease both; }
+.confirm-scale-in { animation: confirmScaleIn 300ms ease-out 200ms both; }
 `;
 
 const PROGRESS_LABELS: Record<number, string> = {
@@ -36,6 +46,7 @@ const PROGRESS_LABELS: Record<number, string> = {
 const UpgradeVideo = () => {
   usePageMeta({ title: "Upgrade — Webinar Vídeo com IA", description: "Adicione a gravação e a Masterclass ao seu pack." });
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [orderState, setOrderState] = useState<VideoOrderState>({ videoPremium: false, masterclass: false });
@@ -97,7 +108,6 @@ const UpgradeVideo = () => {
 
       const sr = (data as any).step_reached;
       if (sr && sr >= 2 && (data as any).role && (data as any).team_size) {
-        // Map old step numbers: old step 1 = role+team (now steps 1-2), old step 2+ shift by 1
         const targetStep = Math.min(sr + 1, 5);
         setStep(targetStep);
         const plan = (data as any).plan_selected;
@@ -182,16 +192,18 @@ const UpgradeVideo = () => {
     }
   }, [userData]);
 
+  // ── Free confirmation (in-card, step 7) ──
   const goToFreeConfirmation = useCallback(() => {
-    window.location.href = `/confirmacao?webinar=video&name=${encodeURIComponent(userData.nome)}&email=${encodeURIComponent(userData.email)}&plan=video-free`;
-  }, [userData]);
+    goForward(7);
+  }, [goForward]);
 
   const totalSteps = 5;
+  const isConfirmation = step === 7;
   const visualStep = Math.min(step, 5);
   const progress = (visualStep / totalSteps) * 100;
   const progressLabel = PROGRESS_LABELS[visualStep] ? ` — ${PROGRESS_LABELS[visualStep]}` : "";
 
-  // ── Recovery screen (unchanged) ──
+  // ── Recovery screen ──
   if (needsRecovery) {
     return (
       <div className="min-h-screen bg-off-white flex items-center justify-center p-4">
@@ -215,6 +227,7 @@ const UpgradeVideo = () => {
               onChange={(e) => setRecoveryEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleRecovery()}
               className="w-full bg-surface border border-border h-12 px-4 rounded-lg text-ink-900 placeholder:text-ink-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all text-sm"
+              style={{ fontSize: 16 }}
             />
             {recoveryError && <p className="text-sm text-red-500">{recoveryError}</p>}
             <motion.button
@@ -233,9 +246,105 @@ const UpgradeVideo = () => {
     );
   }
 
+  // ── In-card confirmation (step 7) ──
+  const renderConfirmation = () => (
+    <div className="confirm-fade-in text-center py-4">
+      {/* Green check circle */}
+      <div
+        className="confirm-scale-in mx-auto flex items-center justify-center"
+        style={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          background: "#dcfce7",
+        }}
+      >
+        <Check style={{ width: 32, height: 32, color: "#16a34a" }} />
+      </div>
+
+      <div style={{ height: 20 }} />
+
+      <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
+        Estás inscrito{firstName ? `, ${firstName}` : ""}.
+      </h2>
+
+      <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
+        Webinar Vídeo com IA · 5 de Março · 10h00
+      </p>
+
+      <div className="max-sm:h-[18px]" style={{ height: 24 }} />
+
+      {/* Info box */}
+      <div
+        className="text-center"
+        style={{
+          background: "#f0fdf4",
+          border: "1px solid #bbf7d0",
+          borderRadius: 12,
+          padding: "16px 20px",
+        }}
+      >
+        <p style={{ fontSize: 14, color: "#166534", lineHeight: 1.6 }}>
+          Vais receber um email de confirmação em breve com o link de acesso.
+        </p>
+      </div>
+
+      <div className="max-sm:h-[20px]" style={{ height: 28 }} />
+
+      {/* Purchase summary if any */}
+      {(orderState.masterclass || orderState.videoPremium) && (
+        <div className="text-left mb-6">
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 12 }}>
+            A TUA COMPRA
+          </p>
+          <div className="space-y-2">
+            {orderState.masterclass && (
+              <div className="flex items-center justify-between" style={{ fontSize: 14, color: "#374151" }}>
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#7c3aed", borderRadius: 6, padding: "3px 8px" }}>MASTERCLASS</span>
+                  <span>Masterclass Vídeo</span>
+                </div>
+                <span>€47 + IVA</span>
+              </div>
+            )}
+            {orderState.videoPremium && (
+              <div className="flex items-center justify-between" style={{ fontSize: 14, color: "#374151" }}>
+                <div className="flex items-center gap-2">
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#1e40af", borderRadius: 6, padding: "3px 8px" }}>GRAVAÇÃO</span>
+                  <span>Gravação + Pack</span>
+                </div>
+                <span>€15 + IVA</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CTA */}
+      <button
+        onClick={() => navigate("/video")}
+        className="w-full transition-colors"
+        style={{
+          height: 48,
+          borderRadius: 28,
+          border: "1.5px solid #e5e7eb",
+          background: "white",
+          color: "#374151",
+          fontSize: 15,
+          fontWeight: 500,
+          cursor: "pointer",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+      >
+        Voltar ao início
+      </button>
+    </div>
+  );
+
   // ── Main layout ──
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#f3f4f6" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#f3f4f6", overflowX: "hidden" }}>
       <style>{transitionStyles}</style>
 
       {/* ── Fixed header bar ── */}
@@ -245,22 +354,33 @@ const UpgradeVideo = () => {
           height: 56,
           background: "white",
           borderBottom: "1px solid #e5e7eb",
+          paddingTop: "env(safe-area-inset-top)",
         }}
       >
-        <span className="text-[13px] font-semibold" style={{ color: "#111827" }}>🎬 Webinar Vídeo com IA</span>
+        {/* Desktop header */}
+        <span className="text-[13px] font-semibold hidden sm:block" style={{ color: "#111827" }}>🎬 Webinar Vídeo com IA</span>
         <span className="text-[13px] hidden sm:block" style={{ color: "#6b7280" }}>5 de Março · 10h00</span>
-        <span className="text-[12px] font-semibold" style={{ color: "#16a34a" }}>Inscrição gratuita confirmada ✓</span>
+        <span className="text-[12px] font-semibold hidden sm:block" style={{ color: "#16a34a" }}>Inscrição gratuita confirmada ✓</span>
+        {/* Mobile header — single line */}
+        <span className="text-[12px] font-semibold sm:hidden mx-auto" style={{ color: "#111827" }}>
+          🎬 Webinar Vídeo · 5 Mar <span style={{ color: "#16a34a" }}>✓</span>
+        </span>
       </header>
 
-      {/* ── Progress bar ── */}
-      <div className="shrink-0 px-4 sm:px-6 pt-2" style={{ background: "#f3f4f6" }}>
-        <div className="flex items-center justify-end mb-1">
-          <span className="text-[11px]" style={{ color: "#9ca3af" }}>Passo {visualStep}/{totalSteps}{progressLabel}</span>
+      {/* ── Progress bar (hidden on confirmation) ── */}
+      {!isConfirmation && (
+        <div className="shrink-0 px-4 sm:px-6 pt-2" style={{ background: "#f3f4f6" }}>
+          <div className="flex items-center justify-end mb-1">
+            <span className="text-[11px]" style={{ color: "#9ca3af" }}>
+              <span className="sm:hidden">Passo {visualStep}/{totalSteps}</span>
+              <span className="hidden sm:inline">Passo {visualStep}/{totalSteps}{progressLabel}</span>
+            </span>
+          </div>
+          <div className="w-full overflow-hidden" style={{ height: 3, background: "#e5e7eb", borderRadius: 2 }}>
+            <div style={{ width: `${progress}%`, height: "100%", background: "#1e40af", borderRadius: 2, transition: "width 300ms ease" }} />
+          </div>
         </div>
-        <div className="w-full overflow-hidden" style={{ height: 3, background: "#e5e7eb", borderRadius: 2 }}>
-          <div style={{ width: `${progress}%`, height: "100%", background: "#1e40af", borderRadius: 2, transition: "width 300ms ease" }} />
-        </div>
-      </div>
+      )}
 
       {/* ── Centered content area ── */}
       <div ref={contentRef} className="flex-1 flex items-start sm:items-center justify-center px-4 py-6 sm:py-10">
@@ -270,6 +390,7 @@ const UpgradeVideo = () => {
             maxWidth: 600,
             background: "white",
             padding: "48px 40px",
+            overscrollBehavior: "none",
           }}
         >
           {/* Mobile overrides */}
@@ -280,12 +401,13 @@ const UpgradeVideo = () => {
                 border-radius: 0 !important;
                 box-shadow: none !important;
                 min-height: calc(100vh - 56px - 30px);
+                padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important;
               }
             }
           `}</style>
 
-          {/* Back arrow for step 2+ */}
-          {step >= 2 && (
+          {/* Back arrow for step 2+ (not on confirmation) */}
+          {step >= 2 && !isConfirmation && (
             <button
               onClick={() => goBack(step - 1)}
               className="mb-4 flex items-center justify-center transition-colors"
@@ -380,6 +502,7 @@ const UpgradeVideo = () => {
                 editToken={editToken || undefined}
               />
             )}
+            {step === 7 && renderConfirmation()}
           </div>
         </div>
       </div>
