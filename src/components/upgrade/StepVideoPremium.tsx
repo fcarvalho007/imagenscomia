@@ -24,35 +24,30 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
   return (
     <>
       <div className="text-center" style={{ paddingBottom: 128 }}>
-        {/* Step label with inline masterclass pill */}
-        <p style={{ fontSize: 12, color: "#9ca3af" }}>
-          Passo 4 de 5 — Gravação Vídeo
-          {masterclassSelected && (
-            <span style={{
-              fontSize: 10, fontWeight: 600, color: "#16a34a",
-              background: "#f0fdf4", border: "1px solid #bbf7d0",
-              borderRadius: 20, padding: "2px 8px", marginLeft: 8,
-              verticalAlign: "middle", display: "inline-block",
-            }}>
-              ✓ Masterclass
-            </span>
-          )}
-        </p>
-
-        <div style={{ height: 20 }} />
-
         {/* Headline */}
         <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
           Gravação do Webinar Vídeo
         </h2>
-        <span style={{
-          fontSize: 10, fontWeight: 600, color: "#9ca3af",
-          border: "1px solid #e5e7eb", borderRadius: 6,
-          padding: "2px 8px", background: "white",
-          display: "inline-block", marginTop: 8,
-        }}>
-          OPCIONAL
-        </span>
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <span style={{
+            fontSize: 10, fontWeight: 600, color: "#9ca3af",
+            border: "1px solid #e5e7eb", borderRadius: 6,
+            padding: "2px 8px", background: "white",
+            display: "inline-block",
+          }}>
+            OPCIONAL
+          </span>
+          {masterclassSelected && (
+            <span style={{
+              fontSize: 10, fontWeight: 600, color: "#16a34a",
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              borderRadius: 20, padding: "2px 8px",
+              display: "inline-block",
+            }}>
+              ✓ Masterclass
+            </span>
+          )}
+        </div>
 
         <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
           Para aplicar o método com mais tranquilidade, ao teu ritmo.

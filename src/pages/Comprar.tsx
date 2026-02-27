@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, Calendar, Lock } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
@@ -334,6 +335,7 @@ export default function Comprar() {
         planLabel={PLANS[activePlan].planLabel}
         webinar="video"
       />
+      <WhatsAppSupportButton />
     </div>
   );
 }

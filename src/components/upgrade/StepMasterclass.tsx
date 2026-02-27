@@ -23,15 +23,18 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
   return (
     <>
       <div className="text-center" style={{ paddingBottom: 128 }}>
-        {/* Step label */}
-        <p style={{ fontSize: 12, color: "#9ca3af" }}>Passo 3 de 5 — Masterclass Vídeo</p>
-
-        <div style={{ height: 20 }} />
-
         {/* Headline */}
         <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
           Vais gostar desta opção
         </h2>
+        <span style={{
+          fontSize: 10, fontWeight: 600, color: "#9ca3af",
+          border: "1px solid #e5e7eb", borderRadius: 6,
+          padding: "2px 8px", background: "white",
+          display: "inline-block", marginTop: 8,
+        }}>
+          OPCIONAL
+        </span>
         <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
           Aprofunda o sistema completo em 3 horas ao vivo.
         </p>
