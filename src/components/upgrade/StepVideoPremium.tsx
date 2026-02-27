@@ -13,18 +13,9 @@ interface Props {
 }
 
 const bullets = [
-  {
-    title: "Gravação HD (acesso contínuo)",
-    sub: "Rever ao teu ritmo, sem depender do directo.",
-  },
-  {
-    title: "Pack de apoio completo",
-    sub: "Checklists, briefings e templates prontos a usar.",
-  },
-  {
-    title: "Sessão Q&A exclusiva (30 min)",
-    sub: "Terça-feira, 10 de Março · 14h30–15h00 · Dúvidas respondidas ao vivo, em grupo.",
-  },
+  { title: "Gravação HD — acesso contínuo" },
+  { title: "Pack de apoio completo" },
+  { title: "Sessão Q&A exclusiva (30 min) — Terça, 10 Mar" },
 ];
 
 export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSelected }: Props) => {
@@ -32,7 +23,7 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
 
   return (
     <>
-      <div className="text-center">
+      <div className="text-center" style={{ paddingBottom: 128 }}>
         {/* Masterclass confirmed note */}
         {masterclassSelected && (
           <div className="mb-4 rounded-lg text-left" style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px 14px" }}>
@@ -43,13 +34,20 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
         {/* Step label */}
         <p style={{ fontSize: 12, color: "#9ca3af" }}>Passo 4 de 5 — Gravação Vídeo</p>
 
-        <div style={{ height: 24 }} />
+        <div style={{ height: 20 }} />
 
         {/* Headline */}
-        <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0, display: "inline" }}>
-          Gravação do Webinar Vídeo{" "}
+        <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
+          Gravação do Webinar Vídeo
         </h2>
-        <span style={{ fontSize: 28, fontWeight: 400, color: "#9ca3af" }}>(opcional)</span>
+        <span style={{
+          fontSize: 10, fontWeight: 600, color: "#9ca3af",
+          border: "1px solid #e5e7eb", borderRadius: 6,
+          padding: "2px 8px", background: "white",
+          display: "inline-block", marginTop: 8,
+        }}>
+          OPCIONAL
+        </span>
 
         <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
           Para aplicar o método com mais tranquilidade, ao teu ritmo.
@@ -100,25 +98,33 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
             </div>
           </div>
 
-          {/* Benefits */}
-          <div className="space-y-3.5">
+          {/* Benefits — titles only */}
+          <div className="space-y-2">
             {bullets.map((b) => (
-              <div key={b.title} className="flex gap-3">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "#1e40af" }}>
+              <div key={b.title} className="flex gap-2 items-center" style={{ height: 36 }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#1e40af" }}>
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{b.title}</p>
-                  <p className="max-sm:text-[12px]" style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{b.sub}</p>
-                </div>
+                <p style={{ fontSize: 15, fontWeight: 600, color: "#111827" }}>{b.title}</p>
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Primary CTA */}
+      {/* ── Sticky bottom bar ── */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: "white", borderTop: "1px solid #e5e7eb",
+        padding: "12px 24px",
+        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        zIndex: 50,
+        boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+      }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 8 }}>
           <button
             onClick={() => setShowConfirm(true)}
-            className="w-full mt-6 text-white font-bold transition-colors"
+            className="w-full text-white font-bold transition-colors"
             style={{
               background: "#1e40af",
               height: 52,
@@ -133,44 +139,29 @@ export const StepVideoPremium = ({ onAddPremium, onSkip, userName, masterclassSe
           >
             Garantir Gravação do Vídeo + Pack →
           </button>
-
-          {/* Social proof */}
-          <p className="text-center mt-3" style={{ fontSize: 12, color: "#9ca3af" }}>
+          <p className="text-center" style={{ fontSize: 11, color: "#9ca3af" }}>
             Recomendado para quem quer rever e aplicar sem pressa.
           </p>
+          <button
+            onClick={onSkip}
+            className="w-full transition-colors"
+            style={{
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "none",
+              border: "none",
+              color: "#6b7280",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
+          >
+            ou continuar com inscrição gratuita →
+          </button>
         </div>
-
-        {/* Separator */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
-          <span style={{ fontSize: 12, color: "#9ca3af", background: "white", padding: "0 12px" }}>ou</span>
-          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
-        </div>
-
-        {/* Secondary CTA */}
-        <button
-          onClick={onSkip}
-          className="w-full transition-colors"
-          style={{
-            height: 48,
-            borderRadius: 28,
-            border: "1.5px solid #e5e7eb",
-            background: "white",
-            color: "#374151",
-            fontSize: 15,
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-        >
-          Continuar com inscrição gratuita →
-        </button>
-
-        {/* Reassurance */}
-        <p className="mt-2" style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
-          A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
-        </p>
       </div>
 
       {/* Confirmation dialog */}

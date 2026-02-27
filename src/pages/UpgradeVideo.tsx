@@ -459,7 +459,7 @@ const UpgradeVideo = () => {
       )}
 
       {/* ── Centered content area ── */}
-      <div ref={contentRef} className="flex-1 flex items-start sm:items-center justify-center px-4 py-6 sm:py-10">
+      <div ref={contentRef} className={`flex-1 flex justify-center px-4 py-6 sm:py-10 ${[3, 4].includes(step) ? "items-start pt-8" : "items-start sm:items-center"}`}>
         <div
           className="w-full sm:rounded-3xl sm:shadow-lg upgrade-card-inner"
           style={{
