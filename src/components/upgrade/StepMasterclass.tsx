@@ -11,23 +11,10 @@ interface Props {
 }
 
 const bullets = [
-  {
-    title: "Sistema completo de produção de vídeo curto",
-    sub: "Fluxo prático para gerar vídeo utilizável.",
-  },
-  {
-    title: "Ferramentas certas (sem confusão)",
-    sub: "Curadoria por objectivo: gratuitas e pagas.",
-  },
-  {
-    title: "Prompts para vídeo (reutilizáveis)",
-    sub: "Estruturas para consistência e controlo.",
-  },
-  {
-    title: "Gravação da Masterclass incluída",
-    sub: "Rever e replicar quando precisares.",
-    highlight: true,
-  },
+  { title: "Sistema completo de produção de vídeo curto" },
+  { title: "Ferramentas certas — sem confusão" },
+  { title: "Prompts para vídeo reutilizáveis" },
+  { title: "Gravação da Masterclass incluída", highlight: true },
 ];
 
 export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
@@ -35,11 +22,11 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
 
   return (
     <>
-      <div className="text-center">
+      <div className="text-center" style={{ paddingBottom: 128 }}>
         {/* Step label */}
         <p style={{ fontSize: 12, color: "#9ca3af" }}>Passo 3 de 5 — Masterclass Vídeo</p>
 
-        <div style={{ height: 24 }} />
+        <div style={{ height: 20 }} />
 
         {/* Headline */}
         <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
@@ -73,11 +60,6 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
             </span>
           </div>
 
-          {/* Label */}
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 4 }}>
-            MASTERCLASS ONLINE
-          </p>
-
           {/* Price row */}
           <div className="flex max-sm:flex-col justify-between items-start gap-3 mb-4">
             <div className="flex items-baseline gap-1">
@@ -99,30 +81,33 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
             </div>
           </div>
 
-          {/* Benefits */}
-          <div className="space-y-3.5">
+          {/* Benefits — titles only */}
+          <div className="space-y-2">
             {bullets.map((b) => (
-              <div key={b.title} className="flex gap-3">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: "#7c3aed" }}>
+              <div key={b.title} className="flex gap-2 items-center" style={{ height: 36 }}>
+                <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#7c3aed" }}>
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
-                <div>
-                  <p style={{ fontSize: 15, fontWeight: b.highlight ? 700 : 600, color: "#111827" }}>{b.title}</p>
-                  <p className="max-sm:text-[12px]" style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.5 }}>{b.sub}</p>
-                </div>
+                <p style={{ fontSize: 15, fontWeight: b.highlight ? 700 : 600, color: "#111827" }}>{b.title}</p>
               </div>
             ))}
           </div>
+        </div>
+      </div>
 
-          {/* Meta row */}
-          <p className="text-center mt-5" style={{ fontSize: 12, color: "#9ca3af" }}>
-            📅 12 de Março · 💻 Online · ⏱ 3 horas
-          </p>
-
-          {/* Primary CTA */}
+      {/* ── Sticky bottom bar ── */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        background: "white", borderTop: "1px solid #e5e7eb",
+        padding: "12px 24px",
+        paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+        zIndex: 50,
+        boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+      }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", display: "flex", flexDirection: "column", gap: 8 }}>
           <button
             onClick={() => setShowConfirm(true)}
-            className="w-full mt-4 text-white font-bold transition-colors"
+            className="w-full text-white font-bold transition-colors"
             style={{
               background: "#7c3aed",
               height: 52,
@@ -137,44 +122,29 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
           >
             Garantir lugar na Masterclass Vídeo →
           </button>
-
-          {/* Social proof */}
-          <p className="text-center mt-3" style={{ fontSize: 12, color: "#9ca3af" }}>
+          <p className="text-center" style={{ fontSize: 11, color: "#9ca3af" }}>
             Grupo limitado para garantir acompanhamento.
           </p>
+          <button
+            onClick={onSkip}
+            className="w-full transition-colors"
+            style={{
+              height: 32,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "none",
+              border: "none",
+              color: "#6b7280",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
+          >
+            ou continuar com inscrição gratuita →
+          </button>
         </div>
-
-        {/* Separator */}
-        <div className="flex items-center gap-3 my-5">
-          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
-          <span style={{ fontSize: 12, color: "#9ca3af", background: "white", padding: "0 12px" }}>ou</span>
-          <div className="flex-grow" style={{ height: 1, background: "#e5e7eb" }} />
-        </div>
-
-        {/* Secondary CTA */}
-        <button
-          onClick={onSkip}
-          className="w-full transition-colors"
-          style={{
-            height: 48,
-            borderRadius: 28,
-            border: "1.5px solid #e5e7eb",
-            background: "white",
-            color: "#374151",
-            fontSize: 15,
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#f9fafb")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-        >
-          Continuar com inscrição gratuita →
-        </button>
-
-        {/* Reassurance */}
-        <p className="mt-2" style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
-          A inscrição gratuita no Webinar Vídeo fica confirmada de qualquer forma.
-        </p>
       </div>
 
       {/* Confirmation dialog */}
