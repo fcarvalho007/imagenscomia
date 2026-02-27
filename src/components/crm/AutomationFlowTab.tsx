@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, Fragment } from "react";
 import { Users, Mail, CheckCircle2, Send, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ interface Props {
   emailStatsLoading?: boolean;
 }
 
-type TagType = "IMEDIATO" | "AGENDADO" | "ENVIADO" | "MANUAL" | "ERRO";
+type TagType = "IMEDIATO" | "AGENDADO" | "ENVIADO" | "MANUAL" | "ERRO" | "ACTIVO" | "ENCERRADO" | "A ENVIAR" | "NAO ENVIADO";
 
 const TAG_STYLES: Record<TagType, { bg: string; color: string }> = {
   IMEDIATO: { bg: "#dcfce7", color: "#16a34a" },
@@ -36,6 +36,10 @@ const TAG_STYLES: Record<TagType, { bg: string; color: string }> = {
   ENVIADO: { bg: "#dcfce7", color: "#16a34a" },
   MANUAL: { bg: "#fef3c7", color: "#d97706" },
   ERRO: { bg: "#fee2e2", color: "#dc2626" },
+  ACTIVO: { bg: "#fef3c7", color: "#d97706" },
+  ENCERRADO: { bg: "#f1f5f9", color: "#64748b" },
+  "A ENVIAR": { bg: "#fef3c7", color: "#d97706" },
+  "NAO ENVIADO": { bg: "#fee2e2", color: "#dc2626" },
 };
 
 const TAG_BORDER: Record<TagType, string> = {
@@ -44,6 +48,10 @@ const TAG_BORDER: Record<TagType, string> = {
   ENVIADO: "#16a34a",
   MANUAL: "#f59e0b",
   ERRO: "#ef4444",
+  ACTIVO: "#f59e0b",
+  ENCERRADO: "#94a3b8",
+  "A ENVIAR": "#f59e0b",
+  "NAO ENVIADO": "#ef4444",
 };
 
 interface NodeDef {
@@ -53,125 +61,221 @@ interface NodeDef {
   templateKeyMatch: string[];
   conditionLabel?: string;
   isPostWebinar?: boolean;
-  /** Hours offset from webinar start for send schedule. Negative = before, positive = after. null = immediate/skip pending */
   sendOffsetHours?: number | null;
+  sectionDivider?: string;
+  note?: string;
+  customTag?: { label: string; bg: string; color: string };
+  borderColorOverride?: string;
+  infoBox?: string;
+  isPaymentBlock?: boolean;
+  iconEmoji?: string;
 }
 
 function getNodes(webinar: WebinarKey): NodeDef[] {
-  const cfg = WEBINAR_CONFIG[webinar];
-  const name = cfg.label;
-  const url = webinar === "video" ? "imagenscomia.com/video" : "imagenscomia.com";
-  const nodes: NodeDef[] = [
+  if (webinar === "imagens") {
+    return [
+      {
+        type: "trigger",
+        title: "Inscrição submetida",
+        subtitle: "Webinar Imagens IA · imagenscomia.com",
+        templateKeyMatch: [],
+      },
+      {
+        type: "email",
+        title: "Confirmação imediata",
+        subtitle: "Enviado automaticamente · segundos após inscrição",
+        templateKeyMatch: ["confirmation"],
+        sendOffsetHours: null,
+      },
+      {
+        type: "email",
+        title: "Lembrete 48h",
+        subtitle: "Enviado automaticamente · 48h antes do webinar",
+        templateKeyMatch: ["reminder-48h", "reminder_48h"],
+        conditionLabel: "48H ANTES DO WEBINAR",
+        sendOffsetHours: -48,
+      },
+      {
+        type: "email",
+        title: "Lembrete 24h",
+        subtitle: "Enviado automaticamente · 24h antes do webinar",
+        templateKeyMatch: ["reminder-24h", "reminder_24h"],
+        conditionLabel: "24H ANTES DO WEBINAR",
+        sendOffsetHours: -24,
+      },
+      {
+        type: "email",
+        title: "Começa em 1 hora",
+        subtitle: "Enviado automaticamente · 60 min antes do webinar",
+        templateKeyMatch: ["reminder-1h", "reminder_1h"],
+        conditionLabel: "1H ANTES DO WEBINAR",
+        sendOffsetHours: -1,
+      },
+      {
+        type: "email",
+        title: "Email pós-webinar",
+        subtitle: "Envio manual via CRM ou automático 3h após o webinar",
+        templateKeyMatch: ["postwebinar", "post-webinar", "post_webinar"],
+        conditionLabel: "APÓS O WEBINAR",
+        isPostWebinar: true,
+        sendOffsetHours: null,
+      },
+      {
+        type: "end",
+        title: "Fluxo concluído",
+        subtitle: "Inscrito recebeu todos os emails do ciclo",
+        templateKeyMatch: [],
+      },
+    ];
+  }
+
+  // ── VIDEO: 12 nodes + end, 4 sections ──
+  const now = new Date();
+  const followupCutoff = new Date("2026-03-03T23:59:59Z");
+  const isFollowupActive = now <= followupCutoff;
+
+  return [
+    // ── SECTION 1: PRÉ-WEBINAR ──
     {
       type: "trigger",
       title: "Inscrição submetida",
-      subtitle: `Webinar ${name} · ${url}`,
+      subtitle: "Webinar Vídeo com IA · imagenscomia.com/video",
       templateKeyMatch: [],
+      sectionDivider: "PRÉ-WEBINAR",
+      iconEmoji: "👤",
+      borderColorOverride: "#8b5cf6",
     },
     {
       type: "email",
       title: "Confirmação imediata",
       subtitle: "Enviado automaticamente · segundos após inscrição",
       templateKeyMatch: ["confirmation"],
-      sendOffsetHours: null, // immediate, skip pending
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#10b981",
+      note: "Tem variantes A/B/C/D para participantes do webinar Imagens",
     },
-  ];
-
-  // Video-only nodes
-  if (webinar === "video") {
-    nodes.push(
-      {
-        type: "email",
-        title: "Confirmação de compra",
-        subtitle: "Enviado após pagamento confirmado",
-        templateKeyMatch: ["video_payment_premium", "video_payment_masterclass"],
-        conditionLabel: "APÓS PAGAMENTO",
-        sendOffsetHours: null,
-      },
-      {
-        type: "email",
-        title: "Follow-up upgrade pré-webinar",
-        subtitle: "48h após inscrição · só gratuitos · até 3 Mar",
-        templateKeyMatch: ["video_followup_prewebinar"],
-        conditionLabel: "CRON · ATÉ 3 MAR",
-        sendOffsetHours: null,
-      },
-    );
-  }
-
-  nodes.push(
+    {
+      type: "email",
+      title: "Follow-up upgrade",
+      subtitle: "48h após inscrição · só gratuitos · só até 3 Mar",
+      templateKeyMatch: ["video_followup_prewebinar"],
+      sendOffsetHours: null,
+      iconEmoji: "⏳",
+      borderColorOverride: "#f59e0b",
+      customTag: isFollowupActive
+        ? { label: "CRON · ATÉ 3 MAR", bg: "#fef3c7", color: "#d97706" }
+        : { label: "ENCERRADO", bg: "#f1f5f9", color: "#64748b" },
+    },
     {
       type: "email",
       title: "Lembrete 48h",
       subtitle: "Enviado automaticamente · 48h antes do webinar",
-      templateKeyMatch: ["reminder-48h", "reminder_48h"],
+      templateKeyMatch: ["reminder-48h", "reminder_48h", "video_reminder_48h"],
       conditionLabel: "48H ANTES DO WEBINAR",
       sendOffsetHours: -48,
+      iconEmoji: "✉️",
+      borderColorOverride: "#3b82f6",
     },
     {
       type: "email",
       title: "Lembrete 24h",
       subtitle: "Enviado automaticamente · 24h antes do webinar",
-      templateKeyMatch: ["reminder-24h", "reminder_24h"],
+      templateKeyMatch: ["reminder-24h", "reminder_24h", "video_reminder_24h"],
       conditionLabel: "24H ANTES DO WEBINAR",
       sendOffsetHours: -24,
+      iconEmoji: "✉️",
+      borderColorOverride: "#3b82f6",
     },
     {
       type: "email",
       title: "Começa em 1 hora",
       subtitle: "Enviado automaticamente · 60 min antes do webinar",
-      templateKeyMatch: ["reminder-1h", "reminder_1h"],
+      templateKeyMatch: ["reminder-1h", "reminder_1h", "video_reminder_1h"],
       conditionLabel: "1H ANTES DO WEBINAR",
       sendOffsetHours: -1,
+      iconEmoji: "✉️",
+      borderColorOverride: "#3b82f6",
+    },
+    // ── SECTION 2: CONFIRMAÇÕES DE COMPRA ──
+    {
+      type: "email",
+      title: "Confirmação de compra — Premium Pass",
+      subtitle: "Gravação HD · Pack · Q&A 10 Mar · link calendário",
+      templateKeyMatch: ["video_payment_premium"],
+      sendOffsetHours: null,
+      sectionDivider: "CONFIRMAÇÕES DE COMPRA",
+      isPaymentBlock: true,
+      iconEmoji: "🎬",
+      borderColorOverride: "#16a34a",
+      customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
     },
     {
       type: "email",
-      title: "Email pós-webinar",
-      subtitle: "Envio manual via CRM ou automático 3h após o webinar",
-      templateKeyMatch: ["postwebinar", "post-webinar", "post_webinar"],
-      conditionLabel: "APÓS O WEBINAR",
-      isPostWebinar: true,
-      sendOffsetHours: null, // manual, skip pending
+      title: "Confirmação de compra — Masterclass",
+      subtitle: "Masterclass 12 Mar · 10h00 · link calendário",
+      templateKeyMatch: ["video_payment_masterclass"],
+      sendOffsetHours: null,
+      isPaymentBlock: true,
+      iconEmoji: "🎓",
+      borderColorOverride: "#7c3aed",
+      customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
     },
-  );
-  // Video-only: post-webinar sequence
-  if (webinar === "video") {
-    nodes.push(
-      {
-        type: "email",
-        title: "Email pós-webinar Dia 1",
-        subtitle: "Todos os inscritos gratuitos",
-        templateKeyMatch: ["video_postwebinar_day1"],
-        conditionLabel: "── PÓS-WEBINAR: SEQUÊNCIA ──",
-        sendOffsetHours: null,
-      },
-      {
-        type: "email",
-        title: "Email pós-webinar Dia 3",
-        subtitle: "Apenas quem recebeu Dia 1 e ainda é gratuito",
-        templateKeyMatch: ["video_postwebinar_day3"],
-        conditionLabel: "8 MAR · 10H00",
-        sendOffsetHours: null,
-      },
-      {
-        type: "email",
-        title: "Email de fecho",
-        subtitle: "Após envio: lead marcado como perdido",
-        templateKeyMatch: ["video_postwebinar_closing"],
-        conditionLabel: "10 MAR · 10H00 · MARCA COMO PERDIDO",
-        sendOffsetHours: null,
-      },
-    );
-  }
-
-  nodes.push({
-    type: "end",
-    title: "Fluxo concluído",
-    subtitle: "Inscrito recebeu todos os emails do ciclo",
-    templateKeyMatch: [],
-  });
-
-  return nodes;
+    // ── SECTION 3: APÓS O WEBINAR ──
+    {
+      type: "email",
+      title: "Email pós-webinar",
+      subtitle: "Envio manual ou automático · 3h após o webinar",
+      templateKeyMatch: ["postwebinar", "post-webinar", "post_webinar", "video_postwebinar"],
+      isPostWebinar: true,
+      sendOffsetHours: null,
+      sectionDivider: "APÓS O WEBINAR",
+      iconEmoji: "✉️",
+      borderColorOverride: "#f59e0b",
+      note: "Só para quem assistiu ao vivo (attended_live_at)",
+    },
+    {
+      type: "email",
+      title: "Email pós-webinar — Dia 1",
+      subtitle: "5 de Março · 13h00 · todos os inscritos gratuitos",
+      templateKeyMatch: ["video_postwebinar_day1"],
+      sendOffsetHours: null,
+      iconEmoji: "📧",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "5 MAR · 13H", bg: "#fef3c7", color: "#d97706" },
+      note: "Inclui quem não assistiu ao vivo",
+    },
+    {
+      type: "email",
+      title: "Email pós-webinar — Dia 3",
+      subtitle: "8 de Março · 10h00 · quem não comprou",
+      templateKeyMatch: ["video_postwebinar_day3"],
+      sendOffsetHours: null,
+      iconEmoji: "📧",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
+    },
+    // ── SECTION 4: FECHO DE LEADS ──
+    {
+      type: "email",
+      title: "Email de fecho",
+      subtitle: "10 de Março · 10h00 · após sequência sem compra",
+      templateKeyMatch: ["video_postwebinar_closing"],
+      sendOffsetHours: null,
+      sectionDivider: "FECHO DE LEADS",
+      iconEmoji: "🔴",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
+      infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
+    },
+    // ── END ──
+    {
+      type: "end",
+      title: "Fluxo concluído",
+      subtitle: "Inscrito recebeu todos os emails do ciclo",
+      templateKeyMatch: [],
+    },
+  ];
 }
 
 function matchTemplate(templateKey: string, patterns: string[]): boolean {
@@ -181,17 +285,92 @@ function matchTemplate(templateKey: string, patterns: string[]): boolean {
 
 function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webinar: WebinarKey): TagType | null {
   if (node.type === "trigger" || node.type === "end") return null;
+  // Video nodes use customTag — skip generic tag logic
+  if (webinar === "video" && node.customTag) return null;
   if (node.templateKeyMatch.some((p) => p.includes("confirmation"))) {
-    return webinarPast ? "ENVIADO" : "IMEDIATO";
+    return "IMEDIATO";
   }
   if (node.isPostWebinar) {
     if (hasSentLogs) return "ENVIADO";
-    if (webinar === "video" && !webinarPast) return "MANUAL";
     if (webinarPast) return "MANUAL";
     return "AGENDADO";
   }
+  // Reminder nodes for video: dynamic based on date
+  if (webinar === "video" && node.sendOffsetHours != null) {
+    const sendDate = new Date(WEBINAR_CONFIG.video.startDate.getTime() + node.sendOffsetHours * 60 * 60 * 1000);
+    const now = new Date();
+    const sendDay = sendDate.toDateString();
+    const today = now.toDateString();
+    if (sendDay === today) return "A ENVIAR";
+    if (sendDate.getTime() > now.getTime()) return "AGENDADO";
+    return "ENVIADO";
+  }
   if (webinarPast) return hasSentLogs ? "ENVIADO" : "ENVIADO";
   return "AGENDADO";
+}
+
+/* ─── Section Divider ─── */
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 my-5">
+      <div className="flex-1 h-px" style={{ background: "#d1d5db" }} />
+      <span
+        style={{
+          fontSize: 10,
+          color: "#9ca3af",
+          letterSpacing: 2,
+          textTransform: "uppercase",
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {label}
+      </span>
+      <div className="flex-1 h-px" style={{ background: "#d1d5db" }} />
+    </div>
+  );
+}
+
+/* ─── Tag Badge ─── */
+function TagBadge({ tag, pulse }: { tag: TagType; pulse?: boolean }) {
+  const s = TAG_STYLES[tag];
+  return (
+    <span
+      className={pulse ? "animate-pulse" : ""}
+      style={{
+        background: s.bg,
+        color: s.color,
+        fontSize: 9,
+        padding: "2px 8px",
+        borderRadius: 20,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+      }}
+    >
+      {tag}
+    </span>
+  );
+}
+
+/* ─── Custom Tag Badge ─── */
+function CustomTagBadge({ tag }: { tag: { label: string; bg: string; color: string } }) {
+  return (
+    <span
+      style={{
+        background: tag.bg,
+        color: tag.color,
+        fontSize: 9,
+        padding: "2px 8px",
+        borderRadius: 20,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+      }}
+    >
+      {tag.label}
+    </span>
+  );
 }
 
 /* ─── Status Bar ─── */
@@ -278,27 +457,6 @@ function StatusBar({ logs, webinar, emailStats }: { logs: MessageLog[]; webinar?
   );
 }
 
-/* ─── Tag Badge ─── */
-function TagBadge({ tag }: { tag: TagType }) {
-  const s = TAG_STYLES[tag];
-  return (
-    <span
-      style={{
-        background: s.bg,
-        color: s.color,
-        fontSize: 9,
-        padding: "2px 8px",
-        borderRadius: 20,
-        fontWeight: 700,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-      }}
-    >
-      {tag}
-    </span>
-  );
-}
-
 /* ─── Single Timeline ─── */
 function Timeline({
   webinar,
@@ -372,198 +530,241 @@ function Timeline({
     }
   };
 
+  // Group payment block nodes
+  const paymentBlockIndices = nodes.reduce<number[]>((acc, n, i) => {
+    if (n.isPaymentBlock) acc.push(i);
+    return acc;
+  }, []);
+
+  const renderNodeCard = (node: NodeDef, idx: number) => {
+    const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
+    const counts = nodeCounts[idx];
+    const hasFailed = (counts?.failed ?? 0) > 0;
+
+    const borderColor = node.borderColorOverride
+      || (node.type === "trigger" ? "#7c3aed"
+        : node.type === "end" ? "#94A3B8"
+          : hasFailed ? "#ef4444"
+            : tag ? TAG_BORDER[tag] : "#e2e8f0");
+
+    const iconElement = node.iconEmoji ? (
+      <span className="flex-shrink-0 mt-0.5 text-base leading-none">{node.iconEmoji}</span>
+    ) : (
+      <div className="flex-shrink-0 mt-0.5" style={{ color: borderColor }}>
+        {node.type === "trigger" && <Users size={20} />}
+        {node.type === "email" && <Mail size={18} />}
+        {node.type === "end" && <CheckCircle2 size={20} />}
+      </div>
+    );
+
+    return (
+      <div
+        style={{
+          background: node.type === "end" ? "#F8FAFC" : "white",
+          border: "1px solid #e2e8f0",
+          borderLeft: `4px solid ${borderColor}`,
+          borderRadius: 10,
+          padding: "14px 16px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        }}
+        className="flex justify-between items-start gap-4"
+      >
+        {/* Left */}
+        <div className="flex items-start gap-3 min-w-0">
+          {iconElement}
+          <div className="min-w-0">
+            <p className="font-heading font-bold" style={{ fontSize: node.type === "trigger" ? 15 : 14, color: "#111827" }}>
+              {node.title}
+            </p>
+            <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{node.subtitle}</p>
+            {node.note && (
+              <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, fontStyle: "italic" }}>{node.note}</p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {node.customTag && <CustomTagBadge tag={node.customTag} />}
+              {tag && !node.customTag && <TagBadge tag={tag} pulse={tag === "A ENVIAR"} />}
+            </div>
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0" style={{ minWidth: 100 }}>
+          {node.type === "trigger" && (
+            <span style={{ fontSize: 12, color: "#888" }}>{inscritosCount} inscrições</span>
+          )}
+          {node.type === "email" && emailStatsLoading && (
+            <span style={{ fontSize: 12, color: "#94A3B8" }}>
+              <span className="inline-flex gap-0.5">
+                <span className="animate-pulse">·</span>
+                <span className="animate-pulse" style={{ animationDelay: "150ms" }}>·</span>
+                <span className="animate-pulse" style={{ animationDelay: "300ms" }}>·</span>
+              </span>
+            </span>
+          )}
+          {node.type === "email" && !emailStatsLoading && counts && (
+            <div className="flex flex-col items-end gap-0.5">
+              {counts.sent > 0 ? (
+                <button
+                  onClick={() => {
+                    const rawKey = node.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
+                    onClickSentCount?.(rawKey, node.title, webinar);
+                  }}
+                  className="text-[13px] font-semibold hover:underline cursor-pointer"
+                  style={{ color: "#1e40af" }}
+                >
+                  {counts.sent} enviados
+                </button>
+              ) : (
+                <span style={{ fontSize: 12, color: "#9ca3af" }}>0 enviados</span>
+              )}
+              <span className="flex items-center gap-1" style={{ fontSize: 12, color: counts.failed > 0 ? "#ef4444" : "#9ca3af" }}>
+                {counts.failed > 0 && <AlertTriangle size={11} />}
+                {counts.failed} falhas
+              </span>
+              {/* Pending indicator */}
+              {node.sendOffsetHours != null && (() => {
+                const sendDate = new Date(WEBINAR_CONFIG[webinar].startDate.getTime() + node.sendOffsetHours! * 60 * 60 * 1000);
+                const sendPassed = Date.now() > sendDate.getTime();
+                const pending = inscritosCount - counts.sent - counts.failed;
+                if (inscritosCount === 0) {
+                  return <span style={{ fontSize: 11, color: "#aaa" }}>— Sem inscritos ainda</span>;
+                }
+                if (!sendPassed && pending > 0) {
+                  return <span style={{ fontSize: 11, color: "#3b82f6" }}>→ {pending} por receber</span>;
+                }
+                if (sendPassed && pending <= 0 && counts.sent > 0) {
+                  return <span style={{ fontSize: 11, color: "#16a34a" }}>✓ Todos receberam</span>;
+                }
+                return null;
+              })()}
+            </div>
+          )}
+          {node.type === "email" && !node.isPostWebinar && (
+            <button
+              onClick={() => {
+                const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
+                const tplKey = `${webinar}_${emailKey.replace("stage_0", "confirmation")}`;
+                onOpenEditor?.(tplKey);
+              }}
+              className="text-[11px] font-medium hover:underline"
+              style={{ color: "#6b7280" }}
+            >
+              Ver email →
+            </button>
+          )}
+          {node.isPostWebinar && (
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => onOpenEditor?.(`${webinar}_postwebinar`)}
+                className="text-[11px] font-medium hover:underline"
+                style={{ color: "#6b7280" }}
+              >
+                Ver email →
+              </button>
+              {showSendNow && (
+                <button
+                  onClick={handleSendPostWebinar}
+                  disabled={sendingPost}
+                  className="flex items-center gap-1 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ background: "#16a34a", color: "#fff" }}
+                >
+                  <Send size={12} />
+                  {sendingPost ? "Enviando..." : "Enviar agora →"}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render connector line
+  const Connector = ({ height = 12 }: { height?: number }) => (
+    <div className="flex justify-center">
+      <div style={{ width: 2, height, borderLeft: "2px dashed #e5e7eb" }} />
+    </div>
+  );
+
   return (
     <div className="relative max-w-[800px] mx-auto">
       {nodes.map((node, idx) => {
         const isLast = idx === nodes.length - 1;
-         const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
-         const counts = nodeCounts[idx];
-         const hasFailed = (counts?.failed ?? 0) > 0;
-          const isFollowupPrewebinar = node.templateKeyMatch.includes("video_followup_prewebinar");
-         const isPostwebinarSeq = node.templateKeyMatch.some(k => k.startsWith("video_postwebinar_day"));
-         const isClosing = node.templateKeyMatch.includes("video_postwebinar_closing");
-          const isPaymentConfirmation = node.templateKeyMatch.some(k => k.startsWith("video_payment_"));
-          const borderColor =
-           node.type === "trigger"
-             ? "#7c3aed"
-             : node.type === "end"
-             ? "#94A3B8"
-             : hasFailed
-             ? "#ef4444"
-             : isClosing
-             ? "#ef4444"
-             : isPaymentConfirmation
-             ? "#16a34a"
-             : isFollowupPrewebinar || isPostwebinarSeq
-             ? "#f59e0b"
-             : tag
-             ? TAG_BORDER[tag]
-             : "#e2e8f0";
+        const isFirstPayment = paymentBlockIndices[0] === idx;
+        const isInPaymentBlock = paymentBlockIndices.includes(idx);
+        const isLastPayment = paymentBlockIndices[paymentBlockIndices.length - 1] === idx;
+
+        // If this node is inside payment block but not the first, skip — rendered inside block
+        if (isInPaymentBlock && !isFirstPayment) return null;
+
         return (
-          <div key={idx}>
+          <Fragment key={idx}>
+            {/* Section divider */}
+            {node.sectionDivider && (
+              <>
+                {idx > 0 && <Connector height={8} />}
+                <SectionDivider label={node.sectionDivider} />
+              </>
+            )}
+
             {/* Condition label */}
-            {node.conditionLabel && (
+            {node.conditionLabel && !node.sectionDivider && (
               <div className="flex items-center justify-center py-2">
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: "#aaa",
-                    letterSpacing: 1,
-                    textTransform: "uppercase",
-                    fontWeight: 600,
-                  }}
-                >
+                <span style={{ fontSize: 9, color: "#9ca3af", letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>
                   {node.conditionLabel}
                 </span>
               </div>
             )}
 
-            {/* Dashed connector line */}
-            {idx > 0 && !node.conditionLabel && (
-              <div className="flex justify-center">
-                <div style={{ width: 1, height: 24, borderLeft: "2px dashed #e2e8f0" }} />
-              </div>
-            )}
-            {node.conditionLabel && (
-              <div className="flex justify-center">
-                <div style={{ width: 1, height: 8, borderLeft: "2px dashed #e2e8f0" }} />
-              </div>
-            )}
+            {/* Connector before node */}
+            {idx > 0 && !node.sectionDivider && <Connector />}
 
-            {/* Node card */}
-            <div
-              style={{
-                background: node.type === "end" ? "#F8FAFC" : "white",
-                border: "1px solid #e2e8f0",
-                borderLeft: `4px solid ${borderColor}`,
-                borderRadius: 10,
-                padding: "16px 20px",
-              }}
-              className="flex justify-between items-start gap-4"
-            >
-              {/* Left */}
-              <div className="flex items-start gap-3 min-w-0">
-                <div
-                  className="flex-shrink-0 mt-0.5"
-                  style={{ color: borderColor }}
-                >
-                  {node.type === "trigger" && <Users size={20} />}
-                  {node.type === "email" && <Mail size={18} />}
-                  {node.type === "end" && <CheckCircle2 size={20} />}
-                </div>
-                <div className="min-w-0">
-                  <p
-                    className="font-heading font-bold"
-                    style={{ fontSize: node.type === "trigger" ? 15 : 14, color: "#0F172A" }}
-                  >
-                    {node.title}
-                  </p>
-                  <p style={{ fontSize: 12, color: "#64748B", marginTop: 2 }}>{node.subtitle}</p>
-                  {tag && (
-                    <div className="mt-2">
-                      <TagBadge tag={tag} />
-                    </div>
-                  )}
+            {/* Payment block wrapper */}
+            {isFirstPayment ? (
+              <div
+                style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: 12,
+                  padding: 16,
+                }}
+              >
+                <p style={{ fontSize: 9, color: "#3b82f6", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 12 }}>
+                  ENVIADO APÓS PAGAMENTO CONFIRMADO
+                </p>
+                <div className="space-y-2">
+                  {paymentBlockIndices.map((pIdx) => (
+                    <Fragment key={pIdx}>
+                      {renderNodeCard(nodes[pIdx], pIdx)}
+                    </Fragment>
+                  ))}
                 </div>
               </div>
-
-              {/* Right */}
-              <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                {node.type === "trigger" && (
-                  <span style={{ fontSize: 12, color: "#888" }}>{inscritosCount} inscrições</span>
-                )}
-                {node.type === "email" && emailStatsLoading && (
-                  <span style={{ fontSize: 12, color: "#94A3B8" }}>
-                    <span className="inline-flex gap-0.5">
-                      <span className="animate-pulse">·</span>
-                      <span className="animate-pulse" style={{ animationDelay: "150ms" }}>·</span>
-                      <span className="animate-pulse" style={{ animationDelay: "300ms" }}>·</span>
-                    </span>
-                  </span>
-                )}
-                {node.type === "email" && !emailStatsLoading && counts && (
-                  <div className="flex flex-col items-end gap-0.5">
-                    {counts.sent > 0 ? (
-                      <button
-                        onClick={() => {
-                          const rawKey = node.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
-                          onClickSentCount?.(rawKey, node.title, webinar);
-                        }}
-                        className="text-[12px] font-medium hover:underline cursor-pointer"
-                        style={{ color: "#2563EB", textDecoration: "underline" }}
-                      >
-                        {counts.sent} enviados
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 12, color: "#999" }}>0 enviados</span>
-                    )}
-                    <span className="flex items-center gap-1" style={{ fontSize: 12, color: counts.failed > 0 ? "#ef4444" : "#999" }}>
-                      {counts.failed > 0 && <AlertTriangle size={11} />}
-                      {counts.failed} falhas
-                    </span>
-                    {/* Pending indicator */}
-                    {node.sendOffsetHours != null && (() => {
-                      const sendDate = new Date(WEBINAR_CONFIG[webinar].startDate.getTime() + node.sendOffsetHours! * 60 * 60 * 1000);
-                      const sendPassed = Date.now() > sendDate.getTime();
-                      const pending = inscritosCount - counts.sent - counts.failed;
-                      if (inscritosCount === 0) {
-                        return <span style={{ fontSize: 11, color: "#aaa" }}>— Sem inscritos ainda</span>;
-                      }
-                      if (!sendPassed && pending > 0) {
-                        return <span style={{ fontSize: 11, color: "#3b82f6" }}>→ {pending} por receber</span>;
-                      }
-                      if (sendPassed && pending <= 0 && counts.sent > 0) {
-                        return <span style={{ fontSize: 11, color: "#16a34a" }}>✓ Todos receberam</span>;
-                      }
-                      return null;
-                    })()}
-                  </div>
-                )}
-                {node.type === "email" && !node.isPostWebinar && (
-                  <button
-                    onClick={() => {
-                      const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
-                      const tplKey = `${webinar}_${emailKey.replace("stage_0", "confirmation")}`;
-                      onOpenEditor?.(tplKey);
+            ) : (
+              <>
+                {renderNodeCard(node, idx)}
+                {/* Info box */}
+                {node.infoBox && (
+                  <div
+                    style={{
+                      background: "#fef2f2",
+                      border: "1px solid #fecaca",
+                      borderRadius: 8,
+                      padding: "10px 12px",
+                      marginTop: 8,
+                      fontSize: 12,
+                      color: "#991b1b",
                     }}
-                    className="text-[12px] font-medium hover:underline"
-                    style={{ color: "#2563EB" }}
                   >
-                    Ver email →
-                  </button>
-                )}
-                {node.isPostWebinar && (
-                  <div className="flex flex-col items-end gap-1">
-                    <button
-                      onClick={() => onOpenEditor?.(`${webinar}_postwebinar`)}
-                      className="text-[12px] font-medium hover:underline"
-                      style={{ color: "#2563EB" }}
-                    >
-                      Ver email →
-                    </button>
-                    {showSendNow && (
-                      <button
-                        onClick={handleSendPostWebinar}
-                        disabled={sendingPost}
-                        className="flex items-center gap-1 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
-                        style={{ background: "#16a34a", color: "#fff" }}
-                      >
-                        <Send size={12} />
-                        {sendingPost ? "Enviando..." : "Enviar agora →"}
-                      </button>
-                    )}
+                    {node.infoBox}
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* Line after node */}
-            {!isLast && (
-              <div className="flex justify-center">
-                <div style={{ width: 1, height: 24, borderLeft: "2px dashed #e2e8f0" }} />
-              </div>
+              </>
             )}
-          </div>
+
+            {/* Connector after node */}
+            {!isLast && <Connector />}
+          </Fragment>
         );
       })}
     </div>
@@ -612,7 +813,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               📷 Imagens IA · 18 Fev 2026
             </h3>
-             <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
+            <Timeline webinar="imagens" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
           </div>
           <div>
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
