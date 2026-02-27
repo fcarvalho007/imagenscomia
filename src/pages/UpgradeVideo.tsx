@@ -460,11 +460,11 @@ const UpgradeVideo = () => {
       {/* ── Centered content area ── */}
       <div ref={contentRef} className={`flex-1 flex justify-center px-4 ${[3, 4].includes(step) ? "items-start pt-2 sm:pt-4 pb-6" : "items-start sm:items-center py-6 sm:py-10"}`}>
         <div
-          className="w-full sm:rounded-3xl sm:shadow-lg upgrade-card-inner"
+          className={`w-full sm:rounded-3xl sm:shadow-lg upgrade-card-inner ${[3, 4].includes(step) ? "upgrade-card-compact" : ""}`}
           style={{
             maxWidth: 600,
             background: "white",
-            padding: "48px 40px",
+            padding: [3, 4].includes(step) ? "24px 40px" : "48px 40px",
             overscrollBehavior: "none",
           }}
         >
@@ -473,10 +473,13 @@ const UpgradeVideo = () => {
             @media (max-width: 639px) {
               .upgrade-card-inner {
                 padding: 32px 20px !important;
-                border-radius: 0 !important;
+                border-radius: 16px 16px 0 0 !important;
                 box-shadow: none !important;
                 min-height: calc(100vh - 56px - 30px);
                 padding-bottom: calc(32px + env(safe-area-inset-bottom)) !important;
+              }
+              .upgrade-card-inner.upgrade-card-compact {
+                padding: 20px 20px !important;
               }
             }
           `}</style>
