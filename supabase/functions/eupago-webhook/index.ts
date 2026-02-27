@@ -144,10 +144,17 @@ async function processPayment(data: PaymentData) {
         matchedRegId = updatedGroupRows?.[0]?.id || null;
         console.log(`✅ Strategy GROUP: updated ${updatedGroupRows?.length} registrations`);
 
-        // Send confirmation email to each attendee (idempotent)
+        // Send confirmation emails (idempotent)
         const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-        if (RESEND_API_KEY && updatedGroupRows) {
+        if (RESEND_API_KEY && updatedGroupRows && updatedGroupRows.length > 0) {
+          const buyerAttendee = updatedGroupRows[0];
+          const buyerEmail = buyerAttendee?.email;
+
+          // ── Individual emails for NON-buyer participants ──
           for (const attendee of updatedGroupRows) {
+            // Skip buyer — they get the summary email instead
+            if (attendee.email === buyerEmail) continue;
+
             const fname = attendee.first_name || (attendee.name || "").split(" ")[0] || "";
 
             // Idempotency check
@@ -212,35 +219,102 @@ async function processPayment(data: PaymentData) {
             console.log(`📧 video_payment_masterclass (group) ${res.ok ? "sent" : "FAILED"} to ${attendee.email}`);
           }
 
-          // Send group summary to buyer (first registration in group)
-          const buyerEmail = updatedGroupRows[0]?.email;
+          // ── Buyer summary email ──
           if (buyerEmail) {
-            const attendeeList = updatedGroupRows.map((a: any) => `<li>${a.name || a.first_name} — ${a.email}</li>`).join("");
-            const summaryHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Lugares confirmados ✅</h2><p>O pagamento do grupo foi confirmado. Todos os participantes receberam um email de confirmação individual.</p><h3 style="font-size:16px;margin:20px 0 8px">Participantes confirmados (${updatedGroupRows.length})</h3><ul style="padding-left:20px">${attendeeList}</ul><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+            // Idempotency check for buyer summary
+            const { data: buyerAlreadySent } = await supabase
+              .from("message_logs")
+              .select("id")
+              .eq("registration_id", buyerAttendee.id)
+              .eq("template_key", "video_group_confirmation_payer")
+              .eq("status", "sent")
+              .limit(1);
 
-            const summaryRes = await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-              body: JSON.stringify({
-                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-                to: [buyerEmail],
-                subject: `Lugares confirmados — ${updatedGroupRows.length} participantes ✅`,
-                html: summaryHtml,
-              }),
-            });
-            const summaryData = await summaryRes.json();
+            if (buyerAlreadySent && buyerAlreadySent.length > 0) {
+              console.log(`📧 video_group_confirmation_payer already sent to ${buyerEmail} — skipping`);
+            } else {
+              const buyerFname = buyerAttendee.first_name || (buyerAttendee.name || "").split(" ")[0] || "";
+              const count = updatedGroupRows.length;
 
-            await supabase.from("message_logs").insert({
-              registration_id: updatedGroupRows[0].id,
-              channel: "email",
-              provider: "resend",
-              template_key: "video_group_payment_summary",
-              status: summaryRes.ok ? "sent" : "failed",
-              provider_message_id: summaryData.id || null,
-              error: summaryRes.ok ? null : JSON.stringify(summaryData),
-            });
+              // Plan-aware pricing
+              const PRICES: Record<string, number> = { masterclass: 57.81, bundle: 76.26, gravacao: 15.00 };
+              const PLAN_LABELS: Record<string, string> = {
+                masterclass: "Masterclass Vídeo com IA",
+                bundle: "Masterclass + Gravação",
+                gravacao: "Gravação HD + Pack de Apoio",
+              };
+              // Determine plan from the first registration's plan_selected
+              const { data: buyerReg } = await supabase
+                .from("registrations")
+                .select("plan_selected")
+                .eq("id", buyerAttendee.id)
+                .maybeSingle();
+              const planKey = buyerReg?.plan_selected || "masterclass";
+              const pricePerPerson = PRICES[planKey] || 57.81;
+              const planLabel = PLAN_LABELS[planKey] || "Masterclass Vídeo com IA";
+              const totalRaw = count * pricePerPerson * (count >= 3 ? 0.9 : 1.0);
+              const totalFormatted = totalRaw.toFixed(2).replace(".", ",");
 
-            console.log(`📧 Group summary ${summaryRes.ok ? "sent" : "FAILED"} to ${buyerEmail}`);
+              const attendeeListHtml = updatedGroupRows
+                .map((a: any) => `<li>${a.name || a.first_name || ""} — ${a.email}</li>`)
+                .join("");
+
+              // Load template from DB
+              const { data: summaryTpl } = await supabase
+                .from("email_templates")
+                .select("subject, html_body")
+                .eq("template_key", "video_group_confirmation_payer")
+                .eq("is_active", true)
+                .maybeSingle();
+
+              const fallbackHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2>A tua inscrição está confirmada ✅</h2><p>Olá {{fname}},</p><p>O pagamento do grupo foi confirmado com sucesso.</p><h3>Resumo</h3><p><strong>Plano:</strong> {{plan_label}}</p><p><strong>Total pago:</strong> €{{total}}</p><h3>Participantes confirmados</h3><ul>{{attendee_list}}</ul><p style="font-size:13px;color:#64748b">Cada participante recebeu o seu próprio email de confirmação.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+
+              const summarySubject = (summaryTpl?.subject || "A tua inscrição está confirmada ✅")
+                .replace(/\{\{fname\}\}/g, buyerFname)
+                .replace(/\{\{plan_label\}\}/g, planLabel)
+                .replace(/\{\{total\}\}/g, totalFormatted)
+                .replace(/\{\{attendee_list\}\}/g, attendeeListHtml);
+
+              const summaryHtml = (summaryTpl?.html_body || fallbackHtml)
+                .replace(/\{\{fname\}\}/g, buyerFname)
+                .replace(/\{\{plan_label\}\}/g, planLabel)
+                .replace(/\{\{total\}\}/g, totalFormatted)
+                .replace(/\{\{attendee_list\}\}/g, attendeeListHtml);
+
+              const summaryRes = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+                  to: [buyerEmail],
+                  subject: summarySubject,
+                  html: summaryHtml,
+                }),
+              });
+              const summaryData = await summaryRes.json();
+
+              await supabase.from("message_logs").insert({
+                registration_id: buyerAttendee.id,
+                channel: "email",
+                provider: "resend",
+                template_key: "video_group_confirmation_payer",
+                status: summaryRes.ok ? "sent" : "failed",
+                provider_message_id: summaryData.id || null,
+                error: summaryRes.ok ? null : JSON.stringify(summaryData),
+              });
+
+              await supabase.from("email_send_logs").insert({
+                email_key: "video_group_confirmation_payer",
+                recipient_email: buyerEmail,
+                fname: buyerFname,
+                webinar: "video",
+                status: summaryRes.ok ? "sent" : "failed",
+                resend_id: summaryData.id || null,
+                error_message: summaryRes.ok ? null : JSON.stringify(summaryData),
+              });
+
+              console.log(`📧 video_group_confirmation_payer ${summaryRes.ok ? "sent" : "FAILED"} to ${buyerEmail}`);
+            }
           }
         }
       }
