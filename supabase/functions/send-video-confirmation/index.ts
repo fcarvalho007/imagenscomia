@@ -125,30 +125,22 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Fetch template from DB (fallback to hardcoded)
-    const { data: tpl } = await supabaseAdmin
-      .from("email_templates")
-      .select("subject, html_body")
-      .eq("template_key", "video_confirmation")
-      .maybeSingle();
-
     // Check subscriber history for personalisation
     const history = await getSubscriberHistory(email, supabaseAdmin);
     const variant = determineVariant(history);
 
+    // Use returning-participant template for variants B/C/D, default for A
+    const templateKey = variant !== "A" ? "video_confirmation_returning" : "video_confirmation";
+
+    const { data: tpl } = await supabaseAdmin
+      .from("email_templates")
+      .select("subject, html_body")
+      .eq("template_key", templateKey)
+      .maybeSingle();
+
     const emailSubject = tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing";
     const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
-    let html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
-
-    // Insert PS block before footer for variants B/C/D
-    if (variant !== "A") {
-      const psBlock = buildPsBlock(variant);
-      const footerMarker = '<div style="border-top:1px solid #eee;padding-top:16px;margin-top:32px;">';
-      const footerIdx = html.lastIndexOf(footerMarker);
-      if (footerIdx !== -1) {
-        html = html.slice(0, footerIdx) + psBlock + html.slice(footerIdx);
-      }
-    }
+    const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
 
     const resendRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -176,7 +168,7 @@ serve(async (req) => {
       if (reg) {
         await supabaseAdmin.from("message_logs").insert({
           registration_id: reg.id,
-          template_key: "video_confirmation",
+          template_key: templateKey,
           provider: "resend",
           channel: "email",
           status: resendRes.ok ? "sent" : "failed",
