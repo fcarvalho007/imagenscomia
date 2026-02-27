@@ -1,58 +1,89 @@
 
+# Corrigir funil do Dashboard e TabResumo para Video Webinar
 
-# Corrigir followup-abandoned: filtrar apenas webinar Imagens
+## Problema
 
-## Problema identificado
+O funil do Dashboard e os nomes dos passos no TabResumo nao correspondem ao fluxo real do /upgrade-video.
 
-A Edge Function `followup-abandoned` (cron de follow-up para inscritos que nao pagaram) nao filtra pelo campo `webinar`. A query na linha 478-485 seleciona TODOS os registos com `paid_at IS NULL` e `plan_selected != 'free'`, incluindo inscritos do webinar de Video.
+Fluxo real no /upgrade-video:
+- Step 1: Qualificacao (StepRole) → step_reached=1
+- Step 2: Equipa (StepTeamSize) → step_reached=2
+- Step 3: Masterclass €47 (StepMasterclass) → step_reached=3
+- Step 4: Gravacao €15 (StepVideoPremium) → step_reached=4
+- Step 5: Duvida (StepDuvida) → step_reached=5
+- Step 6: Checkout (VideoConfirmation) → upgrade_clicked_at
+- Step 7: Confirmacao (paid_at)
 
-Resultado: inscritos do webinar Video recebem emails de follow-up com:
-- Data errada: "18 Fev 2026" (Imagens) em vez de "5 Mar 2026" (Video)
-- Conteudo errado: referencias ao webinar de Imagens
-- Links de upgrade errados: apontam para `/upgrade` em vez de `/upgrade-video`
+O CRM actualmente:
+- Salta step_reached >= 1 (nao mostra quem completou Qualificacao)
+- Chama step_reached >= 2 de "Passo 1 — Qualificacao" quando na verdade e Equipa
+- Os numeros dos passos estao todos desfasados em -1
+- TabResumo chama step 1 de "Inscricao" e step 2 de "Qualificacao" — errado
 
-O webinar de Video ja tem a sua propria funcao de follow-up: `send-video-followup-prewebinar`.
+Alem disso, o badge "Dados ate: 20 Fev 2026" aparece no contexto Video, mas o Video nao tem cutoff (cutoffDate: null).
 
-## Correcao
+## Correcoes
 
-**Ficheiro unico:** `supabase/functions/followup-abandoned/index.ts`
+### 1. DashboardView.tsx — Funil Video (linhas 273-281)
 
-**Alteracao:** Adicionar `.eq("webinar", "imagens")` a query de candidatos (linha 478-485).
+Adicionar step_reached >= 1 como linha separada e corrigir todos os labels:
 
-Antes:
+```text
+Antes (5 linhas de funil):
+1. Submeteu inscricao          → step1 (total)
+2. Passo 1 — Qualificacao      → step_reached >= 2
+3. Masterclass (Passo 2)       → step_reached >= 3
+4. Gravacao (Passo 3)          → step_reached >= 4
+5. Passo 4 — Duvida            → step_reached >= 5
+
+Depois (6 linhas de funil):
+1. Submeteu inscricao          → total
+2. Passo 1 — Qualificacao      → step_reached >= 1  (NOVO)
+3. Passo 2 — Equipa            → step_reached >= 2  (CORRIGIDO)
+4. Passo 3 — Masterclass €47   → step_reached >= 3  (CORRIGIDO)
+5. Passo 4 — Gravacao €15      → step_reached >= 4  (CORRIGIDO)
+6. Passo 5 — Duvida            → step_reached >= 5  (CORRIGIDO)
 ```
-const { data: candidates } = await supabase
-  .from("registrations")
-  .select(...)
-  .is("paid_at", null)
-  .eq("do_not_contact", false)
-  .not("plan_selected", "is", null)
-  .neq("plan_selected", "free")
-  .neq("plan_selected", "video-free");
+
+Apos estes 6, mantem-se "Clicou para pagar" e "Pagamento confirmado".
+
+Adicionar nova variavel `step1q` para step_reached >= 1 no bloco `stats`:
+```text
+const step1q = active.filter((i) => (i.step_reached || 0) >= 1).length;
 ```
 
-Depois:
-```
-const { data: candidates } = await supabase
-  .from("registrations")
-  .select(...)
-  .is("paid_at", null)
-  .eq("do_not_contact", false)
-  .eq("webinar", "imagens")
-  .not("plan_selected", "is", null)
-  .neq("plan_selected", "free")
-  .neq("plan_selected", "video-free");
+Ajustar `funnelValues` e `dropOffs` para incluir o novo step.
+
+O separador "INTENCAO DE COMPRA" move-se para antes do Passo 3 (Masterclass).
+
+Os sublabels ficam:
+- Passo 3: "Viu a oferta de €47+IVA"
+- Passo 4: "Viu a oferta de €15+IVA"
+
+### 2. DashboardView.tsx — Badge de cutoff (linha 328-329)
+
+Condicionar a exibicao: so mostrar "Dados ate: 20 Fev 2026" quando cutoffDate existe (imagens e consolidado). Para video, nao mostrar ou mostrar "Sem limite temporal".
+
+### 3. TabResumo.tsx — STEP_NAMES_VIDEO (linha 23)
+
+Corrigir:
+```text
+Antes:  { 1: "Inscricao", 2: "Qualificacao", 3: "Masterclass", 4: "Gravacao", 5: "Duvida" }
+Depois: { 1: "Qualificacao", 2: "Equipa", 3: "Masterclass", 4: "Gravacao", 5: "Duvida" }
 ```
 
-Isto garante que:
-- Inscritos do webinar Video nao sao contactados por esta funcao
-- O fluxo de follow-up do Video (`send-video-followup-prewebinar`) continua a funcionar independentemente
-- Nenhum outro ficheiro precisa de ser alterado
+## Ficheiros alterados
+
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/DashboardView.tsx` | Funil video: +1 step, labels corrigidos, cutoff badge condicional |
+| `src/components/crm/modal/TabResumo.tsx` | STEP_NAMES_VIDEO corrigido |
 
 ## O que NAO muda
-- `send-video-followup-prewebinar` (intocavel)
-- Todas as outras edge functions
-- Logica de manual send (ja recebe o registration_id especifico)
-- Templates de email
-- CRM
 
+- Funil Imagens (intacto)
+- Funil Consolidado (intacto)
+- Edge functions
+- Templates de email
+- Outros tabs do CRM
+- AutomationFlowTab
