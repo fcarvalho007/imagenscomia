@@ -182,10 +182,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     const aguardamPgto = active.filter((i) => i.payment_status === "awaiting_payment");
 
     const step1 = active.length;
-    const step2 = active.filter((i) => i.step_reached >= 2).length;
-    const step3 = active.filter((i) => i.step_reached >= 3).length;
-    const step4 = active.filter((i) => i.step_reached >= 4).length;
-    const step5 = active.filter((i) => i.step_reached >= 5).length;
+    const step1q = active.filter((i) => (i.step_reached || 0) >= 1).length;
+    const step2 = active.filter((i) => (i.step_reached || 0) >= 2).length;
+    const step3 = active.filter((i) => (i.step_reached || 0) >= 3).length;
+    const step4 = active.filter((i) => (i.step_reached || 0) >= 4).length;
+    const step5 = active.filter((i) => (i.step_reached || 0) >= 5).length;
     const clickedToPay = active.filter((i) => i.upgrade_clicked_at !== null).length;
     const paidConfirmed = active.filter((i) => i.paid_at !== null).length;
 
@@ -247,7 +248,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     ].sort((a, b) => b.count - a.count);
     const maxDiff = difficulties[0]?.count || 1;
 
-    const funnelValues = [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
+    const funnelValues = isVideo ? [step1, step1q, step2, step3, step4, step5, clickedToPay, paidConfirmed] : [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
     const dropOffs = funnelValues.slice(0, -1).map((v, i) => ({
       lost: v - funnelValues[i + 1],
       pct: v ? ((v - funnelValues[i + 1]) / v) * 100 : 0,
@@ -260,7 +261,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
       return (Date.now() - new Date(ref).getTime()) / 3600000 >= 6;
     });
 
-    return { total, receita, conversao, ticket, step1, step2, step3, step4, step5, clickedToPay, paidConfirmed, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
+    return { total, receita, conversao, ticket, step1, step1q, step2, step3, step4, step5, clickedToPay, paidConfirmed, sources, maxSrc, planCounts, pendingCounts, paidCounts, comDuvida, nPremiumPaid, nMCPaid, nBundlePaid, genderCounts, difficulties, maxDiff, dropOffs, maxDropIdx, pendingOver6h, pendentes, pipelineValor, seleccionaram, aguardamPgto };
   }, [filteredInscritos, webinarContext]);
 
   const now = new Date();
@@ -325,9 +326,11 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             ))}
           </div>
           {/* Cutoff badge */}
-          <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
-            Dados até: 20 Fev 2026
-          </span>
+          {dashConfig.cutoffDate && (
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
+              Dados até: 20 Fev 2026
+            </span>
+          )}
           {onRefresh && (
             <button
               onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }}

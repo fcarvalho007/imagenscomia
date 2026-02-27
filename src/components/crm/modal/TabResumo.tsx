@@ -20,7 +20,7 @@ function fmtDate(iso: string) {
 }
 
 const STEP_NAMES_IMAGENS: Record<number, string> = { 1: "Inscrição", 2: "Origem", 3: "Dúvida", 4: "Premium", 5: "Masterclass" };
-const STEP_NAMES_VIDEO: Record<number, string> = { 1: "Inscrição", 2: "Qualificação", 3: "Masterclass", 4: "Gravação", 5: "Dúvida" };
+const STEP_NAMES_VIDEO: Record<number, string> = { 1: "Qualificação", 2: "Equipa", 3: "Masterclass", 4: "Gravação", 5: "Dúvida" };
 
 interface TabResumoProps {
   inscrito: Inscrito;
