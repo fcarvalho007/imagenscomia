@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, Calendar } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
+import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
 
 type Plan = "masterclass" | "gravacao";
 
@@ -44,7 +45,7 @@ const PLANS: Record<Plan, {
   },
 };
 
-function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
+function PlanCard({ plan, onSelect, hideButton }: { plan: Plan; onSelect: () => void; hideButton?: boolean }) {
   const cfg = PLANS[plan];
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 flex flex-col gap-4 flex-1 min-w-[220px]">
@@ -75,13 +76,15 @@ function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
         </div>
       )}
 
-      <button
-        onClick={onSelect}
-        className="mt-auto w-full rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-        style={{ backgroundColor: cfg.ctaColor }}
-      >
-        {cfg.ctaLabel}
-      </button>
+      {!hideButton && (
+        <button
+          onClick={onSelect}
+          className="mt-auto w-full rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+          style={{ backgroundColor: cfg.ctaColor }}
+        >
+          {cfg.ctaLabel}
+        </button>
+      )}
     </div>
   );
 }
@@ -93,16 +96,18 @@ export default function Comprar() {
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(validPlan);
   const [modalOpen, setModalOpen] = useState(false);
+  const [groupMode, setGroupMode] = useState(false);
 
-  // Auto-open modal when plan is in URL
+  // Auto-open modal when plan is in URL (single mode only)
   useEffect(() => {
-    if (validPlan) {
+    if (validPlan && !groupMode) {
       setSelectedPlan(validPlan);
       setModalOpen(true);
     }
-  }, [validPlan]);
+  }, [validPlan, groupMode]);
 
   const activePlan: Plan = selectedPlan || "masterclass";
+  const showGroupToggle = activePlan === "masterclass" || validPlan === "masterclass";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: "#f9fafb" }}>
@@ -117,9 +122,12 @@ export default function Comprar() {
           <PlanCard
             plan={validPlan}
             onSelect={() => {
-              setSelectedPlan(validPlan);
-              setModalOpen(true);
+              if (!groupMode) {
+                setSelectedPlan(validPlan);
+                setModalOpen(true);
+              }
             }}
+            hideButton={groupMode}
           />
         ) : (
           <div className="flex flex-col sm:flex-row gap-4 w-full">
@@ -129,29 +137,71 @@ export default function Comprar() {
                 plan={p}
                 onSelect={() => {
                   setSelectedPlan(p);
+                  if (p === "masterclass" && groupMode) return;
                   setModalOpen(true);
                 }}
+                hideButton={p === "masterclass" && groupMode}
               />
             ))}
           </div>
         )}
 
+        {/* Group mode toggle — masterclass only */}
+        {showGroupToggle && (
+          <div className="w-full">
+            <button
+              onClick={() => {
+                setGroupMode((prev) => !prev);
+                setModalOpen(false);
+              }}
+              className="flex items-center gap-2.5 w-full"
+            >
+              <div
+                className="relative w-10 h-[22px] rounded-full transition-colors shrink-0"
+                style={{ backgroundColor: groupMode ? "#7c3aed" : "#d1d5db" }}
+              >
+                <div
+                  className="absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform"
+                  style={{ left: groupMode ? "20px" : "3px" }}
+                />
+              </div>
+              <span className="text-[13px] text-gray-700">Inscrever várias pessoas?</span>
+            </button>
+            {groupMode && (
+              <p className="text-[12px] mt-1.5 ml-[50px]" style={{ color: "#7c3aed" }}>
+                Modo grupo activo — adiciona os participantes abaixo
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Group checkout form */}
+        {groupMode && activePlan === "masterclass" && (
+          <GroupCheckoutForm />
+        )}
+
         {/* Reassurance */}
-        <p className="text-[11px] text-gray-400 text-center leading-relaxed max-w-[360px]">
-          A tua inscrição no Webinar Vídeo (gratuita) fica confirmada de qualquer forma após o pagamento.
-        </p>
-        <p className="text-[11px] text-gray-400 text-center">
-          Pagamento seguro via EuPago · Cartão, MB WAY ou Multibanco
-        </p>
+        {!groupMode && (
+          <>
+            <p className="text-[11px] text-gray-400 text-center leading-relaxed max-w-[360px]">
+              A tua inscrição no Webinar Vídeo (gratuita) fica confirmada de qualquer forma após o pagamento.
+            </p>
+            <p className="text-[11px] text-gray-400 text-center">
+              Pagamento seguro via EuPago · Cartão, MB WAY ou Multibanco
+            </p>
+          </>
+        )}
       </div>
 
-      <PurchaseModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        plan={activePlan}
-        planLabel={PLANS[activePlan].planLabel}
-        webinar="video"
-      />
+      {!groupMode && (
+        <PurchaseModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          plan={activePlan}
+          planLabel={PLANS[activePlan].planLabel}
+          webinar="video"
+        />
+      )}
     </div>
   );
 }

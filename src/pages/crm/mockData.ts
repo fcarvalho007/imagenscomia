@@ -45,6 +45,7 @@ export type Inscrito = {
   team_size: string | null;
   lost_at: string | null;
   lost_reason: string | null;
+  group_payment_ref: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];
