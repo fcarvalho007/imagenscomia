@@ -1,155 +1,90 @@
 
+# Fixes focados nos Steps 3 e 4 do /upgrade-video
 
-# Refinar Steps 3 e 4 do /upgrade-video
+## FIX 1 -- Reduzir top spacing nos steps 3 e 4
 
-## Resumo
+No `UpgradeVideo.tsx` (linha 462), o wrapper actual usa `py-6 sm:py-10` com `pt-8` para steps 3/4. Alterar para:
 
-5 fixes cirurgicos nos componentes StepMasterclass e StepVideoPremium, mais ajustes no UpgradeVideo.tsx para sticky bottom bar e posicionamento vertical.
+- Steps 3, 4: `pt-2 sm:pt-4` (8px mobile, 16px desktop) em vez de `pt-8`
+- Manter `py-6 sm:py-10` para os outros steps
 
----
-
-## FIX 1 -- Sticky bottom bar (Steps 3 e 4)
-
-### StepMasterclass.tsx
-
-Remover do componente:
-- Botao primario "Garantir lugar..." (linhas 122-139)
-- Social proof "Grupo limitado..." (linhas 141-144)
-- Separador "ou" (linhas 147-152)
-- Botao secundario "Continuar com inscricao gratuita" (linhas 154-172)
-- Reassurance text (linhas 174-177)
-
-O componente passa a renderizar apenas o card de pricing e o confirmation dialog. Os CTAs movem-se para fora.
-
-Adicionar nova prop `onPrimaryClick` (alem de `onAddMasterclass` e `onSkip`) -- ou reutilizar: o botao primario no sticky bar faz `() => setShowConfirm(true)`. Problema: o `showConfirm` state vive dentro do componente.
-
-**Solucao**: Mover o AlertDialog e `showConfirm` state para fora -- elevar para UpgradeVideo.tsx. Ou: manter tudo dentro do StepMasterclass mas exportar tambem o sticky bar content via render prop.
-
-**Abordagem mais simples**: Manter `showConfirm` dentro do componente. Passar uma nova prop `renderStickyBar` como render prop que o componente chama com `{ onPrimary: () => setShowConfirm(true), onSkip }`. O UpgradeVideo.tsx usa um portal ou posiciona o sticky bar fora do card.
-
-**Abordagem mais simples ainda**: O StepMasterclass renderiza o sticky bar como parte do seu output, posicionado com `fixed`. O sticky bar fica visualmente fora do card mas no DOM esta dentro do componente. Funciona perfeitamente com React.
-
-Adicionar ao final do JSX do StepMasterclass (antes do AlertDialog):
-
+Implementacao: condicional no className:
 ```text
-<div style={{
-  position: "fixed", bottom: 0, left: 0, right: 0,
-  background: "white", borderTop: "1px solid #e5e7eb",
-  padding: "12px 24px",
-  paddingBottom: "max(12px, env(safe-area-inset-bottom))",
-  zIndex: 50,
-  boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
-}}>
-  <div style={{ maxWidth: 600, margin: "0 auto" }}>
-    <button primary CTA ... />
-    <p social proof centered 11px #9ca3af />
-    <button secondary text link ... />
-  </div>
-</div>
+[3, 4].includes(step) ? "items-start pt-2 sm:pt-4 pb-6" : "items-start sm:items-center py-6 sm:py-10"
 ```
 
-Adicionar `padding-bottom: 128px` ao wrapper `<div className="text-center">` para que o conteudo nao fique escondido atras do sticky bar.
+## FIX 2 -- Restyle "Masterclass garantida" no Step 4
 
-### StepVideoPremium.tsx
+No `StepVideoPremium.tsx`:
 
-Mesma abordagem. Remover CTA, separador, secondary do card. Adicionar sticky bar fixed com cor azul (#1e40af).
+**Remover** o banner verde (linhas 28-32): o bloco `{masterclassSelected && (<div className="mb-4 rounded-lg...">...</div>)}`.
 
----
-
-## FIX 2 -- Reduzir altura do pricing card
-
-### StepMasterclass.tsx
-
-Remover:
-- Label "MASTERCLASS ONLINE" (linha 77-79)
-- Meta row "calendario Online relogio 3 horas" (linhas 117-120)
-
-Benefits: remover sub-descriptions, manter so titulos. Reduzir `space-y-3.5` para `space-y-2`. Cada item: flex, gap-2, height 36px, align-items center.
-
-Titulos simplificados:
-- "Sistema completo de producao de video curto"
-- "Ferramentas certas -- sem confusao"
-- "Prompts para video reutilizaveis"
-- "Gravacao da Masterclass incluida" (bold)
-
-### StepVideoPremium.tsx
-
-Remover sub-descriptions dos benefits. Mesma abordagem.
-
-Titulos:
-- "Gravacao HD -- acesso continuo"
-- "Pack de apoio completo"
-- "Sessao Q&A exclusiva (30 min) -- Terca, 10 Mar"
-
----
-
-## FIX 3 -- "(opcional)" badge no Step 4
-
-No StepVideoPremium.tsx, substituir:
+**Alterar** a linha do step label (linha 35) para incluir o pill inline:
 ```text
-<span style={{ fontSize: 28, fontWeight: 400, color: "#9ca3af" }}>(opcional)</span>
+<p style={{ fontSize: 12, color: "#9ca3af" }}>
+  Passo 4 de 5 — Gravacao Video
+  {masterclassSelected && (
+    <span style={{
+      fontSize: 10, fontWeight: 600, color: "#16a34a",
+      background: "#f0fdf4", border: "1px solid #bbf7d0",
+      borderRadius: 20, padding: "2px 8px", marginLeft: 8,
+      verticalAlign: "middle", display: "inline-block",
+    }}>
+      checkmark Masterclass
+    </span>
+  )}
+</p>
 ```
 
-Por um badge inline abaixo do headline:
-```text
-<span style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af",
-  border: "1px solid #e5e7eb", borderRadius: 6,
-  padding: "2px 8px", background: "white",
-  display: "inline-block", marginTop: 8 }}>
-  OPCIONAL
-</span>
-```
+Mesma condicao (`masterclassSelected`), apenas muda a apresentacao visual.
 
-E ajustar o h2 para `display: block` (remover `display: inline`).
+## FIX 3 -- Mobile audit para steps 3 e 4
 
----
+### 3a. Header bar mobile (UpgradeVideo.tsx linhas 440-443)
 
-## FIX 4 -- Posicionamento vertical do card
+Ja esta compacto: `"emoji Webinar Video . 5 Mar checkmark"` a 12px. Ajustar height mobile para 44px:
 
-No UpgradeVideo.tsx, linha 462:
-```text
-className="flex-1 flex items-start sm:items-center justify-center..."
-```
+Adicionar classe mobile ao header: `className="... h-[44px] sm:h-[56px]"` em vez do `style={{ height: 56 }}` fixo.
 
-Ajustar para que steps 3 e 4 usem `items-start` com `pt-8` (32px), e step 5 use `items-center` (como steps 1 e 2).
+### 3b. Progress bar label mobile (linhas 451-452)
 
-Logica: adicionar condicional no className:
-- Steps 1, 2, 5: `items-center` (centrado verticalmente)
-- Steps 3, 4: `items-start` com padding-top 32px
-- Steps 0, 6, 7: `items-center`
+Ja esta implementado: mobile mostra `"Passo X/5"` sem subtitulo, desktop mostra com subtitulo. Sem alteracao necessaria.
 
-Implementar com: `const verticalCenter = [1, 2, 5, 0, 6, 7].includes(step);` e aplicar `items-center` vs `items-start pt-8`.
+### 3c. Pricing card mobile -- StepMasterclass.tsx e StepVideoPremium.tsx
 
----
+Aplicar estas classes mobile adicionais:
 
-## FIX 5 -- Spacing audit
+**Price font**: `max-sm:text-[36px]` (ja tem `max-sm:text-[38px]`, reduzir para 36px)
 
-No UpgradeVideo.tsx, o card padding ja esta definido como `48px 40px` desktop e `32px 20px` mobile. Confirmar que esta consistente.
+**Badge font**: `max-sm:text-[8px]` nos badges (actualmente 9px fixo)
 
-Dentro dos componentes StepMasterclass e StepVideoPremium:
-- Apos step label: gap 20px (actualmente 24px -- reduzir `<div style={{ height: 24 }} />` para 20)
-- Apos headline+subheadline: gap 28px (actualmente 28px -- OK)
-- Antes do CTA: removido do card (agora no sticky bar)
+**Benefits list mobile**: adicionar `max-sm:text-[13px]` nos titulos e `max-sm:w-4 max-sm:h-4` nos icones check, `max-sm:space-y-1.5` no wrapper
 
-Header: 56px ja esta definido. Confirmar.
+**Date box mobile**: `max-sm:p-[10px_12px]` e `max-sm:text-[12px]` no subtitulo
 
-Progress bar: 3px ja esta definido. Label right-aligned 11px #9ca3af ja esta correcto.
+**Early bird badge mobile**: `max-sm:text-[10px]` (actualmente 11px)
 
----
+### 3d. Sticky bar mobile -- ambos componentes
+
+**CTA font mobile**: `max-sm:text-[15px]` no botao primario
+
+**Secondary text mobile**: `max-sm:text-[12px]` no link "ou continuar..."
+
+### 3e. Back arrow (UpgradeVideo.tsx linhas 487-494)
+
+Ja tem `width: 44, height: 44` -- tap target correcto. Sem alteracao.
 
 ## Ficheiros alterados
 
-1. **StepMasterclass.tsx** -- remover elementos redundantes, simplificar benefits, adicionar sticky bar fixed
-2. **StepVideoPremium.tsx** -- mesmas alteracoes + badge "OPCIONAL"
-3. **UpgradeVideo.tsx** -- ajustar posicionamento vertical do card (items-start vs items-center por step)
+1. **`src/pages/UpgradeVideo.tsx`** -- FIX 1 (top spacing condicional), FIX 3a (header height mobile)
+2. **`src/components/upgrade/StepMasterclass.tsx`** -- FIX 3c/3d (mobile sizing)
+3. **`src/components/upgrade/StepVideoPremium.tsx`** -- FIX 2 (pill badge), FIX 3c/3d (mobile sizing)
 
 ## O que NAO muda
 
-- Steps 1, 2, 5 (conteudo e logica)
-- AlertDialog / confirmation flow (mantido dentro dos componentes)
-- onAddMasterclass / onAddPremium callbacks
-- onSkip callbacks
-- Supabase writes, EuPago, email triggers
-- Step 0, 6, 7
-- Qualquer outro ficheiro
-
+- Steps 1, 2, 5, 6, 7
+- Logica de pagamento EuPago
+- Supabase writes/reads
+- AlertDialog/confirmation flow
+- Callbacks onAddMasterclass, onAddPremium, onSkip
+- Nenhum outro ficheiro
