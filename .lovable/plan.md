@@ -1,50 +1,122 @@
 
 
-# Conversion Copywriting Improvements for /comprar
+# Checkout Modal Fixes — PurchaseModal + GroupCheckoutForm
 
-Copy-only changes to `src/pages/Comprar.tsx`. No logic, modal, or payment changes. No other files touched.
-
-## Changes
-
-### 1. PLANS config updates (lines 23-74)
-
-**Masterclass card:**
-- Add new field `subPriceNote: "Sem isto, o webinar termina e não voltas a ter acesso ao Frederico ao vivo."`
-- CTA: `"Quero o meu lugar na Masterclass →"`
-
-**Bundle card:**
-- Add new field `urgencyBadge: "Últimos lugares disponíveis"`
-- Add new field `subBenefitsNote: "A Masterclass tem vagas limitadas. O Bundle garante tudo de uma vez."`
-- CTA: `"Quero o Bundle completo →"`
-
-**Gravacao card:**
-- Title: `"Gravação HD + Pack de Apoio"`
-- Add new field `subPriceNote: "Revê quando quiseres. Para sempre."`
-- CTA: `"Quero a gravação →"`
-- planLabel: `"Gravação HD + Pack de Apoio · €15"`
-
-### 2. PlanCard component updates (lines 80-199)
-
-Add rendering for new optional fields in the PLANS type:
-- `subPriceNote` -- rendered below the price block as small italic muted text (12px, #9ca3af, italic)
-- `urgencyBadge` -- rendered next to "Poupa €5" as a red/rose pill badge (bg #fee2e2, color #dc2626, 10px, font-weight 600)
-- `subBenefitsNote` -- rendered after the benefits list, before dateBox, as small italic muted text
-
-### 3. Header section updates (lines 224-241)
-
-Replace the single subtitle with:
-- **Line 1** (amber badge): `"🔥 Preço early bird — sobe depois do webinar de 5 de Março"` -- styled as pill with bg #fef3c7, color #92400e, font 11px, font-weight 600
-- **Line 2** (small muted): `"Acesso garantido em segundos após confirmação de pagamento 🔒"` -- 12px, #9ca3af
-- **Social proof line**: `"Junta-te às 127 pessoas já inscritas"` -- 12px, #6b7280, centered, margin-bottom 8px
-
-### 4. Footer section updates (lines 266-276)
-
-Add a new line between the "Pagamento seguro" and "Cartao de credito" lines:
-- `"✓ Acesso imediato após pagamento  ·  ✓ Suporte via WhatsApp  ·  ✓ Satisfação garantida"` -- 11px, #9ca3af, centered
+Three files changed. No page cards, copy, payment logic, or other pages touched.
 
 ---
 
-## File touched
+## FIX 1 — Modal width + scroll + close button
 
-Only `src/pages/Comprar.tsx` -- inline edits to static copy and a few new optional fields in the PLANS type.
+**File: `src/components/webinar/PurchaseModal.tsx`** (line 118)
+
+Change DialogContent class from:
+```
+sm:max-w-[400px] p-0 overflow-hidden gap-0 border-0 max-h-[90vh] overflow-y-auto
+```
+To:
+```
+w-[95vw] mx-auto sm:max-w-2xl p-0 gap-0 border-0 max-h-[90vh] overflow-y-auto
+```
+
+The close button (X) already exists in the dark header (line 134-138). No change needed there.
+
+---
+
+## FIX 2 — Group toggle on ALL plans (including Gravacao)
+
+**File: `src/components/webinar/PurchaseModal.tsx`** (line 54)
+
+Change:
+```typescript
+const showGroupToggle = plan === "masterclass" || plan === "bundle";
+```
+To:
+```typescript
+const showGroupToggle = plan === "masterclass" || plan === "bundle" || plan === "gravacao";
+```
+
+**File: `src/components/webinar/PurchaseModal.tsx`** — pass `plan` prop to GroupCheckoutForm (line 221-224):
+```tsx
+<GroupCheckoutForm
+  buyerFirstName={firstName}
+  buyerLastName={lastName}
+  buyerEmail={email}
+  plan={plan}
+/>
+```
+
+**File: `src/components/webinar/GroupCheckoutForm.tsx`** — accept `plan` prop and use plan-aware pricing/labels:
+
+Add `plan` to interface:
+```typescript
+interface GroupCheckoutFormProps {
+  buyerFirstName: string;
+  buyerLastName: string;
+  buyerEmail: string;
+  plan?: "masterclass" | "bundle" | "gravacao" | "premium";
+}
+```
+
+Replace hardcoded `PRICE_PER_PERSON = 57.81` with a plan-based lookup:
+```typescript
+const PRICES: Record<string, number> = {
+  masterclass: 57.81,
+  bundle: 76.26,
+  gravacao: 15.00,
+};
+const PLAN_LABELS: Record<string, string> = {
+  masterclass: "Masterclass Video com IA",
+  bundle: "Masterclass + Gravacao",
+  gravacao: "Gravacao HD + Pack de Apoio",
+};
+```
+
+Use `PRICES[plan] || 57.81` as the per-person price throughout.
+
+Update the summary line (line 218) from hardcoded "Masterclass Video com IA" to `PLAN_LABELS[plan]`.
+
+Update the `handleSubmit` body (line 90) to pass `plan` instead of hardcoded `"masterclass"`:
+```typescript
+plan: plan === "bundle" ? "masterclass" : plan,
+```
+
+For gravacao, `plan_selected` in the edge function will receive `"gravacao"` -- but note the backend gap below.
+
+---
+
+## FIX 3 — Mobile layout (375px)
+
+**File: `src/components/webinar/GroupCheckoutForm.tsx`**
+
+Attendee row fields (line 151): change from `flex items-center gap-2` to `flex flex-col sm:flex-row items-stretch sm:items-center gap-2` so inputs stack vertically on mobile.
+
+The "Adicionar outra pessoa" button (line 185) is already `w-full`. No change needed.
+
+The sticky CTA wrapper (line 241) already has `sticky bottom-0 z-10 bg-white pt-1 pb-[env(safe-area-inset-bottom)]`. No change needed.
+
+The toggle label (PurchaseModal line 212): add `flex-wrap` to the parent button class so the label wraps gracefully on 375px.
+
+---
+
+## Backend Gap (informational -- no code change)
+
+The `create-group-payment` edge function is hardcoded for masterclass pricing (EUR 57.81/person). When gravacao groups are submitted, the edge function will charge 57.81/person instead of 15.00/person. This is a **critical gap** that requires an edge function update to support `gravacao` group payments with the correct pricing.
+
+**Recommendation:** Before enabling gravacao group purchases in production, update `create-group-payment` to accept a `plan` parameter and use plan-specific pricing. Until then, the UI will show the correct gravacao price but the actual charge would be incorrect.
+
+**Options:**
+1. Ship the UI now with a note that gravacao group mode needs backend work (toggle visible but backend charges wrong price)
+2. Keep the toggle restricted to masterclass/bundle only until the backend is updated
+
+I will implement the UI changes as requested but flag this clearly. The toggle will show for all plans per the request.
+
+---
+
+## Summary of files changed
+
+| File | Change |
+|---|---|
+| `src/components/webinar/PurchaseModal.tsx` | Wider modal (max-w-2xl), group toggle for all plans, pass plan prop |
+| `src/components/webinar/GroupCheckoutForm.tsx` | Plan-aware pricing/labels, mobile-stacked attendee rows, flex-wrap toggle |
 
