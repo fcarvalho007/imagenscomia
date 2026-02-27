@@ -1,81 +1,23 @@
 
+# Populate 3 NULL email templates
 
-# Responsive fixes + remove text on /comprar
+Create a temporary edge function `populate-templates` that updates the `html_body` of the 3 templates using the exact HTML provided. Deploy it, call it once, verify the results, then delete it.
 
-Only `src/pages/Comprar.tsx` is modified. No logic, icons, colors, or payment flow changes.
+## Steps
 
----
+1. Create `supabase/functions/populate-templates/index.ts` -- a one-shot edge function that uses `SUPABASE_SERVICE_ROLE_KEY` to UPDATE `email_templates` SET `html_body` for the 3 active templates:
+   - `video_postwebinar_day1` (id: `f3b0da12-fa3f-43a3-8365-e748a52f86a0`)
+   - `video_postwebinar_day3` (id: `d5dcf801-ae60-495f-964b-148f66fe8056`)
+   - `video_postwebinar_closing` (id: `a70f9fec-cbd0-4757-aaba-9e88d05aa234`)
 
-## 1. Remove two lines of text from the header
+2. Deploy and invoke the function via curl
 
-Delete the two `<p>` elements (lines 245-250):
-- "Acesso garantido em segundos apos confirmacao de pagamento"
-- "Junta-te as 127 pessoas ja inscritas"
+3. Verify all 3 rows have `html_body` length > 1500 chars
 
----
+4. Delete the temporary edge function
 
-## 2. FIX 1 -- Tablet card width (768px-1024px)
-
-Change the cards container (line 267) from:
-```
-flex flex-col md:flex-row gap-8
-```
-to:
-```
-flex flex-col md:flex-row gap-6 md:gap-4 lg:gap-8
-```
-
-Change PlanCard body padding (line 129) from `p-8` to `p-6 md:p-5 lg:p-8` so cards breathe better at tablet widths.
-
----
-
-## 3. FIX 2 -- "Ultimos lugares disponiveis" badge
-
-Add `whitespace-nowrap` to the urgency badge (line 148):
-```
-className="inline-block self-start text-xs font-semibold text-white bg-rose-500 rounded-full px-2 py-1 whitespace-nowrap"
-```
-
----
-
-## 4. FIX 3 -- Header early bird badge on mobile
-
-Replace the single `<span>` (lines 241-243) with two spans:
-- `<span className="sm:hidden">🔥 Early bird — sobe a 5 de Marco</span>`
-- `<span className="hidden sm:inline">🔥 Preco early bird — sobe depois do webinar de 5 de Marco</span>`
-
-Both inside the same parent element. Desktop copy unchanged.
-
----
-
-## 5. FIX 4 -- Mobile scroll hint dots
-
-After the cards `<div>` (after line 280), add a mobile-only section:
-
-```html
-<div className="flex sm:hidden flex-col items-center mt-6">
-  <div className="flex gap-1.5">
-    <div className="w-2 h-2 rounded-full bg-violet-500" />
-    <div className="w-2 h-2 rounded-full bg-white/20" />
-    <div className="w-2 h-2 rounded-full bg-white/20" />
-  </div>
-  <p className="text-white/40 text-xs text-center mt-2">Desliza para ver todos os planos</p>
-</div>
-```
-
-Static, decorative only, no JS.
-
----
-
-## Summary
-
-| Change | Location (line) |
-|---|---|
-| Remove 2 text paragraphs | Lines 245-250 |
-| Tablet gap + card padding | Lines 129, 267 |
-| Urgency badge whitespace-nowrap | Line 148 |
-| Early bird responsive text | Lines 241-243 |
-| Mobile scroll hint dots | After line 280 |
-
-Single file: `src/pages/Comprar.tsx`
-
+## What is NOT changed
+- No edge functions modified
+- No other templates touched
+- No code changes to the frontend
+- The HTML content is exactly as provided by the user (copy-pasted, not generated)
