@@ -57,28 +57,46 @@ function fmtDateTime(iso: string | null) {
   return `${d.getDate()}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-// Sequence of all video emails in chronological order
-const VIDEO_EMAIL_SEQUENCE = [
-  "video_confirmation",
-  "video_reminder_48h",
-  "video_reminder_24h",
-  "video_reminder_1h",
-  "video_followup_prewebinar",
-  "video_postwebinar",
-  "video_postwebinar_day1",
-  "video_postwebinar_day3",
-  "video_postwebinar_closing",
-];
+// GAP 2 — Hardcoded schedule dates
+const WEBINAR_DATE = new Date("2026-03-05T10:00:00Z");
+const POSTWEBINAR_DAY1 = new Date("2026-03-05T13:00:00Z");
+const POSTWEBINAR_DAY3 = new Date("2026-03-08T10:00:00Z");
+const CLOSING_DATE = new Date("2026-03-10T10:00:00Z");
 
-function getNextScheduled(
-  sentKeys: Set<string>,
-  lostAt: string | null,
-): string {
-  if (lostAt) return "Fecho enviado";
-  for (const key of VIDEO_EMAIL_SEQUENCE) {
-    if (!sentKeys.has(key)) return getTemplateLabel(key);
-  }
-  return "Ciclo completo";
+const MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+function fmtDatePt(d: Date): string {
+  return `${d.getDate()} ${MONTHS_PT[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function subHours(date: Date, hours: number): Date {
+  return new Date(date.getTime() - hours * 3600000);
+}
+
+interface NextScheduledResult {
+  label: string;
+  date: Date | null;
+  isLost?: boolean;
+  isComplete?: boolean;
+}
+
+function getNextScheduled(sentKeys: Set<string>, lostAt: string | null): NextScheduledResult {
+  if (lostAt) return { label: "Fecho enviado", date: null, isLost: true };
+  const now = new Date();
+  if (!sentKeys.has("video_confirmation"))
+    return { label: "Confirmação imediata", date: null };
+  if (!sentKeys.has("video_reminder_48h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 48h", date: subHours(WEBINAR_DATE, 48) };
+  if (!sentKeys.has("video_reminder_24h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 24h", date: subHours(WEBINAR_DATE, 24) };
+  if (!sentKeys.has("video_reminder_1h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 1h", date: subHours(WEBINAR_DATE, 1) };
+  if (!sentKeys.has("video_postwebinar_day1") && now < POSTWEBINAR_DAY1)
+    return { label: "Email pós-webinar Dia 1", date: POSTWEBINAR_DAY1 };
+  if (!sentKeys.has("video_postwebinar_day3") && now < POSTWEBINAR_DAY3)
+    return { label: "Email pós-webinar Dia 3", date: POSTWEBINAR_DAY3 };
+  if (!sentKeys.has("video_postwebinar_closing") && now < CLOSING_DATE)
+    return { label: "Email de fecho", date: CLOSING_DATE };
+  return { label: "Ciclo completo", date: null, isComplete: true };
 }
 
 export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Props) {
@@ -99,7 +117,6 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
       });
   }, []);
 
-  // Group email logs by recipient
   const logsByEmail = useMemo(() => {
     const map: Record<string, EmailLog[]> = {};
     for (const log of emailLogs) {
@@ -196,7 +213,7 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                     <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: "#64748B" }}>Nome</th>
                     <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: "#64748B" }}>Emails Recebidos</th>
                     <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: "#64748B" }}>Último Envio</th>
-                    <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5" style={{ color: "#64748B" }}>Próximo Agendado</th>
+                    <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5 hidden md:table-cell" style={{ color: "#64748B" }}>Próximo Agendado</th>
                     <th className="text-[11px] font-semibold uppercase tracking-wider px-4 py-2.5 text-center" style={{ color: "#64748B" }}>Acções</th>
                   </tr>
                 </thead>
@@ -204,9 +221,18 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                   {filtered.map(i => {
                     const logs = logsByEmail[i.email.toLowerCase()] || [];
                     const sentKeys = new Set(logs.filter(l => l.status === "sent").map(l => l.email_key));
-                    const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
                     const planBadge = getPlanBadge(i.plan_selected);
-                    const nextScheduled = getNextScheduled(sentKeys, i.lost_at);
+                    const next = getNextScheduled(sentKeys, i.lost_at);
+
+                    // GAP 3 — only status='sent'
+                    const sentLogs = logs.filter(l => l.status === "sent" && l.sent_at);
+                    const lastSent = sentLogs.length > 0
+                      ? sentLogs.sort((a, b) => new Date(b.sent_at!).getTime() - new Date(a.sent_at!).getTime())[0]
+                      : null;
+
+                    // GAP 1 — max 8 dots
+                    const visibleDots = logs.slice(0, 8);
+                    const overflowCount = Math.max(0, logs.length - 8);
 
                     return (
                       <tr key={i.id} className="border-t" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
@@ -230,70 +256,81 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                           </div>
                         </td>
 
-                        {/* Email dots */}
+                        {/* Email dots — GAP 1 */}
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-1 flex-wrap">
                             {logs.length === 0 ? (
                               <span className="text-[11px] italic" style={{ color: "#94A3B8" }}>nenhum</span>
                             ) : (
-                              logs.map(log => (
-                                <Tooltip key={log.id}>
-                                  <TooltipTrigger asChild>
-                                    <span
-                                      className="inline-flex items-center justify-center cursor-default"
-                                      style={{ width: 14, height: 14, fontSize: 10 }}
-                                    >
-                                      {log.status === "failed" ? (
-                                        <span style={{ color: "#EF4444", fontWeight: 700, fontSize: 11 }}>✕</span>
-                                      ) : (
-                                        <span style={{
-                                          display: "inline-block",
-                                          width: 8,
-                                          height: 8,
-                                          borderRadius: "50%",
-                                          background: getDotColor(log.email_key),
-                                        }} />
-                                      )}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs max-w-[220px]">
-                                    <p className="font-semibold">{getTemplateLabel(log.email_key)}</p>
-                                    <p>{fmtDateTime(log.sent_at)}</p>
-                                    <p style={{ color: log.status === "failed" ? "#EF4444" : "#10B981" }}>
-                                      {log.status === "sent" ? "Enviado" : log.status === "failed" ? "Falha" : log.status}
-                                    </p>
-                                    {log.error_message && <p className="text-[10px]" style={{ color: "#EF4444" }}>{log.error_message}</p>}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ))
+                              <>
+                                {visibleDots.map(log => (
+                                  <Tooltip key={log.id}>
+                                    <TooltipTrigger asChild>
+                                      <span
+                                        className="inline-flex items-center justify-center cursor-default"
+                                        style={{ width: 14, height: 14, fontSize: 10 }}
+                                      >
+                                        {log.status === "failed" ? (
+                                          <span style={{ color: "#EF4444", fontWeight: 700, fontSize: 11 }}>✕</span>
+                                        ) : (
+                                          <span style={{
+                                            display: "inline-block",
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: "50%",
+                                            background: getDotColor(log.email_key),
+                                          }} />
+                                        )}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs max-w-[220px]">
+                                      <p className="font-semibold">{getTemplateLabel(log.email_key)}</p>
+                                      <p>{fmtDateTime(log.sent_at)}</p>
+                                      <p style={{ color: log.status === "failed" ? "#EF4444" : "#10B981" }}>
+                                        {log.status === "sent" ? "Enviado" : log.status === "failed" ? "Falha" : log.status}
+                                      </p>
+                                      {log.error_message && <p className="text-[10px]" style={{ color: "#EF4444" }}>{log.error_message}</p>}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ))}
+                                {overflowCount > 0 && (
+                                  <span style={{ background: "#f3f4f6", color: "#6b7280", fontSize: 10, fontWeight: 500, borderRadius: 20, padding: "1px 6px", marginLeft: 4 }}>
+                                    +{overflowCount}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
 
-                        {/* Último Envio */}
+                        {/* Último Envio — GAP 3 */}
                         <td className="px-4 py-2.5">
-                          {lastLog ? (
+                          {lastSent ? (
                             <>
-                              <p className="text-[12px]" style={{ color: "#0F172A" }}>{fmtDateTime(lastLog.sent_at)}</p>
-                              <p className="text-[11px]" style={{ color: "#94A3B8" }}>{getTemplateLabel(lastLog.email_key)}</p>
+                              <p className="text-[12px]" style={{ color: "#0F172A" }}>{fmtDateTime(lastSent.sent_at)}</p>
+                              <p className="text-[11px]" style={{ color: "#94A3B8" }}>{getTemplateLabel(lastSent.email_key)}</p>
                             </>
                           ) : (
-                            <p className="text-[12px] italic" style={{ color: "#94A3B8" }}>Nenhum email enviado</p>
+                            <p className="text-[12px]" style={{ color: "#94A3B8" }}>—</p>
                           )}
                         </td>
 
-                        {/* Próximo Agendado */}
-                        <td className="px-4 py-2.5">
+                        {/* Próximo Agendado — GAP 2 + GAP 4 */}
+                        <td className="px-4 py-2.5 hidden md:table-cell">
                           <span
                             className="text-[12px] font-medium"
                             style={{
-                              color: nextScheduled === "Fecho enviado" ? "#EF4444"
-                                : nextScheduled === "Ciclo completo" ? "#94A3B8"
-                                : "#0F172A"
+                              color: next.isLost ? "#EF4444"
+                                : next.isComplete ? "#94A3B8"
+                                : "#0F172A",
+                              fontStyle: next.isComplete ? "italic" : "normal",
                             }}
                           >
-                            {nextScheduled}
+                            {next.label}
                           </span>
+                          {next.date && (
+                            <p className="text-[11px]" style={{ color: "#94A3B8" }}>{fmtDatePt(next.date)}</p>
+                          )}
                         </td>
 
                         {/* Acções */}
@@ -329,8 +366,15 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                 const logs = logsByEmail[i.email.toLowerCase()] || [];
                 const sentKeys = new Set(logs.filter(l => l.status === "sent").map(l => l.email_key));
                 const planBadge = getPlanBadge(i.plan_selected);
-                const nextScheduled = getNextScheduled(sentKeys, i.lost_at);
-                const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+                const next = getNextScheduled(sentKeys, i.lost_at);
+
+                const sentLogs = logs.filter(l => l.status === "sent" && l.sent_at);
+                const lastSent = sentLogs.length > 0
+                  ? sentLogs.sort((a, b) => new Date(b.sent_at!).getTime() - new Date(a.sent_at!).getTime())[0]
+                  : null;
+
+                const mobileDots = logs.slice(0, 8);
+                const mobileOverflow = Math.max(0, logs.length - 8);
 
                 return (
                   <div key={i.id} className="rounded-xl border p-3" style={{ background: "#fff", borderColor: "rgba(0,0,0,0.06)" }}>
@@ -349,12 +393,15 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                           )}
                         </div>
                       </div>
-                      <span className="text-[11px]" style={{ color: nextScheduled === "Fecho enviado" ? "#EF4444" : "#94A3B8" }}>
-                        {nextScheduled}
+                      <span
+                        className="text-[11px]"
+                        style={{ color: next.isLost ? "#EF4444" : "#94A3B8", fontStyle: next.isComplete ? "italic" : "normal" }}
+                      >
+                        {next.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 flex-wrap mb-2">
-                      {logs.map(log => (
+                      {mobileDots.map(log => (
                         <span key={log.id} style={{
                           display: "inline-block",
                           width: log.status === "failed" ? "auto" : 8,
@@ -368,11 +415,16 @@ export default function FollowUpPessoasVideo({ inscritos, onSelectInscrito }: Pr
                           {log.status === "failed" ? "✕" : ""}
                         </span>
                       ))}
+                      {mobileOverflow > 0 && (
+                        <span style={{ background: "#f3f4f6", color: "#6b7280", fontSize: 10, fontWeight: 500, borderRadius: 20, padding: "1px 6px", marginLeft: 4 }}>
+                          +{mobileOverflow}
+                        </span>
+                      )}
                       {logs.length === 0 && <span className="text-[11px] italic" style={{ color: "#94A3B8" }}>nenhum email</span>}
                     </div>
-                    {lastLog && (
+                    {lastSent && (
                       <p className="text-[11px] mb-2" style={{ color: "#64748B" }}>
-                        Último: {getTemplateLabel(lastLog.email_key)} — {fmtDateTime(lastLog.sent_at)}
+                        Último: {getTemplateLabel(lastSent.email_key)} — {fmtDateTime(lastSent.sent_at)}
                       </p>
                     )}
                     <div className="flex items-center gap-1">
