@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import FollowUpOverview from "./FollowUpOverview";
 import FollowUpAudit from "./FollowUpAudit";
 import FollowUpPessoas from "./FollowUpPessoas";
+import FollowUpPessoasVideo from "./FollowUpPessoasVideo";
 import TemplatesView from "./TemplatesView";
 import AutomationFlowTab from "./AutomationFlowTab";
 import EmailEditorPanel, { type EmailTemplate } from "./EmailEditorPanel";
@@ -54,6 +56,7 @@ type TabKey = typeof TABS[number]["key"];
 const TEMPLATE_KEYS = [
   "video_confirmation", "video_followup_prewebinar", "video_reminder_48h", "video_reminder_24h", "video_reminder_1h", "video_postwebinar",
   "video_postwebinar_day1", "video_postwebinar_day3", "video_postwebinar_closing",
+  "video_payment_premium", "video_payment_masterclass",
   "imagens_confirmation", "imagens_reminder_48h", "imagens_reminder_24h", "imagens_reminder_1h", "imagens_postwebinar",
 ];
 
@@ -139,7 +142,11 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
 
   const handleOpenEditor = useCallback((templateKey: string) => {
     const tpl = emailTemplates.find((t) => t.template_key === templateKey);
-    if (tpl) setSelectedTemplate(tpl);
+    if (tpl) {
+      setSelectedTemplate(tpl);
+    } else {
+      toast.error("Template não configurado");
+    }
   }, [emailTemplates]);
 
   const handleEditorSaved = useCallback((updated: EmailTemplate) => {
@@ -239,13 +246,20 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           </div>
 
           {auditSubTab === "pessoas" ? (
-            <FollowUpPessoas
-              inscritos={inscritos}
-              logs={logs}
-              logsLoading={logsLoading}
-              initialFilter={auditFilter}
-              onSelectInscrito={onSelectInscrito}
-            />
+            webinarContext === "video" ? (
+              <FollowUpPessoasVideo
+                inscritos={inscritos}
+                onSelectInscrito={onSelectInscrito}
+              />
+            ) : (
+              <FollowUpPessoas
+                inscritos={inscritos}
+                logs={logs}
+                logsLoading={logsLoading}
+                initialFilter={auditFilter}
+                onSelectInscrito={onSelectInscrito}
+              />
+            )
           ) : (
             <FollowUpAudit
               inscritos={inscritos}
