@@ -1,77 +1,127 @@
 
-# 3 Targeted Fixes for Automacoes
+# Fix 4 Gaps in FollowUpPessoasVideo.tsx
 
-## FIX 1 — Register missing template keys
-
-**Ficheiro:** `src/components/crm/FollowUpView.tsx`
-
-O array `TEMPLATE_KEYS` (linha 54-58) ja inclui a maioria dos keys de video, mas faltam 2:
-- `"video_payment_premium"`
-- `"video_payment_masterclass"`
-
-Adicionar esses 2 keys ao array. Os restantes (`video_postwebinar_day1`, `video_postwebinar_day3`, `video_postwebinar_closing`, `video_followup_prewebinar`) ja estao presentes.
-
-Alem disso, no `AutomationFlowTab.tsx` (linha 642-653), o botao "Ver email" nao tem fallback quando o template nao e encontrado. Adicionar logica no `FollowUpView.handleOpenEditor` para mostrar `toast.error("Template nao configurado")` se o template nao for encontrado no array carregado da BD.
+Single file change: `src/components/crm/FollowUpPessoasVideo.tsx`
 
 ---
 
-## FIX 2 — Novo componente FollowUpPessoasVideo
+## GAP 1 — Max 8 dots with "+N" overflow pill
 
-**Novo ficheiro:** `src/components/crm/FollowUpPessoasVideo.tsx`
-
-Componente dedicado ao contexto Video que mostra historico de emails por pessoa.
-
-### Dados
-- Usa `inscritos` (ja filtrados para video pelo parent) + query directa a `email_send_logs` filtrando `webinar = 'video'`
-- Join client-side por `recipient_email`
-
-### Colunas da tabela
-1. **Nome** — nome + email (12px grey) + badge de plano (green=gratuito, blue=premium, purple=masterclass) + badge vermelho "perdido" se `lost_at` existir
-2. **Emails Recebidos** — dots inline coloridos por template:
-   - `video_confirmation` → verde
-   - `video_reminder_*` → azul
-   - `video_followup_prewebinar` → amber
-   - `video_payment_*` → roxo
-   - `video_postwebinar` / `_day1` / `_day3` → laranja
-   - `video_postwebinar_closing` → vermelho
-   - Falha: X vermelho
-   - Tooltip com nome do template (via `templateLabels.ts`), data, e status
-3. **Ultimo Envio** — data/hora do email mais recente + label do template
-4. **Proximo Agendado** — calculo baseado na data de registo e datas dos crons (5 Mar, 8 Mar, 10 Mar) vs emails ja enviados. "Ciclo completo" se todos enviados, "Fecho enviado" se perdido
-5. **Accoes** — mesmos icones actuais (ficha, WhatsApp)
-
-### Filtros
-`"Todos"` | `"So gratuitos"` | `"Compraram"` | `"Sem emails"` | `"Perdidos"`
-
-### Empty state
-"Ainda sem inscritos no Webinar Video."
+In the desktop table (lines 236-269) and mobile cards (lines 356-370):
+- Slice logs to first 8: `const visibleDots = logs.slice(0, 8)`
+- Calculate overflow: `const overflowCount = logs.length - 8`
+- Render only `visibleDots` instead of all `logs`
+- After the dots, if `overflowCount > 0`, append:
+```tsx
+<span style={{ background: "#f3f4f6", color: "#6b7280", fontSize: 10, fontWeight: 500, borderRadius: 20, padding: "1px 6px", marginLeft: 4 }}>
+  +{overflowCount}
+</span>
+```
 
 ---
 
-## FIX 3 — Condicional no FollowUpView
+## GAP 2 — Hardcoded schedule dates + new getNextScheduled
 
-**Ficheiro:** `src/components/crm/FollowUpView.tsx`
+Replace lines 60-82 (the `VIDEO_EMAIL_SEQUENCE` array and current `getNextScheduled` function) with:
 
-Na tab "Pessoas" (sub-tab "Pessoas"), verificar `webinarContext`:
-- Se `"video"` ou `"consolidado"` com sub-filtro video: renderizar `FollowUpPessoasVideo`
-- Se `"imagens"`: renderizar `FollowUpPessoas` existente (zero alteracoes)
+**New constants** (before component):
+```typescript
+const WEBINAR_DATE = new Date("2026-03-05T10:00:00Z");
+const POSTWEBINAR_DAY1 = new Date("2026-03-05T13:00:00Z");
+const POSTWEBINAR_DAY3 = new Date("2026-03-08T10:00:00Z");
+const CLOSING_DATE = new Date("2026-03-10T10:00:00Z");
 
-O componente `FollowUpPessoas.tsx` nao e modificado.
+const MONTHS_PT = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+function fmtDatePt(d: Date): string {
+  return `${d.getDate()} ${MONTHS_PT[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}`;
+}
+
+function subHours(date: Date, hours: number): Date {
+  return new Date(date.getTime() - hours * 3600000);
+}
+```
+
+**New return type and function:**
+```typescript
+interface NextScheduledResult {
+  label: string;
+  date: Date | null;
+  isLost?: boolean;
+  isComplete?: boolean;
+}
+
+function getNextScheduled(sentKeys: Set<string>, lostAt: string | null): NextScheduledResult {
+  if (lostAt) return { label: "Fecho enviado", date: null, isLost: true };
+  const now = new Date();
+  if (!sentKeys.has("video_confirmation"))
+    return { label: "Confirmacao imediata", date: null };
+  if (!sentKeys.has("video_reminder_48h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 48h", date: subHours(WEBINAR_DATE, 48) };
+  if (!sentKeys.has("video_reminder_24h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 24h", date: subHours(WEBINAR_DATE, 24) };
+  if (!sentKeys.has("video_reminder_1h") && now < WEBINAR_DATE)
+    return { label: "Lembrete 1h", date: subHours(WEBINAR_DATE, 1) };
+  if (!sentKeys.has("video_postwebinar_day1") && now < POSTWEBINAR_DAY1)
+    return { label: "Email pos-webinar Dia 1", date: POSTWEBINAR_DAY1 };
+  if (!sentKeys.has("video_postwebinar_day3") && now < POSTWEBINAR_DAY3)
+    return { label: "Email pos-webinar Dia 3", date: POSTWEBINAR_DAY3 };
+  if (!sentKeys.has("video_postwebinar_closing") && now < CLOSING_DATE)
+    return { label: "Email de fecho", date: CLOSING_DATE };
+  return { label: "Ciclo completo", date: null, isComplete: true };
+}
+```
+
+**Update all call sites** to use the new object return type:
+- Desktop table (line 209): `const next = getNextScheduled(...)` then use `next.label`, `next.isLost`, `next.isComplete`, `next.date`
+- Mobile cards (line 332): same pattern
+- "Proximo Agendado" column: show `next.label` + `fmtDatePt(next.date)` below when date exists
+- Style: `isLost` = red, `isComplete` = grey italic
 
 ---
 
-## Ficheiros alterados
+## GAP 3 — "Ultimo Envio" only counts status='sent'
 
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/FollowUpView.tsx` | +2 template keys, fallback toast no handleOpenEditor, condicional video/imagens na tab Pessoas |
-| `src/components/crm/FollowUpPessoasVideo.tsx` | Novo componente — historico de emails por pessoa para Video |
-| `src/components/crm/AutomationFlowTab.tsx` | Nenhuma alteracao |
+In both desktop (line 207) and mobile (line 333), replace:
+```typescript
+const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+```
+with:
+```typescript
+const sentLogs = logs.filter(l => l.status === "sent" && l.sent_at);
+const lastSent = sentLogs.length > 0
+  ? sentLogs.sort((a, b) => new Date(b.sent_at!).getTime() - new Date(a.sent_at!).getTime())[0]
+  : null;
+```
 
-## O que NAO muda
-- `FollowUpPessoas.tsx` (Imagens intacto)
-- `AutomationFlowTab.tsx`
-- Edge functions
-- Templates de email
-- Logica de pagamento
-- Qualquer outra seccao do CRM
+Then use `lastSent` instead of `lastLog` in the "Ultimo Envio" column. When `lastSent` is null, show `"--"` in grey (not "Nenhum email enviado").
+
+---
+
+## GAP 4 — Hide "Proximo Agendado" on mobile
+
+Add `className="hidden md:table-cell"` to:
+- The `<th>` for "Proximo Agendado" (line 199)
+- The `<td>` for "Proximo Agendado" (line 286)
+
+The mobile cards section (lines 327-394) already does NOT show this column, so no change needed there.
+
+---
+
+## Summary of edits
+
+All changes in a single file: `src/components/crm/FollowUpPessoasVideo.tsx`
+
+| Section | Lines | Change |
+|---|---|---|
+| Constants + getNextScheduled | 60-82 | Replace with date constants, helper functions, and new logic returning `NextScheduledResult` |
+| Desktop row variables | 205-209 | Add `lastSent`, `visibleDots`, `overflowCount`; use new `next` object |
+| Desktop dots column | 236-269 | Render `visibleDots` + overflow pill |
+| Desktop "Ultimo Envio" | 273-283 | Use `lastSent` instead of `lastLog` |
+| Desktop "Proximo Agendado" th | 199 | Add `hidden md:table-cell` |
+| Desktop "Proximo Agendado" td | 286-297 | Add `hidden md:table-cell`, use `next.label`/`next.date`/`next.isLost`/`next.isComplete` |
+| Mobile card variables | 329-333 | Add `lastSent`, `mobileDots`, `mobileOverflow`; use `next` object |
+| Mobile dots | 356-370 | Render `mobileDots` + overflow pill |
+| Mobile "Ultimo" | 373-376 | Use `lastSent` |
+| Mobile next label | 352-354 | Use `next.isLost` |
+
+No other files are touched.
