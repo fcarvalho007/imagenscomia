@@ -31,6 +31,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   link_created: "Link de pagamento gerado",
   // Confirmação vídeo
   video_confirmation: "Email de confirmação enviado",
+  // Follow-up pré-webinar
+  video_followup_prewebinar: "Follow-up pré-webinar — upgrade",
   // Fatura
   invoice_notification: "Email de notificação de fatura",
   // E-goi sync
