@@ -1,7 +1,8 @@
 import type { Inscrito } from "@/pages/crm/mockData";
 import { Send } from "lucide-react";
 
-const STEP_NAMES = ["Inscrição", "Origem", "Dúvida", "Premium", "Masterclass", "Conclusão"];
+const STEP_NAMES_IMAGENS = ["Inscrição", "Origem", "Dúvida", "Premium", "Masterclass", "Conclusão"];
+const STEP_NAMES_VIDEO = ["Inscrição", "Qualificação", "Qualificação", "Masterclass", "Gravação", "Dúvida"];
 
 const PLAN_LABELS: Record<string, string> = {
   free: "Gratuito",
@@ -99,6 +100,7 @@ export default function StatusBlock({ inscrito, onResendLink, onToggleInvoiceSen
   // State C — Free, incomplete flow
   if ((inscrito.step_reached || 0) < 5) {
     const step = inscrito.step_reached || 1;
+    const STEP_NAMES = inscrito.webinar === "video" ? STEP_NAMES_VIDEO : STEP_NAMES_IMAGENS;
     return (
       <div className="rounded-[10px] p-4" style={{ background: "rgba(100,116,139,0.05)", border: "1px solid rgba(100,116,139,0.15)" }}>
         <span className="inline-flex items-center gap-1.5 text-[14px] font-bold" style={{ color: "#94a3b8" }}>
