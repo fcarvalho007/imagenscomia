@@ -11,6 +11,7 @@ import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepDuvida } from "@/components/upgrade/StepDuvida";
 import { VideoConfirmation, type VideoOrderState } from "@/components/upgrade/VideoConfirmation";
 import { toast } from "sonner";
+import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Mail, Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
 
 /* ── CSS for step transitions + confirmation animation ── */
@@ -289,7 +290,14 @@ const UpgradeVideo = () => {
         </p>
       </div>
 
-      <div className="max-sm:h-[20px]" style={{ height: 28 }} />
+      <div className="max-sm:h-[20px]" style={{ height: 24 }} />
+
+      {/* Próximos Passos — Instagram, Calendar, Social Share */}
+      <div className="text-left">
+        <ConfirmacaoExtras webinar="video" />
+      </div>
+
+      <div className="max-sm:h-[20px]" style={{ height: 24 }} />
 
       {/* Purchase summary if any */}
       {(orderState.masterclass || orderState.videoPremium) && (
