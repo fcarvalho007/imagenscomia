@@ -1,73 +1,107 @@
 
-# Redesign Steps 3 e 4 do /upgrade-video
+# Redesign Step 5 + Mobile polish + Confirmacao in-card
 
 ## Resumo
 
-Redesign visual dos componentes `StepMasterclass.tsx` (Step 3) e `StepVideoPremium.tsx` (Step 4) para alinhar com o novo design system do upgrade flow. Sem alteracoes a logica de pagamento, Supabase, ou outros componentes.
+Redesign do StepDuvida (Step 5) com novo visual de checkboxes e layout de botoes. Adicionar estado de confirmacao in-card para utilizadores sem compra (substituir redirect para `/confirmacao`). Aplicar mobile polish global ao UpgradeVideo.tsx e sub-componentes.
 
-## Alteracoes
+## Ficheiros a alterar
 
-### 1. `src/components/upgrade/StepMasterclass.tsx`
+### 1. `src/components/upgrade/StepDuvida.tsx` — Rewrite completo
 
-Rewrite completo do JSX mantendo as mesmas props (`onAddMasterclass`, `onSkip`) e o AlertDialog de confirmacao.
+**Manter:** Props interface (`duvida`, `setDuvida`, `onNext`, `onSkip`, `userName`), logica de multi-select (toggle, buildDuvida, otherText), serializacao para string com `;`.
 
-Mudancas visuais:
-- Step label centrado: "Passo 3 de 5 -- Masterclass Video" (12px, #9ca3af)
-- Headline centrado: "Vais gostar desta opcao" (28px, 700, #111827)
-- Subheadline centrado: "Aprofunda o sistema completo em 3 horas ao vivo." (15px, #6b7280)
-- Pricing card com border #7c3aed, border-radius 20px, shadow purple, padding 28px 24px
-- Badges: esquerdo com fundo #7c3aed e texto branco; direito com fundo #f5f3ff e texto #7c3aed
-- Label "MASTERCLASS ONLINE" em 11px, 700, uppercase, letter-spacing 1.5px
-- Preco: "euro47" em 48px/800 (mobile 40px) + "+ IVA" inline 16px/400
-- Early bird badge: fundo #fefce8, border #fde047, texto #854d0e
-- Date box: fundo #f5f3ff, texto #7c3aed
-- Benefits: check icon 20px purple circle com tick branco, gap 14px entre items, sub em 13px (mobile 12px)
-- Meta row centrado com middots: "calendario 12 de Marco . laptop Online . relogio 3 horas" (12px, #9ca3af)
-- CTA primario: fundo #7c3aed, hover #6d28d9, rounded-[28px], h-[52px], 16px/700
-- Social proof: "Grupo limitado para garantir acompanhamento." (12px, #9ca3af)
-- Separador "ou" com linhas #e5e7eb
-- CTA secundario: border 1.5px #e5e7eb, rounded-[28px], h-[48px], 15px/500, hover bg #f9fafb
-- Reassurance note: italico, 12px, #9ca3af
+**Novo visual:**
+- Step label centrado: "Passo 5 de 5 -- A tua duvida" (12px, #9ca3af)
+- Headline: "{firstName}, uma ultima pergunta" (28px, 700, #111827) -- mobile: 24px
+- Subheadline: "Isto ajuda-nos a preparar o conteudo para ti." (15px, #6b7280)
+- Question: "Qual a maior duvida..." (17px, 600, #111827)
+- Hint: "(pode seleccionar mais de uma)" (13px, #9ca3af, italic)
+- Checkbox rows full-width: min-height 52px, border 1.5px #e5e7eb, rounded-[12px], padding 14px 16px
+- Custom checkbox: 20x20px, rounded-[6px], unselected: border 2px #d1d5db, selected: bg #1e40af com tick branco
+- Selected row: border #1e40af, bg #eff6ff, text #1e40af, font-weight 600
+- "Outro" com input text (font-size 16px para iOS)
+- Botoes: "Finalizar" (bg #1e40af, h-52, rounded-[28px], 16px/700, min-w-160px) + "Saltar" (inline link, #9ca3af, underline dotted)
+- Mobile: botoes empilhados verticalmente, Finalizar full-width, Saltar centrado abaixo
 
-### 2. `src/components/upgrade/StepVideoPremium.tsx`
+### 2. `src/pages/UpgradeVideo.tsx` — Mobile polish + confirmacao
 
-Rewrite completo do JSX mantendo as mesmas props (`onAddPremium`, `onSkip`, `userName`) e o AlertDialog.
+**Header mobile:** Colapsar para uma unica linha "Webinar Video . 5 Mar check" em < 640px. Esconder texto "Inscricao gratuita confirmada" em mobile, manter so o check verde.
 
-Nova prop adicionada: `masterclassSelected?: boolean` — para mostrar nota verde no topo se Masterclass foi seleccionada no Step 3.
+**Progress bar label mobile:** Em < 480px, mostrar so "Passo N/5" sem o subtitulo.
 
-Mudancas visuais:
-- Se `masterclassSelected` = true: nota verde no topo "checkmark Masterclass garantida." (14px, 600, #16a34a, fundo #f0fdf4, border #bbf7d0, rounded-lg, padding 10px 14px)
-- Step label centrado: "Passo 4 de 5 -- Gravacao Video" (12px, #9ca3af)
-- Headline: "Gravacao do Webinar Video" (28px, 700) + "(opcional)" inline (28px, 400, #9ca3af)
-- Subheadline centrado (15px, #6b7280)
-- Pricing card com border #1e40af, border-radius 20px, shadow blue, padding 28px 24px
-- Badges: esquerdo fundo #1e40af texto branco; direito fundo #eff6ff texto #1e40af
-- Preco: "euro15" em 48px/800 (mobile 40px)
-- Early bird badge: mesma cor amber do Step 3
-- Date box: fundo #eff6ff, texto #1e40af
-- Benefits: check icon blue #1e40af, sub em 13px (mobile 12px)
-- CTA primario: fundo #1e40af, hover #1e3a8a, rounded-[28px], h-[52px]
-- Social proof: "Recomendado para quem quer rever e aplicar sem pressa."
-- Separador + CTA secundario + reassurance note: mesmo estilo do Step 3
+**Card overrides mobile:**
+- `overscroll-behavior: none` no card
+- `padding-top: env(safe-area-inset-top)` no header
+- `overflow-x: hidden` no wrapper principal
 
-### 3. `src/pages/UpgradeVideo.tsx`
+**Confirmacao in-card (step 7 visual, para free users):**
+Quando `goToFreeConfirmation()` e chamado actualmente, em vez de redirect, fazer `goForward(7)` e renderizar um novo bloco inline no step === 7:
+- Circulo verde 64px com tick 32px (#16a34a sobre #dcfce7)
+- "Estas inscrito, {firstName}." (28px, 700) -- mobile 24px
+- "Webinar Video com IA . 5 de Marco . 10h00" (15px, #6b7280)
+- Info box verde (#f0fdf4, border #bbf7d0): "Vais receber um email de confirmacao..."
+- Se orderState tem compras: summary com badges + precos
+- CTA "Voltar ao inicio": border #e5e7eb, h-48, rounded-[28px], navega para /video
+- Animacao: fade-in com scale no circulo (300ms, ease-out)
 
-Unica alteracao: passar `masterclassSelected={orderState.masterclass}` como prop ao `StepVideoPremium` (linha ~334). Tudo o resto fica inalterado.
+**Nota:** Para paid users (step 6 = VideoConfirmation), o fluxo permanece inalterado -- redirect para EuPago.
+
+**Actualizar `goToFreeConfirmation`:** Em vez de `window.location.href = /confirmacao...`, fazer `goForward(7)`.
+
+**Progress bar:** Esconder no step 7 (confirmacao). Ou manter em 100%.
+
+**totalSteps:** Manter visual em 5 (step 7 nao conta para a barra).
+
+### 3. Mobile polish nos sub-componentes (StepRole, StepTeamSize, StepMasterclass, StepVideoPremium)
+
+Alteracoes minimas, apenas responsive:
+
+**StepRole.tsx:**
+- Headline ja tem `max-sm:text-[26px]` -- OK
+- Chips ja tem `max-sm:w-full` -- OK
+- Sem alteracoes necessarias
+
+**StepTeamSize.tsx:**
+- Headline ja tem `max-sm:text-[22px]` -- OK
+- Sem alteracoes necessarias
+
+**StepMasterclass.tsx:**
+- Headline 28px -- adicionar `max-sm:text-[24px]` via className
+- Price ja tem `max-sm:text-[40px]` -- reduzir para `max-sm:text-[38px]`
+- Sem outras alteracoes
+
+**StepVideoPremium.tsx:**
+- Mesmas alteracoes que StepMasterclass (headline e price mobile)
+
+### 4. CSS global no UpgradeVideo.tsx
+
+Adicionar ao style tag existente:
+- `.upgrade-card-inner { overscroll-behavior: none; }`
+- Header: `padding-top: env(safe-area-inset-top)` no estilo inline
+- Wrapper: `overflow-x: hidden` (ja inline)
+- Confirmacao: keyframes `confirmFadeIn` e `confirmScaleIn`
+- Mobile header: media query < 640px para colapsar a single line
 
 ## O que NAO muda
 
-- Props de callback (`onAddMasterclass`, `onSkip`, `onAddPremium`)
-- AlertDialog de confirmacao (mantido identico, so actualiza cor do botao para match)
+- Steps 1-4 (conteudo e logica inalterados, so mobile polish minimo)
+- VideoConfirmation (step 6) -- checkout pago inalterado
 - Logica de pagamento EuPago
-- Supabase reads/writes
-- Steps 1, 2, 5, 6
-- UpgradeVideo.tsx (excepto a nova prop)
-- Qualquer outro ficheiro
+- Supabase writes/reads (saveStepData, handleRecovery)
+- Email automation
+- Routing / outras paginas
+- WhatsAppSupportButton
 
-## Mobile (< 640px)
+## Fluxo final
 
-- Pricing card padding: 20px 16px
-- Preco: 40px em vez de 48px
-- Sub-text benefits: 12px
-- Badges: flex-wrap para empilhar
-- CTAs: sempre full-width, 16px, 52px/48px height mantidos
+1. Step 1: Role (chips, auto-advance)
+2. Step 2: TeamSize (chips, auto-advance)
+3. Step 3: Masterclass (pricing card purple)
+4. Step 4: Gravacao (pricing card blue)
+5. Step 5: Duvida (checkboxes, redesigned)
+6. Step 6: VideoConfirmation (checkout pago -- so se tem compras)
+7. Step 7: Confirmacao in-card (free users -- novo)
+
+Free path: 1 -> 2 -> 3(skip) -> 4(skip) -> 5 -> 7 (confirmacao in-card)
+Paid path: 1 -> 2 -> 3/4(select) -> 5 -> 6(checkout) -> EuPago redirect
