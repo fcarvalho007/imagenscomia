@@ -1,27 +1,43 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
-import { StepQualification } from "@/components/upgrade/StepQualification";
+import { StepRole } from "@/components/upgrade/StepRole";
+import { StepTeamSize } from "@/components/upgrade/StepTeamSize";
 import { StepVideoPremium } from "@/components/upgrade/StepVideoPremium";
 import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepDuvida } from "@/components/upgrade/StepDuvida";
-import { VideoConfirmation, type VideoOrderState, getVideoTotal, formatVideoPrice } from "@/components/upgrade/VideoConfirmation";
+import { VideoConfirmation, type VideoOrderState } from "@/components/upgrade/VideoConfirmation";
 import { toast } from "sonner";
-import { Mail, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Mail, Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 
-const stepVariants = {
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-  exit: { opacity: 0, y: -8, transition: { duration: 0.2 } },
+/* ── CSS for step transitions ── */
+const transitionStyles = `
+@keyframes stepEnterRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes stepEnterLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.step-enter-right { animation: stepEnterRight 250ms ease both; }
+.step-enter-left  { animation: stepEnterLeft 250ms ease both; }
+`;
+
+const PROGRESS_LABELS: Record<number, string> = {
+  3: "Masterclass Vídeo",
+  4: "Gravação",
+  5: "Checkout",
 };
 
 const UpgradeVideo = () => {
   usePageMeta({ title: "Upgrade — Webinar Vídeo com IA", description: "Adicione a gravação e a Masterclass ao seu pack." });
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [orderState, setOrderState] = useState<VideoOrderState>({ videoPremium: false, masterclass: false });
   const [userData, setUserData] = useState({
     nome: searchParams.get("name") || "",
@@ -43,6 +59,9 @@ const UpgradeVideo = () => {
   const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
+  const firstName = userData.nome?.trim().split(" ")[0] || "";
+
+  // ── Recovery ──
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -73,14 +92,13 @@ const UpgradeVideo = () => {
         whatsapp: "",
         referralCode: "",
       });
-      // Restore qualification data if available
       if ((data as any).role) setRole((data as any).role);
       if ((data as any).team_size) setTeamSize((data as any).team_size);
 
-      // If step 1 already completed with required data, restore step
       const sr = (data as any).step_reached;
       if (sr && sr >= 2 && (data as any).role && (data as any).team_size) {
-        const targetStep = sr > 5 ? 5 : sr;
+        // Map old step numbers: old step 1 = role+team (now steps 1-2), old step 2+ shift by 1
+        const targetStep = Math.min(sr + 1, 5);
         setStep(targetStep);
         const plan = (data as any).plan_selected;
         if (plan?.includes("premium") || plan?.includes("bundle")) {
@@ -89,6 +107,8 @@ const UpgradeVideo = () => {
         if (plan?.includes("masterclass") || plan?.includes("bundle")) {
           setOrderState(s => ({ ...s, masterclass: true }));
         }
+      } else if ((data as any).role && (data as any).team_size) {
+        setStep(3);
       }
 
       setNeedsRecovery(false);
@@ -100,6 +120,7 @@ const UpgradeVideo = () => {
     }
   }, [recoveryEmail]);
 
+  // ── Save step data ──
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
     if (!userData.email) return;
     try {
@@ -113,16 +134,23 @@ const UpgradeVideo = () => {
     }
   }, [userData.email]);
 
-  const advanceStep = useCallback((next: number) => {
+  // ── Navigation helpers ──
+  const goForward = useCallback((next: number) => {
+    setDirection(1);
     setStep(next);
   }, []);
 
-  // Force scroll to top whenever step changes (after framer-motion render)
+  const goBack = useCallback((prev: number) => {
+    setDirection(-1);
+    setStep(prev);
+  }, []);
+
+  // Scroll to top on step change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-    if (contentRef.current) contentRef.current.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
   }, [step]);
 
+  // ── Payment ──
   const handlePayment = useCallback(async (plan: string) => {
     if (!userData.email) {
       toast.error("Erro: email não definido. Recarregue a página.");
@@ -159,8 +187,11 @@ const UpgradeVideo = () => {
   }, [userData]);
 
   const totalSteps = 5;
-  const progress = (step / totalSteps) * 100;
+  const visualStep = Math.min(step, 5);
+  const progress = (visualStep / totalSteps) * 100;
+  const progressLabel = PROGRESS_LABELS[visualStep] ? ` — ${PROGRESS_LABELS[visualStep]}` : "";
 
+  // ── Recovery screen (unchanged) ──
   if (needsRecovery) {
     return (
       <div className="min-h-screen bg-off-white flex items-center justify-center p-4">
@@ -202,242 +233,154 @@ const UpgradeVideo = () => {
     );
   }
 
+  // ── Main layout ──
   return (
-    <div className="min-h-screen bg-off-white">
-      {/* Mobile summary bar */}
-      <div className="lg:hidden sticky top-0 z-50 h-12 bg-background border-b border-border px-4 flex items-center justify-between">
-        <p className="font-medium text-[14px] text-ink-700">A sua compra</p>
-        <span className="font-heading font-bold text-[16px] text-ink-900">
-          {formatVideoPrice(getVideoTotal(orderState))} <span className="text-[14px] text-ink-400">c/IVA</span>
-        </span>
+    <div className="min-h-screen flex flex-col" style={{ background: "#f3f4f6" }}>
+      <style>{transitionStyles}</style>
+
+      {/* ── Fixed header bar ── */}
+      <header
+        className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 shrink-0"
+        style={{
+          height: 56,
+          background: "white",
+          borderBottom: "1px solid #e5e7eb",
+        }}
+      >
+        <span className="text-[13px] font-semibold" style={{ color: "#111827" }}>🎬 Webinar Vídeo com IA</span>
+        <span className="text-[13px] hidden sm:block" style={{ color: "#6b7280" }}>5 de Março · 10h00</span>
+        <span className="text-[12px] font-semibold" style={{ color: "#16a34a" }}>Inscrição gratuita confirmada ✓</span>
+      </header>
+
+      {/* ── Progress bar ── */}
+      <div className="shrink-0 px-4 sm:px-6 pt-2" style={{ background: "#f3f4f6" }}>
+        <div className="flex items-center justify-end mb-1">
+          <span className="text-[11px]" style={{ color: "#9ca3af" }}>Passo {visualStep}/{totalSteps}{progressLabel}</span>
+        </div>
+        <div className="w-full overflow-hidden" style={{ height: 3, background: "#e5e7eb", borderRadius: 2 }}>
+          <div style={{ width: `${progress}%`, height: "100%", background: "#1e40af", borderRadius: 2, transition: "width 300ms ease" }} />
+        </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:min-h-screen">
-        {/* Desktop left panel */}
-        <aside className="hidden lg:flex flex-col sticky top-0 h-screen bg-background border-r border-border overflow-hidden" style={{ padding: "40px 24px" }}>
-          <div>
-            <p className="font-heading font-bold text-[16px] text-ink-900">Frederico Carvalho</p>
-            <div className="inline-flex items-center gap-1.5 mt-1 rounded-full px-2.5 py-0.5" style={{ background: 'rgba(22,163,74,0.12)', border: '1px solid rgba(22,163,74,0.25)' }}>
-              <span className="text-[11px] font-bold" style={{ color: '#16a34a' }}>🎬 Vídeo com IA</span>
-            </div>
-          </div>
-          <div className="w-full h-px bg-border mt-5 mb-6" />
-          <p className="font-heading font-semibold text-[14px] text-ink-400 uppercase tracking-[0.08em] mb-4">A SUA COMPRA</p>
-          <div className="flex-1">
-            {orderState.masterclass && (
-              <div className="flex justify-between items-start py-3 border-b border-border">
-                <div>
-                  <p className="font-semibold text-[14px] text-ink-900">Masterclass Online</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">12 Mar · 10h-13h · Online</p>
-                </div>
-                <p className="font-heading font-bold text-[14px] text-ink-900">€47 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
-              </div>
-            )}
-            {orderState.videoPremium && (
-              <div className="flex justify-between items-start py-3 border-b border-border">
-                <div>
-                  <p className="font-semibold text-[14px] text-ink-900">Gravação + Pack de Apoio</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">Acesso contínuo</p>
-                  <p className="text-[13px] text-blue-600 mt-0.5">Q&A: 10 Mar, 14:30h</p>
-                </div>
-                <p className="font-heading font-bold text-[16px] text-ink-900">€15 <span className="text-[14px] font-normal text-ink-400">+ IVA</span></p>
-              </div>
-            )}
-            {!orderState.videoPremium && !orderState.masterclass && (
-              <div className="flex justify-between items-start py-3 border-b border-border">
-                <div>
-                  <p className="font-semibold text-[14px] text-ink-900">Webinar Vídeo com IA</p>
-                  <p className="text-[14px] text-ink-400 mt-0.5">5 Mar · 10h00</p>
-                </div>
-                <p className="font-heading font-bold text-[16px] text-green-600">€0</p>
-              </div>
-            )}
-            {/* Context note */}
-            <div className="my-3" style={{ borderTop: '1px solid #e5e7eb' }} />
-            <p className="text-[11px] leading-[1.5]" style={{ color: '#888' }}>
-              Este é um webinar diferente — focado em <strong style={{ color: '#333' }}>vídeo curto para marketing</strong>, não em imagens estáticas.
-            </p>
-          </div>
-          <div className="mt-4 pt-4" style={{ borderTop: "2px solid hsl(var(--ink-900))" }}>
-            <div className="flex justify-between items-center">
-              <p className="font-heading font-bold text-[14px] text-ink-700 uppercase">TOTAL</p>
-              <p className="font-heading font-extrabold text-[22px] text-ink-900">{formatVideoPrice(getVideoTotal(orderState))}</p>
-            </div>
-          </div>
-          <div className="mt-auto pt-5 border-t border-border">
-            <p className="text-[14px] text-ink-400 leading-[1.8]">🔒 Pagamento seguro EuPago</p>
-            <p className="text-[14px] text-ink-400 leading-[1.8]">📋 RGPD</p>
-          </div>
-        </aside>
+      {/* ── Centered content area ── */}
+      <div ref={contentRef} className="flex-1 flex items-start sm:items-center justify-center px-4 py-6 sm:py-10">
+        <div
+          className="w-full sm:rounded-3xl sm:shadow-lg upgrade-card-inner"
+          style={{
+            maxWidth: 600,
+            background: "white",
+            padding: "48px 40px",
+          }}
+        >
+          {/* Mobile overrides */}
+          <style>{`
+            @media (max-width: 639px) {
+              .upgrade-card-inner {
+                padding: 32px 20px !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                min-height: calc(100vh - 56px - 30px);
+              }
+            }
+          `}</style>
 
-        {/* Right content */}
-        <div ref={contentRef} className="lg:overflow-y-auto lg:h-screen overflow-x-hidden">
-          <div className="px-4 pt-4 pb-24 sm:pt-6 lg:px-12 lg:pt-10 lg:pb-10">
-
-            {/* Confirmation banner — after step 2 (masterclass added) */}
-            {step >= 3 && orderState.masterclass && (
-              <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-heading font-bold text-[15px] text-green-800">Masterclass garantida</p>
-                  <p className="text-[13px] text-green-700 mt-0.5">12 Mar · 10h-13h · 47 € + IVA</p>
-                  <p className="text-[13px] text-green-600 mt-1">Esta página é opcional: serve apenas para adicionar extras.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Confirmation banner — after step 3 (video premium added) */}
-            {step >= 4 && orderState.videoPremium && !orderState.masterclass && (
-              <div className="max-w-[560px] mb-5 lg:mb-6 rounded-xl border border-green-200 bg-green-50 p-4 flex gap-3 items-start lg:relative max-lg:sticky max-lg:top-12 max-lg:z-40">
-                <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-heading font-bold text-[15px] text-green-800">Gravação + Pack garantidos</p>
-                  <p className="text-[13px] text-green-700 mt-0.5">Acesso contínuo · 15 € + IVA</p>
-                  <p className="text-[13px] text-green-600 mt-1">Esta página é opcional: serve apenas para adicionar extras.</p>
-                </div>
-              </div>
-            )}
-
-            {/* Progress bar */}
-            <div className="max-w-[560px] mb-5 lg:mb-8">
-              <div className="w-full h-1.5 rounded-full bg-border overflow-hidden">
-                <div className="h-full bg-blue-600 rounded-full" style={{ width: `${progress}%`, transition: "width 400ms ease" }} />
-              </div>
-              <p className="text-right text-[14px] text-ink-400 font-medium mt-1.5">
-                Passo {step}/{totalSteps}
-                {step === 2 && (
-                  <>
-                    <span className="hidden min-[480px]:inline"> — Masterclass Vídeo</span>
-                    <span className="min-[480px]:hidden"> — Masterclass</span>
-                  </>
-                )}
-                {step === 3 && (
-                  <>
-                    <span className="hidden min-[480px]:inline"> — Gravação Vídeo</span>
-                    <span className="min-[480px]:hidden"> — Gravação</span>
-                  </>
-                )}
-                {step === 4 && " — A tua dúvida"}
-              </p>
-            </div>
-
-            {/* Steps */}
-            <AnimatePresence mode="wait">
-              {step === 1 && (
-                <motion.div key="s1" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepQualification
-                    videoMode
-                    role={role}
-                    setRole={setRole}
-                    teamSize={teamSize}
-                    setTeamSize={setTeamSize}
-                    onNext={() => {
-                      saveStepData(2, { role: role || null, team_size: teamSize || null });
-                      advanceStep(2);
-                    }}
-                    userName={userData.nome}
-                  />
-                </motion.div>
-              )}
-              {step === 2 && (
-                <motion.div key="s2" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepMasterclass
-                    onAddMasterclass={() => {
-                      setOrderState((s) => ({ ...s, masterclass: true }));
-                      saveStepData(3, { plan_selected: "video-masterclass" });
-                      advanceStep(3);
-                    }}
-                    onSkip={() => {
-                      advanceStep(3);
-                    }}
-                  />
-                </motion.div>
-              )}
-              {step === 3 && (
-                <motion.div key="s3" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepVideoPremium
-                    onAddPremium={() => {
-                      setOrderState((s) => ({ ...s, videoPremium: true }));
-                      const newPlan = orderState.masterclass ? "video-bundle" : "video-premium";
-                      saveStepData(4, { plan_selected: newPlan });
-                      advanceStep(4);
-                    }}
-                    onSkip={() => {
-                      if (!orderState.masterclass) {
-                        saveStepData(4, { plan_selected: "video-free" });
-                      }
-                      advanceStep(4);
-                    }}
-                    userName={userData.nome}
-                  />
-                </motion.div>
-              )}
-              {step === 4 && (
-                <motion.div key="s4" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <StepDuvida
-                    duvida={duvida}
-                    setDuvida={setDuvida}
-                    onNext={() => {
-                      const hasOrder = orderState.videoPremium || orderState.masterclass;
-                      saveStepData(5, { duvida: duvida || null });
-                      if (hasOrder) {
-                        advanceStep(5);
-                      } else {
-                        goToFreeConfirmation();
-                      }
-                    }}
-                    onSkip={() => {
-                      const hasOrder = orderState.videoPremium || orderState.masterclass;
-                      saveStepData(5, { duvida: null });
-                      if (hasOrder) {
-                        advanceStep(5);
-                      } else {
-                        goToFreeConfirmation();
-                      }
-                    }}
-                    userName={userData.nome}
-                  />
-                </motion.div>
-              )}
-              {step === 5 && (
-                <motion.div key="s5" variants={stepVariants} initial="initial" animate="animate" exit="exit">
-                  <VideoConfirmation
-                    orderState={orderState}
-                    loading={loading}
-                    error={error}
-                    onPay={handlePayment}
-                    onBack={() => setStep(4)}
-                    userName={userData.nome}
-                    userEmail={userData.email}
-                    registrationId={registrationId || undefined}
-                    editToken={editToken || undefined}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Mobile sticky footer — skip link for upsell steps */}
-        {(step === 2 || step === 3) && (
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 text-center">
+          {/* Back arrow for step 2+ */}
+          {step >= 2 && (
             <button
-              onClick={() => {
-                if (step === 2) {
-                  advanceStep(3);
-                } else if (step === 3) {
+              onClick={() => goBack(step - 1)}
+              className="mb-4 flex items-center justify-center transition-colors"
+              style={{ width: 44, height: 44, color: "#6b7280", cursor: "pointer", background: "transparent", border: "none" }}
+              aria-label="Voltar"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
+
+          {/* Step content with CSS transition */}
+          <div key={step} className={direction === 1 ? "step-enter-right" : "step-enter-left"}>
+            {step === 1 && (
+              <StepRole
+                role={role}
+                setRole={setRole}
+                firstName={firstName}
+                onNext={() => {
+                  saveStepData(1, { role: role || null });
+                  goForward(2);
+                }}
+              />
+            )}
+            {step === 2 && (
+              <StepTeamSize
+                teamSize={teamSize}
+                setTeamSize={setTeamSize}
+                onBack={() => goBack(1)}
+                onNext={() => {
+                  saveStepData(2, { role: role || null, team_size: teamSize || null });
+                  goForward(3);
+                }}
+              />
+            )}
+            {step === 3 && (
+              <StepMasterclass
+                onAddMasterclass={() => {
+                  setOrderState((s) => ({ ...s, masterclass: true }));
+                  saveStepData(3, { plan_selected: "video-masterclass" });
+                  goForward(4);
+                }}
+                onSkip={() => goForward(4)}
+              />
+            )}
+            {step === 4 && (
+              <StepVideoPremium
+                onAddPremium={() => {
+                  setOrderState((s) => ({ ...s, videoPremium: true }));
+                  const newPlan = orderState.masterclass ? "video-bundle" : "video-premium";
+                  saveStepData(4, { plan_selected: newPlan });
+                  goForward(5);
+                }}
+                onSkip={() => {
                   if (!orderState.masterclass) {
                     saveStepData(4, { plan_selected: "video-free" });
                   }
-                  advanceStep(4);
-                }
-              }}
-              className="text-[14px] text-ink-500 hover:text-ink-700 transition-colors underline underline-offset-2"
-            >
-              Continuar com inscrição gratuita →
-            </button>
+                  goForward(5);
+                }}
+                userName={userData.nome}
+              />
+            )}
+            {step === 5 && (
+              <StepDuvida
+                duvida={duvida}
+                setDuvida={setDuvida}
+                onNext={() => {
+                  const hasOrder = orderState.videoPremium || orderState.masterclass;
+                  saveStepData(5, { duvida: duvida || null });
+                  if (hasOrder) goForward(6);
+                  else goToFreeConfirmation();
+                }}
+                onSkip={() => {
+                  const hasOrder = orderState.videoPremium || orderState.masterclass;
+                  saveStepData(5, { duvida: null });
+                  if (hasOrder) goForward(6);
+                  else goToFreeConfirmation();
+                }}
+                userName={userData.nome}
+              />
+            )}
+            {step === 6 && (
+              <VideoConfirmation
+                orderState={orderState}
+                loading={loading}
+                error={error}
+                onPay={handlePayment}
+                onBack={() => goBack(5)}
+                userName={userData.nome}
+                userEmail={userData.email}
+                registrationId={registrationId || undefined}
+                editToken={editToken || undefined}
+              />
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <WhatsAppSupportButton />
