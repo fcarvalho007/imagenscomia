@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Calendar, Lock, CreditCard } from "lucide-react";
+import { Check, Calendar, Lock } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
-import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
@@ -78,7 +77,7 @@ const PLANS: Record<Plan, {
 const DESKTOP_ORDER: Plan[] = ["masterclass", "bundle", "gravacao"];
 const MOBILE_ORDER: Plan[] = ["bundle", "masterclass", "gravacao"];
 
-function PlanCard({ plan, onSelect, hideButton }: { plan: Plan; onSelect: () => void; hideButton?: boolean }) {
+function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
   const cfg = PLANS[plan];
   const isFeatured = cfg.featured;
 
@@ -95,7 +94,6 @@ function PlanCard({ plan, onSelect, hideButton }: { plan: Plan; onSelect: () => 
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; }}
     >
-      {/* MAIS POPULAR badge */}
       {isFeatured && (
         <div
           className="absolute left-1/2 -translate-x-1/2 top-0"
@@ -185,20 +183,18 @@ function PlanCard({ plan, onSelect, hideButton }: { plan: Plan; onSelect: () => 
         </div>
       )}
 
-      {!hideButton && (
-        <button
-          onClick={onSelect}
-          className="mt-auto w-full font-semibold text-white transition-opacity hover:opacity-90"
-          style={{
-            backgroundColor: cfg.ctaColor,
-            borderRadius: 10,
-            height: 48,
-            fontSize: 14,
-          }}
-        >
-          {cfg.ctaLabel}
-        </button>
-      )}
+      <button
+        onClick={onSelect}
+        className="mt-auto w-full font-semibold text-white transition-opacity hover:opacity-90"
+        style={{
+          backgroundColor: cfg.ctaColor,
+          borderRadius: 10,
+          height: 48,
+          fontSize: 14,
+        }}
+      >
+        {cfg.ctaLabel}
+      </button>
     </div>
   );
 }
@@ -211,20 +207,15 @@ export default function Comprar() {
 
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(validPlan);
   const [modalOpen, setModalOpen] = useState(false);
-  const [groupMode, setGroupMode] = useState(false);
 
   useEffect(() => {
-    if (validPlan && !groupMode) {
+    if (validPlan) {
       setSelectedPlan(validPlan);
       setModalOpen(true);
     }
-  }, [validPlan, groupMode]);
+  }, [validPlan]);
 
   const activePlan: Plan = selectedPlan || "bundle";
-  const showGroupToggle =
-    activePlan === "masterclass" || activePlan === "bundle" ||
-    validPlan === "masterclass" || validPlan === "bundle";
-
   const cardOrder = isMobile ? MOBILE_ORDER : DESKTOP_ORDER;
 
   return (
@@ -245,22 +236,17 @@ export default function Comprar() {
           🎬 Webinar Vídeo com IA · 5 de Março · 10h00
         </div>
 
-        {/* Trust line */}
         <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", marginBottom: 8 }}>
           Acesso garantido em segundos após confirmação de pagamento
         </p>
 
-        {/* Cards */}
         {validPlan ? (
           <PlanCard
             plan={validPlan}
             onSelect={() => {
-              if (!groupMode) {
-                setSelectedPlan(validPlan);
-                setModalOpen(true);
-              }
+              setSelectedPlan(validPlan);
+              setModalOpen(true);
             }}
-            hideButton={groupMode}
           />
         ) : (
           <div className="flex flex-col sm:flex-row gap-4 w-full items-stretch">
@@ -270,73 +256,33 @@ export default function Comprar() {
                 plan={p}
                 onSelect={() => {
                   setSelectedPlan(p);
-                  if ((p === "masterclass" || p === "bundle") && groupMode) return;
                   setModalOpen(true);
                 }}
-                hideButton={(p === "masterclass" || p === "bundle") && groupMode}
               />
             ))}
           </div>
         )}
 
-        {/* Group mode toggle */}
-        {showGroupToggle && (
-          <div className="w-full">
-            <button
-              onClick={() => {
-                setGroupMode((prev) => !prev);
-                setModalOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full"
-            >
-              <div
-                className="relative w-10 shrink-0 transition-colors"
-                style={{ height: 22, borderRadius: 11, backgroundColor: groupMode ? "#7c3aed" : "#d1d5db" }}
-              >
-                <div
-                  className="absolute top-[3px] w-4 h-4 rounded-full bg-white transition-transform"
-                  style={{ left: groupMode ? 20 : 3 }}
-                />
-              </div>
-              <span style={{ fontSize: 13, color: "#374151" }}>Inscrever várias pessoas?</span>
-            </button>
-            {groupMode && (
-              <p className="ml-[50px] mt-1.5" style={{ color: "#7c3aed", fontSize: 12 }}>
-                Modo grupo activo — adiciona os participantes abaixo
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Group checkout form */}
-        {groupMode && (activePlan === "masterclass" || activePlan === "bundle") && (
-          <GroupCheckoutForm />
-        )}
-
         {/* Footer */}
-        {!groupMode && (
-          <div className="w-full flex flex-col items-center gap-3 mt-2">
-            <div style={{ width: "100%", maxWidth: 360, height: 1, background: "#e5e7eb" }} />
-            <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#9ca3af" }}>
-              <Lock className="w-3.5 h-3.5" />
-              <span>Pagamento seguro via EuPago</span>
-            </div>
-            <p style={{ fontSize: 11, color: "#9ca3af" }}>
-              Cartão de crédito · MB WAY · Multibanco
-            </p>
+        <div className="w-full flex flex-col items-center gap-3 mt-2">
+          <div style={{ width: "100%", maxWidth: 360, height: 1, background: "#e5e7eb" }} />
+          <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#9ca3af" }}>
+            <Lock className="w-3.5 h-3.5" />
+            <span>Pagamento seguro via EuPago</span>
           </div>
-        )}
+          <p style={{ fontSize: 11, color: "#9ca3af" }}>
+            Cartão de crédito · MB WAY · Multibanco
+          </p>
+        </div>
       </div>
 
-      {!groupMode && (
-        <PurchaseModal
-          open={modalOpen}
-          onOpenChange={setModalOpen}
-          plan={activePlan}
-          planLabel={PLANS[activePlan].planLabel}
-          webinar="video"
-        />
-      )}
+      <PurchaseModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        plan={activePlan}
+        planLabel={PLANS[activePlan].planLabel}
+        webinar="video"
+      />
     </div>
   );
 }
