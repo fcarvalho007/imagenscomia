@@ -1,89 +1,77 @@
 
-# Corrigir funil do Dashboard e TabResumo para Video Webinar
+# 3 Targeted Fixes for Automacoes
 
-## Problema
+## FIX 1 — Register missing template keys
 
-O funil do Dashboard e os nomes dos passos no TabResumo nao correspondem ao fluxo real do /upgrade-video.
+**Ficheiro:** `src/components/crm/FollowUpView.tsx`
 
-Fluxo real no /upgrade-video:
-- Step 1: Qualificacao (StepRole) → step_reached=1
-- Step 2: Equipa (StepTeamSize) → step_reached=2
-- Step 3: Masterclass €47 (StepMasterclass) → step_reached=3
-- Step 4: Gravacao €15 (StepVideoPremium) → step_reached=4
-- Step 5: Duvida (StepDuvida) → step_reached=5
-- Step 6: Checkout (VideoConfirmation) → upgrade_clicked_at
-- Step 7: Confirmacao (paid_at)
+O array `TEMPLATE_KEYS` (linha 54-58) ja inclui a maioria dos keys de video, mas faltam 2:
+- `"video_payment_premium"`
+- `"video_payment_masterclass"`
 
-O CRM actualmente:
-- Salta step_reached >= 1 (nao mostra quem completou Qualificacao)
-- Chama step_reached >= 2 de "Passo 1 — Qualificacao" quando na verdade e Equipa
-- Os numeros dos passos estao todos desfasados em -1
-- TabResumo chama step 1 de "Inscricao" e step 2 de "Qualificacao" — errado
+Adicionar esses 2 keys ao array. Os restantes (`video_postwebinar_day1`, `video_postwebinar_day3`, `video_postwebinar_closing`, `video_followup_prewebinar`) ja estao presentes.
 
-Alem disso, o badge "Dados ate: 20 Fev 2026" aparece no contexto Video, mas o Video nao tem cutoff (cutoffDate: null).
+Alem disso, no `AutomationFlowTab.tsx` (linha 642-653), o botao "Ver email" nao tem fallback quando o template nao e encontrado. Adicionar logica no `FollowUpView.handleOpenEditor` para mostrar `toast.error("Template nao configurado")` se o template nao for encontrado no array carregado da BD.
 
-## Correcoes
+---
 
-### 1. DashboardView.tsx — Funil Video (linhas 273-281)
+## FIX 2 — Novo componente FollowUpPessoasVideo
 
-Adicionar step_reached >= 1 como linha separada e corrigir todos os labels:
+**Novo ficheiro:** `src/components/crm/FollowUpPessoasVideo.tsx`
 
-```text
-Antes (5 linhas de funil):
-1. Submeteu inscricao          → step1 (total)
-2. Passo 1 — Qualificacao      → step_reached >= 2
-3. Masterclass (Passo 2)       → step_reached >= 3
-4. Gravacao (Passo 3)          → step_reached >= 4
-5. Passo 4 — Duvida            → step_reached >= 5
+Componente dedicado ao contexto Video que mostra historico de emails por pessoa.
 
-Depois (6 linhas de funil):
-1. Submeteu inscricao          → total
-2. Passo 1 — Qualificacao      → step_reached >= 1  (NOVO)
-3. Passo 2 — Equipa            → step_reached >= 2  (CORRIGIDO)
-4. Passo 3 — Masterclass €47   → step_reached >= 3  (CORRIGIDO)
-5. Passo 4 — Gravacao €15      → step_reached >= 4  (CORRIGIDO)
-6. Passo 5 — Duvida            → step_reached >= 5  (CORRIGIDO)
-```
+### Dados
+- Usa `inscritos` (ja filtrados para video pelo parent) + query directa a `email_send_logs` filtrando `webinar = 'video'`
+- Join client-side por `recipient_email`
 
-Apos estes 6, mantem-se "Clicou para pagar" e "Pagamento confirmado".
+### Colunas da tabela
+1. **Nome** — nome + email (12px grey) + badge de plano (green=gratuito, blue=premium, purple=masterclass) + badge vermelho "perdido" se `lost_at` existir
+2. **Emails Recebidos** — dots inline coloridos por template:
+   - `video_confirmation` → verde
+   - `video_reminder_*` → azul
+   - `video_followup_prewebinar` → amber
+   - `video_payment_*` → roxo
+   - `video_postwebinar` / `_day1` / `_day3` → laranja
+   - `video_postwebinar_closing` → vermelho
+   - Falha: X vermelho
+   - Tooltip com nome do template (via `templateLabels.ts`), data, e status
+3. **Ultimo Envio** — data/hora do email mais recente + label do template
+4. **Proximo Agendado** — calculo baseado na data de registo e datas dos crons (5 Mar, 8 Mar, 10 Mar) vs emails ja enviados. "Ciclo completo" se todos enviados, "Fecho enviado" se perdido
+5. **Accoes** — mesmos icones actuais (ficha, WhatsApp)
 
-Adicionar nova variavel `step1q` para step_reached >= 1 no bloco `stats`:
-```text
-const step1q = active.filter((i) => (i.step_reached || 0) >= 1).length;
-```
+### Filtros
+`"Todos"` | `"So gratuitos"` | `"Compraram"` | `"Sem emails"` | `"Perdidos"`
 
-Ajustar `funnelValues` e `dropOffs` para incluir o novo step.
+### Empty state
+"Ainda sem inscritos no Webinar Video."
 
-O separador "INTENCAO DE COMPRA" move-se para antes do Passo 3 (Masterclass).
+---
 
-Os sublabels ficam:
-- Passo 3: "Viu a oferta de €47+IVA"
-- Passo 4: "Viu a oferta de €15+IVA"
+## FIX 3 — Condicional no FollowUpView
 
-### 2. DashboardView.tsx — Badge de cutoff (linha 328-329)
+**Ficheiro:** `src/components/crm/FollowUpView.tsx`
 
-Condicionar a exibicao: so mostrar "Dados ate: 20 Fev 2026" quando cutoffDate existe (imagens e consolidado). Para video, nao mostrar ou mostrar "Sem limite temporal".
+Na tab "Pessoas" (sub-tab "Pessoas"), verificar `webinarContext`:
+- Se `"video"` ou `"consolidado"` com sub-filtro video: renderizar `FollowUpPessoasVideo`
+- Se `"imagens"`: renderizar `FollowUpPessoas` existente (zero alteracoes)
 
-### 3. TabResumo.tsx — STEP_NAMES_VIDEO (linha 23)
+O componente `FollowUpPessoas.tsx` nao e modificado.
 
-Corrigir:
-```text
-Antes:  { 1: "Inscricao", 2: "Qualificacao", 3: "Masterclass", 4: "Gravacao", 5: "Duvida" }
-Depois: { 1: "Qualificacao", 2: "Equipa", 3: "Masterclass", 4: "Gravacao", 5: "Duvida" }
-```
+---
 
 ## Ficheiros alterados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/components/crm/DashboardView.tsx` | Funil video: +1 step, labels corrigidos, cutoff badge condicional |
-| `src/components/crm/modal/TabResumo.tsx` | STEP_NAMES_VIDEO corrigido |
+| `src/components/crm/FollowUpView.tsx` | +2 template keys, fallback toast no handleOpenEditor, condicional video/imagens na tab Pessoas |
+| `src/components/crm/FollowUpPessoasVideo.tsx` | Novo componente — historico de emails por pessoa para Video |
+| `src/components/crm/AutomationFlowTab.tsx` | Nenhuma alteracao |
 
 ## O que NAO muda
-
-- Funil Imagens (intacto)
-- Funil Consolidado (intacto)
+- `FollowUpPessoas.tsx` (Imagens intacto)
+- `AutomationFlowTab.tsx`
 - Edge functions
 - Templates de email
-- Outros tabs do CRM
-- AutomationFlowTab
+- Logica de pagamento
+- Qualquer outra seccao do CRM
