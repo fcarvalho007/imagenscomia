@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Calendar, Lock } from "lucide-react";
+import { Check, Lock, Video, Sparkles, Play, FileText, MessageCircle, CalendarDays } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
+
+function getBenefitIcon(text: string, color: string) {
+  const lower = text.toLowerCase();
+  if (lower.includes("horas ao vivo") || lower.includes("masterclass")) return <Video className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("sistema completo") || lower.includes("prompts")) return <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("gravação") || lower.includes("gravacao")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("pack de apoio") || lower.includes("checklists")) return <FileText className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("sessão q&a") || lower.includes("sessao q&a")) return <MessageCircle className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  return <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+}
 
 const PLANS: Record<Plan, {
   title: string;
@@ -20,10 +30,12 @@ const PLANS: Record<Plan, {
   benefits: string[];
   dateBox?: string;
   ctaLabel: string;
-  ctaColor: string;
   planLabel: string;
   featured?: boolean;
-  checkColor: string;
+  stripeClass: string;
+  iconColor: string;
+  ctaClassName: string;
+  shadow: string;
 }> = {
   masterclass: {
     title: "Masterclass Vídeo com IA",
@@ -39,9 +51,11 @@ const PLANS: Record<Plan, {
     ],
     dateBox: "12 de Março · 10h00–13h00",
     ctaLabel: "Quero o meu lugar na Masterclass →",
-    ctaColor: "#7c3aed",
     planLabel: "Masterclass Vídeo com IA · €47 + IVA",
-    checkColor: "#7c3aed",
+    stripeClass: "bg-violet-400",
+    iconColor: "#8b5cf6",
+    ctaClassName: "bg-violet-600 hover:bg-violet-700 rounded-xl py-4 font-semibold",
+    shadow: "0 8px 40px rgba(0,0,0,0.25)",
   },
   bundle: {
     title: "Masterclass + Gravação",
@@ -61,10 +75,12 @@ const PLANS: Record<Plan, {
     ],
     dateBox: "12 de Março · 10h00–13h00",
     ctaLabel: "Quero o Bundle completo →",
-    ctaColor: "#7c3aed",
     planLabel: "Masterclass + Gravação · €57 + IVA",
     featured: true,
-    checkColor: "#7c3aed",
+    stripeClass: "bg-gradient-to-r from-violet-600 to-purple-500",
+    iconColor: "#8b5cf6",
+    ctaClassName: "bg-gradient-to-r from-violet-600 to-purple-600 hover:opacity-90 rounded-xl py-4 font-bold text-lg",
+    shadow: "0 16px 60px rgba(124,58,237,0.4)",
   },
   gravacao: {
     title: "Gravação HD + Pack de Apoio",
@@ -76,158 +92,104 @@ const PLANS: Record<Plan, {
       "Sessão Q&A em grupo · 10 de Março · 14h30",
     ],
     ctaLabel: "Quero a gravação →",
-    ctaColor: "#1e40af",
     planLabel: "Gravação HD + Pack de Apoio · €15",
-    checkColor: "#1e40af",
+    stripeClass: "bg-slate-700",
+    iconColor: "#475569",
+    ctaClassName: "bg-slate-800 hover:bg-slate-900 rounded-xl py-4 font-semibold",
+    shadow: "0 8px 40px rgba(0,0,0,0.25)",
   },
 };
 
 const DESKTOP_ORDER: Plan[] = ["masterclass", "bundle", "gravacao"];
 const MOBILE_ORDER: Plan[] = ["bundle", "masterclass", "gravacao"];
 
-function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
+function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => void; isMobile: boolean }) {
   const cfg = PLANS[plan];
   const isFeatured = cfg.featured;
 
   return (
     <div
-      className="relative flex flex-col gap-4 flex-1 min-w-[220px] bg-white transition-shadow duration-200"
+      className="relative flex flex-col flex-1 min-w-[220px] bg-white overflow-hidden"
       style={{
-        borderRadius: 16,
-        padding: "28px 24px",
-        border: isFeatured ? "2px solid #7c3aed" : "1px solid #e5e7eb",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        transform: isFeatured ? "scale(1.03)" : undefined,
+        borderRadius: 20,
+        boxShadow: cfg.shadow,
+        transform: isFeatured && !isMobile ? "scale(1.04)" : undefined,
       }}
-      onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; }}
     >
-      {isFeatured && (
-        <div
-          className="absolute left-1/2 -translate-x-1/2 top-0"
-          style={{
-            background: "#7c3aed",
-            color: "white",
-            fontSize: 9,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            borderRadius: "0 0 8px 8px",
-            padding: "4px 14px",
-          }}
-        >
+      {/* Top stripe or MAIS POPULAR banner */}
+      {isFeatured ? (
+        <div className="bg-gradient-to-r from-violet-600 to-purple-500 text-white text-xs font-bold tracking-widest py-2 text-center rounded-t-[20px]">
           MAIS POPULAR
         </div>
+      ) : (
+        <div className={`h-2 rounded-t-[20px] ${cfg.stripeClass}`} />
       )}
 
-      <div className={isFeatured ? "mt-4" : ""}>
-        <h2 className="text-lg font-bold" style={{ color: "#111827" }}>{cfg.title}</h2>
-        <div className="flex items-baseline gap-2 mt-1">
-          <span style={{ fontSize: 32, fontWeight: 700, color: "#111827" }}>{cfg.price}</span>
-          {cfg.ivaNote && <span style={{ fontSize: 14, color: "#6b7280", fontWeight: 400 }}>{cfg.ivaNote}</span>}
-          {cfg.priceStrike && (
-            <span style={{ fontSize: 14, color: "#9ca3af", textDecoration: "line-through" }}>{cfg.priceStrike}</span>
-          )}
-          {cfg.savingsBadge && (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: "#16a34a",
-                background: "#dcfce7",
-                borderRadius: 99,
-                padding: "2px 8px",
-              }}
-            >
-              {cfg.savingsBadge}
-            </span>
-          )}
+      {/* Card body */}
+      <div className="flex flex-col flex-1 justify-between p-8 gap-5">
+        <div className="flex flex-col gap-4">
+          <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
+
+          {/* Price row */}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-5xl font-black text-gray-900">{cfg.price}</span>
+            {cfg.ivaNote && <span className="text-sm text-gray-400">{cfg.ivaNote}</span>}
+            {cfg.priceStrike && (
+              <span className="text-sm text-gray-400 line-through">{cfg.priceStrike}</span>
+            )}
+            {cfg.savingsBadge && (
+              <span className="text-xs font-semibold text-green-600 bg-green-50 rounded-full px-2 py-0.5">
+                {cfg.savingsBadge}
+              </span>
+            )}
+          </div>
+
           {cfg.urgencyBadge && (
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                color: "#dc2626",
-                background: "#fee2e2",
-                borderRadius: 99,
-                padding: "2px 8px",
-              }}
-            >
+            <span className="inline-block self-start text-xs font-semibold text-white bg-rose-500 rounded-full px-3 py-1">
               {cfg.urgencyBadge}
             </span>
           )}
-        </div>
-        {cfg.subPriceNote && (
-          <p style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic", marginTop: 4 }}>
-            {cfg.subPriceNote}
-          </p>
-        )}
-      </div>
 
-      {cfg.earlyBird && (
-        <span
-          className="inline-block self-start"
-          style={{
-            borderRadius: 99,
-            background: "#fef3c7",
-            color: "#92400e",
-            fontSize: 11,
-            fontWeight: 600,
-            padding: "2px 10px",
-          }}
-        >
-          {cfg.earlyBird}
-        </span>
-      )}
+          {cfg.subPriceNote && (
+            <p className="text-xs text-gray-400 italic">{cfg.subPriceNote}</p>
+          )}
 
-      <ul className="space-y-2.5">
-        {cfg.benefits.map((b) => (
-          <li key={b} className="flex items-start gap-2" style={{ fontSize: 13, color: "#374151" }}>
-            <span
-              className="mt-1 shrink-0 rounded-full flex items-center justify-center"
-              style={{ width: 16, height: 16, background: cfg.checkColor }}
-            >
-              <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+          {cfg.earlyBird && (
+            <span className="inline-block self-start text-xs font-semibold text-amber-800 bg-amber-100 rounded-full px-3 py-1">
+              {cfg.earlyBird}
             </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
+          )}
 
-      {cfg.subBenefitsNote && (
-        <p style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
-          {cfg.subBenefitsNote}
-        </p>
-      )}
+          {/* Benefits */}
+          <ul className="space-y-2.5">
+            {cfg.benefits.map((b) => (
+              <li key={b} className="flex items-start gap-2 text-sm text-gray-700">
+                {getBenefitIcon(b, cfg.iconColor)}
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
 
-      {cfg.dateBox && (
-        <div
-          className="flex items-center gap-2"
-          style={{
-            background: "#f5f3ff",
-            borderRadius: 8,
-            padding: "10px 14px",
-            fontSize: 12,
-            color: "#7c3aed",
-          }}
-        >
-          <Calendar className="w-4 h-4 shrink-0" />
-          <span>{cfg.dateBox}</span>
+          {cfg.subBenefitsNote && (
+            <p className="text-xs text-gray-400 italic">{cfg.subBenefitsNote}</p>
+          )}
+
+          {cfg.dateBox && (
+            <div className="flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-lg px-4 py-2.5 text-sm text-violet-700 font-medium">
+              <CalendarDays className="w-4 h-4 shrink-0" />
+              <span>{cfg.dateBox}</span>
+            </div>
+          )}
         </div>
-      )}
 
-      <button
-        onClick={onSelect}
-        className="mt-auto w-full font-semibold text-white transition-opacity hover:opacity-90"
-        style={{
-          backgroundColor: cfg.ctaColor,
-          borderRadius: 10,
-          height: 48,
-          fontSize: 14,
-        }}
-      >
-        {cfg.ctaLabel}
-      </button>
+        {/* CTA */}
+        <button
+          onClick={onSelect}
+          className={`mt-auto w-full text-white transition-all ${cfg.ctaClassName}`}
+        >
+          {cfg.ctaLabel}
+        </button>
+      </div>
     </div>
   );
 }
@@ -252,77 +214,83 @@ export default function Comprar() {
   const cardOrder = isMobile ? MOBILE_ORDER : DESKTOP_ORDER;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ backgroundColor: "#f9fafb" }}>
-      <div className="w-full max-w-[900px] flex flex-col items-center gap-6">
-        {/* Header badge */}
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 lg:px-16 py-12"
+      style={{ background: "linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%)" }}
+    >
+      <div className="w-full max-w-6xl flex flex-col items-center gap-6 relative">
+        {/* Radial glow behind bundle card */}
         <div
+          className="absolute pointer-events-none z-0 blur-3xl"
           style={{
-            background: "white",
-            borderRadius: 20,
-            padding: "6px 16px",
-            border: "1px solid #e5e7eb",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-            fontSize: 12,
-            color: "#374151",
+            width: 600,
+            height: 600,
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -40%)",
+            background: "radial-gradient(circle, rgba(124,58,237,0.15) 0%, transparent 70%)",
           }}
-        >
-          🎬 Webinar Vídeo com IA · 5 de Março · 10h00
+        />
+
+        {/* Header */}
+        <div className="relative z-10 flex flex-col items-center gap-3">
+          <div className="bg-white/10 backdrop-blur text-white border border-white/20 rounded-full px-4 py-1.5 text-xs">
+            🎬 Webinar Vídeo com IA · 5 de Março · 10h00
+          </div>
+
+          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full px-4 py-1 text-xs font-semibold">
+            🔥 Preço early bird — sobe depois do webinar de 5 de Março
+          </span>
+
+          <p className="text-white/60 text-sm text-center">
+            Acesso garantido em segundos após confirmação de pagamento 🔒
+          </p>
+          <p className="text-white/80 text-sm text-center">
+            Junta-te às 127 pessoas já inscritas
+          </p>
         </div>
 
-        <span
-          style={{
-            display: "inline-block",
-            background: "#fef3c7",
-            color: "#92400e",
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 99,
-            padding: "4px 14px",
-          }}
-        >
-          🔥 Preço early bird — sobe depois do webinar de 5 de Março
-        </span>
-        <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center" }}>
-          Acesso garantido em segundos após confirmação de pagamento 🔒
-        </p>
-        <p style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 8 }}>
-          Junta-te às 127 pessoas já inscritas
-        </p>
-
-        {validPlan ? (
-          <PlanCard
-            plan={validPlan}
-            onSelect={() => {
-              setSelectedPlan(validPlan);
-              setModalOpen(true);
-            }}
-          />
-        ) : (
-          <div className="flex flex-col sm:flex-row gap-4 w-full items-stretch">
-            {cardOrder.map((p) => (
+        {/* Cards */}
+        <div className="relative z-10 w-full mt-12">
+          {validPlan ? (
+            <div className="max-w-md mx-auto">
               <PlanCard
-                key={p}
-                plan={p}
+                plan={validPlan}
+                isMobile={isMobile}
                 onSelect={() => {
-                  setSelectedPlan(p);
+                  setSelectedPlan(validPlan);
                   setModalOpen(true);
                 }}
               />
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row gap-8 w-full items-stretch">
+              {cardOrder.map((p) => (
+                <PlanCard
+                  key={p}
+                  plan={p}
+                  isMobile={isMobile}
+                  onSelect={() => {
+                    setSelectedPlan(p);
+                    setModalOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
-        {/* Footer */}
-        <div className="w-full flex flex-col items-center gap-3 mt-2">
-          <div style={{ width: "100%", maxWidth: 360, height: 1, background: "#e5e7eb" }} />
-          <div className="flex items-center gap-1.5" style={{ fontSize: 11, color: "#9ca3af" }}>
-            <Lock className="w-3.5 h-3.5" />
+        {/* Footer trust row */}
+        <div className="relative z-10 w-full flex flex-col items-center gap-3 mt-6">
+          <div className="w-full max-w-[360px] h-px bg-white/20" />
+          <div className="flex items-center gap-1.5 text-white/50 text-xs">
+            <Lock className="w-3.5 h-3.5 text-white/40" />
             <span>Pagamento seguro via EuPago</span>
           </div>
-          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
+          <p className="text-xs text-white/50 text-center">
             ✓ Acesso imediato após pagamento &nbsp;·&nbsp; ✓ Suporte via WhatsApp &nbsp;·&nbsp; ✓ Satisfação garantida
           </p>
-          <p style={{ fontSize: 11, color: "#9ca3af" }}>
+          <p className="text-xs text-white/50">
             Cartão de crédito · MB WAY · Multibanco
           </p>
         </div>
