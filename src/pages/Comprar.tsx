@@ -126,7 +126,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
       )}
 
       {/* Card body */}
-      <div className="flex flex-col flex-1 justify-between p-8 gap-5">
+      <div className="flex flex-col flex-1 justify-between p-6 md:p-5 lg:p-8 gap-5">
         <div className="flex flex-col gap-4">
           <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
 
@@ -145,7 +145,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
           </div>
 
           {cfg.urgencyBadge && (
-            <span className="inline-block self-start text-xs font-semibold text-white bg-rose-500 rounded-full px-3 py-1">
+            <span className="inline-block self-start text-xs font-semibold text-white bg-rose-500 rounded-full px-2 py-1 whitespace-nowrap">
               {cfg.urgencyBadge}
             </span>
           )}
@@ -239,15 +239,10 @@ export default function Comprar() {
           </div>
 
           <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full px-4 py-1 text-xs font-semibold">
-            🔥 Preço early bird — sobe depois do webinar de 5 de Março
+            <span className="sm:hidden">🔥 Early bird — sobe a 5 de Março</span>
+            <span className="hidden sm:inline">🔥 Preço early bird — sobe depois do webinar de 5 de Março</span>
           </span>
 
-          <p className="text-white/60 text-sm text-center">
-            Acesso garantido em segundos após confirmação de pagamento 🔒
-          </p>
-          <p className="text-white/80 text-sm text-center">
-            Junta-te às 127 pessoas já inscritas
-          </p>
         </div>
 
         {/* Cards */}
@@ -264,7 +259,7 @@ export default function Comprar() {
               />
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row gap-8 w-full items-stretch">
+            <div className="flex flex-col md:flex-row gap-6 md:gap-4 lg:gap-8 w-full items-stretch">
               {cardOrder.map((p) => (
                 <PlanCard
                   key={p}
@@ -278,6 +273,16 @@ export default function Comprar() {
               ))}
             </div>
           )}
+
+          {/* Mobile scroll hint */}
+          <div className="flex sm:hidden flex-col items-center mt-6">
+            <div className="flex gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-violet-500" />
+              <div className="w-2 h-2 rounded-full bg-white/20" />
+              <div className="w-2 h-2 rounded-full bg-white/20" />
+            </div>
+            <p className="text-white/40 text-xs text-center mt-2">Desliza para ver todos os planos</p>
+          </div>
         </div>
 
         {/* Footer trust row */}
