@@ -45,12 +45,13 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up },
-  { title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up },
-  { title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up },
-  { title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up },
-  { title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up },
-  { title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up },
+  { title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up && !i.lost_at },
+  { title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
+  { title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
+  { title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
+  { title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
+  { title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
+  { title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
 ];
 
 function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscrito: Inscrito; onSelectInscrito: (i: Inscrito) => void; showWebinarBadge?: boolean }) {

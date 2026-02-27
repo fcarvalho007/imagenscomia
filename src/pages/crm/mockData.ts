@@ -43,6 +43,8 @@ export type Inscrito = {
   webinar: "imagens" | "video";
   role: string | null;
   team_size: string | null;
+  lost_at: string | null;
+  lost_reason: string | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];
