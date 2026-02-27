@@ -1,127 +1,73 @@
 
-
-# Redesign /upgrade-video — Layout centrado com card unico
+# Redesign Steps 3 e 4 do /upgrade-video
 
 ## Resumo
 
-Substituir o layout actual (sidebar esquerda 280px + area de conteudo) por um layout full-width centrado: header fixo no topo, barra de progresso full-width, e card branco centrado sobre fundo cinzento. Steps 1-2 recebem novo design com chips; steps 3-5 mantem conteudo existente mas dentro do novo wrapper.
+Redesign visual dos componentes `StepMasterclass.tsx` (Step 3) e `StepVideoPremium.tsx` (Step 4) para alinhar com o novo design system do upgrade flow. Sem alteracoes a logica de pagamento, Supabase, ou outros componentes.
 
-## Ficheiros a alterar
+## Alteracoes
 
-### 1. `src/pages/UpgradeVideo.tsx` (rewrite do layout principal)
+### 1. `src/components/upgrade/StepMasterclass.tsx`
 
-**Remover:**
-- Barra mobile sticky top (linhas 208-213)
-- Sidebar `<aside>` desktop inteira (linhas 217-271)
-- Grid `lg:grid lg:grid-cols-[280px_1fr]`
-- Banners de confirmacao (masterclass/premium) entre steps
-- Mobile sticky footer (linhas 422-440)
-- Dependencia de `framer-motion` para step transitions (usar CSS puro)
-- Imports: `AnimatePresence`, `motion`, `CheckCircle2`
+Rewrite completo do JSX mantendo as mesmas props (`onAddMasterclass`, `onSkip`) e o AlertDialog de confirmacao.
 
-**Adicionar:**
-- Header fixo 56px: emoji webinar + data + confirmacao verde
-- Barra de progresso 3px full-width abaixo do header, com label "Passo N/5"
-- Container centrado `flex items-center justify-center` com fundo `#f3f4f6`
-- Card branco `max-w-[600px]`, `rounded-3xl`, `shadow`, padding 48/40
-- Mobile: card sem border-radius, sem shadow, min-height `calc(100vh - 56px)`
-- Transicao CSS entre steps: translateX + opacity (sem framer-motion)
-- Estado `direction` (1 ou -1) para controlar direcao da animacao
-- Botao voltar (seta) no topo do card a partir do step 2
+Mudancas visuais:
+- Step label centrado: "Passo 3 de 5 -- Masterclass Video" (12px, #9ca3af)
+- Headline centrado: "Vais gostar desta opcao" (28px, 700, #111827)
+- Subheadline centrado: "Aprofunda o sistema completo em 3 horas ao vivo." (15px, #6b7280)
+- Pricing card com border #7c3aed, border-radius 20px, shadow purple, padding 28px 24px
+- Badges: esquerdo com fundo #7c3aed e texto branco; direito com fundo #f5f3ff e texto #7c3aed
+- Label "MASTERCLASS ONLINE" em 11px, 700, uppercase, letter-spacing 1.5px
+- Preco: "euro47" em 48px/800 (mobile 40px) + "+ IVA" inline 16px/400
+- Early bird badge: fundo #fefce8, border #fde047, texto #854d0e
+- Date box: fundo #f5f3ff, texto #7c3aed
+- Benefits: check icon 20px purple circle com tick branco, gap 14px entre items, sub em 13px (mobile 12px)
+- Meta row centrado com middots: "calendario 12 de Marco . laptop Online . relogio 3 horas" (12px, #9ca3af)
+- CTA primario: fundo #7c3aed, hover #6d28d9, rounded-[28px], h-[52px], 16px/700
+- Social proof: "Grupo limitado para garantir acompanhamento." (12px, #9ca3af)
+- Separador "ou" com linhas #e5e7eb
+- CTA secundario: border 1.5px #e5e7eb, rounded-[28px], h-[48px], 15px/500, hover bg #f9fafb
+- Reassurance note: italico, 12px, #9ca3af
 
-**Step variants (CSS puro):**
-- Classe `.step-enter-right`: translateX(20px) -> 0, opacity 0 -> 1 (250ms)
-- Classe `.step-enter-left`: translateX(-20px) -> 0, opacity 0 -> 1 (250ms)
-- Usar `key` no div do step para forcar re-render
+### 2. `src/components/upgrade/StepVideoPremium.tsx`
 
-**Recovery screen:** manter como esta (nao faz parte do redesign).
+Rewrite completo do JSX mantendo as mesmas props (`onAddPremium`, `onSkip`, `userName`) e o AlertDialog.
 
-**Progress bar labels:**
-- Steps 1-2: "Passo 1/5", "Passo 2/5"
-- Step 3+: "Passo 3/5 -- Masterclass Video", "Passo 4/5 -- Gravacao", "Passo 5/5 -- Checkout"
+Nova prop adicionada: `masterclassSelected?: boolean` — para mostrar nota verde no topo se Masterclass foi seleccionada no Step 3.
 
-### 2. `src/components/upgrade/StepQualification.tsx` (redesign step 1 + step 2)
+Mudancas visuais:
+- Se `masterclassSelected` = true: nota verde no topo "checkmark Masterclass garantida." (14px, 600, #16a34a, fundo #f0fdf4, border #bbf7d0, rounded-lg, padding 10px 14px)
+- Step label centrado: "Passo 4 de 5 -- Gravacao Video" (12px, #9ca3af)
+- Headline: "Gravacao do Webinar Video" (28px, 700) + "(opcional)" inline (28px, 400, #9ca3af)
+- Subheadline centrado (15px, #6b7280)
+- Pricing card com border #1e40af, border-radius 20px, shadow blue, padding 28px 24px
+- Badges: esquerdo fundo #1e40af texto branco; direito fundo #eff6ff texto #1e40af
+- Preco: "euro15" em 48px/800 (mobile 40px)
+- Early bird badge: mesma cor amber do Step 3
+- Date box: fundo #eff6ff, texto #1e40af
+- Benefits: check icon blue #1e40af, sub em 13px (mobile 12px)
+- CTA primario: fundo #1e40af, hover #1e3a8a, rounded-[28px], h-[52px]
+- Social proof: "Recomendado para quem quer rever e aplicar sem pressa."
+- Separador + CTA secundario + reassurance note: mesmo estilo do Step 3
 
-Este componente actualmente tem role + teamSize juntos. No novo design, role e teamSize sao steps separados (step 1 e step 2). Ha duas abordagens:
+### 3. `src/pages/UpgradeVideo.tsx`
 
-**Abordagem escolhida:** Criar dois novos componentes inline no UpgradeVideo ou separar a logica:
-- **Step 1** mostra so role (chips centrados, auto-advance 400ms)
-- **Step 2** mostra so teamSize (chips centrados, auto-advance 400ms, back arrow)
-
-Na pratica, o mais limpo e **nao usar StepQualification** para steps 1-2 e em vez disso renderizar o conteudo directamente no UpgradeVideo (ou criar dois sub-componentes simples). Isto evita alterar StepQualification que pode ser usado noutros sitios.
-
-**Novo Step 1 (role) -- inline ou novo componente:**
-- Label: "Passo 1 de 5" centrado, 12px, #9ca3af
-- Titulo: "{firstName}, espera..." -- 32px, 700
-- Sub: "So duas perguntas rapidas." -- 16px, #6b7280
-- Chips pill: flex-wrap, centrados, gap 10px
-- Chip: border 1.5px #e5e7eb, rounded-full, padding 12px 20px, 14px 500
-- Selected: border 2px #1e40af, bg #eff6ff, color #1e40af, 600
-- Auto-advance: setTimeout 400ms apos seleccao
-- CTA "Proximo" full-width 52px como fallback
-
-**Novo Step 2 (teamSize):**
-- Back arrow top-left: ArrowLeft, 20px, #6b7280, tap target 44x44
-- Label: "Passo 2 de 5" centrado
-- Titulo em duas linhas: "Quantas pessoas trabalham / em marketing na tua organizacao?"
-- Sub: "(selecciona uma opcao)" italico
-- Mesmos chips, auto-advance 400ms
-
-### 3. Steps 3, 4, 5 -- sem alteracao de conteudo
-
-Os componentes `StepMasterclass`, `StepVideoPremium`, `StepDuvida`, `VideoConfirmation` nao sao alterados internamente. Sao renderizados dentro do novo card wrapper com:
-- Back arrow no topo
-- Mesma barra de progresso
-- Mesma card centrada
-
-O `max-w-[620px]` / `max-w-[560px]` interno destes componentes fica contido pelo card de 600px, funcionando naturalmente.
-
-## Estrutura do layout final
-
-```text
-+--------------------------------------------------+
-| HEADER FIXO (56px, branco, border-bottom)        |
-| "Webinar Video"  "5 Marco 10h"  "Confirmada"    |
-+--------------------------------------------------+
-| PROGRESS BAR (3px, full-width)         Passo 1/5 |
-+--------------------------------------------------+
-|                                                  |
-|           FUNDO CINZENTO (#f3f4f6)               |
-|                                                  |
-|         +----------------------------+           |
-|         | CARD BRANCO (max 600px)    |           |
-|         |                            |           |
-|         |  [conteudo do step]        |           |
-|         |                            |           |
-|         +----------------------------+           |
-|                                                  |
-+--------------------------------------------------+
-```
-
-## Mobile (< 640px)
-
-- Header: 2 linhas se necessario (webinar+data na 1a, confirmacao na 2a)
-- Card: border-radius 0, shadow none, min-height calc(100vh - 56px - 3px)
-- Chips longos: full-width, text wrap
-- CTA: sempre full-width
-- Back arrow: 44x44 tap target
+Unica alteracao: passar `masterclassSelected={orderState.masterclass}` como prop ao `StepVideoPremium` (linha ~334). Tudo o resto fica inalterado.
 
 ## O que NAO muda
 
-- Logica de pagamento / EuPago (`handlePayment`, `create-payment`)
-- Queries Supabase (`saveStepData`, `handleRecovery`)
-- Dados de qualificacao (role, team_size)
-- Email automation triggers
-- Routing / navegacao entre paginas
-- Recovery screen
-- WhatsAppSupportButton
-- Componentes de outros pages
+- Props de callback (`onAddMasterclass`, `onSkip`, `onAddPremium`)
+- AlertDialog de confirmacao (mantido identico, so actualiza cor do botao para match)
+- Logica de pagamento EuPago
+- Supabase reads/writes
+- Steps 1, 2, 5, 6
+- UpgradeVideo.tsx (excepto a nova prop)
+- Qualquer outro ficheiro
 
-## Detalhes tecnicos
+## Mobile (< 640px)
 
-- Remover `framer-motion` do UpgradeVideo (usar CSS transitions com classes)
-- Manter `framer-motion` nos child components que ja a usam (VideoConfirmation tem `motion.div`)
-- CSS transitions: adicionar keyframes no proprio componente via style tag ou classes Tailwind com `animate-[]`
-- Auto-advance: `useEffect` que observa `role`/`teamSize` e faz setTimeout 400ms
-- Direction state: `const [direction, setDirection] = useState(1)` -- usado para escolher classe de animacao
-
+- Pricing card padding: 20px 16px
+- Preco: 40px em vez de 48px
+- Sub-text benefits: 12px
+- Badges: flex-wrap para empilhar
+- CTAs: sempre full-width, 16px, 52px/48px height mantidos
