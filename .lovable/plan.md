@@ -1,41 +1,40 @@
 
-# Corrigir Social Card: actualizar index.html raiz para Video
 
-## Problema confirmado
+# Remover password do CRM Login — acesso apenas por email
 
-O LinkedIn Post Inspector mostra claramente que para `imagenscomia.com/video`:
-- Canonical URL: `https://imagenscomia.com` (raiz, nao /video)
-- Title: "Criar Imagens com IA para Empresas" (webinar antigo)
-- Image: guia-essencial-seo.png (imagem errada)
+## Resumo
 
-O hosting serve SEMPRE o `index.html` raiz para todas as rotas (SPA fallback). O ficheiro `video/index.html` configurado via Vite MPA nao e usado pelo servidor em producao.
+Substituir o login com email+password por **Magic Link** (link enviado por email). O utilizador insere apenas o email, recebe um link no email e clica para entrar. Apenas `fredericodigital@gmail.com` e aceite.
 
-## Solucao
+## Alteracoes
 
-Actualizar o `index.html` raiz com os meta tags do webinar de Video, ja que o webinar de Imagens (18 Fev) ja terminou e o activo agora e o de Video (5 Marco).
+### 1. `src/components/crm/CRMLogin.tsx`
 
-## Alteracoes no ficheiro `index.html`
+- Remover campo de password completamente
+- Validar no client que o email e exactamente `fredericodigital@gmail.com` antes de enviar (camada extra de proteccao)
+- Substituir `signInWithPassword` por `signInWithOtp({ email })` que envia um Magic Link
+- Mostrar mensagem de sucesso apos envio ("Verifica o teu email")
+- Remover toda a logica de signup (ja nao e necessaria)
 
-| Meta tag | Valor actual (Imagens) | Novo valor (Video) |
-|---|---|---|
-| `<title>` | Criar Imagens com IA para Empresas -- Webinar Gratuito 18 Fev 10h | Cria Video Profissional com IA -- Webinar Gratuito 5 Marco 10h |
-| `og:title` | (Imagens) | Cria Video Profissional com IA -- Webinar Gratuito 5 Marco 10h |
-| `og:description` | Aprende a criar imagens... | Sessao pratica ao vivo: de briefing a clip publicavel em minutos. Gratuito, 5 de Marco, 10h. |
-| `og:url` | https://imagenscomia.com | https://imagenscomia.com/video |
-| `og:image` | guia-essencial-seo.png | video-social-card.jpg |
-| `twitter:title` | (Imagens) | (Video) |
-| `twitter:description` | (Imagens) | (Video) |
-| `twitter:image` | guia-essencial-seo.png | video-social-card.jpg |
-| `description` | Aprende a criar imagens... | Sessao pratica ao vivo: de briefing a clip publicavel em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Marco, 10h. |
-| `keywords` | criar imagens ia, midjourney... | criar video ia, video ia, gerador video ia, video marketing, webinar ia gratuito |
-| `canonical` | fredericocarvalho.pt/webinar-ia | https://imagenscomia.com/video |
-| JSON-LD Schema | Evento Imagens (18 Fev) | Evento Video (5 Marco), com imagem video-social-card.jpg |
+### 2. `src/pages/CRM.tsx`
 
-O ficheiro `video/index.html` permanece como backup/referencia mas nao necessita de alteracoes.
+- Sem alteracoes — o fluxo `onAuthStateChange` e `checkAdminRole` ja validam o admin via `user_roles`. Quando o utilizador clica no magic link, o Supabase autentica-o e o `onAuthStateChange` dispara automaticamente.
 
-## Resultado esperado
+### 3. Seguranca
 
-Apos publicacao e re-scrape no LinkedIn Post Inspector, `imagenscomia.com/video` mostrara:
-- Titulo: "Cria Video Profissional com IA..."
-- Imagem: o poster do Frederico com o telemovel
-- Descricao: sobre o webinar de video
+- **Client-side**: Rejeita qualquer email diferente de `fredericodigital@gmail.com` antes de enviar o OTP
+- **Server-side**: O `user_roles` + RLS continuam a garantir que so admins acedem ao CRM (nao muda nada)
+- **Edge functions**: Continuam a validar JWT + admin role (nao muda nada)
+
+## Fluxo do utilizador
+
+1. Acede a `/crm`
+2. Insere `fredericodigital@gmail.com`
+3. Clica "Entrar"
+4. Recebe email com link magico
+5. Clica no link → redireccionado para `/crm` ja autenticado
+
+## Detalhe tecnico
+
+A chamada `supabase.auth.signInWithOtp({ email })` envia um email com um link de autenticacao. Quando o utilizador clica, o Supabase cria uma sessao e o `onAuthStateChange` no `CRM.tsx` detecta a sessao, verifica o role admin na tabela `user_roles`, e mostra o dashboard.
+
