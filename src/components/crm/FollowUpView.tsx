@@ -10,8 +10,9 @@ import AutomationFlowTab from "./AutomationFlowTab";
 import EmailEditorPanel, { type EmailTemplate } from "./EmailEditorPanel";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { useWebinarContext } from "@/contexts/WebinarContext";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, AlertTriangle } from "lucide-react";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
+import { Button } from "@/components/ui/button";
 
 export type EmailStats = Record<string, { sent: number; failed: number }>;
 
@@ -67,6 +68,8 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
   const [logs, setLogs] = useState<MessageLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
   const { webinarContext } = useWebinarContext();
+  const [backfillDone, setBackfillDone] = useState(false);
+  const [backfillLoading, setBackfillLoading] = useState(false);
 
   // Email templates state
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
@@ -178,7 +181,35 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
           <h1 className="font-heading font-bold text-[22px]" style={{ color: "#0F172A" }}>Automações de Email</h1>
           <p className="text-sm" style={{ color: "#64748B" }}>Fluxo de emails automáticos, estado dos envios e edição de templates</p>
         </div>
-        <WebinarSwitcherBar />
+        <div className="flex items-center gap-2">
+          {webinarContext === "video" && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={backfillDone || backfillLoading}
+              onClick={async () => {
+                if (!window.confirm("Vais enviar video_confirmation a ~18 pessoas que nunca receberam este email. Continuar?")) return;
+                setBackfillLoading(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("backfill-video-confirmations");
+                  if (error) throw error;
+                  toast.success(`✅ ${data.sent} emails enviados · ${data.failed} falhas · ${data.skipped} já enviados`);
+                  setBackfillDone(true);
+                  fetchLogs();
+                } catch (err: any) {
+                  toast.error("Erro no backfill: " + (err?.message || "desconhecido"));
+                } finally {
+                  setBackfillLoading(false);
+                }
+              }}
+              className="text-xs gap-1.5"
+            >
+              <AlertTriangle size={14} />
+              {backfillDone ? "Backfill concluído" : backfillLoading ? "A enviar…" : "Reenviar confirmações em falta"}
+            </Button>
+          )}
+          <WebinarSwitcherBar />
+        </div>
       </div>
 
       {/* Pill tabs */}

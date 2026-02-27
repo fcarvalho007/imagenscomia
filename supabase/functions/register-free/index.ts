@@ -122,6 +122,18 @@ serve(async (req) => {
             console.error("Failed to create video registration:", insertErr);
           } else {
             console.log(`Created video registration for existing user: ${email}`);
+            // Send video confirmation email for newly created video registration
+            try {
+              const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+              const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+              fetch(`${supabaseUrl}/functions/v1/send-video-confirmation`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ email: email.toLowerCase().trim(), fname: (existing.first_name || firstName).trim() }),
+              }).catch((err) => console.error("Video confirmation email failed for existing user (non-blocking):", err));
+            } catch (err) {
+              console.error("Video confirmation email setup failed for existing user:", err);
+            }
           }
         }
       }
