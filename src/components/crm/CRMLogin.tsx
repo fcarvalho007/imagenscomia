@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BarChart2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+
+const ALLOWED_EMAIL = "fredericodigital@gmail.com";
 
 interface CRMLoginProps {
   onLogin: () => void;
@@ -8,47 +9,19 @@ interface CRMLoginProps {
 
 export default function CRMLogin({ onLogin }: CRMLoginProps) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
-    try {
-      // Try sign in first
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        // If user doesn't exist, try signup
-        if (signInError.message.includes("Invalid login credentials")) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-          });
-          if (signUpError) {
-            setError(signUpError.message);
-            setLoading(false);
-            return;
-          }
-          // signup triggers auto-admin, onAuthStateChange in parent will handle the rest
-          return;
-        }
-        setError(signInError.message);
-        setLoading(false);
-        return;
-      }
-
-      // signIn success — parent's onAuthStateChange handles the rest
-    } catch (err) {
-      setError("Erro inesperado. Tenta novamente.");
-      setLoading(false);
+    if (email.toLowerCase().trim() !== ALLOWED_EMAIL) {
+      setError("Acesso restrito.");
+      return;
     }
+
+    sessionStorage.setItem("crm_admin_email", ALLOWED_EMAIL);
+    onLogin();
   };
 
   return (
@@ -85,31 +58,14 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
           }}
           onFocus={(e) => (e.target.style.borderColor = "rgba(99,179,237,0.6)")}
           onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-        />
-
-        <label className="block text-[13px] font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
-          Palavra-passe
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(""); }}
-          placeholder="••••••••"
-          className="w-full rounded-lg px-3.5 py-2.5 text-sm text-white outline-none mb-4"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "rgba(99,179,237,0.6)")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
+          autoFocus
         />
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full mt-6 py-3 rounded-[10px] font-heading font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="w-full mt-2 py-3 rounded-[10px] font-heading font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors"
         >
-          {loading ? "A entrar..." : "Entrar"}
+          Entrar
         </button>
 
         {error && (
