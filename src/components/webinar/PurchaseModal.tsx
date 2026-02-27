@@ -51,7 +51,7 @@ export const PurchaseModal = ({
   const [error, setError] = useState("");
   const [groupMode, setGroupMode] = useState(false);
 
-  const showGroupToggle = plan === "masterclass" || plan === "bundle";
+  const showGroupToggle = plan === "masterclass" || plan === "bundle" || plan === "gravacao";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +115,7 @@ export const PurchaseModal = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setGroupMode(false); }}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0 border-0 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] mx-auto sm:max-w-2xl p-0 gap-0 border-0 max-h-[90vh] overflow-y-auto">
         {/* Dark header */}
         <div
           className="relative"
@@ -192,7 +192,7 @@ export const PurchaseModal = ({
             <button
               type="button"
               onClick={() => setGroupMode((prev) => !prev)}
-              className="flex items-center gap-2.5 w-full mt-4"
+              className="flex flex-wrap items-center gap-2.5 w-full mt-4"
               style={{
                 background: "#fafafa",
                 border: "1px solid #f3f4f6",
@@ -222,6 +222,7 @@ export const PurchaseModal = ({
                 buyerFirstName={firstName}
                 buyerLastName={lastName}
                 buyerEmail={email}
+                plan={plan}
               />
             </div>
           ) : (

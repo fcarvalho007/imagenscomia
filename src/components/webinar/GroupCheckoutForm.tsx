@@ -12,9 +12,19 @@ interface GroupCheckoutFormProps {
   buyerFirstName: string;
   buyerLastName: string;
   buyerEmail: string;
+  plan?: "masterclass" | "bundle" | "gravacao" | "premium";
 }
 
-const PRICE_PER_PERSON = 57.81;
+const PRICES: Record<string, number> = {
+  masterclass: 57.81,
+  bundle: 76.26,
+  gravacao: 15.00,
+};
+const PLAN_LABELS: Record<string, string> = {
+  masterclass: "Masterclass Vídeo com IA",
+  bundle: "Masterclass + Gravação",
+  gravacao: "Gravação HD + Pack de Apoio",
+};
 const DISCOUNT_THRESHOLD = 3;
 const DISCOUNT_RATE = 0.10;
 
@@ -22,13 +32,15 @@ function fmt(v: number) {
   return v.toFixed(2).replace(".", ",");
 }
 
-function calcTotal(count: number) {
-  const base = count * PRICE_PER_PERSON;
+function calcTotal(count: number, pricePerPerson: number) {
+  const base = count * pricePerPerson;
   if (count >= DISCOUNT_THRESHOLD) return base * (1 - DISCOUNT_RATE);
   return base;
 }
 
-export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyerEmail }: GroupCheckoutFormProps) {
+export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyerEmail, plan = "masterclass" }: GroupCheckoutFormProps) {
+  const pricePerPerson = PRICES[plan] || 57.81;
+  const planLabel = PLAN_LABELS[plan] || "Masterclass Vídeo com IA";
   const [attendees, setAttendees] = useState<Attendee[]>([
     { firstName: buyerFirstName, lastName: buyerLastName, email: buyerEmail },
   ]);
@@ -47,7 +59,7 @@ export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyer
 
   const count = attendees.length;
   const hasDiscount = count >= DISCOUNT_THRESHOLD;
-  const total = calcTotal(count);
+  const total = calcTotal(count, pricePerPerson);
 
   const updateAttendee = (idx: number, field: keyof Attendee, value: string) => {
     setAttendees((prev) => prev.map((a, i) => (i === idx ? { ...a, [field]: value } : a)));
@@ -87,7 +99,7 @@ export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyer
             lastName: a.lastName.trim(),
             email: a.email.trim().toLowerCase(),
           })),
-          plan: "masterclass",
+          plan: plan === "bundle" ? "masterclass" : plan,
           webinar: "video",
           discountApplied: hasDiscount,
         },
@@ -148,7 +160,7 @@ export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyer
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   placeholder="Nome completo"
                   value={a.firstName}
@@ -215,10 +227,10 @@ export default function GroupCheckoutForm({ buyerFirstName, buyerLastName, buyer
         }}
       >
         <p style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>
-          {count} pessoa{count !== 1 ? "s" : ""} · Masterclass Vídeo com IA
+          {count} pessoa{count !== 1 ? "s" : ""} · {planLabel}
         </p>
         <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-          €{fmt(PRICE_PER_PERSON)} por pessoa{hasDiscount ? " · desconto grupo (−10%)" : " · IVA incluído"}
+          €{fmt(pricePerPerson)} por pessoa{hasDiscount ? " · desconto grupo (−10%)" : " · IVA incluído"}
         </p>
         <div style={{ height: 1, background: "#e9d5ff", margin: "10px 0" }} />
         <p style={{ fontSize: 16, fontWeight: 700, color: "#7c3aed" }}>
