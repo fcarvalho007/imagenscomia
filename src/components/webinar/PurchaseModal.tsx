@@ -5,9 +5,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, X, Lock, Zap, Mail } from "lucide-react";
+import { Loader2, X, Lock, Zap, Mail, Users } from "lucide-react";
+import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -49,6 +49,9 @@ export const PurchaseModal = ({
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [groupMode, setGroupMode] = useState(false);
+
+  const showGroupToggle = plan === "masterclass" || plan === "bundle";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,8 +114,8 @@ export const PurchaseModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0 border-0">
+    <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setGroupMode(false); }}>
+      <DialogContent className="sm:max-w-[400px] p-0 overflow-hidden gap-0 border-0 max-h-[90vh] overflow-y-auto">
         {/* Dark header */}
         <div
           className="relative"
@@ -138,7 +141,13 @@ export const PurchaseModal = ({
 
         {/* Body */}
         <div style={{ padding: 24, background: "white" }}>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* Buyer fields — always visible */}
+          <div className="flex flex-col gap-4">
+            {groupMode && (
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", marginBottom: -4 }}>
+                Os teus dados de contacto
+              </p>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="purchase-first-name" style={{ fontSize: 13 }}>Primeiro nome</Label>
               <Input
@@ -176,43 +185,85 @@ export const PurchaseModal = ({
                 style={{ height: 44, borderRadius: 8, fontSize: 14 }}
               />
             </div>
+          </div>
 
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
-
-            {/* Trust row */}
-            <div className="flex items-center justify-center gap-4 py-1" style={{ fontSize: 10, color: "#9ca3af" }}>
-              <span className="flex items-center gap-1"><Lock className="w-3 h-3" />Pagamento seguro</span>
-              <span className="flex items-center gap-1"><Zap className="w-3 h-3" />Acesso imediato</span>
-              <span className="flex items-center gap-1"><Mail className="w-3 h-3" />Confirmação por email</span>
-            </div>
-
+          {/* Group toggle */}
+          {showGroupToggle && (
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              type="button"
+              onClick={() => setGroupMode((prev) => !prev)}
+              className="flex items-center gap-2.5 w-full mt-4"
               style={{
-                background: ctaBg(plan),
+                background: "#fafafa",
+                border: "1px solid #f3f4f6",
                 borderRadius: 10,
-                height: 52,
-                fontSize: 15,
+                padding: "10px 14px",
               }}
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  A processar…
-                </span>
-              ) : (
-                "Ir para pagamento →"
-              )}
+              <div
+                className="relative shrink-0 transition-colors"
+                style={{ width: 36, height: 20, borderRadius: 10, backgroundColor: groupMode ? "#7c3aed" : "#d1d5db" }}
+              >
+                <div
+                  className="absolute top-[2px] w-4 h-4 rounded-full bg-white transition-transform"
+                  style={{ left: groupMode ? 18 : 2 }}
+                />
+              </div>
+              <span className="flex items-center gap-1.5" style={{ fontSize: 13, color: "#374151" }}>
+                <Users className="w-3.5 h-3.5" /> Inscrever mais do que uma pessoa?
+              </span>
             </button>
+          )}
 
-            <p className="text-center" style={{ fontSize: 10, color: "#9ca3af" }}>
-              Ao prosseguir, aceitas os nossos termos e política de privacidade
-            </p>
-          </form>
+          {/* Group form (inline) */}
+          {groupMode && showGroupToggle ? (
+            <div className="mt-4">
+              <GroupCheckoutForm
+                buyerFirstName={firstName}
+                buyerLastName={lastName}
+                buyerEmail={email}
+              />
+            </div>
+          ) : (
+            /* Single-person checkout */
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-4">
+              {error && (
+                <p className="text-sm text-destructive">{error}</p>
+              )}
+
+              {/* Trust row */}
+              <div className="flex items-center justify-center gap-4 py-1" style={{ fontSize: 10, color: "#9ca3af" }}>
+                <span className="flex items-center gap-1"><Lock className="w-3 h-3" />Pagamento seguro</span>
+                <span className="flex items-center gap-1"><Zap className="w-3 h-3" />Acesso imediato</span>
+                <span className="flex items-center gap-1"><Mail className="w-3 h-3" />Confirmação por email</span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{
+                  background: ctaBg(plan),
+                  borderRadius: 10,
+                  height: 52,
+                  fontSize: 15,
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    A processar…
+                  </span>
+                ) : (
+                  "Confirmar e pagar →"
+                )}
+              </button>
+
+              <p className="text-center" style={{ fontSize: 10, color: "#9ca3af" }}>
+                Ao prosseguir, aceitas os nossos termos e política de privacidade
+              </p>
+            </form>
+          )}
         </div>
       </DialogContent>
     </Dialog>
