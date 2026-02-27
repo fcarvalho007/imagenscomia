@@ -480,6 +480,7 @@ serve(async (req) => {
       .select("id, email, name, first_name, plan_selected, eupago_ref, upgrade_clicked_at, created_at, followup_stage, last_followup_at, last_payment_link, payment_link_created_at, do_not_contact, paid_at, next_followup_at, order_id")
       .is("paid_at", null)
       .eq("do_not_contact", false)
+      .eq("webinar", "imagens")
       .not("plan_selected", "is", null)
       .neq("plan_selected", "free")
       .neq("plan_selected", "video-free");
