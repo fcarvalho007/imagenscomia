@@ -274,6 +274,8 @@ export type Database = {
           last_name: string | null
           last_payment_link: string | null
           last_payment_link_sent_at: string | null
+          lost_at: string | null
+          lost_reason: string | null
           name: string
           next_followup_at: string | null
           order_id: string | null
@@ -316,6 +318,8 @@ export type Database = {
           last_name?: string | null
           last_payment_link?: string | null
           last_payment_link_sent_at?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
           name: string
           next_followup_at?: string | null
           order_id?: string | null
@@ -358,6 +362,8 @@ export type Database = {
           last_name?: string | null
           last_payment_link?: string | null
           last_payment_link_sent_at?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
           name?: string
           next_followup_at?: string | null
           order_id?: string | null

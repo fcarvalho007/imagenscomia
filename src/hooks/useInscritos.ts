@@ -65,6 +65,8 @@ function mapRegistration(r: any): Inscrito {
     webinar: (r.webinar === "video" ? "video" : "imagens") as "imagens" | "video",
     role: (r as any).role || null,
     team_size: (r as any).team_size || null,
+    lost_at: (r as any).lost_at || null,
+    lost_reason: (r as any).lost_reason || null,
   };
 }
 

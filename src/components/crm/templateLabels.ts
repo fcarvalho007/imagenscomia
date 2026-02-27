@@ -38,6 +38,10 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   // E-goi sync
   egoi_sync: "Sincronizado com E-goi",
   egoi_tag: "Tag E-goi aplicada",
+  // Pós-webinar sequência
+  video_postwebinar_day1: "Email pós-webinar — Dia 1",
+  video_postwebinar_day3: "Email pós-webinar — Dia 3",
+  video_postwebinar_closing: "Email de fecho — sem compra",
 };
 
 export function getTemplateLabel(key: string): string {

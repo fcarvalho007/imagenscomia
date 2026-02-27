@@ -124,6 +124,36 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: null, // manual, skip pending
     },
   );
+  // Video-only: post-webinar sequence
+  if (webinar === "video") {
+    nodes.push(
+      {
+        type: "email",
+        title: "Email pós-webinar Dia 1",
+        subtitle: "Todos os inscritos gratuitos",
+        templateKeyMatch: ["video_postwebinar_day1"],
+        conditionLabel: "── PÓS-WEBINAR: SEQUÊNCIA ──",
+        sendOffsetHours: null,
+      },
+      {
+        type: "email",
+        title: "Email pós-webinar Dia 3",
+        subtitle: "Apenas quem recebeu Dia 1 e ainda é gratuito",
+        templateKeyMatch: ["video_postwebinar_day3"],
+        conditionLabel: "8 MAR · 10H00",
+        sendOffsetHours: null,
+      },
+      {
+        type: "email",
+        title: "Email de fecho",
+        subtitle: "Após envio: lead marcado como perdido",
+        templateKeyMatch: ["video_postwebinar_closing"],
+        conditionLabel: "10 MAR · 10H00 · MARCA COMO PERDIDO",
+        sendOffsetHours: null,
+      },
+    );
+  }
+
   nodes.push({
     type: "end",
     title: "Fluxo concluído",
@@ -339,7 +369,9 @@ function Timeline({
          const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
          const counts = nodeCounts[idx];
          const hasFailed = (counts?.failed ?? 0) > 0;
-         const isFollowupPrewebinar = node.templateKeyMatch.includes("video_followup_prewebinar");
+          const isFollowupPrewebinar = node.templateKeyMatch.includes("video_followup_prewebinar");
+         const isPostwebinarSeq = node.templateKeyMatch.some(k => k.startsWith("video_postwebinar_day"));
+         const isClosing = node.templateKeyMatch.includes("video_postwebinar_closing");
          const borderColor =
            node.type === "trigger"
              ? "#7c3aed"
@@ -347,7 +379,9 @@ function Timeline({
              ? "#94A3B8"
              : hasFailed
              ? "#ef4444"
-             : isFollowupPrewebinar
+             : isClosing
+             ? "#ef4444"
+             : isFollowupPrewebinar || isPostwebinarSeq
              ? "#f59e0b"
              : tag
              ? TAG_BORDER[tag]

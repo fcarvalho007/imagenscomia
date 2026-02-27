@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Mail, CreditCard, AlertTriangle, Copy, Check, ChevronDown, Loader2 } from "lucide-react";
+import { Mail, CreditCard, AlertTriangle, Copy, Check, ChevronDown, Loader2, XCircle } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { Switch } from "@/components/ui/switch";
 import { getTemplateLabel, fmtTimeAgo } from "../templateLabels";
@@ -118,7 +118,21 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       status: evt.processed_at ? "processed" : "pending",
     }));
 
-    let all = [...emailItems, ...paymentItems].sort(
+    // Inject synthetic "lost" event
+    const lostItems: TimelineItem[] = [];
+    if (inscrito.lost_at) {
+      lostItems.push({
+        id: "lost-event",
+        type: "payment" as const,
+        date: inscrito.lost_at,
+        title: "Lead marcado como perdido",
+        status: "resolved",
+        event_type: "lost",
+        isManual: true,
+      });
+    }
+
+    let all = [...emailItems, ...paymentItems, ...lostItems].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
@@ -189,20 +203,25 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
 
           <div className="space-y-1">
             {items.map((item) => {
-              const Icon = item.type === "email"
-                ? (item.status === "failed" || item.error ? AlertTriangle : Mail)
-                : CreditCard;
-              const iconColor = item.status === "failed" || item.error
-                ? "text-red-500"
+              const isLostEvent = item.id === "lost-event";
+              const Icon = isLostEvent
+                ? XCircle
                 : item.type === "email"
-                  ? "text-primary"
-                  : "text-amber-600";
+                  ? (item.status === "failed" || item.error ? AlertTriangle : Mail)
+                  : CreditCard;
+              const iconColor = isLostEvent
+                ? "text-red-500"
+                : item.status === "failed" || item.error
+                  ? "text-red-500"
+                  : item.type === "email"
+                    ? "text-primary"
+                    : "text-amber-600";
 
               return (
                 <div key={item.id} className="relative">
                   {/* Dot */}
                   <div className={`absolute -left-5 top-2.5 w-3 h-3 rounded-full border-2 border-background flex items-center justify-center ${
-                    item.status === "failed" ? "bg-red-500" : item.type === "payment" ? "bg-amber-500" : "bg-primary"
+                    isLostEvent ? "bg-red-500" : item.status === "failed" ? "bg-red-500" : item.type === "payment" ? "bg-amber-500" : "bg-primary"
                   }`} />
 
                   <div className={`rounded-lg border border-border bg-card px-3 py-2 ${item.isLegacy ? "opacity-55" : ""}`}>

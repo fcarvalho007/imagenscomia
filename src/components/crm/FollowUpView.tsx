@@ -53,6 +53,7 @@ type TabKey = typeof TABS[number]["key"];
 
 const TEMPLATE_KEYS = [
   "video_confirmation", "video_followup_prewebinar", "video_reminder_48h", "video_reminder_24h", "video_reminder_1h", "video_postwebinar",
+  "video_postwebinar_day1", "video_postwebinar_day3", "video_postwebinar_closing",
   "imagens_confirmation", "imagens_reminder_48h", "imagens_reminder_24h", "imagens_reminder_1h", "imagens_postwebinar",
 ];
 
