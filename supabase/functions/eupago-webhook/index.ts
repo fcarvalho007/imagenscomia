@@ -370,78 +370,162 @@ async function processPayment(data: PaymentData) {
       console.error("Invoice email error (non-blocking):", invoiceErr);
     }
 
-    // ── Email ao cliente: payment_confirmed_customer ──
+    // ── Email ao cliente: payment confirmation (video-aware) ──
     try {
       const RESEND_API_KEY_CUST = Deno.env.get("RESEND_API_KEY");
 
-      const { data: customerEmailSent } = await supabase
-        .from("message_logs")
-        .select("id")
-        .eq("registration_id", matchedRegId)
-        .eq("template_key", "payment_confirmed_customer")
-        .eq("status", "sent")
-        .limit(1);
+      const { data: regCust } = await supabase
+        .from("registrations")
+        .select("email, name, first_name, plan_selected, eupago_ref, webinar")
+        .eq("id", matchedRegId)
+        .maybeSingle();
 
-      if (customerEmailSent && customerEmailSent.length > 0) {
-        console.log("📧 Customer confirmation already sent — skipping");
-      } else {
-        const { data: regCust } = await supabase
-          .from("registrations")
-          .select("email, name, plan_selected, eupago_ref")
-          .eq("id", matchedRegId)
-          .maybeSingle();
+      if (regCust && RESEND_API_KEY_CUST) {
+        const fname = regCust.first_name || (regCust.name || "").split(" ")[0] || "";
+        const custWebinar = regCust.webinar || "imagens";
+        const normalizedPlan = (regCust.plan_selected || "").replace(/^video-/, "");
 
-        if (regCust && RESEND_API_KEY_CUST) {
-          const custPlanLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Bundle (Premium + Masterclass)" } as Record<string, string>)[regCust.plan_selected || ""] || regCust.plan_selected || "N/A";
-          const eupagoRefDisplay = transactionID || reference || regCust.eupago_ref || "N/A";
-          const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
-          const primaryAccessUrl = `${siteUrl}/live`;
-          const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
+        if (custWebinar === "video") {
+          // ── Video webinar: plan-specific templates ──
+          const templatesToSend: { templateKey: string; subject: string; htmlFallback: string }[] = [];
 
-          const customerSubject = "Pagamento confirmado — obrigado pela confiança";
-          const customerHtml = `<h2>Pagamento confirmado</h2>
-            <p>Agradece-se a confiança. O pagamento foi confirmado e a inscrição está garantida.</p>
-            <hr/>
-            <p><strong>Resumo</strong></p>
-            <ul>
-              <li><strong>Plano:</strong> ${custPlanLabel}</li>
-              <li><strong>Referência:</strong> ${eupagoRefDisplay}</li>
-              <li><strong>Email associado:</strong> ${regCust.email}</li>
-            </ul>
-            <p><strong>Próximo passo</strong></p>
-            <p><a href="${primaryAccessUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;">Aceder / Preparar participação</a></p>
-            <p style="font-size:13px;color:#64748b;">Se o botão não abrir, usar este link: ${primaryAccessUrl}</p>
-            <hr/>
-            <p><strong>Faturação</strong></p>
-            <p>A fatura será emitida e enviada posteriormente para o email indicado nos dados de faturação.</p>
-            <p><strong>Suporte</strong></p>
-            <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
-            <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
+          const premiumHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Tudo confirmado ✅</h2><p>Olá ${fname},</p><p>O teu pagamento foi confirmado e o <strong>Premium Pass</strong> está ativo.</p><ul style="padding-left:20px;margin:12px 0"><li>Sessão de Q&amp;A exclusiva ao vivo</li><li>Gravação completa do webinar</li><li>Recursos premium e materiais de apoio</li></ul><p style="margin:24px 0"><a href="https://calendar.app.google/Mczyo7DFx7xazgXD6" style="display:inline-block;padding:14px 28px;background:#1e40af;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">Guardar no Calendário →</a></p><p style="font-size:13px;color:#64748b">Adiciona a sessão Q&amp;A ao teu calendário.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
 
-          const customerRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-              to: [regCust.email],
-              subject: customerSubject,
-              html: customerHtml,
-            }),
-          });
-          const customerData = await customerRes.json();
+          const masterclassHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Lugar garantido ✅</h2><p>Olá ${fname},</p><p>O teu pagamento foi confirmado e o teu lugar na <strong>Masterclass de IA</strong> está reservado.</p><ul style="padding-left:20px;margin:12px 0"><li>Formação intensiva e prática</li><li>Acesso vitalício à gravação</li><li>Materiais exclusivos e templates</li></ul><p style="margin:24px 0"><a href="https://calendar.app.google/LWQVacdqqavvEqSG9" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">Guardar no Calendário →</a></p><p style="font-size:13px;color:#64748b">Adiciona a Masterclass ao teu calendário.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
 
-          await supabase.from("message_logs").insert({
-            registration_id: matchedRegId,
-            channel: "email",
-            provider: "resend",
-            template_key: "payment_confirmed_customer",
-            status: customerRes.ok ? "sent" : "failed",
-            provider_message_id: customerData.id || null,
-            payment_url: null,
-            error: customerRes.ok ? null : JSON.stringify(customerData),
-          });
+          if (["premium", "gravacao"].includes(normalizedPlan) || normalizedPlan === "bundle") {
+            templatesToSend.push({ templateKey: "video_payment_premium", subject: `Tudo confirmado ✅ — aqui está o teu acesso`, htmlFallback: premiumHtml });
+          }
+          if (["masterclass"].includes(normalizedPlan) || normalizedPlan === "bundle") {
+            templatesToSend.push({ templateKey: "video_payment_masterclass", subject: `Lugar garantido na Masterclass ✅`, htmlFallback: masterclassHtml });
+          }
 
-          console.log(`📧 Customer confirmation ${customerRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+          for (const tpl of templatesToSend) {
+            // Idempotency check
+            const { data: alreadySentCust } = await supabase
+              .from("message_logs")
+              .select("id")
+              .eq("registration_id", matchedRegId)
+              .eq("template_key", tpl.templateKey)
+              .eq("status", "sent")
+              .limit(1);
+
+            if (alreadySentCust && alreadySentCust.length > 0) {
+              console.log(`📧 ${tpl.templateKey} already sent — skipping`);
+              continue;
+            }
+
+            // Try to load template from DB
+            const { data: dbTpl } = await supabase
+              .from("email_templates")
+              .select("subject, html_body")
+              .eq("template_key", tpl.templateKey)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            const finalSubject = (dbTpl?.subject || tpl.subject).replace(/\{\{fname\}\}/g, fname);
+            const finalHtml = (dbTpl?.html_body || tpl.htmlFallback).replace(/\{\{fname\}\}/g, fname);
+
+            const custRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+                to: [regCust.email],
+                subject: finalSubject,
+                html: finalHtml,
+              }),
+            });
+            const custData = await custRes.json();
+
+            // Dual logging: message_logs + email_send_logs
+            await supabase.from("message_logs").insert({
+              registration_id: matchedRegId,
+              channel: "email",
+              provider: "resend",
+              template_key: tpl.templateKey,
+              status: custRes.ok ? "sent" : "failed",
+              provider_message_id: custData.id || null,
+              payment_url: null,
+              error: custRes.ok ? null : JSON.stringify(custData),
+            });
+
+            await supabase.from("email_send_logs").insert({
+              email_key: tpl.templateKey,
+              recipient_email: regCust.email,
+              fname: fname,
+              webinar: "video",
+              status: custRes.ok ? "sent" : "failed",
+              resend_id: custData.id || null,
+              error_message: custRes.ok ? null : JSON.stringify(custData),
+            });
+
+            console.log(`📧 ${tpl.templateKey} ${custRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+          }
+        } else {
+          // ── Imagens webinar: existing generic template ──
+          const { data: customerEmailSent } = await supabase
+            .from("message_logs")
+            .select("id")
+            .eq("registration_id", matchedRegId)
+            .eq("template_key", "payment_confirmed_customer")
+            .eq("status", "sent")
+            .limit(1);
+
+          if (customerEmailSent && customerEmailSent.length > 0) {
+            console.log("📧 Customer confirmation already sent — skipping");
+          } else {
+            const custPlanLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Bundle (Premium + Masterclass)" } as Record<string, string>)[regCust.plan_selected || ""] || regCust.plan_selected || "N/A";
+            const eupagoRefDisplay = transactionID || reference || regCust.eupago_ref || "N/A";
+            const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
+            const primaryAccessUrl = `${siteUrl}/live`;
+            const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
+
+            const customerSubject = "Pagamento confirmado — obrigado pela confiança";
+            const customerHtml = `<h2>Pagamento confirmado</h2>
+              <p>Agradece-se a confiança. O pagamento foi confirmado e a inscrição está garantida.</p>
+              <hr/>
+              <p><strong>Resumo</strong></p>
+              <ul>
+                <li><strong>Plano:</strong> ${custPlanLabel}</li>
+                <li><strong>Referência:</strong> ${eupagoRefDisplay}</li>
+                <li><strong>Email associado:</strong> ${regCust.email}</li>
+              </ul>
+              <p><strong>Próximo passo</strong></p>
+              <p><a href="${primaryAccessUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;">Aceder / Preparar participação</a></p>
+              <p style="font-size:13px;color:#64748b;">Se o botão não abrir, usar este link: ${primaryAccessUrl}</p>
+              <hr/>
+              <p><strong>Faturação</strong></p>
+              <p>A fatura será emitida e enviada posteriormente para o email indicado nos dados de faturação.</p>
+              <p><strong>Suporte</strong></p>
+              <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
+              <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
+
+            const customerRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+                to: [regCust.email],
+                subject: customerSubject,
+                html: customerHtml,
+              }),
+            });
+            const customerData = await customerRes.json();
+
+            await supabase.from("message_logs").insert({
+              registration_id: matchedRegId,
+              channel: "email",
+              provider: "resend",
+              template_key: "payment_confirmed_customer",
+              status: customerRes.ok ? "sent" : "failed",
+              provider_message_id: customerData.id || null,
+              payment_url: null,
+              error: customerRes.ok ? null : JSON.stringify(customerData),
+            });
+
+            console.log(`📧 Customer confirmation ${customerRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+          }
         }
       }
     } catch (custErr) {
