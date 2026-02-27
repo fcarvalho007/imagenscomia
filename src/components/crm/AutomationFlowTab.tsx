@@ -77,16 +77,26 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     },
   ];
 
-  // Video-only: follow-up upgrade node
+  // Video-only nodes
   if (webinar === "video") {
-    nodes.push({
-      type: "email",
-      title: "Follow-up upgrade pré-webinar",
-      subtitle: "48h após inscrição · só gratuitos · até 3 Mar",
-      templateKeyMatch: ["video_followup_prewebinar"],
-      conditionLabel: "CRON · ATÉ 3 MAR",
-      sendOffsetHours: null,
-    });
+    nodes.push(
+      {
+        type: "email",
+        title: "Confirmação de compra",
+        subtitle: "Enviado após pagamento confirmado",
+        templateKeyMatch: ["video_payment_premium", "video_payment_masterclass"],
+        conditionLabel: "APÓS PAGAMENTO",
+        sendOffsetHours: null,
+      },
+      {
+        type: "email",
+        title: "Follow-up upgrade pré-webinar",
+        subtitle: "48h após inscrição · só gratuitos · até 3 Mar",
+        templateKeyMatch: ["video_followup_prewebinar"],
+        conditionLabel: "CRON · ATÉ 3 MAR",
+        sendOffsetHours: null,
+      },
+    );
   }
 
   nodes.push(
@@ -372,7 +382,8 @@ function Timeline({
           const isFollowupPrewebinar = node.templateKeyMatch.includes("video_followup_prewebinar");
          const isPostwebinarSeq = node.templateKeyMatch.some(k => k.startsWith("video_postwebinar_day"));
          const isClosing = node.templateKeyMatch.includes("video_postwebinar_closing");
-         const borderColor =
+          const isPaymentConfirmation = node.templateKeyMatch.some(k => k.startsWith("video_payment_"));
+          const borderColor =
            node.type === "trigger"
              ? "#7c3aed"
              : node.type === "end"
@@ -381,6 +392,8 @@ function Timeline({
              ? "#ef4444"
              : isClosing
              ? "#ef4444"
+             : isPaymentConfirmation
+             ? "#16a34a"
              : isFollowupPrewebinar || isPostwebinarSeq
              ? "#f59e0b"
              : tag

@@ -38,6 +38,9 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   // E-goi sync
   egoi_sync: "Sincronizado com E-goi",
   egoi_tag: "Tag E-goi aplicada",
+  // Confirmação de compra video
+  video_payment_premium: "Confirmação de compra — Premium Pass",
+  video_payment_masterclass: "Confirmação de compra — Masterclass",
   // Pós-webinar sequência
   video_postwebinar_day1: "Email pós-webinar — Dia 1",
   video_postwebinar_day3: "Email pós-webinar — Dia 3",
