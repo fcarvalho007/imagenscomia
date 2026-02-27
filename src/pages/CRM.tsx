@@ -15,59 +15,12 @@ import { WebinarProvider, useWebinarContext } from "@/contexts/WebinarContext";
 import { filterByWebinar } from "@/config/webinarConfig";
 
 function CRMInner() {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authenticated, setAuthenticated] = useState(() => {
+    return sessionStorage.getItem("crm_admin_email") === "fredericodigital@gmail.com";
+  });
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
   const { webinarContext } = useWebinarContext();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkAdminRole = async (userId: string) => {
-      try {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .eq("role", "admin")
-          .maybeSingle();
-        if (isMounted) setAuthenticated(!!data);
-      } catch {
-        if (isMounted) setAuthenticated(false);
-      }
-    };
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!isMounted) return;
-        if (session?.user) {
-          setTimeout(() => checkAdminRole(session.user.id), 0);
-        } else {
-          setAuthenticated(false);
-        }
-      }
-    );
-
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-        if (session?.user) {
-          await checkAdminRole(session.user.id);
-        }
-      } finally {
-        if (isMounted) setCheckingAuth(false);
-      }
-    };
-
-    initializeAuth();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium } = useInscritos();
 
@@ -78,22 +31,14 @@ function CRMInner() {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
 
-  const handleLogout = useCallback(async () => {
-    await supabase.auth.signOut();
+  const handleLogout = useCallback(() => {
+    sessionStorage.removeItem("crm_admin_email");
     setAuthenticated(false);
   }, []);
 
   const currentInscrito = selectedInscrito
     ? inscritos.find((i) => i.id === selectedInscrito.id) || null
     : null;
-
-  if (checkingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0F172A" }}>
-        <p className="text-white/40 text-sm">A verificar sessão...</p>
-      </div>
-    );
-  }
 
   if (!authenticated) {
     return <CRMLogin onLogin={() => setAuthenticated(true)} />;
