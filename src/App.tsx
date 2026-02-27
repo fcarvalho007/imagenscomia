@@ -20,6 +20,7 @@ import UpgradeVideo from "./pages/UpgradeVideo";
 import Inicial from "./pages/Inicial";
 import Recursos from "./pages/Recursos";
 import VideoPage from "./pages/Video";
+import Comprar from "./pages/Comprar";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/inicial" element={<Inicial />} />
           <Route path="/recursos" element={<Recursos />} />
           <Route path="/video" element={<VideoPage />} />
+          <Route path="/comprar" element={<Comprar />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
