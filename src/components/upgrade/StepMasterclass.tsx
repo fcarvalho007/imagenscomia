@@ -42,7 +42,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
         <div style={{ height: 24 }} />
 
         {/* Headline */}
-        <h2 style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
+        <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827", margin: 0 }}>
           Vais gostar desta opção
         </h2>
         <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
@@ -81,7 +81,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
           {/* Price row */}
           <div className="flex max-sm:flex-col justify-between items-start gap-3 mb-4">
             <div className="flex items-baseline gap-1">
-              <span className="max-sm:text-[40px]" style={{ fontSize: 48, fontWeight: 800, color: "#111827", lineHeight: 1 }}>€47</span>
+              <span className="max-sm:text-[38px]" style={{ fontSize: 48, fontWeight: 800, color: "#111827", lineHeight: 1 }}>€47</span>
               <span style={{ fontSize: 16, fontWeight: 400, color: "#6b7280" }}>+ IVA</span>
             </div>
             <div style={{ background: "#fefce8", border: "1px solid #fde047", borderRadius: 8, padding: "6px 10px" }} className="max-sm:w-full">
