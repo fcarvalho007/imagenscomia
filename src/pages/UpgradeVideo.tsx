@@ -425,9 +425,8 @@ const UpgradeVideo = () => {
 
       {/* ── Fixed header bar ── */}
       <header
-        className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 shrink-0"
+        className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 shrink-0 h-[44px] sm:h-[56px]"
         style={{
-          height: 56,
           background: "white",
           borderBottom: "1px solid #e5e7eb",
           paddingTop: "env(safe-area-inset-top)",
@@ -459,7 +458,7 @@ const UpgradeVideo = () => {
       )}
 
       {/* ── Centered content area ── */}
-      <div ref={contentRef} className={`flex-1 flex justify-center px-4 py-6 sm:py-10 ${[3, 4].includes(step) ? "items-start pt-8" : "items-start sm:items-center"}`}>
+      <div ref={contentRef} className={`flex-1 flex justify-center px-4 ${[3, 4].includes(step) ? "items-start pt-2 sm:pt-4 pb-6" : "items-start sm:items-center py-6 sm:py-10"}`}>
         <div
           className="w-full sm:rounded-3xl sm:shadow-lg upgrade-card-inner"
           style={{
