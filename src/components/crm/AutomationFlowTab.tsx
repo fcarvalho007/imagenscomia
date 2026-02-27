@@ -643,7 +643,8 @@ function Timeline({
             <button
               onClick={() => {
                 const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
-                const tplKey = `${webinar}_${emailKey.replace("stage_0", "confirmation")}`;
+                const cleaned = emailKey.replace("stage_0", "confirmation");
+                const tplKey = cleaned.startsWith(`${webinar}_`) ? cleaned : `${webinar}_${cleaned}`;
                 onOpenEditor?.(tplKey);
               }}
               className="text-[11px] font-medium hover:underline"
