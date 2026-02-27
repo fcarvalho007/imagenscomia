@@ -61,7 +61,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
   const cfg = WEBINAR_CONFIG[webinar];
   const name = cfg.label;
   const url = webinar === "video" ? "imagenscomia.com/video" : "imagenscomia.com";
-  return [
+  const nodes: NodeDef[] = [
     {
       type: "trigger",
       title: "Inscrição submetida",
@@ -75,6 +75,21 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       templateKeyMatch: ["confirmation"],
       sendOffsetHours: null, // immediate, skip pending
     },
+  ];
+
+  // Video-only: follow-up upgrade node
+  if (webinar === "video") {
+    nodes.push({
+      type: "email",
+      title: "Follow-up upgrade pré-webinar",
+      subtitle: "48h após inscrição · só gratuitos · até 3 Mar",
+      templateKeyMatch: ["video_followup_prewebinar"],
+      conditionLabel: "CRON · ATÉ 3 MAR",
+      sendOffsetHours: null,
+    });
+  }
+
+  nodes.push(
     {
       type: "email",
       title: "Lembrete 48h",
@@ -108,13 +123,15 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       isPostWebinar: true,
       sendOffsetHours: null, // manual, skip pending
     },
-    {
-      type: "end",
-      title: "Fluxo concluído",
-      subtitle: "Inscrito recebeu todos os emails do ciclo",
-      templateKeyMatch: [],
-    },
-  ];
+  );
+  nodes.push({
+    type: "end",
+    title: "Fluxo concluído",
+    subtitle: "Inscrito recebeu todos os emails do ciclo",
+    templateKeyMatch: [],
+  });
+
+  return nodes;
 }
 
 function matchTemplate(templateKey: string, patterns: string[]): boolean {
@@ -322,6 +339,7 @@ function Timeline({
          const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
          const counts = nodeCounts[idx];
          const hasFailed = (counts?.failed ?? 0) > 0;
+         const isFollowupPrewebinar = node.templateKeyMatch.includes("video_followup_prewebinar");
          const borderColor =
            node.type === "trigger"
              ? "#7c3aed"
@@ -329,6 +347,8 @@ function Timeline({
              ? "#94A3B8"
              : hasFailed
              ? "#ef4444"
+             : isFollowupPrewebinar
+             ? "#f59e0b"
              : tag
              ? TAG_BORDER[tag]
              : "#e2e8f0";
