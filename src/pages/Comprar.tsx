@@ -13,6 +13,9 @@ const PLANS: Record<Plan, {
   savingsBadge?: string;
   ivaNote?: string;
   earlyBird?: string;
+  subPriceNote?: string;
+  urgencyBadge?: string;
+  subBenefitsNote?: string;
   benefits: string[];
   dateBox?: string;
   ctaLabel: string;
@@ -26,6 +29,7 @@ const PLANS: Record<Plan, {
     price: "€47",
     ivaNote: "+ IVA",
     earlyBird: "Preço early bird · sobe após o webinar",
+    subPriceNote: "Sem isto, o webinar termina e não voltas a ter acesso ao Frederico ao vivo.",
     benefits: [
       "3 horas ao vivo com o Frederico",
       "Sistema completo de criação de vídeo com IA",
@@ -33,7 +37,7 @@ const PLANS: Record<Plan, {
       "Gravação incluída para reverem depois",
     ],
     dateBox: "12 de Março · 10h00–13h00",
-    ctaLabel: "Garantir lugar na Masterclass →",
+    ctaLabel: "Quero o meu lugar na Masterclass →",
     ctaColor: "#7c3aed",
     planLabel: "Masterclass Vídeo com IA · €47 + IVA",
     checkColor: "#7c3aed",
@@ -43,7 +47,9 @@ const PLANS: Record<Plan, {
     price: "€57",
     priceStrike: "€62",
     savingsBadge: "Poupa €5",
+    urgencyBadge: "Últimos lugares disponíveis",
     ivaNote: "+ IVA",
+    subBenefitsNote: "A Masterclass tem vagas limitadas. O Bundle garante tudo de uma vez.",
     benefits: [
       "3 horas ao vivo — Masterclass 12 de Março",
       "Sistema completo + prompts reutilizáveis",
@@ -53,23 +59,24 @@ const PLANS: Record<Plan, {
       "Sessão Q&A em grupo · 10 de Março · 14h30",
     ],
     dateBox: "12 de Março · 10h00–13h00",
-    ctaLabel: "Garantir Bundle completo →",
+    ctaLabel: "Quero o Bundle completo →",
     ctaColor: "#7c3aed",
     planLabel: "Masterclass + Gravação · €57 + IVA",
     featured: true,
     checkColor: "#7c3aed",
   },
   gravacao: {
-    title: "Gravação + Pack de Apoio",
+    title: "Gravação HD + Pack de Apoio",
     price: "€15",
+    subPriceNote: "Revê quando quiseres. Para sempre.",
     benefits: [
       "Gravação HD do Webinar Vídeo com IA",
       "Pack de apoio completo (checklists + templates)",
       "Sessão Q&A em grupo · 10 de Março · 14h30",
     ],
-    ctaLabel: "Garantir gravação →",
+    ctaLabel: "Quero a gravação →",
     ctaColor: "#1e40af",
-    planLabel: "Gravação + Pack de Apoio · €15",
+    planLabel: "Gravação HD + Pack de Apoio · €15",
     checkColor: "#1e40af",
   },
 };
@@ -134,7 +141,26 @@ function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
               {cfg.savingsBadge}
             </span>
           )}
+          {cfg.urgencyBadge && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#dc2626",
+                background: "#fee2e2",
+                borderRadius: 99,
+                padding: "2px 8px",
+              }}
+            >
+              {cfg.urgencyBadge}
+            </span>
+          )}
         </div>
+        {cfg.subPriceNote && (
+          <p style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic", marginTop: 4 }}>
+            {cfg.subPriceNote}
+          </p>
+        )}
       </div>
 
       {cfg.earlyBird && (
@@ -166,6 +192,12 @@ function PlanCard({ plan, onSelect }: { plan: Plan; onSelect: () => void }) {
           </li>
         ))}
       </ul>
+
+      {cfg.subBenefitsNote && (
+        <p style={{ fontSize: 12, color: "#9ca3af", fontStyle: "italic" }}>
+          {cfg.subBenefitsNote}
+        </p>
+      )}
 
       {cfg.dateBox && (
         <div
@@ -236,8 +268,24 @@ export default function Comprar() {
           🎬 Webinar Vídeo com IA · 5 de Março · 10h00
         </div>
 
-        <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", marginBottom: 8 }}>
-          Acesso garantido em segundos após confirmação de pagamento
+        <span
+          style={{
+            display: "inline-block",
+            background: "#fef3c7",
+            color: "#92400e",
+            fontSize: 11,
+            fontWeight: 600,
+            borderRadius: 99,
+            padding: "4px 14px",
+          }}
+        >
+          🔥 Preço early bird — sobe depois do webinar de 5 de Março
+        </span>
+        <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center" }}>
+          Acesso garantido em segundos após confirmação de pagamento 🔒
+        </p>
+        <p style={{ fontSize: 12, color: "#6b7280", textAlign: "center", marginBottom: 8 }}>
+          Junta-te às 127 pessoas já inscritas
         </p>
 
         {validPlan ? (
@@ -270,6 +318,9 @@ export default function Comprar() {
             <Lock className="w-3.5 h-3.5" />
             <span>Pagamento seguro via EuPago</span>
           </div>
+          <p style={{ fontSize: 11, color: "#9ca3af", textAlign: "center" }}>
+            ✓ Acesso imediato após pagamento &nbsp;·&nbsp; ✓ Suporte via WhatsApp &nbsp;·&nbsp; ✓ Satisfação garantida
+          </p>
           <p style={{ fontSize: 11, color: "#9ca3af" }}>
             Cartão de crédito · MB WAY · Multibanco
           </p>
