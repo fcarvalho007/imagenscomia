@@ -345,6 +345,7 @@ const UpgradeVideo = () => {
                   goForward(5);
                 }}
                 userName={userData.nome}
+                masterclassSelected={orderState.masterclass}
               />
             )}
             {step === 5 && (
