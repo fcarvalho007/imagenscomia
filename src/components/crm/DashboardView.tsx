@@ -248,7 +248,8 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
     ].sort((a, b) => b.count - a.count);
     const maxDiff = difficulties[0]?.count || 1;
 
-    const funnelValues = isVideo ? [step1, step1q, step2, step3, step4, step5, clickedToPay, paidConfirmed] : [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
+    const ctxIsVideo = webinarContext === "video";
+    const funnelValues = ctxIsVideo ? [step1, step1q, step2, step3, step4, step5, clickedToPay, paidConfirmed] : [step1, step2, step3, step4, step5, clickedToPay, paidConfirmed];
     const dropOffs = funnelValues.slice(0, -1).map((v, i) => ({
       lost: v - funnelValues[i + 1],
       pct: v ? ((v - funnelValues[i + 1]) / v) * 100 : 0,
