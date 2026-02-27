@@ -71,7 +71,71 @@ const UpgradeVideo = () => {
   const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
+  // ── Returning user state ──
+  const [initialLoading, setInitialLoading] = useState(!!searchParams.get("email"));
+  const [isReturning, setIsReturning] = useState(false);
+  const [returningData, setReturningData] = useState<{
+    step_reached: number | null;
+    paid_at: string | null;
+    plan_selected: string | null;
+  } | null>(null);
+
   const firstName = userData.nome?.trim().split(" ")[0] || "";
+
+  // ── Helper: restore state from DB record ──
+  const restoreFromRecord = useCallback((data: any) => {
+    setRegistrationId(data.id);
+    setEditToken(data.edit_token || null);
+    setUserData(prev => ({
+      ...prev,
+      nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
+      email: prev.email || data.email,
+    }));
+    if (data.role) setRole(data.role);
+    if (data.team_size) setTeamSize(data.team_size);
+    const plan = data.plan_selected;
+    if (plan?.includes("premium") || plan?.includes("bundle")) {
+      setOrderState(s => ({ ...s, videoPremium: true }));
+    }
+    if (plan?.includes("masterclass") || plan?.includes("bundle")) {
+      setOrderState(s => ({ ...s, masterclass: true }));
+    }
+  }, []);
+
+  // ── Auto-check on mount (email in URL) ──
+  useEffect(() => {
+    if (!userData.email || needsRecovery) {
+      setInitialLoading(false);
+      return;
+    }
+    const check = async () => {
+      try {
+        const { data } = await supabase
+          .from("registrations")
+          .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
+          .eq("email", userData.email)
+          .eq("webinar", "video")
+          .maybeSingle();
+
+        if (data && (data.step_reached ?? 0) >= 1) {
+          restoreFromRecord(data);
+          setReturningData({
+            step_reached: data.step_reached,
+            paid_at: data.paid_at,
+            plan_selected: data.plan_selected,
+          });
+          setIsReturning(true);
+          setStep(0);
+        }
+      } catch (err) {
+        console.error("Auto-check error:", err);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Recovery ──
   const handleRecovery = useCallback(async () => {
@@ -85,8 +149,9 @@ const UpgradeVideo = () => {
     try {
       const { data, error } = await supabase
         .from("registrations")
-        .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected")
+        .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
         .eq("email", trimmed)
+        .eq("webinar", "video")
         .maybeSingle();
 
       if (error) throw error;
@@ -96,30 +161,19 @@ const UpgradeVideo = () => {
         return;
       }
 
-      setRegistrationId(data.id);
-      setEditToken((data as any).edit_token || null);
-      setUserData({
-        nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-        email: trimmed,
-        whatsapp: "",
-        referralCode: "",
-      });
-      if ((data as any).role) setRole((data as any).role);
-      if ((data as any).team_size) setTeamSize((data as any).team_size);
+      setUserData(prev => ({ ...prev, email: trimmed }));
+      restoreFromRecord(data);
 
-      const sr = (data as any).step_reached;
-      if (sr && sr >= 2 && (data as any).role && (data as any).team_size) {
-        const targetStep = Math.min(sr + 1, 5);
-        setStep(targetStep);
-        const plan = (data as any).plan_selected;
-        if (plan?.includes("premium") || plan?.includes("bundle")) {
-          setOrderState(s => ({ ...s, videoPremium: true }));
-        }
-        if (plan?.includes("masterclass") || plan?.includes("bundle")) {
-          setOrderState(s => ({ ...s, masterclass: true }));
-        }
-      } else if ((data as any).role && (data as any).team_size) {
-        setStep(3);
+      if ((data.step_reached ?? 0) >= 1) {
+        setReturningData({
+          step_reached: data.step_reached,
+          paid_at: data.paid_at,
+          plan_selected: data.plan_selected,
+        });
+        setIsReturning(true);
+        setStep(0);
+      } else {
+        setStep(1);
       }
 
       setNeedsRecovery(false);
@@ -129,7 +183,7 @@ const UpgradeVideo = () => {
     } finally {
       setRecoveryLoading(false);
     }
-  }, [recoveryEmail]);
+  }, [recoveryEmail, restoreFromRecord]);
 
   // ── Save step data ──
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
@@ -200,9 +254,23 @@ const UpgradeVideo = () => {
 
   const totalSteps = 5;
   const isConfirmation = step === 7;
+  const isReturningScreen = step === 0;
+  const hideProgressBar = isConfirmation || isReturningScreen;
   const visualStep = Math.min(step, 5);
   const progress = (visualStep / totalSteps) * 100;
   const progressLabel = PROGRESS_LABELS[visualStep] ? ` — ${PROGRESS_LABELS[visualStep]}` : "";
+
+  // ── Loading screen (auto-check in progress) ──
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#f3f4f6" }}>
+        <div className="w-full max-w-[600px] sm:rounded-3xl sm:shadow-lg bg-white p-12 flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#1e40af" }} />
+          <p className="text-[15px]" style={{ color: "#6b7280" }}>A verificar a tua inscrição…</p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Recovery screen ──
   if (needsRecovery) {
@@ -376,7 +444,7 @@ const UpgradeVideo = () => {
       </header>
 
       {/* ── Progress bar (hidden on confirmation) ── */}
-      {!isConfirmation && (
+      {!hideProgressBar && (
         <div className="shrink-0 px-4 sm:px-6 pt-2" style={{ background: "#f3f4f6" }}>
           <div className="flex items-center justify-end mb-1">
             <span className="text-[11px]" style={{ color: "#9ca3af" }}>
@@ -428,6 +496,75 @@ const UpgradeVideo = () => {
 
           {/* Step content with CSS transition */}
           <div key={step} className={direction === 1 ? "step-enter-right" : "step-enter-left"}>
+            {/* ── Step 0: Returning user ── */}
+            {step === 0 && returningData && (() => {
+              const sr = returningData.step_reached ?? 1;
+              const hasPaid = !!returningData.paid_at;
+              return (
+                <div className="text-center py-4">
+                  <div
+                    className="mx-auto flex items-center justify-center"
+                    style={{ width: 64, height: 64, borderRadius: "50%", background: hasPaid ? "#dcfce7" : "#dbeafe", fontSize: 32 }}
+                  >
+                    {hasPaid ? <Check style={{ width: 32, height: 32, color: "#16a34a" }} /> : "👋"}
+                  </div>
+
+                  <div style={{ height: 20 }} />
+
+                  <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
+                    Olá de novo{firstName ? `, ${firstName}` : ""}!
+                  </h2>
+
+                  <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
+                    A tua inscrição no Webinar Vídeo está confirmada.
+                  </p>
+
+                  {hasPaid && (
+                    <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5" style={{ background: "#dcfce7", borderRadius: 20, fontSize: 13, fontWeight: 600, color: "#166534" }}>
+                      <Check style={{ width: 14, height: 14 }} /> Compra confirmada
+                    </div>
+                  )}
+
+                  {!hasPaid && sr >= 2 && (
+                    <p style={{ fontSize: 14, color: "#9ca3af", marginTop: 12 }}>
+                      Ficaste no passo {sr} da última vez.
+                    </p>
+                  )}
+
+                  <div style={{ height: 28 }} />
+
+                  {hasPaid ? (
+                    <button
+                      onClick={() => goForward(7)}
+                      className="w-full transition-colors"
+                      style={{ height: 52, borderRadius: 28, background: "#1e40af", color: "white", fontSize: 16, fontWeight: 700, cursor: "pointer", border: "none" }}
+                    >
+                      Ver a minha confirmação →
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          setIsReturning(false);
+                          goForward(sr >= 5 ? 3 : Math.min(sr + 1, 5));
+                        }}
+                        className="w-full transition-colors"
+                        style={{ height: 52, borderRadius: 28, background: "#1e40af", color: "white", fontSize: 16, fontWeight: 700, cursor: "pointer", border: "none" }}
+                      >
+                        {sr >= 5 ? "Ver ofertas disponíveis →" : "Continuar de onde parei →"}
+                      </button>
+                      <button
+                        onClick={() => { setIsReturning(false); goForward(1); }}
+                        className="w-full transition-colors"
+                        style={{ height: 48, borderRadius: 28, border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontSize: 15, fontWeight: 500, cursor: "pointer" }}
+                      >
+                        Recomeçar do início
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {step === 1 && (
               <StepRole
                 role={role}
