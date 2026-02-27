@@ -67,6 +67,7 @@ function mapRegistration(r: any): Inscrito {
     team_size: (r as any).team_size || null,
     lost_at: (r as any).lost_at || null,
     lost_reason: (r as any).lost_reason || null,
+    group_payment_ref: (r as any).group_payment_ref || null,
   };
 }
 

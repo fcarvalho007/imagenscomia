@@ -267,6 +267,7 @@ export type Database = {
           gender_override: string | null
           gift_code: string | null
           gifted_at: string | null
+          group_payment_ref: string | null
           id: string
           invoice_sent: boolean
           is_gift: boolean
@@ -311,6 +312,7 @@ export type Database = {
           gender_override?: string | null
           gift_code?: string | null
           gifted_at?: string | null
+          group_payment_ref?: string | null
           id?: string
           invoice_sent?: boolean
           is_gift?: boolean
@@ -355,6 +357,7 @@ export type Database = {
           gender_override?: string | null
           gift_code?: string | null
           gifted_at?: string | null
+          group_payment_ref?: string | null
           id?: string
           invoice_sent?: boolean
           is_gift?: boolean

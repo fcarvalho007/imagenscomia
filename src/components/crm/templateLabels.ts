@@ -45,6 +45,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   video_postwebinar_day1: "Email pós-webinar — Dia 1",
   video_postwebinar_day3: "Email pós-webinar — Dia 3",
   video_postwebinar_closing: "Email de fecho — sem compra",
+  video_group_payment_summary: "Confirmação grupo — resumo para comprador",
 };
 
 export function getTemplateLabel(key: string): string {

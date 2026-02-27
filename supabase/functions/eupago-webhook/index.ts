@@ -99,6 +99,156 @@ async function processPayment(data: PaymentData) {
     }
   }
 
+  // ── Strategy GROUP — match by GROUP-{ref} in identifier ────────────────
+  if (!matched && identifier && identifier.startsWith("GROUP-")) {
+    const groupRef12 = identifier.replace("GROUP-", "");
+    console.log(`🔎 Strategy GROUP: extracted ref="${groupRef12}" from identifier="${identifier}"`);
+
+    // Find all registrations with matching group_payment_ref (starts with these 12 chars)
+    const { data: groupRows, error: groupErr } = await supabase
+      .from("registrations")
+      .select("id, email, name, first_name, group_payment_ref")
+      .not("group_payment_ref", "is", null)
+      .eq("webinar", "video");
+
+    if (groupErr) {
+      console.error("Strategy GROUP: query error:", groupErr.message);
+    }
+
+    // Filter by matching the first 12 chars of group_payment_ref (without dashes)
+    const matchingRows = (groupRows || []).filter((r: any) =>
+      r.group_payment_ref && r.group_payment_ref.replace(/-/g, "").slice(0, 12) === groupRef12
+    );
+
+    if (matchingRows.length > 0) {
+      const groupPaymentRefFull = matchingRows[0].group_payment_ref;
+      console.log(`✅ Strategy GROUP: found ${matchingRows.length} attendees for group_payment_ref=${groupPaymentRefFull}`);
+
+      // Update all group members
+      const { data: updatedGroupRows, error: updateErr } = await supabase
+        .from("registrations")
+        .update({
+          plan_selected: "masterclass",
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || transactionID,
+          eupago_transaction_id: transactionID || null,
+        })
+        .eq("group_payment_ref", groupPaymentRefFull)
+        .eq("webinar", "video")
+        .select("id, email, first_name, name");
+
+      if (updateErr) {
+        console.error("Strategy GROUP: update error:", updateErr.message);
+      } else {
+        matched = true;
+        matchedRegId = updatedGroupRows?.[0]?.id || null;
+        console.log(`✅ Strategy GROUP: updated ${updatedGroupRows?.length} registrations`);
+
+        // Send confirmation email to each attendee (idempotent)
+        const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+        if (RESEND_API_KEY && updatedGroupRows) {
+          for (const attendee of updatedGroupRows) {
+            const fname = attendee.first_name || (attendee.name || "").split(" ")[0] || "";
+
+            // Idempotency check
+            const { data: alreadySent } = await supabase
+              .from("message_logs")
+              .select("id")
+              .eq("registration_id", attendee.id)
+              .eq("template_key", "video_payment_masterclass")
+              .eq("status", "sent")
+              .limit(1);
+
+            if (alreadySent && alreadySent.length > 0) {
+              console.log(`📧 video_payment_masterclass already sent to ${attendee.email} — skipping`);
+              continue;
+            }
+
+            // Load template from DB or use fallback
+            const { data: dbTpl } = await supabase
+              .from("email_templates")
+              .select("subject, html_body")
+              .eq("template_key", "video_payment_masterclass")
+              .eq("is_active", true)
+              .maybeSingle();
+
+            const masterclassHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Lugar garantido ✅</h2><p>Olá ${fname},</p><p>O teu pagamento foi confirmado e o teu lugar na <strong>Masterclass de IA</strong> está reservado.</p><ul style="padding-left:20px;margin:12px 0"><li>Formação intensiva e prática</li><li>Acesso vitalício à gravação</li><li>Materiais exclusivos e templates</li></ul><p style="margin:24px 0"><a href="https://calendar.app.google/LWQVacdqqavvEqSG9" style="display:inline-block;padding:14px 28px;background:#7c3aed;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">Guardar no Calendário →</a></p><p style="font-size:13px;color:#64748b">Adiciona a Masterclass ao teu calendário.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+
+            const finalSubject = (dbTpl?.subject || `Lugar garantido na Masterclass ✅`).replace(/\{\{fname\}\}/g, fname);
+            const finalHtml = (dbTpl?.html_body || masterclassHtml).replace(/\{\{fname\}\}/g, fname);
+
+            const res = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+                to: [attendee.email],
+                subject: finalSubject,
+                html: finalHtml,
+              }),
+            });
+            const resData = await res.json();
+
+            await supabase.from("message_logs").insert({
+              registration_id: attendee.id,
+              channel: "email",
+              provider: "resend",
+              template_key: "video_payment_masterclass",
+              status: res.ok ? "sent" : "failed",
+              provider_message_id: resData.id || null,
+              error: res.ok ? null : JSON.stringify(resData),
+            });
+
+            await supabase.from("email_send_logs").insert({
+              email_key: "video_payment_masterclass",
+              recipient_email: attendee.email,
+              fname,
+              webinar: "video",
+              status: res.ok ? "sent" : "failed",
+              resend_id: resData.id || null,
+              error_message: res.ok ? null : JSON.stringify(resData),
+            });
+
+            console.log(`📧 video_payment_masterclass (group) ${res.ok ? "sent" : "FAILED"} to ${attendee.email}`);
+          }
+
+          // Send group summary to buyer (first registration in group)
+          const buyerEmail = updatedGroupRows[0]?.email;
+          if (buyerEmail) {
+            const attendeeList = updatedGroupRows.map((a: any) => `<li>${a.name || a.first_name} — ${a.email}</li>`).join("");
+            const summaryHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Lugares confirmados ✅</h2><p>O pagamento do grupo foi confirmado. Todos os participantes receberam um email de confirmação individual.</p><h3 style="font-size:16px;margin:20px 0 8px">Participantes confirmados (${updatedGroupRows.length})</h3><ul style="padding-left:20px">${attendeeList}</ul><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+
+            const summaryRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
+                to: [buyerEmail],
+                subject: `Lugares confirmados — ${updatedGroupRows.length} participantes ✅`,
+                html: summaryHtml,
+              }),
+            });
+            const summaryData = await summaryRes.json();
+
+            await supabase.from("message_logs").insert({
+              registration_id: updatedGroupRows[0].id,
+              channel: "email",
+              provider: "resend",
+              template_key: "video_group_payment_summary",
+              status: summaryRes.ok ? "sent" : "failed",
+              provider_message_id: summaryData.id || null,
+              error: summaryRes.ok ? null : JSON.stringify(summaryData),
+            });
+
+            console.log(`📧 Group summary ${summaryRes.ok ? "sent" : "FAILED"} to ${buyerEmail}`);
+          }
+        }
+      }
+    } else {
+      console.warn(`⚠️ Strategy GROUP: no registrations found for ref="${groupRef12}"`);
+    }
+  }
+
   // ── Strategy 2 (PRIMARY) — match by order_id in identifier ────────────────
   // Identifier format: "ORDER-{12-char-order_id}-{name}"
   // The order_id is always the first segment after "ORDER-" (12 hex chars).

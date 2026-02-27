@@ -69,6 +69,11 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
       <span className="font-heading font-semibold text-[14px] text-ink-900 truncate block pr-8">
         {genderEmoji(inscrito.gender)} {inscrito.nome}
       </span>
+      {inscrito.group_payment_ref && (
+        <span className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wider text-ink-400 bg-ink-100 px-1.5 py-0.5 rounded">
+          GRUPO
+        </span>
+      )}
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
         {inscrito.registration_source === "gravacao" && (

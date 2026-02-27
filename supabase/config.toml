@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.send-video-postwebinar-closing]
 verify_jwt = false
+
+[functions.create-group-payment]
+verify_jwt = false
