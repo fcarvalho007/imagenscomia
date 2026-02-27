@@ -9,11 +9,11 @@ const STEPS_IMAGENS = [
 ];
 
 const STEPS_VIDEO = [
-  { num: 1, name: "Qualificação" },
-  { num: 2, name: "Masterclass" },
-  { num: 3, name: "Gravação" },
-  { num: 4, name: "Dúvida" },
-  { num: 5, name: "Conclusão" },
+  { num: 1, name: "Função" },
+  { num: 2, name: "Equipa" },
+  { num: 3, name: "Masterclass" },
+  { num: 4, name: "Gravação" },
+  { num: 5, name: "Dúvida" },
 ];
 
 interface SidebarFunnelProps {
