@@ -1,116 +1,155 @@
 
 
-# Returning User Detection no /upgrade-video
+# Refinar Steps 3 e 4 do /upgrade-video
 
-## Problema actual
+## Resumo
 
-Existem dois cenarios problematicos:
+5 fixes cirurgicos nos componentes StepMasterclass e StepVideoPremium, mais ajustes no UpgradeVideo.tsx para sticky bottom bar e posicionamento vertical.
 
-1. **Com email no URL** (`?email=...`): O utilizador vai directamente para o Step 1, mesmo que ja tenha completado steps anteriores. Nao ha reconhecimento de que ja esta registado.
+---
 
-2. **Sem email no URL** (recovery screen): O ecra pede o email mas a mensagem e generica ("Retomar a sua compra"). Se o utilizador nao se lembra que ja se registou, a experiencia e confusa.
+## FIX 1 -- Sticky bottom bar (Steps 3 e 4)
 
-## Solucao proposta
+### StepMasterclass.tsx
 
-Adicionar um **useEffect** que corre quando o utilizador chega com `email` no URL. Este effect consulta a base de dados e:
+Remover do componente:
+- Botao primario "Garantir lugar..." (linhas 122-139)
+- Social proof "Grupo limitado..." (linhas 141-144)
+- Separador "ou" (linhas 147-152)
+- Botao secundario "Continuar com inscricao gratuita" (linhas 154-172)
+- Reassurance text (linhas 174-177)
 
-- Se o utilizador **ja esta registado** e **ja completou steps**: mostra um ecra de "Bem-vindo de volta" (novo step 0) com o nome do utilizador, indicando que a inscricao esta confirmada, e oferecendo duas opcoes:
-  - "Continuar de onde parei" (avanca para o step seguinte ao ultimo completado)
-  - "Recomecar do inicio" (vai para step 1)
-  - Se ja completou o step 5, mostra opcao de "Ver as ofertas" (vai para step 3) ou ir directamente para a confirmacao
+O componente passa a renderizar apenas o card de pricing e o confirmation dialog. Os CTAs movem-se para fora.
 
-- Se o utilizador **nao esta registado**: continua normalmente no Step 1 sem interrupcao
+Adicionar nova prop `onPrimaryClick` (alem de `onAddMasterclass` e `onSkip`) -- ou reutilizar: o botao primario no sticky bar faz `() => setShowConfirm(true)`. Problema: o `showConfirm` state vive dentro do componente.
 
-Para a **recovery screen** (sem email no URL): manter como esta, mas melhorar a copy para "Introduza o email que usou para se inscrever" (ja esta assim).
+**Solucao**: Mover o AlertDialog e `showConfirm` state para fora -- elevar para UpgradeVideo.tsx. Ou: manter tudo dentro do StepMasterclass mas exportar tambem o sticky bar content via render prop.
 
-## Alteracoes tecnicas
+**Abordagem mais simples**: Manter `showConfirm` dentro do componente. Passar uma nova prop `renderStickyBar` como render prop que o componente chama com `{ onPrimary: () => setShowConfirm(true), onSkip }`. O UpgradeVideo.tsx usa um portal ou posiciona o sticky bar fora do card.
 
-### 1. `src/pages/UpgradeVideo.tsx`
+**Abordagem mais simples ainda**: O StepMasterclass renderiza o sticky bar como parte do seu output, posicionado com `fixed`. O sticky bar fica visualmente fora do card mas no DOM esta dentro do componente. Funciona perfeitamente com React.
 
-**Novo estado:**
-```text
-const [isReturning, setIsReturning] = useState(false)
-const [returningData, setReturningData] = useState(null)
-const [initialLoading, setInitialLoading] = useState(!!searchParams.get("email"))
-```
-
-**Novo useEffect (auto-check on mount):**
-Quando `email` existe nos search params, fazer query a `registrations` com `.eq("email", email).eq("webinar", "video")`. Se encontrar registo:
-- Guardar dados (nome, role, team_size, step_reached, plan_selected, paid_at)
-- Se `step_reached >= 1`: marcar `isReturning = true`
-- Restaurar estado (role, teamSize, orderState) a partir dos dados
-- Se `paid_at` existe: marcar produtos como comprados
-
-Se nao encontrar: continuar normalmente (step 1, sem interrupcao).
-
-**Novo ecra de returning user (step 0):**
-Renderizado quando `isReturning === true` e `step === 0`:
-
-- Circulo com emoji de onda (wave) ou check verde
-- "Ola de novo, {firstName}!" (28px, 700, #111827) -- mobile 24px
-- "A tua inscricao no Webinar Video esta confirmada." (15px, #6b7280)
-- Se ja comprou algo (paid_at): mostrar badge "checkmark Compra confirmada" em verde
-- Se tem step_reached mas nao comprou: mostrar "Ficaste no passo {N} da ultima vez."
-
-Botoes:
-- **Primario**: "Continuar de onde parei ->" ou "Ver ofertas disponiveis ->" (se ja completou step 5)
-  - Background: #1e40af, h-52, rounded-[28px], 16px/700
-  - Avanca para `Math.min(step_reached + 1, 5)` se step_reached < 5
-  - Avanca para step 3 se step_reached >= 5 (para rever ofertas)
-- **Secundario**: "Recomecar do inicio"
-  - Border: 1.5px #e5e7eb, h-48, rounded-[28px], 15px/500
-  - Vai para step 1
-
-- Se `paid_at` existe (ja pagou):
-  - Primario: "Ver a minha confirmacao" -> vai para step 7
-  - Sem secundario
-
-**Loading state:**
-Enquanto `initialLoading === true`, mostrar um spinner centrado no card (mesmo layout do card branco, com Loader2 a rodar). Desaparece quando a query resolve.
-
-**Progress bar:**
-Esconder no step 0 (mesmo comportamento do step 7).
-
-**Header:**
-Manter igual (ja mostra "Inscricao gratuita confirmada checkmark").
-
-### 2. Fluxo completo actualizado
+Adicionar ao final do JSX do StepMasterclass (antes do AlertDialog):
 
 ```text
-Utilizador chega com ?email=...
-  |
-  v
-Query DB (registrations WHERE email AND webinar='video')
-  |
-  +-- Nao encontrado --> Step 1 (normal, sem interrupcao)
-  |
-  +-- Encontrado, step_reached < 1 --> Step 1 (normal)
-  |
-  +-- Encontrado, step_reached >= 1 --> Step 0 (returning user screen)
-       |
-       +-- "Continuar" --> Step min(step_reached+1, 5)
-       +-- "Recomecar" --> Step 1
-       +-- (Se paid_at) "Ver confirmacao" --> Step 7
+<div style={{
+  position: "fixed", bottom: 0, left: 0, right: 0,
+  background: "white", borderTop: "1px solid #e5e7eb",
+  padding: "12px 24px",
+  paddingBottom: "max(12px, env(safe-area-inset-bottom))",
+  zIndex: 50,
+  boxShadow: "0 -4px 12px rgba(0,0,0,0.06)",
+}}>
+  <div style={{ maxWidth: 600, margin: "0 auto" }}>
+    <button primary CTA ... />
+    <p social proof centered 11px #9ca3af />
+    <button secondary text link ... />
+  </div>
+</div>
 ```
 
-### 3. Recovery screen (sem email no URL)
+Adicionar `padding-bottom: 128px` ao wrapper `<div className="text-center">` para que o conteudo nao fique escondido atras do sticky bar.
 
-A recovery screen actual ja faz a mesma logica de restaurar estado. Pequena melhoria: depois de encontrar o utilizador, em vez de ir directamente para o step, mostrar primeiro o step 0 (returning user screen) para dar contexto. Ajustar `handleRecovery` para fazer `setIsReturning(true)` e `setStep(0)` em vez de ir directamente para o step calculado.
+### StepVideoPremium.tsx
+
+Mesma abordagem. Remover CTA, separador, secondary do card. Adicionar sticky bar fixed com cor azul (#1e40af).
+
+---
+
+## FIX 2 -- Reduzir altura do pricing card
+
+### StepMasterclass.tsx
+
+Remover:
+- Label "MASTERCLASS ONLINE" (linha 77-79)
+- Meta row "calendario Online relogio 3 horas" (linhas 117-120)
+
+Benefits: remover sub-descriptions, manter so titulos. Reduzir `space-y-3.5` para `space-y-2`. Cada item: flex, gap-2, height 36px, align-items center.
+
+Titulos simplificados:
+- "Sistema completo de producao de video curto"
+- "Ferramentas certas -- sem confusao"
+- "Prompts para video reutilizaveis"
+- "Gravacao da Masterclass incluida" (bold)
+
+### StepVideoPremium.tsx
+
+Remover sub-descriptions dos benefits. Mesma abordagem.
+
+Titulos:
+- "Gravacao HD -- acesso continuo"
+- "Pack de apoio completo"
+- "Sessao Q&A exclusiva (30 min) -- Terca, 10 Mar"
+
+---
+
+## FIX 3 -- "(opcional)" badge no Step 4
+
+No StepVideoPremium.tsx, substituir:
+```text
+<span style={{ fontSize: 28, fontWeight: 400, color: "#9ca3af" }}>(opcional)</span>
+```
+
+Por um badge inline abaixo do headline:
+```text
+<span style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af",
+  border: "1px solid #e5e7eb", borderRadius: 6,
+  padding: "2px 8px", background: "white",
+  display: "inline-block", marginTop: 8 }}>
+  OPCIONAL
+</span>
+```
+
+E ajustar o h2 para `display: block` (remover `display: inline`).
+
+---
+
+## FIX 4 -- Posicionamento vertical do card
+
+No UpgradeVideo.tsx, linha 462:
+```text
+className="flex-1 flex items-start sm:items-center justify-center..."
+```
+
+Ajustar para que steps 3 e 4 usem `items-start` com `pt-8` (32px), e step 5 use `items-center` (como steps 1 e 2).
+
+Logica: adicionar condicional no className:
+- Steps 1, 2, 5: `items-center` (centrado verticalmente)
+- Steps 3, 4: `items-start` com padding-top 32px
+- Steps 0, 6, 7: `items-center`
+
+Implementar com: `const verticalCenter = [1, 2, 5, 0, 6, 7].includes(step);` e aplicar `items-center` vs `items-start pt-8`.
+
+---
+
+## FIX 5 -- Spacing audit
+
+No UpgradeVideo.tsx, o card padding ja esta definido como `48px 40px` desktop e `32px 20px` mobile. Confirmar que esta consistente.
+
+Dentro dos componentes StepMasterclass e StepVideoPremium:
+- Apos step label: gap 20px (actualmente 24px -- reduzir `<div style={{ height: 24 }} />` para 20)
+- Apos headline+subheadline: gap 28px (actualmente 28px -- OK)
+- Antes do CTA: removido do card (agora no sticky bar)
+
+Header: 56px ja esta definido. Confirmar.
+
+Progress bar: 3px ja esta definido. Label right-aligned 11px #9ca3af ja esta correcto.
+
+---
+
+## Ficheiros alterados
+
+1. **StepMasterclass.tsx** -- remover elementos redundantes, simplificar benefits, adicionar sticky bar fixed
+2. **StepVideoPremium.tsx** -- mesmas alteracoes + badge "OPCIONAL"
+3. **UpgradeVideo.tsx** -- ajustar posicionamento vertical do card (items-start vs items-center por step)
 
 ## O que NAO muda
 
-- Steps 1-5 (conteudo e logica inalterados)
-- Step 6 (VideoConfirmation / checkout pago)
-- Step 7 (confirmacao in-card)
-- Logica de pagamento EuPago
-- Supabase writes/reads (saveStepData)
-- Nenhum outro ficheiro ou componente
-- Recovery screen visual (so muda o destino apos encontrar registo)
-
-## Mobile
-
-- Step 0 segue o mesmo layout do card branco centrado
-- Headline: 24px em mobile (max-sm:text-[24px])
-- Botoes: full-width em mobile
-- Sem novos componentes -- tudo inline no UpgradeVideo.tsx
+- Steps 1, 2, 5 (conteudo e logica)
+- AlertDialog / confirmation flow (mantido dentro dos componentes)
+- onAddMasterclass / onAddPremium callbacks
+- onSkip callbacks
+- Supabase writes, EuPago, email triggers
+- Step 0, 6, 7
+- Qualquer outro ficheiro
 
