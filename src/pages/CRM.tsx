@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+
 import CRMLogin from "@/components/crm/CRMLogin";
 import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import DashboardView from "@/components/crm/DashboardView";
@@ -31,9 +31,8 @@ function CRMInner() {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = useCallback(() => {
     sessionStorage.removeItem("crm_admin_email");
-    await supabase.auth.signOut();
     setAuthenticated(false);
   }, []);
 
@@ -113,8 +112,7 @@ function CRMInner() {
           onUpdateStepReached={updateStepReached}
           onToggleInvoiceSent={toggleInvoiceSent}
           onGrantPremium={async (id) => {
-            const { data: { user } } = await supabase.auth.getUser();
-            await grantPremium(id, user?.email || "admin");
+            await grantPremium(id, "fredericodigital@gmail.com");
           }}
         />
       )}
