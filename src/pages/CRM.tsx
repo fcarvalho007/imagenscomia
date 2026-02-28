@@ -31,8 +31,9 @@ function CRMInner() {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     sessionStorage.removeItem("crm_admin_email");
+    await supabase.auth.signOut();
     setAuthenticated(false);
   }, []);
 
