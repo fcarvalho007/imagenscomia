@@ -1,45 +1,43 @@
 
 
-# Fix eyebrow and subtitle colors in video_postwebinar_closing
+# Fix: Permitir eliminação de registos no CRM
 
-## What's wrong
+## Diagnóstico
 
-The header has two elements using `#94a3b8` (slate gray) instead of the design system colors:
-- **Eyebrow** ("Webinar Video com IA"): should be `#a5b4fc`
-- **Subtitle** ("O acesso fecha hoje."): should be `#c7d2fe`
+Dois problemas impedem a eliminação:
 
-## Fix
+### Problema 1 — CRM login sem sessão Supabase
+O `CRMLogin.tsx` apenas verifica se o email e `fredericodigital@gmail.com` e guarda em `sessionStorage`. Nao faz `supabase.auth.signInWithPassword()`. Quando `deleteInscrito` chama `supabase.auth.getSession()`, recebe `null` — o token enviado a edge function e vazio e ela retorna 401.
 
-Run a single UPDATE with two nested REPLACE calls, using surrounding CSS properties as unique anchors to target each occurrence precisely:
+### Problema 2 — `getClaims()` nao existe no Supabase SDK
+A edge function `delete-registration` usa `userClient.auth.getClaims(token)` que nao e um metodo valido do supabase-js. Mesmo com um token valido, isto daria erro. O metodo correcto e `supabase.auth.getUser(token)`.
 
-```sql
-UPDATE email_templates
-SET html_body = REPLACE(
-  REPLACE(html_body,
-    'font-size:12px;color:#94a3b8;letter-spacing',
-    'font-size:12px;color:#a5b4fc;letter-spacing'),
-  'font-size:15px;color:#94a3b8;',
-  'font-size:15px;color:#c7d2fe;'),
-    updated_at = now()
-WHERE template_key = 'video_postwebinar_closing';
-```
+## Solucao
 
-## Verification
+### Passo 1 — Adicionar autenticacao Supabase ao CRM login
+Modificar `src/components/crm/CRMLogin.tsx`:
+- Adicionar campo de password
+- Usar `supabase.auth.signInWithPassword({ email, password })` em vez de apenas comparar o email
+- Manter a verificacao de email `fredericodigital@gmail.com` como camada extra
+- Guardar sessao via Supabase Auth (automatico com `persistSession: true`)
 
-```sql
-SELECT template_key,
-  CASE WHEN html_body LIKE '%94a3b8%'
-       THEN 'still has wrong color'
-       ELSE 'fixed'
-  END as color_check
-FROM email_templates
-WHERE template_key = 'video_postwebinar_closing';
-```
+### Passo 2 — Corrigir edge function `delete-registration`
+Modificar `supabase/functions/delete-registration/index.ts`:
+- Substituir `getClaims(token)` por `getUser(token)` que e o metodo correcto
+- Extrair `userId` de `userData.user.id` em vez de `claimsData.claims.sub`
 
-Expected: `fixed`
+### Passo 3 — Actualizar logout do CRM
+Em `src/pages/CRM.tsx`, o `handleLogout` deve tambem chamar `supabase.auth.signOut()` para limpar a sessao.
 
-## Scope
+## Ficheiros alterados
 
-- Only `video_postwebinar_closing` html_body is touched
-- No copy, subject, links, or CTA changes
-- No other templates or edge functions modified
+| Ficheiro | Alteracao |
+|---|---|
+| `src/components/crm/CRMLogin.tsx` | Adicionar password + `signInWithPassword` |
+| `src/pages/CRM.tsx` | Adicionar `signOut()` ao logout + verificar sessao existente no mount |
+| `supabase/functions/delete-registration/index.ts` | `getClaims` → `getUser` |
+
+## Notas
+- A conta Supabase Auth para `fredericodigital@gmail.com` ja existe (user_id: `f1c642b2-...`)
+- A role `admin` ja esta atribuida na tabela `user_roles`
+- Nenhuma tabela, template, ou outra edge function e alterada
