@@ -1,53 +1,70 @@
 
 
-# Auditoria de Automacoes — Problemas encontrados e correcoes
+# Correcao critica: filtro plan_selected errado em 4 edge functions
 
-## Problema encontrado: duracao errada em 4 templates na base de dados
+## Problema
 
-Quatro templates na base de dados dizem **"3 horas"** quando deviam dizer **"45 a 60 minutos"**:
+Quatro edge functions filtram por `plan_selected = 'gratuito'`, mas na base de dados nenhum registo do webinar de video tem esse valor. Os valores reais sao:
 
-| Template | Texto errado | Contexto |
+- `video-free`: 76 registos
+- `NULL`: 42 registos (inscritos sem plano definido — tambem sao gratuitos)
+- `video-masterclass`: 3 (pagos)
+- `video-premium`: 2 (pagos)
+
+Resultado: os emails de follow-up pre-webinar, pos-webinar day 1, day 3 e closing **nunca vao ser enviados**.
+
+## Funcoes afectadas
+
+| Funcao | Quando dispara | O que faz |
 |---|---|---|
-| `video_confirmation` | "3 horas" (na linha de duracao) | Bloco de detalhes do evento |
-| `video_confirmation_returning` | "3 horas" (na linha de duracao) | Bloco de detalhes do evento |
-| `video_reminder_48h` | "O que vais aprender em 3 horas:" | Titulo da seccao de conteudo |
-| `video_reminder_24h` | "sessao ao vivo, 3 horas." | Descricao do webinar |
+| `send-video-followup-prewebinar` | Diario 10h (27 Fev - 3 Mar) | Upsell pre-webinar para quem nao pagou |
+| `send-video-postwebinar-day1` | 5 Mar 13h | Resumo + upsell Premium Pass |
+| `send-video-postwebinar-day3` | 8 Mar 10h | Lembrete antes do fecho |
+| `send-video-postwebinar-closing` | 10 Mar 10h | Ultimo email + marca como lost |
 
-Nota: os fallbacks em codigo (edge functions) ja estao correctos com "45-60 minutos". O problema e apenas nos templates guardados na tabela `email_templates`.
+## Funcoes que estao correctas (sem alteracao)
 
-## O que esta correcto (nao precisa de alteracao)
+- `send-video-reminder-48h` — filtra por `paid_at IS NULL` (OK)
+- `send-video-reminder-24h` — filtra por `paid_at IS NULL` (OK)
+- `send-video-reminder-1h` — sem filtro de plano, todos os inscritos (OK)
+- `send-video-postwebinar` (day 0) — filtra por `attended_live_at IS NOT NULL` (OK)
 
-- **ICS / calendario**: DTSTART 10h00, DTEND 11h00 — 1h, OK
-- **Cron schedules**: todos correctos para webinar 5 de Marco as 10h UTC
-- **Janelas de tempo**: 48h, 24h, 1h — todas com guards adequados
-- **Idempotencia**: todos os emails verificam envios anteriores antes de reenviar
-- **Seguranca cron**: todos validam `CRON_SECRET`
-- **Sequencia pos-webinar**: Day 0 (12:30), Day 1 (13:00), Day 3 (8 Mar), Closing (10 Mar) — correcto
-- **Guard-rail de pagamento**: templates de upsell excluem quem ja pagou
-- **Template video_payment_masterclass**: referencia a Masterclass (nao diz "45-60 min" — correcto, porque a Masterclass de 12 de Marco sao 3 horas)
+## Correcao
 
-## Correcao: 1 migration SQL com 4 REPLACE
-
-Uma unica query UPDATE por template para substituir "3 horas" pela duracao correcta:
+Em cada uma das 4 funcoes, substituir:
 
 ```text
-video_confirmation:           "3 horas" -> "45 a 60 minutos"
-video_confirmation_returning: "3 horas" -> "45 a 60 minutos"
-video_reminder_48h:           "em 3 horas:" -> "em 45 a 60 minutos:"
-video_reminder_24h:           "3 horas." -> "45 a 60 minutos."
+.eq("plan_selected", "gratuito")
 ```
 
-Cada UPDATE usa REPLACE com contexto suficiente para evitar substituicoes acidentais. Nenhum outro template, edge function ou ficheiro e alterado.
+Por logica equivalente que apanhe registos gratuitos (video-free ou NULL) e exclua pagos:
+
+```text
+.is("paid_at", null)
+```
+
+Este filtro e mais robusto porque:
+- Apanha `video-free` (76 registos) e `NULL` (42 registos)
+- Exclui automaticamente quem ja pagou (`video-premium`, `video-masterclass`)
+- Nao depende do valor exacto de `plan_selected`
+- E consistente com o que as funcoes de reminder ja usam
+
+O mesmo ajuste aplica-se a linha de "mark as lost" no `postwebinar-closing` (linha 166), que tambem filtra por `plan_selected = 'gratuito'`.
+
+## Ficheiros alterados
+
+| Ficheiro | Linha(s) | Alteracao |
+|---|---|---|
+| `supabase/functions/send-video-followup-prewebinar/index.ts` | ~90 | `.eq("plan_selected", "gratuito")` → `.is("paid_at", null)` |
+| `supabase/functions/send-video-postwebinar-day1/index.ts` | ~89 | `.eq("plan_selected", "gratuito")` → `.is("paid_at", null)` |
+| `supabase/functions/send-video-postwebinar-day3/index.ts` | ~linha equivalente | `.eq("plan_selected", "gratuito")` → `.is("paid_at", null)` |
+| `supabase/functions/send-video-postwebinar-closing/index.ts` | ~82 e ~166 | `.eq("plan_selected", "gratuito")` → `.is("paid_at", null)` (query + mark as lost) |
+
+## Urgencia
+
+O `followup-prewebinar` ja esta activo (janela 27 Fev - 3 Mar) e nao esta a enviar nada. Sem esta correcao, nenhum dos 118 inscritos gratuitos recebera emails de upsell nem de follow-up pos-webinar.
 
 ## Verificacao pos-correcao
 
-```sql
-SELECT template_key,
-  CASE WHEN html_body LIKE '%3 horas%' THEN 'ERRO' ELSE 'OK' END as check_3h,
-  CASE WHEN html_body LIKE '%45 a 60 minutos%' OR html_body LIKE '%45–60%' THEN 'OK' ELSE 'SEM DURACAO' END as check_duracao
-FROM email_templates
-WHERE template_key IN ('video_confirmation','video_confirmation_returning','video_reminder_48h','video_reminder_24h');
-```
-
-Esperado: todos "OK" / "OK".
+Invocar manualmente o `followup-prewebinar` para confirmar que detecta destinatarios e envia (ou verificar nos logs que o proximo cron as 10h apanha registos).
 
