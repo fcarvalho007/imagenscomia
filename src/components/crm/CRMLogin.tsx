@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, Eye, EyeOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ALLOWED_EMAIL = "fredericodigital@gmail.com";
 
@@ -9,14 +10,29 @@ interface CRMLoginProps {
 
 export default function CRMLogin({ onLogin }: CRMLoginProps) {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     if (email.toLowerCase().trim() !== ALLOWED_EMAIL) {
       setError("Acesso restrito.");
+      return;
+    }
+
+    setLoading(true);
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password,
+    });
+    setLoading(false);
+
+    if (authError) {
+      setError("Credenciais inválidas.");
       return;
     }
 
@@ -61,11 +77,40 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
           autoFocus
         />
 
+        <label className="block text-[13px] font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
+          Password
+        </label>
+        <div className="relative mb-4">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(""); }}
+            placeholder="••••••••"
+            className="w-full rounded-lg px-3.5 py-2.5 pr-10 text-sm text-white outline-none"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+            onFocus={(e) => (e.target.style.borderColor = "rgba(99,179,237,0.6)")}
+            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            style={{ color: "rgba(255,255,255,0.35)" }}
+            tabIndex={-1}
+          >
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+
         <button
           type="submit"
-          className="w-full mt-2 py-3 rounded-[10px] font-heading font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+          disabled={loading}
+          className="w-full mt-2 py-3 rounded-[10px] font-heading font-semibold text-[15px] text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
         >
-          Entrar
+          {loading ? "A entrar..." : "Entrar"}
         </button>
 
         {error && (
