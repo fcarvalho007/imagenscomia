@@ -1,43 +1,57 @@
 
+Objetivo: voltar o `/crm` para acesso apenas por email (sem password), restringido exclusivamente a `fredericodigital@gmail.com`, sem voltar a quebrar ações críticas como apagar registos.
 
-# Fix: Permitir eliminação de registos no CRM
+1) Reverter o login do CRM para modelo “email-only” (frontend)
+- Ficheiro: `src/components/crm/CRMLogin.tsx`
+- Alterações:
+  - Remover dependência de autenticação por password:
+    - retirar `supabase.auth.signInWithPassword`
+    - retirar campo de password, estado `password`, `showPassword`, `loading` e ícones Eye/EyeOff
+  - Manter apenas:
+    - input de email
+    - validação `email.toLowerCase().trim() === "fredericodigital@gmail.com"`
+    - `sessionStorage.setItem("crm_admin_email", ALLOWED_EMAIL)` + `onLogin()`
+  - Mensagem de erro continua simples: “Acesso restrito.”
 
-## Diagnóstico
+2) Ajustar o estado de logout para não depender de sessão autenticada
+- Ficheiro: `src/pages/CRM.tsx`
+- Alterações:
+  - `handleLogout` deixa de chamar `supabase.auth.signOut()`
+  - mantém apenas limpeza de `sessionStorage` + `setAuthenticated(false)`
+- Motivo:
+  - no modo email-only não existe sessão de autenticação para terminar.
 
-Dois problemas impedem a eliminação:
+3) Evitar regressão no “apagar registo” (delete) após remover password
+- Problema atual:
+  - `registrations` não tem policy de DELETE pública, por isso o delete depende da função backend `delete-registration`.
+  - hoje essa função exige JWT + `user_roles` (logo, exige login com password).
+- Correção:
+  - Ficheiro frontend: `src/hooks/useInscritos.ts`
+    - `deleteInscrito` deixa de pedir `supabase.auth.getSession()`
+    - envia o email admin da sessão local (ex.: header `x-crm-admin-email`) ao chamar `delete-registration`
+  - Ficheiro backend: `supabase/functions/delete-registration/index.ts`
+    - remover validação por JWT/user_roles
+    - validar apenas allowlist do email admin (`fredericodigital@gmail.com`) recebido no pedido
+    - manter o delete com credencial de serviço (como já existe)
+- Resultado:
+  - continua sem password no `/crm`
+  - apagar volta a funcionar com o modelo pedido (email-only).
 
-### Problema 1 — CRM login sem sessão Supabase
-O `CRMLogin.tsx` apenas verifica se o email e `fredericodigital@gmail.com` e guarda em `sessionStorage`. Nao faz `supabase.auth.signInWithPassword()`. Quando `deleteInscrito` chama `supabase.auth.getSession()`, recebe `null` — o token enviado a edge function e vazio e ela retorna 401.
+4) Pequeno ajuste de consistência no “grant premium”
+- Ficheiro: `src/pages/CRM.tsx`
+- Alteração:
+  - onde hoje usa `supabase.auth.getUser()` para obter email do admin, passar diretamente o email permitido (`fredericodigital@gmail.com`) no `grantPremium`.
+- Motivo:
+  - evitar dependência de sessão autenticada num fluxo que volta a ser email-only.
 
-### Problema 2 — `getClaims()` nao existe no Supabase SDK
-A edge function `delete-registration` usa `userClient.auth.getClaims(token)` que nao e um metodo valido do supabase-js. Mesmo com um token valido, isto daria erro. O metodo correcto e `supabase.auth.getUser(token)`.
+5) Validação final (checklist)
+- `/crm` mostra apenas campo de email (sem password).
+- `fredericodigital@gmail.com` entra com sucesso.
+- qualquer outro email é bloqueado.
+- logout limpa acesso local e volta ao login.
+- apagar registo funciona novamente no CRM sem exigir password.
+- não há mudanças em templates de email, páginas públicas ou outras funções fora do necessário.
 
-## Solucao
-
-### Passo 1 — Adicionar autenticacao Supabase ao CRM login
-Modificar `src/components/crm/CRMLogin.tsx`:
-- Adicionar campo de password
-- Usar `supabase.auth.signInWithPassword({ email, password })` em vez de apenas comparar o email
-- Manter a verificacao de email `fredericodigital@gmail.com` como camada extra
-- Guardar sessao via Supabase Auth (automatico com `persistSession: true`)
-
-### Passo 2 — Corrigir edge function `delete-registration`
-Modificar `supabase/functions/delete-registration/index.ts`:
-- Substituir `getClaims(token)` por `getUser(token)` que e o metodo correcto
-- Extrair `userId` de `userData.user.id` em vez de `claimsData.claims.sub`
-
-### Passo 3 — Actualizar logout do CRM
-Em `src/pages/CRM.tsx`, o `handleLogout` deve tambem chamar `supabase.auth.signOut()` para limpar a sessao.
-
-## Ficheiros alterados
-
-| Ficheiro | Alteracao |
-|---|---|
-| `src/components/crm/CRMLogin.tsx` | Adicionar password + `signInWithPassword` |
-| `src/pages/CRM.tsx` | Adicionar `signOut()` ao logout + verificar sessao existente no mount |
-| `supabase/functions/delete-registration/index.ts` | `getClaims` → `getUser` |
-
-## Notas
-- A conta Supabase Auth para `fredericodigital@gmail.com` ja existe (user_id: `f1c642b2-...`)
-- A role `admin` ja esta atribuida na tabela `user_roles`
-- Nenhuma tabela, template, ou outra edge function e alterada
+Notas técnicas importantes
+- O modelo email-only é de conveniência e menos robusto que autenticação completa.
+- A implementação seguirá exatamente o comportamento que pediste (como antes), com foco em manter o fluxo operacional do CRM sem password.
