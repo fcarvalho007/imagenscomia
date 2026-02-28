@@ -1,57 +1,53 @@
 
-Objetivo: voltar o `/crm` para acesso apenas por email (sem password), restringido exclusivamente a `fredericodigital@gmail.com`, sem voltar a quebrar ações críticas como apagar registos.
 
-1) Reverter o login do CRM para modelo “email-only” (frontend)
-- Ficheiro: `src/components/crm/CRMLogin.tsx`
-- Alterações:
-  - Remover dependência de autenticação por password:
-    - retirar `supabase.auth.signInWithPassword`
-    - retirar campo de password, estado `password`, `showPassword`, `loading` e ícones Eye/EyeOff
-  - Manter apenas:
-    - input de email
-    - validação `email.toLowerCase().trim() === "fredericodigital@gmail.com"`
-    - `sessionStorage.setItem("crm_admin_email", ALLOWED_EMAIL)` + `onLogin()`
-  - Mensagem de erro continua simples: “Acesso restrito.”
+# Auditoria de Automacoes — Problemas encontrados e correcoes
 
-2) Ajustar o estado de logout para não depender de sessão autenticada
-- Ficheiro: `src/pages/CRM.tsx`
-- Alterações:
-  - `handleLogout` deixa de chamar `supabase.auth.signOut()`
-  - mantém apenas limpeza de `sessionStorage` + `setAuthenticated(false)`
-- Motivo:
-  - no modo email-only não existe sessão de autenticação para terminar.
+## Problema encontrado: duracao errada em 4 templates na base de dados
 
-3) Evitar regressão no “apagar registo” (delete) após remover password
-- Problema atual:
-  - `registrations` não tem policy de DELETE pública, por isso o delete depende da função backend `delete-registration`.
-  - hoje essa função exige JWT + `user_roles` (logo, exige login com password).
-- Correção:
-  - Ficheiro frontend: `src/hooks/useInscritos.ts`
-    - `deleteInscrito` deixa de pedir `supabase.auth.getSession()`
-    - envia o email admin da sessão local (ex.: header `x-crm-admin-email`) ao chamar `delete-registration`
-  - Ficheiro backend: `supabase/functions/delete-registration/index.ts`
-    - remover validação por JWT/user_roles
-    - validar apenas allowlist do email admin (`fredericodigital@gmail.com`) recebido no pedido
-    - manter o delete com credencial de serviço (como já existe)
-- Resultado:
-  - continua sem password no `/crm`
-  - apagar volta a funcionar com o modelo pedido (email-only).
+Quatro templates na base de dados dizem **"3 horas"** quando deviam dizer **"45 a 60 minutos"**:
 
-4) Pequeno ajuste de consistência no “grant premium”
-- Ficheiro: `src/pages/CRM.tsx`
-- Alteração:
-  - onde hoje usa `supabase.auth.getUser()` para obter email do admin, passar diretamente o email permitido (`fredericodigital@gmail.com`) no `grantPremium`.
-- Motivo:
-  - evitar dependência de sessão autenticada num fluxo que volta a ser email-only.
+| Template | Texto errado | Contexto |
+|---|---|---|
+| `video_confirmation` | "3 horas" (na linha de duracao) | Bloco de detalhes do evento |
+| `video_confirmation_returning` | "3 horas" (na linha de duracao) | Bloco de detalhes do evento |
+| `video_reminder_48h` | "O que vais aprender em 3 horas:" | Titulo da seccao de conteudo |
+| `video_reminder_24h` | "sessao ao vivo, 3 horas." | Descricao do webinar |
 
-5) Validação final (checklist)
-- `/crm` mostra apenas campo de email (sem password).
-- `fredericodigital@gmail.com` entra com sucesso.
-- qualquer outro email é bloqueado.
-- logout limpa acesso local e volta ao login.
-- apagar registo funciona novamente no CRM sem exigir password.
-- não há mudanças em templates de email, páginas públicas ou outras funções fora do necessário.
+Nota: os fallbacks em codigo (edge functions) ja estao correctos com "45-60 minutos". O problema e apenas nos templates guardados na tabela `email_templates`.
 
-Notas técnicas importantes
-- O modelo email-only é de conveniência e menos robusto que autenticação completa.
-- A implementação seguirá exatamente o comportamento que pediste (como antes), com foco em manter o fluxo operacional do CRM sem password.
+## O que esta correcto (nao precisa de alteracao)
+
+- **ICS / calendario**: DTSTART 10h00, DTEND 11h00 — 1h, OK
+- **Cron schedules**: todos correctos para webinar 5 de Marco as 10h UTC
+- **Janelas de tempo**: 48h, 24h, 1h — todas com guards adequados
+- **Idempotencia**: todos os emails verificam envios anteriores antes de reenviar
+- **Seguranca cron**: todos validam `CRON_SECRET`
+- **Sequencia pos-webinar**: Day 0 (12:30), Day 1 (13:00), Day 3 (8 Mar), Closing (10 Mar) — correcto
+- **Guard-rail de pagamento**: templates de upsell excluem quem ja pagou
+- **Template video_payment_masterclass**: referencia a Masterclass (nao diz "45-60 min" — correcto, porque a Masterclass de 12 de Marco sao 3 horas)
+
+## Correcao: 1 migration SQL com 4 REPLACE
+
+Uma unica query UPDATE por template para substituir "3 horas" pela duracao correcta:
+
+```text
+video_confirmation:           "3 horas" -> "45 a 60 minutos"
+video_confirmation_returning: "3 horas" -> "45 a 60 minutos"
+video_reminder_48h:           "em 3 horas:" -> "em 45 a 60 minutos:"
+video_reminder_24h:           "3 horas." -> "45 a 60 minutos."
+```
+
+Cada UPDATE usa REPLACE com contexto suficiente para evitar substituicoes acidentais. Nenhum outro template, edge function ou ficheiro e alterado.
+
+## Verificacao pos-correcao
+
+```sql
+SELECT template_key,
+  CASE WHEN html_body LIKE '%3 horas%' THEN 'ERRO' ELSE 'OK' END as check_3h,
+  CASE WHEN html_body LIKE '%45 a 60 minutos%' OR html_body LIKE '%45–60%' THEN 'OK' ELSE 'SEM DURACAO' END as check_duracao
+FROM email_templates
+WHERE template_key IN ('video_confirmation','video_confirmation_returning','video_reminder_48h','video_reminder_24h');
+```
+
+Esperado: todos "OK" / "OK".
+
