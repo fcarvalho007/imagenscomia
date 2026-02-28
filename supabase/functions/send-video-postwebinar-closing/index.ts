@@ -79,7 +79,7 @@ serve(async (req) => {
       .from("registrations")
       .select("id, email, first_name")
       .eq("webinar", "video")
-      .eq("plan_selected", "gratuito")
+      .is("paid_at", null)
       .eq("do_not_contact", false);
 
     if (queryErr) throw queryErr;
@@ -163,7 +163,7 @@ serve(async (req) => {
         .from("registrations")
         .update({ lost_at: new Date().toISOString(), lost_reason: "no_purchase_post_webinar" } as any)
         .eq("webinar", "video")
-        .eq("plan_selected", "gratuito")
+        .is("paid_at", null)
         .in("email", sentEmails);
 
       if (lostErr) {

@@ -77,7 +77,7 @@ serve(async (req) => {
       .from("registrations")
       .select("id, email, first_name")
       .eq("webinar", "video")
-      .eq("plan_selected", "gratuito")
+      .is("paid_at", null)
       .eq("do_not_contact", false);
 
     if (queryErr) throw queryErr;
