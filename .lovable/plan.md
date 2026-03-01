@@ -1,63 +1,62 @@
 
+# Correcao: registo apagado tratado como utilizador existente
 
-# Correcao de timing: lembrete de 48h nunca vai disparar
+## Problema
 
-## Problema critico encontrado
+O `register-free` verifica se o email ja existe na tabela `registrations` **sem filtrar por webinar** (linha 43-49). Quando se apaga um registo do webinar "video" pelo CRM, o registo antigo do webinar "imagens" continua a existir. Ao re-registar para "video", a funcao encontra o registo de "imagens" e devolve `alreadyRegistered: true`, o que activa o modal "Ola de novo" e envia o template `video_confirmation_returning` em vez do `video_confirmation`.
 
-O cron do lembrete de 48h esta agendado para as **08:00 UTC**, mas a janela de disparo no codigo so abre entre **09:00 e 11:00 UTC** do dia 3 de Marco.
+## Analise detalhada
 
-Calculo:
-- Webinar: 5 Mar 10:00 UTC
-- 49h antes = 3 Mar 09:00 UTC (inicio da janela)
-- 47h antes = 3 Mar 11:00 UTC (fim da janela)
-- Cron dispara as 08:00 UTC = **50h antes = FORA da janela**
-- Proximo disparo: 4 Mar 08:00 = 26h antes = tambem fora
-
-Resultado: o lembrete de 48h **nunca sera enviado** aos 122 inscritos gratuitos.
-
-## Todas as outras automacoes estao correctas
-
-| Automacao | Cron | Janela no codigo | Dispara? |
-|---|---|---|---|
-| followup-prewebinar | 10:00 diario | 27 Fev - 3 Mar | OK (proximo: 1 Mar 10h) |
-| **reminder-48h** | **08:00 diario** | **09:00-11:00 do 3 Mar** | **FALHA** |
-| reminder-24h | 10:00 diario | 09:00-11:00 do 4 Mar | OK (10:00 esta dentro) |
-| reminder-1h | cada hora | 08:30-09:30 do 5 Mar | OK (09:00 esta dentro) |
-| postwebinar (day 0) | 12:30 do 5 Mar | sem janela | OK |
-| postwebinar-day1 | 13:00 do 5 Mar | sem janela | OK |
-| postwebinar-day3 | 10:00 do 8 Mar | depende de day1 | OK |
-| postwebinar-closing | 10:00 do 10 Mar | depende de day3 | OK |
-
-## Verificacoes adicionais concluidas
-
-- Templates na BD: nenhum tem "3 horas" (correcao anterior aplicada com sucesso)
-- Confirmacoes de email: 128 enviados, sistema a funcionar
-- Filtros de pagamento: todos usam `.is("paid_at", null)` (correcao anterior OK)
-- Cadeia de dependencias day1 → day3 → closing: email_keys coincidem
-- Idempotencia: todas as funcoes verificam envios anteriores
-- Seguranca: todos validam CRON_SECRET
+1. **`register-free` (linha 43-49)**: faz `.eq("email", ...)` sem `.eq("webinar", webinar)` — encontra qualquer registo do email, incluindo de outros webinars
+2. **`send-video-confirmation` (linha 28-38)**: verifica historico do webinar "imagens" para decidir se e "returning" — isto e intencional para personalizar o email, mas o flag `alreadyRegistered` na resposta do `register-free` e que causa o problema do modal
+3. **Frontend (`RegistrationModal.tsx`, linha 61-66)**: quando recebe `alreadyRegistered: true`, redireciona para o upgrade com parametros de utilizador existente, o que activa o ecrã "Welcome Back"
 
 ## Correcao
 
-Alterar o cron job `video-reminder-48h` de `0 8 * * *` para `0 10 * * *`.
+### Ficheiro 1: `supabase/functions/register-free/index.ts`
 
-Isto faz com que dispare as 10:00 UTC do dia 3 de Marco, que esta dentro da janela de 09:00-11:00.
+Alterar a query de verificacao de existencia (linhas 43-49) para filtrar pelo webinar especifico:
 
-```sql
-SELECT cron.unschedule('video-reminder-48h');
+```text
+// ANTES (linha 43-49):
+const { data: existing } = await supabase
+  .from("registrations")
+  .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
+  .eq("email", email.toLowerCase().trim())
+  .order("created_at", { ascending: false })
+  .limit(1)
+  .maybeSingle();
 
-SELECT cron.schedule(
-  'video-reminder-48h',
-  '0 10 * * *',
-  $$
-  SELECT net.http_post(
-    url:='https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/send-video-reminder-48h',
-    headers:='{"Content-Type":"application/json","x-cron-secret":"Yx7Kp2mQ9vD4nL8sR3tA6hJ1cW5zB0uE7iO2pS9"}'::jsonb,
-    body:='{}'::jsonb
-  ) as request_id;
-  $$
-);
+// DEPOIS:
+const targetWebinar = webinar || "imagens";
+const { data: existing } = await supabase
+  .from("registrations")
+  .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
+  .eq("email", email.toLowerCase().trim())
+  .eq("webinar", targetWebinar)
+  .maybeSingle();
 ```
 
-Nenhum ficheiro de codigo e alterado — apenas o agendamento do cron na base de dados.
+Isto garante que:
+- Se apagaste o registo "video", ao re-registar nao encontra o registo "imagens"
+- O registo e tratado como novo e cria-se uma nova entrada para o webinar correcto
+- O email de confirmacao sera o `video_confirmation` (novo utilizador) e nao o `video_confirmation_returning`
 
+### Impacto no fluxo existente
+
+A logica de criar registo "video" para utilizadores que ja tinham "imagens" (linhas 93-138) continua a funcionar correctamente porque:
+- Se o email tem registo "imagens" mas nao "video", a query agora nao encontra nada → cria registo novo
+- Dentro do bloco de novo registo (linha 241+), ja existe a logica de video confirmation e egoi-sync
+
+A unica perda e que utilizadores que vem do webinar "imagens" ja nao terao os dados (nome, whatsapp) copiados automaticamente do registo anterior. Mas como estao a preencher o formulario de inscricao, esses dados ja vem no request body.
+
+### Nenhuma alteracao no frontend
+
+O frontend ja funciona correctamente — o problema estava apenas no backend a devolver `alreadyRegistered: true` incorrectamente.
+
+## Verificacao pos-correcao
+
+1. Apagar o registo `fredericodigital@gmail.com` / `video` do CRM
+2. Registar novamente na landing page do video
+3. Confirmar que o sistema trata como novo utilizador (sem modal "Ola de novo")
+4. Confirmar que o email recebido e o `video_confirmation` (e nao `video_confirmation_returning`)
