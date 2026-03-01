@@ -39,13 +39,13 @@ serve(async (req) => {
     const name = `${firstName.trim()} ${(lastName || "").trim()}`.trim();
     const cleanPhone = whatsapp ? whatsapp.replace(/[\s\-\(\)\.]/g, "") : null;
 
-    // Check if email already exists
+    // Check if email already exists for this specific webinar
+    const targetWebinar = webinar || "imagens";
     const { data: existing } = await supabase
       .from("registrations")
       .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
       .eq("email", email.toLowerCase().trim())
-      .order("created_at", { ascending: false })
-      .limit(1)
+      .eq("webinar", targetWebinar)
       .maybeSingle();
 
     if (existing) {
