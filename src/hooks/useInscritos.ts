@@ -376,5 +376,46 @@ export function useInscritos() {
     );
   }, [inscritos]);
 
-  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium };
+  const updatePlan = useCallback(async (inscritoId: string, newPlan: string, markAsPaid?: boolean) => {
+    const reg = inscritos.find((i) => i.id === inscritoId);
+    if (!reg) return;
+    const prefix = reg.webinar === "video" ? "video-" : "";
+    const dbPlan = newPlan === "free" ? null : `${prefix}${newPlan}`;
+    const updateData: Record<string, any> = { plan_selected: dbPlan, lost_at: null, lost_reason: null };
+    if (markAsPaid) updateData.paid_at = new Date().toISOString();
+    const { error } = await supabase.from("registrations").update(updateData).eq("id", inscritoId);
+    if (error) { console.error("Error updating plan:", error); return; }
+    const valor = PLAN_VALUES[newPlan] || 0;
+    setInscritos((prev) =>
+      prev.map((i) => i.id === inscritoId ? {
+        ...i,
+        plan_selected: newPlan === "free" ? null : newPlan,
+        plan: newPlan as Inscrito["plan"],
+        valor,
+        lost_at: null,
+        lost_reason: null,
+        ...(markAsPaid ? { paid_at: new Date().toISOString(), payment_status: "paid" as const } : {}),
+      } : i)
+    );
+  }, [inscritos]);
+
+  const markAsPaid = useCallback(async (inscritoId: string) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("registrations").update({ paid_at: now }).eq("id", inscritoId);
+    if (error) { console.error("Error marking as paid:", error); return; }
+    setInscritos((prev) =>
+      prev.map((i) => i.id === inscritoId ? { ...i, paid_at: now, payment_status: "paid" as const } : i)
+    );
+  }, []);
+
+  const markAsLost = useCallback(async (inscritoId: string, reason?: string) => {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("registrations").update({ lost_at: now, lost_reason: reason || null } as any).eq("id", inscritoId);
+    if (error) { console.error("Error marking as lost:", error); return; }
+    setInscritos((prev) =>
+      prev.map((i) => i.id === inscritoId ? { ...i, lost_at: now, lost_reason: reason || null } : i)
+    );
+  }, []);
+
+  return { inscritos, loading, refresh: fetchData, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium, updatePlan, markAsPaid, markAsLost };
 }

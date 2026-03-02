@@ -10,6 +10,11 @@ import WebinarSwitcherBar from "./WebinarSwitcherBar";
 interface PipelineViewProps {
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
+  onUpdatePlan?: (id: string, plan: string, markAsPaid?: boolean) => Promise<void>;
+  onMarkAsPaid?: (id: string) => Promise<void>;
+  onMarkAsLost?: (id: string, reason?: string) => Promise<void>;
+  onToggleFollowUp?: (id: string) => void;
+  onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
@@ -38,27 +43,35 @@ function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): {
   return { text: `Há ${days}d+`, color: "#DC2626" };
 }
 
+type ColumnKey = "inscrito" | "flow_completo" | "premium" | "masterclass" | "bundle" | "followup" | "lost";
+
 type Column = {
+  key: ColumnKey;
   title: string;
   color: string;
   filter: (i: Inscrito) => boolean;
 };
 
 const COLUMNS: Column[] = [
-  { title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up && !i.lost_at },
-  { title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
-  { title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
-  { title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
-  { title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
-  { title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
-  { title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
+  { key: "inscrito", title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up && !i.lost_at },
+  { key: "flow_completo", title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
+  { key: "premium", title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
+  { key: "masterclass", title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
+  { key: "bundle", title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
+  { key: "followup", title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
+  { key: "lost", title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
 ];
 
 function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscrito: Inscrito; onSelectInscrito: (i: Inscrito) => void; showWebinarBadge?: boolean }) {
   const badge = PLAN_BADGE[inscrito.plan] || DEFAULT_PLAN_BADGE;
   return (
     <div
-      className="bg-white border border-border rounded-[10px] p-3 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-pointer relative"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", inscrito.id);
+        e.dataTransfer.effectAllowed = "move";
+      }}
+      className="bg-white border border-border rounded-[10px] p-3 shadow-card hover:shadow-card-md hover:-translate-y-px transition-all cursor-grab active:cursor-grabbing relative"
       onClick={() => onSelectInscrito(inscrito)}
     >
       {showWebinarBadge && (
@@ -116,10 +129,11 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
   );
 }
 
-export default function PipelineView({ inscritos, onSelectInscrito }: PipelineViewProps) {
+export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan, onMarkAsPaid, onMarkAsLost, onToggleFollowUp, onUpdateStepReached }: PipelineViewProps) {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao">("all");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([COLUMNS[0].title]));
+  const [dragOverCol, setDragOverCol] = useState<ColumnKey | null>(null);
   const isMobile = useIsMobile();
   const { webinarContext } = useWebinarContext();
   const isConsolidado = webinarContext === "consolidado";
@@ -153,6 +167,43 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
     });
   };
 
+  const handleDrop = async (targetCol: ColumnKey, inscritoId: string) => {
+    setDragOverCol(null);
+    const inscrito = inscritos.find((i) => i.id === inscritoId);
+    if (!inscrito) return;
+
+    // Find which column the inscrito is currently in
+    const currentCol = COLUMNS.find((c) => c.filter(inscrito));
+    if (currentCol?.key === targetCol) return;
+
+    const colLabel = COLUMNS.find((c) => c.key === targetCol)?.title || targetCol;
+    if (!confirm(`Mover "${inscrito.nome}" para "${colLabel}"?`)) return;
+
+    switch (targetCol) {
+      case "inscrito":
+        await onUpdatePlan?.(inscritoId, "free");
+        break;
+      case "flow_completo":
+        await onUpdateStepReached?.(inscritoId, 5);
+        await onUpdatePlan?.(inscritoId, "free");
+        break;
+      case "premium":
+        await onUpdatePlan?.(inscritoId, "premium");
+        break;
+      case "masterclass":
+        await onUpdatePlan?.(inscritoId, "masterclass");
+        break;
+      case "bundle":
+        await onUpdatePlan?.(inscritoId, "bundle");
+        break;
+      case "followup":
+        onToggleFollowUp?.(inscritoId);
+        break;
+      case "lost":
+        await onMarkAsLost?.(inscritoId);
+        break;
+    }
+  };
   return (
     <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
       {/* Row 1: Title + Webinar Switcher */}
@@ -242,7 +293,13 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
             const items = filtered.filter(col.filter);
             const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             return (
-              <div key={col.title} className="min-w-[220px] max-w-[240px] flex-shrink-0">
+              <div
+                key={col.title}
+                className={`min-w-[220px] max-w-[240px] flex-shrink-0 transition-all ${dragOverCol === col.key ? "ring-2 ring-blue-400 rounded-lg" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setDragOverCol(col.key); }}
+                onDragLeave={() => setDragOverCol(null)}
+                onDrop={(e) => { e.preventDefault(); handleDrop(col.key, e.dataTransfer.getData("text/plain")); }}
+              >
                 <div className="rounded-t-lg overflow-hidden">
                   <div className="h-1" style={{ background: col.color }} />
                   <div className="px-3 pt-2.5 pb-2 bg-white border-x border-border">
@@ -265,7 +322,7 @@ export default function PipelineView({ inscritos, onSelectInscrito }: PipelineVi
                     </p>
                   </div>
                 </div>
-                <div className="bg-surface/50 border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2">
+                <div className={`border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2 transition-colors ${dragOverCol === col.key ? "bg-blue-50/50" : "bg-surface/50"}`}>
                   {items.map((inscrito) => (
                     <PipelineCard key={inscrito.id} inscrito={inscrito} onSelectInscrito={onSelectInscrito} showWebinarBadge={isConsolidado} />
                   ))}

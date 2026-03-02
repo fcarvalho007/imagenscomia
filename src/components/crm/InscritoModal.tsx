@@ -42,6 +42,9 @@ interface InscritoModalProps {
   onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
   onToggleInvoiceSent?: (id: string) => void;
   onGrantPremium?: (id: string) => void;
+  onUpdatePlan?: (id: string, plan: string, markAsPaid?: boolean) => Promise<void>;
+  onMarkAsPaid?: (id: string) => Promise<void>;
+  onMarkAsLost?: (id: string, reason?: string) => Promise<void>;
 }
 
 function fmtDate(iso: string) {
@@ -59,7 +62,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent, onGrantPremium,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent, onGrantPremium, onUpdatePlan, onMarkAsPaid, onMarkAsLost,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -307,6 +310,9 @@ export default function InscritoModal({
                   onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)}
                   sendBacklogCheckin={sendBacklogCheckin}
                   regenerateLink={regenerateLink}
+                  onUpdatePlan={onUpdatePlan}
+                  onMarkAsPaid={onMarkAsPaid}
+                  onMarkAsLost={onMarkAsLost}
                 />
 
               </>
@@ -336,7 +342,7 @@ export default function InscritoModal({
             {isMobile && (
               <div className="px-4 py-3 space-y-3" style={{ background: "#0F172A" }}>
                 <StatusBlock inscrito={inscrito} onResendLink={() => setResendModalOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} />
-                <SidebarActions inscrito={inscrito} onToggleFollowUp={onToggleFollowUp} onArchive={onArchive} onDelete={onDelete} onOpenResendModal={() => setResendModalOpen(true)} onOpenSendPayment={() => setSendPaymentOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} sendBacklogCheckin={sendBacklogCheckin} regenerateLink={regenerateLink} />
+                <SidebarActions inscrito={inscrito} onToggleFollowUp={onToggleFollowUp} onArchive={onArchive} onDelete={onDelete} onOpenResendModal={() => setResendModalOpen(true)} onOpenSendPayment={() => setSendPaymentOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} sendBacklogCheckin={sendBacklogCheckin} regenerateLink={regenerateLink} onUpdatePlan={onUpdatePlan} onMarkAsPaid={onMarkAsPaid} onMarkAsLost={onMarkAsLost} />
                 
               </div>
             )}

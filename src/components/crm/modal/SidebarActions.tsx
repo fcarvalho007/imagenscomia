@@ -1,6 +1,7 @@
-import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check } from "lucide-react";
+import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard } from "lucide-react";
 import { useState } from "react";
 import type { Inscrito } from "@/pages/crm/mockData";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface SidebarActionsProps {
   inscrito: Inscrito;
@@ -12,12 +13,15 @@ interface SidebarActionsProps {
   onToggleInvoiceSent?: () => void;
   sendBacklogCheckin?: (id: string, templateKey: string) => Promise<any>;
   regenerateLink?: (id: string) => Promise<any>;
+  onUpdatePlan?: (id: string, plan: string, markAsPaid?: boolean) => Promise<void>;
+  onMarkAsPaid?: (id: string) => Promise<void>;
+  onMarkAsLost?: (id: string, reason?: string) => Promise<void>;
 }
 
 export default function SidebarActions({
   inscrito, onToggleFollowUp, onArchive, onDelete,
   onOpenResendModal, onOpenSendPayment, onToggleInvoiceSent,
-  sendBacklogCheckin, regenerateLink,
+  sendBacklogCheckin, regenerateLink, onUpdatePlan, onMarkAsPaid, onMarkAsLost,
 }: SidebarActionsProps) {
   const [backlogSending, setBacklogSending] = useState(false);
   const [backlogSent, setBacklogSent] = useState(false);
@@ -128,6 +132,64 @@ export default function SidebarActions({
           </button>
         )}
       </div>
+
+      {/* PLAN SELECTOR */}
+      {onUpdatePlan && (
+        <div className="mt-2 space-y-1">
+          <label className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>Alterar plano</label>
+          <Select
+            value={inscrito.plan_selected || "free"}
+            onValueChange={(val) => {
+              if (val === (inscrito.plan_selected || "free")) return;
+              const planLabel = val === "free" ? "Gratuito" : val === "premium" ? "Premium" : val === "masterclass" ? "Masterclass" : "Bundle";
+              if (confirm(`Alterar plano de ${inscrito.nome} para "${planLabel}"?`)) {
+                onUpdatePlan(inscrito.id, val);
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 text-[12px] bg-white/5 border-white/10 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="free">Gratuito</SelectItem>
+              <SelectItem value="premium">Premium — €15</SelectItem>
+              <SelectItem value="masterclass">Masterclass — €57,81</SelectItem>
+              <SelectItem value="bundle">Bundle — €76,26</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* MARK AS PAID */}
+      {onMarkAsPaid && !inscrito.paid_at && inscrito.plan_selected && inscrito.plan_selected !== "free" && (
+        <button
+          onClick={() => {
+            if (confirm(`Marcar ${inscrito.nome} como PAGO manualmente? Esta acção é irreversível.`)) {
+              onMarkAsPaid(inscrito.id);
+            }
+          }}
+          className={btnBase + " mt-1"}
+          style={{ background: "rgba(22,163,74,0.12)", color: "#4ade80" }}
+        >
+          <CreditCard size={13} /> Marcar como pago
+        </button>
+      )}
+
+      {/* MARK AS LOST */}
+      {onMarkAsLost && !inscrito.lost_at && (
+        <button
+          onClick={() => {
+            const reason = prompt(`Motivo para marcar ${inscrito.nome} como "sem interesse" (opcional):`);
+            if (reason !== null) {
+              onMarkAsLost(inscrito.id, reason || undefined);
+            }
+          }}
+          className={btnBase + " mt-1"}
+          style={{ background: "rgba(239,68,68,0.08)", color: "#f87171" }}
+        >
+          <XCircle size={13} /> Sem interesse
+        </button>
+      )}
 
       {/* TIER 3 */}
       <div className="mt-2 space-y-1">
