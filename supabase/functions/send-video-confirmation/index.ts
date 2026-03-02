@@ -138,7 +138,7 @@ serve(async (req) => {
       .eq("template_key", templateKey)
       .maybeSingle();
 
-    const emailSubject = tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing";
+    const emailSubject = (tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing").replace(/\{\{fname\}\}/g, fname || "");
     const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
     const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
 

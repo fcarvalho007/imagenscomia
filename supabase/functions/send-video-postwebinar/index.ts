@@ -172,7 +172,7 @@ serve(async (req) => {
           // Personalise based on variant
           html = personaliseHtml(html, variant);
 
-          const emailSubject = tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir";
+          const emailSubject = (tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
           const resendRes = await fetch("https://api.resend.com/emails", {
             method: "POST",
             headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },

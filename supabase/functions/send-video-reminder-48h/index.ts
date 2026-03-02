@@ -129,7 +129,7 @@ serve(async (req) => {
         const fallbackHtml = buildHtml(reg.first_name || "");
         const rawHtml = tpl?.html_body ?? fallbackHtml;
         const html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
-        const emailSubject = tpl?.subject ?? "Faltam 2 dias — o teu lugar está reservado 🎬";
+        const emailSubject = (tpl?.subject ?? "Faltam 2 dias — o teu lugar está reservado 🎬").replace(/\{\{fname\}\}/g, reg.first_name || "");
         const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
