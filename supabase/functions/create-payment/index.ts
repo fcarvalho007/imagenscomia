@@ -134,6 +134,24 @@ serve(async (req) => {
       }
     }
 
+    // Fallback: try lookup without webinar filter if first lookup failed
+    if (!regId && email) {
+      const { data: regFallback } = await supabase
+        .from("registrations")
+        .select("id, edit_token, order_id")
+        .eq("email", email.toLowerCase().trim())
+        .is("paid_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (regFallback) {
+        regId = regFallback.id;
+        editToken = regFallback.edit_token || "";
+        orderId = regFallback.order_id || "";
+        console.log(`📎 Fallback lookup (no webinar filter): found regId=${regId}, orderId=${orderId}`);
+      }
+    }
+
     const eupagoResponse = await fetch(
       "https://clientes.eupago.pt/api/v1.02/paybylink/create",
       {
@@ -150,7 +168,7 @@ serve(async (req) => {
             },
             identifier: orderId
               ? `ORDER-${orderId}-${(nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30)}`
-              : `${product.identifier}-${Date.now()}`,
+              : `${product.identifier}-${(email || "no-email").replace(/[^a-zA-Z0-9@._-]/g, "").slice(0, 60)}-${Date.now()}`,
             successUrl: `${origin}/upgrade/sucesso?rid=${regId}&t=${encodeURIComponent(editToken)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,

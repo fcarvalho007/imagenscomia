@@ -399,6 +399,45 @@ async function processPayment(data: PaymentData) {
     }
   }
 
+  // ── Strategy 3b — extract email from new fallback format WEBINAR-{PLAN}-{email}-{timestamp} ──
+  if (!matched && identifier && identifier.startsWith("WEBINAR-")) {
+    const parts = identifier.split("-");
+    if (parts.length >= 4) {
+      const possibleEmail = parts.slice(2, -1).join("-");
+      if (possibleEmail.includes("@")) {
+        console.log(`🔎 Strategy 3b: extracted email="${possibleEmail}" from identifier="${identifier}"`);
+        const { data: fallbackReg } = await supabase
+          .from("registrations")
+          .select("id, email, webinar")
+          .eq("email", possibleEmail)
+          .is("paid_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (fallbackReg) {
+          const { data: updatedRows, error } = await supabase
+            .from("registrations")
+            .update({
+              paid_at: new Date().toISOString(),
+              eupago_ref: reference || transactionID,
+              eupago_transaction_id: transactionID || null,
+            })
+            .eq("id", fallbackReg.id)
+            .select("id, email");
+
+          if (!error && updatedRows?.length) {
+            matched = true;
+            matchedRegId = updatedRows[0].id;
+            console.log(`✅ Strategy 3b: matched by email=${possibleEmail}`);
+          }
+        } else {
+          console.warn(`⚠️ Strategy 3b: no unpaid registration found for email=${possibleEmail}`);
+        }
+      }
+    }
+  }
+
   // ── Fallback alert: unmatched payment ─────────────────────────────────────
   // If no strategy succeeded, log an unmatched_payment event so it's visible
   // in the audit log and never silently lost.
