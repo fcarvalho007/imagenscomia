@@ -22,7 +22,7 @@ function CRMInner() {
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
   const { webinarContext } = useWebinarContext();
 
-  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium } = useInscritos();
+  const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium, updatePlan, markAsPaid, markAsLost } = useInscritos();
 
   const filteredInscritos = filterByWebinar(inscritos, webinarContext);
 
@@ -57,7 +57,7 @@ function CRMInner() {
           <DashboardView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} onRefresh={refresh} />
         )}
         {activeView === "pipeline" && (
-          <PipelineView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} />
+          <PipelineView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} onUpdatePlan={updatePlan} onMarkAsPaid={markAsPaid} onMarkAsLost={markAsLost} onToggleFollowUp={toggleFollowUp} onUpdateStepReached={updateStepReached} />
         )}
         {activeView === "tabela" && (
           <TableView
@@ -111,10 +111,13 @@ function CRMInner() {
           onRefresh={refresh}
           onUpdateStepReached={updateStepReached}
           onToggleInvoiceSent={toggleInvoiceSent}
-          onGrantPremium={async (id) => {
-            await grantPremium(id, "fredericodigital@gmail.com");
-          }}
-        />
+           onGrantPremium={async (id) => {
+             await grantPremium(id, "fredericodigital@gmail.com");
+           }}
+           onUpdatePlan={updatePlan}
+           onMarkAsPaid={markAsPaid}
+           onMarkAsLost={markAsLost}
+         />
       )}
     </div>
   );
