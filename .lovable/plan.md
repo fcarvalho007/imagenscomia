@@ -1,88 +1,87 @@
 
 
-# Correcao URGENTE: {{fname}} literal no assunto dos emails
+# Plano: Reconciliar pagamento do Bruno Costa + Mover inscritos entre estagios
 
-## Problema
+## Parte 1: Reconciliar pagamento orfao (Bruno Costa)
 
-Todas as Edge Functions que leem o assunto da tabela `email_templates` nao fazem `.replace()` de `{{fname}}` no subject — apenas no corpo HTML. Resultado: 152 emails de confirmacao foram enviados com o assunto literal "Ate 5 de Marco, {{fname}}".
+Atualizar o registo do Bruno Costa (id: `4083d6e3-7eac-4e40-9824-cf1f3bdb735c`) na base de dados:
+- `plan_selected` = `video-bundle`
+- `paid_at` = `2026-03-01T14:28:23Z`
+- `eupago_ref` = `62556563`
+- `eupago_transaction_id` = `106795053`
 
-## Impacto
+Remover o evento `unmatched_payment` correspondente da tabela `payment_events` (se existir).
 
-| Funcao | Emails ja enviados com bug | Proximo disparo |
-|---|---|---|
-| send-video-confirmation | **152 enviados** | A cada nova inscricao |
-| send-video-reminder-48h | 0 | 3 Mar 10:00 UTC |
-| send-video-reminder-24h | 0 | 4 Mar 10:00 UTC |
-| send-video-reminder-1h | 0 | 5 Mar 09:00 UTC |
-| send-video-postwebinar | 0 | 5 Mar 12:30 UTC |
+---
 
-O `send-video-followup-prewebinar` ja tem o fix (linha 138) — nao e afectado.
+## Parte 2: Alterar plano/estagio de um inscrito dentro da ficha (modal)
 
-Os templates `video_postwebinar_day1`, `video_postwebinar_day3` e `video_postwebinar_closing` precisam tambem de ser verificados.
+Adicionar um selector de plano no `StatusBlock` ou `SidebarActions` do modal que permite ao admin:
+- Alterar o plano do inscrito (free, premium, masterclass, bundle)
+- Marcar como pago manualmente (com data actual)
+- Marcar como "sem interesse" (lost)
 
-## Correcao
+Isto resolve o caso de uso "preciso mover o Bruno para bundle" sem sair da ficha.
 
-Adicionar `.replace(/\{\{fname\}\}/g, fname)` na linha do `emailSubject` em **todas** as funcoes afectadas:
+### Implementacao
 
-### 1. `send-video-confirmation/index.ts` (linha 141)
+**Novo hook `updatePlan` em `useInscritos.ts`:**
+- Recebe `(inscritoId, newPlan, markAsPaid?)` 
+- Atualiza `plan_selected` na BD (com prefixo `video-` se webinar === "video")
+- Se `markAsPaid`, define `paid_at` = now
+- Atualiza o valor local correspondente
 
-```text
-// ANTES:
-const emailSubject = tpl?.subject ?? "Inscricao confirmada ...";
+**Novo hook `markAsLost` em `useInscritos.ts`:**
+- Recebe `(inscritoId, reason?)`
+- Atualiza `lost_at` = now, `lost_reason` na BD
 
-// DEPOIS:
-const emailSubject = (tpl?.subject ?? "Inscricao confirmada ...").replace(/\{\{fname\}\}/g, fname || "");
-```
+**UI no modal (SidebarActions ou StatusBlock):**
+- Dropdown/select para alterar plano com confirmacao
+- Botao "Marcar como pago" (para reconciliacoes manuais)
+- Botao "Sem interesse" com campo opcional de motivo
 
-### 2. `send-video-reminder-48h/index.ts` (linha 132)
+---
 
-```text
-// ANTES:
-const emailSubject = tpl?.subject ?? "Faltam 2 dias ...";
+## Parte 3: Drag-and-drop no Pipeline (desktop)
 
-// DEPOIS:
-const emailSubject = (tpl?.subject ?? "Faltam 2 dias ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
-```
+Adicionar drag-and-drop nas colunas do pipeline kanban para mover cards entre estagios.
 
-### 3. `send-video-reminder-24h/index.ts` (linha 114)
+### Abordagem tecnica
 
-```text
-// ANTES:
-const emailSubject = tpl?.subject ?? "E amanha as 10h00 ...";
+Utilizar a API nativa de HTML5 Drag and Drop (sem biblioteca externa) para manter o bundle leve. Cada `PipelineCard` recebe `draggable="true"` e cada coluna aceita drops.
 
-// DEPOIS:
-const emailSubject = (tpl?.subject ?? "E amanha as 10h00 ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
-```
+### Mapeamento de colunas para accoes
 
-### 4. `send-video-reminder-1h/index.ts` (linha 120)
+Quando um card e largado numa coluna diferente, a accao correspondente e executada:
 
 ```text
-// ANTES:
-const emailSubject = tpl?.subject ?? "Comeca em 1 hora ...";
-
-// DEPOIS:
-const emailSubject = (tpl?.subject ?? "Comeca em 1 hora ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
+Coluna destino          -> Accao na BD
+-----------------------------------------------------
+Inscrito                -> plan_selected=null, paid_at=null, lost_at=null
+Flow Completo           -> step_reached=5, plan_selected=null, lost_at=null
+Premium Pass            -> plan_selected=premium, lost_at=null
+Masterclass             -> plan_selected=masterclass, lost_at=null
+Bundle                  -> plan_selected=bundle, lost_at=null
+Follow-up Necessario    -> follow_up=true, lost_at=null
+Sem interesse           -> lost_at=now()
 ```
 
-### 5. `send-video-postwebinar/index.ts` (linha 175)
+Nota: mover para Premium/Masterclass/Bundle NAO marca como pago automaticamente — apenas muda a intencao. Para marcar como pago, usa-se a ficha do inscrito.
 
-```text
-// ANTES:
-const emailSubject = tpl?.subject ?? "Obrigado por estares presente ...";
+### Ficheiros alterados
 
-// DEPOIS:
-const emailSubject = (tpl?.subject ?? "Obrigado por estares presente ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
-```
+| Ficheiro | Alteracao |
+|---|---|
+| `src/hooks/useInscritos.ts` | Adicionar `updatePlan`, `markAsLost`, `markAsPaid` |
+| `src/components/crm/PipelineView.tsx` | Adicionar drag-and-drop com HTML5 API |
+| `src/components/crm/modal/SidebarActions.tsx` | Adicionar selector de plano + marcar pago + sem interesse |
+| `src/pages/CRM.tsx` | Passar novos callbacks ao PipelineView e InscritoModal |
+| BD (data update) | Reconciliar Bruno Costa |
 
-### 6-8. Verificar e corrigir tambem as funcoes:
-- `send-video-postwebinar-day1`
-- `send-video-postwebinar-day3`
-- `send-video-postwebinar-closing`
+### Notas importantes
 
-## Deploy
+- O drag-and-drop so funciona em desktop (mobile mantem o accordion actual)
+- Cada drop pede confirmacao antes de executar a alteracao
+- As alteracoes sao persistidas na BD imediatamente via Supabase
+- O pipeline re-renderiza automaticamente apos a actualizacao do estado local
 
-Redeployar todas as funcoes corrigidas de uma so vez.
-
-## Sobre os 152 emails ja enviados
-
-Infelizmente os 152 emails de confirmacao ja enviados nao podem ser recolhidos. O corpo do email esta correcto (nome personalizado) — apenas o assunto ficou com `{{fname}}` literal. Nao ha forma de corrigir emails ja entregues.
