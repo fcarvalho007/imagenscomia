@@ -1,134 +1,88 @@
 
 
-# Correcao: identificador de pagamento sem informacao do cliente
+# Correcao URGENTE: {{fname}} literal no assunto dos emails
 
-## Problema diagnosticado
+## Problema
 
-1. **Pagamento orfao**: O pagamento de 76,26 EUR (txID: 106795053, ref: 62556563) esta registado como `unmatched_payment` na tabela `payment_events`. Nenhuma das 3 estrategias do webhook conseguiu reconciliar.
+Todas as Edge Functions que leem o assunto da tabela `email_templates` nao fazem `.replace()` de `{{fname}}` no subject — apenas no corpo HTML. Resultado: 152 emails de confirmacao foram enviados com o assunto literal "Ate 5 de Marco, {{fname}}".
 
-2. **Causa raiz**: A funcao `create-payment` tem um fallback no identificador (linha 151-153):
+## Impacto
 
-```text
-identifier: orderId
-  ? `ORDER-${orderId}-${nome}`
-  : `${product.identifier}-${Date.now()}`
-```
+| Funcao | Emails ja enviados com bug | Proximo disparo |
+|---|---|---|
+| send-video-confirmation | **152 enviados** | A cada nova inscricao |
+| send-video-reminder-48h | 0 | 3 Mar 10:00 UTC |
+| send-video-reminder-24h | 0 | 4 Mar 10:00 UTC |
+| send-video-reminder-1h | 0 | 5 Mar 09:00 UTC |
+| send-video-postwebinar | 0 | 5 Mar 12:30 UTC |
 
-Quando o lookup do email falha (ex: plano "bundle" procura webinar "imagens" mas o inscrito so tem registo "video"), nao ha `orderId` e o identificador gerado e `WEBINAR-BUNDLE-{timestamp}` — sem qualquer referencia ao cliente.
+O `send-video-followup-prewebinar` ja tem o fix (linha 138) — nao e afectado.
 
-3. **Porque o lookup falhou**: O plano "bundle" (sem prefixo "video-") faz `webinar = "imagens"` (linha 80). Se o inscrito so tem registo no webinar "video", a query nao encontra nada.
+Os templates `video_postwebinar_day1`, `video_postwebinar_day3` e `video_postwebinar_closing` precisam tambem de ser verificados.
 
-## Identificar quem pagou (acao manual)
+## Correcao
 
-Verificar no painel da EuPago qual email esta associado a transacao **106795053** (referencia 62556563). Depois reconciliar manualmente na BD.
+Adicionar `.replace(/\{\{fname\}\}/g, fname)` na linha do `emailSubject` em **todas** as funcoes afectadas:
 
-## Correcoes no codigo
-
-### Ficheiro 1: `supabase/functions/create-payment/index.ts`
-
-**Alteracao A** — Incluir SEMPRE o email no identificador, mesmo no fallback (linhas 151-153):
+### 1. `send-video-confirmation/index.ts` (linha 141)
 
 ```text
 // ANTES:
-identifier: orderId
-  ? `ORDER-${orderId}-${(nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30)}`
-  : `${product.identifier}-${Date.now()}`,
+const emailSubject = tpl?.subject ?? "Inscricao confirmada ...";
 
 // DEPOIS:
-identifier: orderId
-  ? `ORDER-${orderId}-${(nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30)}`
-  : `${product.identifier}-${(email || "no-email").replace(/[^a-zA-Z0-9@._-]/g, "").slice(0, 60)}-${Date.now()}`,
+const emailSubject = (tpl?.subject ?? "Inscricao confirmada ...").replace(/\{\{fname\}\}/g, fname || "");
 ```
 
-Isto garante que mesmo sem order_id, o identificador contem o email para reconciliacao manual e automatica.
-
-**Alteracao B** — Tentar lookup sem filtro de webinar como fallback (apos linha 135):
+### 2. `send-video-reminder-48h/index.ts` (linha 132)
 
 ```text
-// Se o primeiro lookup falhou, tentar sem filtro de webinar
-if (!regId && email) {
-  const { data: regFallback } = await supabase
-    .from("registrations")
-    .select("id, edit_token, order_id")
-    .eq("email", email.toLowerCase().trim())
-    .is("paid_at", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (regFallback) {
-    regId = regFallback.id;
-    editToken = regFallback.edit_token || "";
-    orderId = regFallback.order_id || "";
-  }
-}
+// ANTES:
+const emailSubject = tpl?.subject ?? "Faltam 2 dias ...";
+
+// DEPOIS:
+const emailSubject = (tpl?.subject ?? "Faltam 2 dias ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
 ```
 
-Assim, se o inscrito tem registo "video" mas o plano e "bundle", o sistema ainda encontra o order_id.
-
-### Ficheiro 2: `supabase/functions/eupago-webhook/index.ts`
-
-**Alteracao** — Adicionar Strategy 3b antes do fallback (apos linha 399): extrair email do identificador no formato `WEBINAR-{PLAN}-{email}-{timestamp}`:
+### 3. `send-video-reminder-24h/index.ts` (linha 114)
 
 ```text
-// Strategy 3b: extract email from new fallback format WEBINAR-{PLAN}-{email}-{timestamp}
-if (!matched && identifier && identifier.startsWith("WEBINAR-")) {
-  const parts = identifier.split("-");
-  // Format: WEBINAR-{PLAN}-{email}-{timestamp}
-  // Email is between the second and last segment
-  if (parts.length >= 4) {
-    const possibleEmail = parts.slice(2, -1).join("-");
-    if (possibleEmail.includes("@")) {
-      console.log(`Strategy 3b: extracted email="${possibleEmail}" from identifier`);
-      const { data: fallbackReg } = await supabase
-        .from("registrations")
-        .select("id, email, webinar")
-        .eq("email", possibleEmail)
-        .is("paid_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+// ANTES:
+const emailSubject = tpl?.subject ?? "E amanha as 10h00 ...";
 
-      if (fallbackReg) {
-        const { data: updatedRows, error } = await supabase
-          .from("registrations")
-          .update({
-            paid_at: new Date().toISOString(),
-            eupago_ref: reference || transactionID,
-            eupago_transaction_id: transactionID || null,
-          })
-          .eq("id", fallbackReg.id)
-          .select("id, email");
-
-        if (!error && updatedRows?.length) {
-          matched = true;
-          matchedRegId = updatedRows[0].id;
-          console.log(`Strategy 3b: matched by email=${possibleEmail}`);
-        }
-      }
-    }
-  }
-}
+// DEPOIS:
+const emailSubject = (tpl?.subject ?? "E amanha as 10h00 ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
 ```
 
-## Ficheiros alterados
+### 4. `send-video-reminder-1h/index.ts` (linha 120)
 
-| Ficheiro | Alteracao |
-|---|---|
-| `supabase/functions/create-payment/index.ts` | Incluir email no fallback identifier + lookup sem filtro webinar |
-| `supabase/functions/eupago-webhook/index.ts` | Adicionar Strategy 3b para extrair email do novo formato |
+```text
+// ANTES:
+const emailSubject = tpl?.subject ?? "Comeca em 1 hora ...";
 
-## Reconciliacao imediata
-
-Apos identificar o email no painel EuPago, executar manualmente:
-
-```sql
-UPDATE registrations
-SET paid_at = '2026-03-01T14:28:23Z',
-    eupago_ref = '62556563',
-    eupago_transaction_id = '106795053',
-    plan_selected = 'video-bundle'
-WHERE email = '{EMAIL_DO_CLIENTE}'
-  AND webinar = 'video'
-  AND paid_at IS NULL;
+// DEPOIS:
+const emailSubject = (tpl?.subject ?? "Comeca em 1 hora ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
 ```
 
+### 5. `send-video-postwebinar/index.ts` (linha 175)
+
+```text
+// ANTES:
+const emailSubject = tpl?.subject ?? "Obrigado por estares presente ...";
+
+// DEPOIS:
+const emailSubject = (tpl?.subject ?? "Obrigado por estares presente ...").replace(/\{\{fname\}\}/g, reg.first_name || "");
+```
+
+### 6-8. Verificar e corrigir tambem as funcoes:
+- `send-video-postwebinar-day1`
+- `send-video-postwebinar-day3`
+- `send-video-postwebinar-closing`
+
+## Deploy
+
+Redeployar todas as funcoes corrigidas de uma so vez.
+
+## Sobre os 152 emails ja enviados
+
+Infelizmente os 152 emails de confirmacao ja enviados nao podem ser recolhidos. O corpo do email esta correcto (nome personalizado) — apenas o assunto ficou com `{{fname}}` literal. Nao ha forma de corrigir emails ja entregues.
