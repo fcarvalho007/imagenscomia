@@ -1,87 +1,70 @@
 
+# Correcao URGENTE: Precos errados na pagina /comprar
 
-# Plano: Reconciliar pagamento do Bruno Costa + Mover inscritos entre estagios
+## Problema
 
-## Parte 1: Reconciliar pagamento orfao (Bruno Costa)
+O `PurchaseModal` envia os nomes de plano sem o prefixo `video-` ao `create-payment`, fazendo com que sejam usados os produtos do webinar de imagens em vez dos produtos de video.
 
-Atualizar o registo do Bruno Costa (id: `4083d6e3-7eac-4e40-9824-cf1f3bdb735c`) na base de dados:
-- `plan_selected` = `video-bundle`
-- `paid_at` = `2026-03-01T14:28:23Z`
-- `eupago_ref` = `62556563`
-- `eupago_transaction_id` = `106795053`
+### Impacto concreto
 
-Remover o evento `unmatched_payment` correspondente da tabela `payment_events` (se existir).
+| Plano | Preco na UI | Valor enviado ao EuPago | Valor correcto |
+|---|---|---|---|
+| Gravacao (15 + IVA) | 18,45 EUR | 33,21 EUR (gravacao) | 18,45 EUR (video-premium) |
+| Masterclass (47 + IVA) | 57,81 EUR | 57,81 EUR (masterclass) | 57,81 EUR (video-masterclass) -- mesmo valor, produto errado |
+| Bundle (57 + IVA) | 70,11 EUR | 76,26 EUR (bundle) | Precisa de novo produto |
 
----
+### Causa raiz
 
-## Parte 2: Alterar plano/estagio de um inscrito dentro da ficha (modal)
+Em `PurchaseModal.tsx` linha 86, o `plan` e enviado directamente ("gravacao", "masterclass", "bundle") sem mapear para o equivalente video.
 
-Adicionar um selector de plano no `StatusBlock` ou `SidebarActions` do modal que permite ao admin:
-- Alterar o plano do inscrito (free, premium, masterclass, bundle)
-- Marcar como pago manualmente (com data actual)
-- Marcar como "sem interesse" (lost)
+## Decisao necessaria sobre o Bundle
 
-Isto resolve o caso de uso "preciso mover o Bruno para bundle" sem sair da ficha.
+O video-bundle actual no create-payment tem valor 76,26 EUR (62 + IVA). Mas a UI mostra 57 + IVA = 70,11 EUR. Ha duas opcoes:
 
-### Implementacao
+**Opcao A**: O preco correcto e 57 + IVA. Nesse caso, preciso criar um novo produto `video-bundle` com valor 70,11 EUR.
 
-**Novo hook `updatePlan` em `useInscritos.ts`:**
-- Recebe `(inscritoId, newPlan, markAsPaid?)` 
-- Atualiza `plan_selected` na BD (com prefixo `video-` se webinar === "video")
-- Se `markAsPaid`, define `paid_at` = now
-- Atualiza o valor local correspondente
+**Opcao B**: O preco correcto e 62 + IVA (47+15). Nesse caso, a UI precisa de ser corrigida para mostrar 62 EUR.
 
-**Novo hook `markAsLost` em `useInscritos.ts`:**
-- Recebe `(inscritoId, reason?)`
-- Atualiza `lost_at` = now, `lost_reason` na BD
+O plano assume **Opcao A** (57 + IVA = 70,11 EUR) dado que e o que a UI promete.
 
-**UI no modal (SidebarActions ou StatusBlock):**
-- Dropdown/select para alterar plano com confirmacao
-- Botao "Marcar como pago" (para reconciliacoes manuais)
-- Botao "Sem interesse" com campo opcional de motivo
+## Correcoes
 
----
+### 1. PurchaseModal.tsx -- Mapear planos para video
 
-## Parte 3: Drag-and-drop no Pipeline (desktop)
-
-Adicionar drag-and-drop nas colunas do pipeline kanban para mover cards entre estagios.
-
-### Abordagem tecnica
-
-Utilizar a API nativa de HTML5 Drag and Drop (sem biblioteca externa) para manter o bundle leve. Cada `PipelineCard` recebe `draggable="true"` e cada coluna aceita drops.
-
-### Mapeamento de colunas para accoes
-
-Quando um card e largado numa coluna diferente, a accao correspondente e executada:
+Adicionar mapeamento quando `webinar === "video"`:
 
 ```text
-Coluna destino          -> Accao na BD
------------------------------------------------------
-Inscrito                -> plan_selected=null, paid_at=null, lost_at=null
-Flow Completo           -> step_reached=5, plan_selected=null, lost_at=null
-Premium Pass            -> plan_selected=premium, lost_at=null
-Masterclass             -> plan_selected=masterclass, lost_at=null
-Bundle                  -> plan_selected=bundle, lost_at=null
-Follow-up Necessario    -> follow_up=true, lost_at=null
-Sem interesse           -> lost_at=now()
+// Antes de chamar create-payment:
+const paymentPlan = webinar === "video"
+  ? { gravacao: "video-premium", masterclass: "video-masterclass", bundle: "video-bundle" }[plan] || plan
+  : plan;
 ```
 
-Nota: mover para Premium/Masterclass/Bundle NAO marca como pago automaticamente — apenas muda a intencao. Para marcar como pago, usa-se a ficha do inscrito.
+Usar `paymentPlan` em vez de `plan` na chamada a `create-payment`.
 
-### Ficheiros alterados
+Tambem corrigir o objecto `prices` na linha 99 para usar os valores correctos do video.
+
+### 2. create-payment/index.ts -- Corrigir valor do video-bundle
+
+Alterar o valor de `video-bundle` de 76,26 para 70,11 EUR (57 + 23% IVA).
+
+Actualizar a descricao para reflectir o produto correcto.
+
+### 3. PurchaseModal.tsx -- Corrigir display de preco do gravacao
+
+Linha 23: `gravacao: "EUR15"` deveria ser `"EUR15 + IVA"` para consistencia, dado que todos os precos sao + IVA.
+
+### 4. Deploy
+
+Redeployar a funcao `create-payment` apos a correcao.
+
+## Ficheiros alterados
 
 | Ficheiro | Alteracao |
 |---|---|
-| `src/hooks/useInscritos.ts` | Adicionar `updatePlan`, `markAsLost`, `markAsPaid` |
-| `src/components/crm/PipelineView.tsx` | Adicionar drag-and-drop com HTML5 API |
-| `src/components/crm/modal/SidebarActions.tsx` | Adicionar selector de plano + marcar pago + sem interesse |
-| `src/pages/CRM.tsx` | Passar novos callbacks ao PipelineView e InscritoModal |
-| BD (data update) | Reconciliar Bruno Costa |
+| `src/components/webinar/PurchaseModal.tsx` | Mapear plano para prefixo video- quando webinar=video; corrigir prices e display |
+| `supabase/functions/create-payment/index.ts` | Corrigir valor de video-bundle para 70,11 EUR |
 
-### Notas importantes
+## Verificacao pos-fix
 
-- O drag-and-drop so funciona em desktop (mobile mantem o accordion actual)
-- Cada drop pede confirmacao antes de executar a alteracao
-- As alteracoes sao persistidas na BD imediatamente via Supabase
-- O pipeline re-renderiza automaticamente apos a actualizacao do estado local
-
+Testar cada plano na pagina /comprar e confirmar que o valor enviado ao EuPago corresponde ao preco exibido na UI.
