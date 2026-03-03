@@ -49,9 +49,9 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     description: "Masterclass — Vídeo com IA",
   },
   "video-bundle": {
-    value: 76.26,
+    value: 70.11,
     identifier: "WEBINAR-VIDBUNDLE",
-    description: "Premium + Masterclass — Vídeo com IA",
+    description: "Masterclass + Gravação — Vídeo com IA",
   },
 };
 

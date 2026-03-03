@@ -20,7 +20,7 @@ interface PurchaseModalProps {
 const PLAN_PRICES_DISPLAY: Record<string, string> = {
   premium: "€15 + IVA",
   masterclass: "€47 + IVA",
-  gravacao: "€15",
+  gravacao: "€15 + IVA",
   bundle: "€57 + IVA",
 };
 
@@ -81,11 +81,15 @@ export const PurchaseModal = ({
         },
       });
 
+      const paymentPlan = webinar === "video"
+        ? { gravacao: "video-premium", masterclass: "video-masterclass", bundle: "video-bundle" }[plan] || plan
+        : plan;
+
       const { data, error: fnError } = await supabase.functions.invoke(
         "create-payment",
         {
           body: {
-            plan,
+            plan: paymentPlan,
             email: trimmedEmail,
             nome: `${trimmedFirst} ${trimmedLast}`,
           },
@@ -96,8 +100,8 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
-      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26, gravacao: 33.21 };
-      const capturedPlan = plan;
+      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26, gravacao: 33.21, "video-premium": 18.45, "video-masterclass": 57.81, "video-bundle": 70.11 };
+      const capturedPlan = paymentPlan;
       setTimeout(() => {
         try {
           const fbqSafe = (window as any)?.fbq;
