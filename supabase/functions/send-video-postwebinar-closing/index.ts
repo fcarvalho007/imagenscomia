@@ -107,10 +107,9 @@ serve(async (req) => {
     let errors = 0;
     const sentEmails: string[] = [];
 
-    for (let i = 0; i < toSend.length; i += 5) {
-      const batch = toSend.slice(i, i + 5);
-      const results = await Promise.all(batch.map(async (reg) => {
-        try {
+    for (const reg of toSend) {
+      await new Promise(r => setTimeout(r, 600));
+      try {
           const fname = reg.first_name || "";
           const rawHtml = tpl?.html_body ?? buildFallbackHtml(fname);
           const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
@@ -144,16 +143,11 @@ serve(async (req) => {
             error_message: ok ? null : JSON.stringify(resendData),
           });
 
-          if (ok) sentEmails.push(reg.email);
-          return ok ? "sent" : "failed";
-        } catch (err) {
-          console.error(`Failed for ${reg.email}:`, err);
-          return "failed";
-        }
-      }));
-
-      for (const r of results) {
-        if (r === "sent") sent++; else errors++;
+          if (ok) { sent++; sentEmails.push(reg.email); }
+          else errors++;
+      } catch (err) {
+        console.error(`Failed for ${reg.email}:`, err);
+        errors++;
       }
     }
 

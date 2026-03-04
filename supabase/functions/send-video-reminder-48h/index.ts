@@ -125,6 +125,7 @@ serve(async (req) => {
       .maybeSingle();
 
     for (const reg of toSend) {
+      await new Promise(r => setTimeout(r, 600));
       try {
         const fallbackHtml = buildHtml(reg.first_name || "");
         const rawHtml = tpl?.html_body ?? fallbackHtml;

@@ -129,6 +129,7 @@ serve(async (req) => {
     let errors = 0;
 
     for (const reg of toSend) {
+      await new Promise(r => setTimeout(r, 600));
       try {
         const fname = reg.first_name || "";
         const fallbackHtml = buildFallbackHtml(fname);
