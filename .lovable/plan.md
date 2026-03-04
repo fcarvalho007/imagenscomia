@@ -1,27 +1,47 @@
 
 
-# Configurar E-goi com o CNAME verificado
+# Bug: "Welcome Back" modal aparece para utilizadores novos
 
-## Descoberta
+## Causa raiz
 
-O CNAME transacional `mkt.digitalfc.pt → t896690.kmitd.com` esta verificado e activo no E-goi (confirmado no screenshot). O erro anterior era `INVALID_DOMAIN_STATUS` para `digitalfc.pt` — o dominio transacional registado no Slingshot e `mkt.digitalfc.pt`, nao `digitalfc.pt`.
+O fluxo de um utilizador **novo** no webinar de video:
 
-## Alteracao
+1. Preenche o modal de registo na pagina `/video`
+2. `register-free` cria o registo na BD com `step_reached: 1` (default da tabela)
+3. Retorna `alreadyRegistered: false`
+4. O modal navega para `/upgrade-video?name=...&email=...`
+5. `UpgradeVideo` monta e executa o auto-check (linha 120):
+   ```
+   if (data && (data.step_reached ?? 0) >= 1)
+   ```
+6. Como `step_reached` e **1** (o default), a condicao e **verdadeira**
+7. O utilizador ve o ecra "Welcome Back" (step 0) — **mesmo sendo a primeira vez**
 
-### Ficheiro: `supabase/functions/send-email/index.ts`
+O problema e que `step_reached` tem default `1` na BD, e a condicao `>= 1` apanha todos os utilizadores, incluindo os que acabaram de se registar.
 
-Mudar o dominio de `digitalfc.pt` para `mkt.digitalfc.pt`:
+## Correcao
+
+### Ficheiro: `src/pages/UpgradeVideo.tsx`
+
+Alterar a condicao na linha 120 de `>= 1` para `>= 2`. Isto garante que o "Welcome Back" so aparece para quem ja avancou pelo menos um passo alem do registo inicial.
+
+```typescript
+// ANTES (linha 120)
+if (data && (data.step_reached ?? 0) >= 1) {
+
+// DEPOIS
+if (data && (data.step_reached ?? 0) >= 2) {
+```
+
+Mesma correcao na funcao `handleRecovery` (linha 167):
 
 ```typescript
 // ANTES
-const EGOI_DOMAIN = "digitalfc.pt";
+if ((data.step_reached ?? 0) >= 1) {
 
 // DEPOIS
-const EGOI_DOMAIN = "mkt.digitalfc.pt";
+if ((data.step_reached ?? 0) >= 2) {
 ```
 
-### Apos deploy
-
-1. Invocar `test-send-email` para enviar teste para `fredericodigital@gmail.com`
-2. Se o teste chegar, invocar `resend-failed-emails` para os ~166 emails falhados (reminder_24h, followup_prewebinar, confirmation)
+Nenhuma outra alteracao e necessaria. O step 1 (Qualificacao) e o primeiro ecra que o utilizador ve normalmente, por isso `>= 2` significa que ja respondeu a pelo menos uma pergunta.
 
