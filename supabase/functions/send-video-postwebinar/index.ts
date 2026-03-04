@@ -156,70 +156,64 @@ serve(async (req) => {
       .eq("template_key", TEMPLATE_KEY)
       .maybeSingle();
 
-    // Process in batches of 5
-    for (let i = 0; i < toSend.length; i += 5) {
-      const batch = toSend.slice(i, i + 5);
-      const results = await Promise.all(batch.map(async (reg) => {
-        try {
-          // Check history for personalisation
-          const history = await getSubscriberHistory(reg.email, supabase);
-          const variant = determineVariant(history);
+    // Process sequentially with throttling to avoid Resend rate limits
+    for (const reg of toSend) {
+      await new Promise(r => setTimeout(r, 600));
+      try {
+        // Check history for personalisation
+        const history = await getSubscriberHistory(reg.email, supabase);
+        const variant = determineVariant(history);
 
-          const fallbackHtml = buildHtml(reg.first_name || "");
-          const rawHtml = tpl?.html_body ?? fallbackHtml;
-          let html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const fallbackHtml = buildHtml(reg.first_name || "");
+        const rawHtml = tpl?.html_body ?? fallbackHtml;
+        let html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
 
-          // Personalise based on variant
-          html = personaliseHtml(html, variant);
+        // Personalise based on variant
+        html = personaliseHtml(html, variant);
 
-          const emailSubject = (tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
-          const resendRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              from: RESEND_FROM,
-              to: [reg.email],
-              subject: emailSubject,
-              html,
-            }),
-          });
-          const resendData = await resendRes.json();
+        const emailSubject = (tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const resendRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            from: RESEND_FROM,
+            to: [reg.email],
+            subject: emailSubject,
+            html,
+          }),
+        });
+        const resendData = await resendRes.json();
 
-          await supabase.from("message_logs").insert({
-            registration_id: reg.id,
-            template_key: TEMPLATE_KEY,
-            provider: "resend",
-            channel: "email",
-            status: resendRes.ok ? "sent" : "failed",
-            provider_message_id: resendData.id || null,
-            error: resendRes.ok ? null : JSON.stringify(resendData),
-          });
+        await supabase.from("message_logs").insert({
+          registration_id: reg.id,
+          template_key: TEMPLATE_KEY,
+          provider: "resend",
+          channel: "email",
+          status: resendRes.ok ? "sent" : "failed",
+          provider_message_id: resendData.id || null,
+          error: resendRes.ok ? null : JSON.stringify(resendData),
+        });
 
-          await supabase.from("email_send_logs").insert({
-            webinar: "video",
-            email_key: "postwebinar",
-            recipient_email: reg.email,
-            fname: reg.first_name || "",
-            status: resendRes.ok ? "sent" : "failed",
-            resend_id: resendData.id || null,
-            error_message: resendRes.ok ? null : JSON.stringify(resendData),
-            metadata: JSON.stringify({
-              variant,
-              had_imagens_history: history !== null,
-              imagens_plan: history?.plan_selected || null,
-            }),
-          });
+        await supabase.from("email_send_logs").insert({
+          webinar: "video",
+          email_key: "postwebinar",
+          recipient_email: reg.email,
+          fname: reg.first_name || "",
+          status: resendRes.ok ? "sent" : "failed",
+          resend_id: resendData.id || null,
+          error_message: resendRes.ok ? null : JSON.stringify(resendData),
+          metadata: JSON.stringify({
+            variant,
+            had_imagens_history: history !== null,
+            imagens_plan: history?.plan_selected || null,
+          }),
+        });
 
-          return resendRes.ok ? "sent" : "failed";
-        } catch (err) {
-          console.error(`Failed for ${reg.email}:`, err);
-          return "failed";
-        }
-      }));
-
-      for (const r of results) {
-        if (r === "sent") sent++;
+        if (resendRes.ok) sent++;
         else errors++;
+      } catch (err) {
+        console.error(`Failed for ${reg.email}:`, err);
+        errors++;
       }
     }
 
