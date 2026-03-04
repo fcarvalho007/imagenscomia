@@ -1,34 +1,34 @@
 
-# Email Provider: E-goi Transactional (primário) + Resend (fallback)
 
-## Estado: ✅ IMPLEMENTADO (4 Mar 2026)
+# Correcções na integração E-goi Transactional
 
-## Arquitectura
+## Problemas encontrados no `send-email/index.ts`
 
-Todas as Edge Functions de envio de email passam pela função utilitária centralizada `send-email/index.ts`:
+Após análise da documentação oficial da API Transactional V2, encontrei **2 bugs** que vão causar falhas no envio:
 
-1. **Tenta E-goi Transactional** (POST slingshot.egoiapp.com/api/v2/email/messages/action/send/single)
-   - Sender ID: 2
-   - Domain: digitalfc.pt
-   - Auth: ApiKey (EGOI_API_KEY)
-2. **Se falhar → fallback Resend** (POST api.resend.com/emails)
-3. Retorna `{ success, provider, messageId }`
+1. **`to` está como array** — o código envia `to: [to]` mas o endpoint `/send/single` espera uma **string** (`"to": "john-doe@email.com"`)
+2. **`senderId` está como número** — o código envia `senderId: 2` (number) mas a API espera uma **string** (`"senderId": "2"`)
 
-## Funções refactorizadas (9 ficheiros)
+## Melhorias baseadas na documentação
 
-| Ficheiro | Tipo |
-|---|---|
-| `supabase/functions/send-email/index.ts` | **Novo** — utilitária centralizada |
-| `send-video-confirmation` | Confirmação de inscrição |
-| `send-video-reminder-48h` | Lembrete 48h |
-| `send-video-reminder-24h` | Lembrete 24h |
-| `send-video-reminder-1h` | Lembrete 1h |
-| `send-video-followup-prewebinar` | Follow-up pré-webinar |
-| `send-video-postwebinar` | Pós-webinar imediato |
-| `send-video-postwebinar-day1` | Pós-webinar dia 1 |
-| `send-video-postwebinar-day3` | Pós-webinar dia 3 |
-| `send-video-postwebinar-closing` | Pós-webinar closing |
+3. **Activar tracking** — a tua conta E-goi tem tracking de aberturas e cliques activado (vi na imagem). Podemos passar `openTracking: true` e `clickTracking: true` para ter métricas de aberturas/cliques por email
+4. **Campo `group`** — permite agrupar emails por tipo (ex: "confirmation", "reminder_48h") para depois ver estatísticas no painel E-goi por grupo
 
-## Logging
+## Alterações
 
-O campo `provider` nos `message_logs` agora regista "egoi" ou "resend" conforme o provider usado.
+### Ficheiro: `supabase/functions/send-email/index.ts`
+
+```typescript
+// ANTES (bugs)
+senderId: EGOI_SENDER_ID,     // number 2
+to: [to],                      // array
+
+// DEPOIS (corrigido)
+senderId: String(EGOI_SENDER_ID),  // string "2"
+to: to,                             // string
+openTracking: true,
+clickTracking: true,
+```
+
+Apenas 1 ficheiro alterado. As 8 Edge Functions que chamam `send-email` não precisam de mudanças — a interface é a mesma.
+
