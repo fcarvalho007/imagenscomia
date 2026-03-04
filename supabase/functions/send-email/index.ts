@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const EGOI_SENDER_ID = "2";
-const EGOI_DOMAIN = "digitalfc.pt";
+const EGOI_DOMAIN = "mkt.digitalfc.pt";
 const EGOI_SENDER_NAME = "Frederico Carvalho";
 const DEFAULT_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 
