@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const EGOI_SENDER_HASH = "f345a6c8e09b43ee3ceb18a4519fc9b4";
+const EGOI_SENDER_ID = "2";
 const EGOI_DOMAIN = "digitalfc.pt";
 const EGOI_SENDER_NAME = "Frederico Carvalho";
 const DEFAULT_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
@@ -38,7 +38,7 @@ async function sendViaEgoi(to: string, subject: string, html: string): Promise<{
       },
       body: JSON.stringify({
         domain: EGOI_DOMAIN,
-        senderId: EGOI_SENDER_HASH,
+        senderId: EGOI_SENDER_ID,
         senderName: EGOI_SENDER_NAME,
         to: to,
         subject,
