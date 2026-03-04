@@ -1,95 +1,86 @@
 
 
-# Auditoria de Emails — Resultados e Correcoes Necessarias
+# Avaliacao: E-goi Transactional como provider de email (substituir ou backup ao Resend)
 
-## Caso luisfmenezes@gmail.com
+## Contexto
 
-O Luis tem 2 registos (imagens + video). O historico de emails do registo **video** e:
+Actualmente usas o Resend para todos os envios transaccionais (confirmacoes, lembretes, pos-webinar). O Resend tem limite de 2 req/s que ja causou 89 falhas. Ja tens a E-goi integrada para gestao de contactos (API Marketing — lista 5, tags), mas nao para envio de emails transaccionais.
 
-| Email | Data | Estado |
-|---|---|---|
-| video_confirmation | 27 Fev 17:06 | **Enviado** (Resend ID: 751e2a84) |
-| video_followup_prewebinar | 1 Mar 10:00 | **Enviado** (Resend ID: 7aeed7db) |
-| reminder_48h | 3 Mar 10:00 | **Falhou** (rate_limit_exceeded 429) |
+## API Transactional da E-goi
 
-**O Luis recebeu a confirmacao e o follow-up pre-webinar**, mas o lembrete de 48h falhou por rate limiting do Resend.
+A E-goi tem uma API Transactional V2 separada da API Marketing:
 
----
+- **Endpoint**: `POST https://slingshot.egoiapp.com/api/v2/email/messages/action/send/single`
+- **Auth**: Header `ApiKey: <key>`
+- **Payload**: `domain`, `senderId` (obrigatorio), `senderName`, `to`, `subject`, `htmlBody`, tracking, etc.
+- **Sem limite de rate** relevante para os teus volumes (~200 emails por batch)
 
-## Problema Critico: Rate Limiting do Resend
+### Requisitos para funcionar
 
-O `reminder_48h` tentou enviar ~165 emails sequencialmente sem qualquer delay. O Resend tem um limite de **2 requests/segundo**. Resultado:
+1. **Activar Transactional** na conta E-goi (Menu > Configuracoes > Transactional > Activar)
+2. **Sender ID**: Precisas do ID numerico do sender `frederico.carvalho@digitalfc.pt` na E-goi. Este sender precisa de estar verificado/autenticado (SPF/DKIM) na E-goi transactional
+3. **Domain**: `digitalfc.pt` precisa de estar configurado como dominio na E-goi transactional (pode ser diferente do dominio da API Marketing)
+4. **API Key**: A mesma key `EGOI_API_KEY` que ja tens pode funcionar, MAS a E-goi por vezes usa keys separadas para transactional vs marketing. Preciso que confirmes
 
-- **76 enviados** (os primeiros ~76 passaram)
-- **89 falharam** (429 rate_limit_exceeded) — incluindo o Luis
+## Recomendacao: E-goi como primario, Resend como fallback
 
-Este mesmo problema vai afectar o `reminder_24h` (amanha) e o `reminder_1h` (quinta) porque usam exactamente o mesmo padrao de envio sem throttling.
+### Vantagens
 
----
+- Sem limites de rate para os teus volumes
+- Ja tens conta e dominio configurado
+- Consolidas tudo num provider (contactos + emails)
+- Resend fica como seguranca se a E-goi falhar
 
-## Correcao: Adicionar Throttling a Todas as Funcoes de Envio em Massa
+### Arquitectura proposta
 
-Adicionar um `await new Promise(r => setTimeout(r, 600))` entre cada envio (maximo ~1.6 req/s, abaixo do limite de 2/s) nas seguintes funcoes:
+Criar uma funcao utilitaria `send-email/index.ts` que:
 
-1. `send-video-reminder-48h/index.ts`
-2. `send-video-reminder-24h/index.ts`
-3. `send-video-reminder-1h/index.ts`
-4. `send-video-postwebinar/index.ts`
-5. `send-video-postwebinar-day1/index.ts`
-6. `send-video-postwebinar-day3/index.ts`
-7. `send-video-postwebinar-closing/index.ts`
-8. `send-video-followup-prewebinar/index.ts`
+1. Tenta enviar via E-goi Transactional
+2. Se falhar (timeout, 5xx, 403), tenta via Resend
+3. Loga o provider usado em `email_send_logs`
 
-Em cada uma, dentro do `for` loop, antes ou depois do `fetch` ao Resend, adicionar:
+Todas as 8+ Edge Functions de envio passam a chamar esta funcao em vez de chamar o Resend directamente. Isto centraliza a logica e elimina duplicacao.
 
-```typescript
-await new Promise(r => setTimeout(r, 600));
+```text
+Edge Function (ex: reminder_24h)
+  │
+  └─> send-email (nova Edge Function utilitaria)
+        ├─ Tentar E-goi Transactional API
+        │   POST slingshot.egoiapp.com/api/v2/email/messages/action/send/single
+        │   Headers: { ApiKey: EGOI_API_KEY }
+        │   Body: { domain, senderId, senderName, to, subject, htmlBody }
+        │
+        ├─ Se falhar → fallback Resend
+        │   POST api.resend.com/emails
+        │   Headers: { Authorization: Bearer RESEND_API_KEY }
+        │
+        └─ Return { success, provider, messageId }
 ```
 
----
+### Alternativa mais simples (sem funcao utilitaria)
 
-## Correcao 2: Reenviar os 89 Emails Falhados do reminder_48h
+Adicionar fallback inline em cada Edge Function. Mais rapido de implementar, mas duplica logica em 8 ficheiros. Nao recomendo.
 
-O reminder_48h so executa dentro da janela 47-49h antes do webinar (ja passou). E necessario reenviar manualmente. Duas opcoes:
+## O que preciso de ti antes de implementar
 
-**Opcao A (recomendada)**: Alargar temporariamente a janela do reminder_48h (remover o time-window check), redeployar, invocar manualmente uma vez, e depois repor o check original.
+1. **Confirmar que o Transactional esta activado** na tua conta E-goi. Vai a bo.e-goi.com > Configuracoes > Transactional. Se nao estiver, activa.
+2. **Sender ID**: Preciso do ID numerico do sender `frederico.carvalho@digitalfc.pt` na E-goi. Podes encontrar em Configuracoes > Remetentes.
+3. **Dominio**: Confirmar que `digitalfc.pt` tem SPF/DKIM configurado para transactional na E-goi (pode ser diferente da configuracao de marketing).
+4. **API Key**: Confirmar se a key que ja tens (`EGOI_API_KEY`) funciona para transactional ou se precisa de uma key separada.
 
-**Opcao B**: Criar uma funcao one-shot `retry-failed-reminders` que busca os 89 emails falhados do `email_send_logs` e reenvia com throttling.
-
-Recomendo **Opcao A** por ser mais simples e rapida.
-
----
-
-## Correcao 3: Idempotencia Robusta
-
-A idempotencia actual verifica `message_logs` com `status = "sent"`. Os 89 falhados foram registados como `status = "failed"`, portanto um reenvio NAO os vai duplicar — isto esta correcto.
-
----
-
-## Estado das Automacoes Futuras
-
-Os cron jobs estao todos configurados correctamente:
-
-| Cron | Funcao | Schedule | Estado |
-|---|---|---|---|
-| reminder_24h | send-video-reminder-24h | 4 Mar 10:00 | **Vai falhar sem throttling** |
-| reminder_1h | send-video-reminder-1h | 5 Mar 09:00-09:30 | **Vai falhar sem throttling** |
-| postwebinar | send-video-postwebinar | 5 Mar 12:30 | **Vai falhar sem throttling** |
-| postwebinar_day1 | send-video-postwebinar-day1 | 5 Mar 13:00 | Vai falhar |
-| postwebinar_day3 | send-video-postwebinar-day3 | 8 Mar 10:00 | Vai falhar |
-| postwebinar_closing | send-video-postwebinar-closing | 10 Mar 10:00 | Vai falhar |
-
-**Urgencia**: O reminder_24h dispara amanha as 10h. Sem o throttling, vai ter o mesmo problema.
-
----
-
-## Resumo das Alteracoes
+## Ficheiros a alterar
 
 | Ficheiro | Alteracao |
 |---|---|
-| 8 Edge Functions de envio em massa | Adicionar `await sleep(600)` no loop de envio |
-| `send-video-reminder-48h/index.ts` | Remover temporariamente time-window para reenvio |
-| Deploy | Redeployar todas as 8 funcoes |
-| Invocacao manual | Invocar `send-video-reminder-48h` uma vez para reenviar os falhados |
-| Restaurar | Repor time-window no reminder_48h apos reenvio |
+| `supabase/functions/send-email/index.ts` | **Novo** — funcao utilitaria com E-goi primario + Resend fallback |
+| `supabase/config.toml` | Adicionar `[functions.send-email]` |
+| 8 Edge Functions de envio | Substituir chamada directa ao Resend por invocacao de `send-email` |
+
+## Estimativa
+
+- Funcao utilitaria: 1 ficheiro novo
+- Refactor das 8 funcoes: substituicao mecanica do bloco de envio
+- Total: ~9 ficheiros alterados
+
+Assim que confirmares os 4 pontos acima, avanço com a implementacao.
 
