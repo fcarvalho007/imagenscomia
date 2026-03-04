@@ -147,7 +147,7 @@ const UpgradeSucesso = () => {
 
             <motion.div {...fadeUp(0.4)} className="w-full flex justify-center mb-6">
               <a
-                href="https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com"
+                href="https://calendar.app.google/kyhFPoficXByZf5S8"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 font-heading font-semibold text-[14px] text-white py-3 px-6 rounded-xl transition-colors bg-[#4285F4] hover:bg-[#3367D6]"

@@ -7,8 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
+const GOOGLE_CAL_URL = "https://calendar.app.google/kyhFPoficXByZf5S8";
 
 const ICS_CONTENT = `BEGIN:VCALENDAR
 VERSION:2.0

@@ -11,8 +11,7 @@ const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
-const GOOGLE_CAL_URL =
-  "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
+const GOOGLE_CAL_URL = "https://calendar.app.google/kyhFPoficXByZf5S8";
 
 export const VideoWebinarVideoArea = () => {
   const countdown = useCountdown(VIDEO_WEBINAR_CONFIG.startDate);
