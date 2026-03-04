@@ -1,47 +1,21 @@
 
 
-# Bug: "Welcome Back" modal aparece para utilizadores novos
+# Corrigir URL do Google Calendar em todos os ficheiros
 
-## Causa raiz
+## Problema
 
-O fluxo de um utilizador **novo** no webinar de video:
+O URL do Google Calendar usado no email de confirmação e em várias páginas é o antigo link TEMPLATE. O URL correto é o link curto: `https://calendar.app.google/kyhFPoficXByZf5S8`
 
-1. Preenche o modal de registo na pagina `/video`
-2. `register-free` cria o registo na BD com `step_reached: 1` (default da tabela)
-3. Retorna `alreadyRegistered: false`
-4. O modal navega para `/upgrade-video?name=...&email=...`
-5. `UpgradeVideo` monta e executa o auto-check (linha 120):
-   ```
-   if (data && (data.step_reached ?? 0) >= 1)
-   ```
-6. Como `step_reached` e **1** (o default), a condicao e **verdadeira**
-7. O utilizador ve o ecra "Welcome Back" (step 0) — **mesmo sendo a primeira vez**
+## Ficheiros a alterar
 
-O problema e que `step_reached` tem default `1` na BD, e a condicao `>= 1` apanha todos os utilizadores, incluindo os que acabaram de se registar.
+| Ficheiro | Linha | Contexto |
+|---|---|---|
+| `supabase/functions/send-video-confirmation/index.ts` | 10-11 | Hardcoded no email de confirmação |
+| `src/components/webinar/VideoWebinarVideoArea.tsx` | 14-15 | Página /live-video (sala de espera) |
+| `src/components/landing/ConfirmacaoExtras.tsx` | 45 | Página /confirmacao (passo 2 calendário) |
+| `src/pages/UpgradeSucesso.tsx` | 150 | Página de sucesso pós-pagamento |
 
-## Correcao
+Todos os 4 ficheiros: substituir o URL longo `https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=...` por `https://calendar.app.google/kyhFPoficXByZf5S8`.
 
-### Ficheiro: `src/pages/UpgradeVideo.tsx`
-
-Alterar a condicao na linha 120 de `>= 1` para `>= 2`. Isto garante que o "Welcome Back" so aparece para quem ja avancou pelo menos um passo alem do registo inicial.
-
-```typescript
-// ANTES (linha 120)
-if (data && (data.step_reached ?? 0) >= 1) {
-
-// DEPOIS
-if (data && (data.step_reached ?? 0) >= 2) {
-```
-
-Mesma correcao na funcao `handleRecovery` (linha 167):
-
-```typescript
-// ANTES
-if ((data.step_reached ?? 0) >= 1) {
-
-// DEPOIS
-if ((data.step_reached ?? 0) >= 2) {
-```
-
-Nenhuma outra alteracao e necessaria. O step 1 (Qualificacao) e o primeiro ecra que o utilizador ve normalmente, por isso `>= 2` significa que ja respondeu a pelo menos uma pergunta.
+A Edge Function `send-video-confirmation` será redeployed automaticamente.
 
