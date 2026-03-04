@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.backfill-video-confirmations]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.resend-failed-emails]
+verify_jwt = false
