@@ -38,11 +38,13 @@ async function sendViaEgoi(to: string, subject: string, html: string): Promise<{
       },
       body: JSON.stringify({
         domain: EGOI_DOMAIN,
-        senderId: EGOI_SENDER_ID,
+        senderId: String(EGOI_SENDER_ID),
         senderName: EGOI_SENDER_NAME,
-        to: [to],
+        to: to,
         subject,
         htmlBody: html,
+        openTracking: true,
+        clickTracking: true,
       }),
     });
 
