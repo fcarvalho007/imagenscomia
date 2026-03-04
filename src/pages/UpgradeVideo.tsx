@@ -117,7 +117,7 @@ const UpgradeVideo = () => {
           .eq("webinar", "video")
           .maybeSingle();
 
-        if (data && (data.step_reached ?? 0) >= 1) {
+        if (data && (data.step_reached ?? 0) >= 2) {
           restoreFromRecord(data);
           setReturningData({
             step_reached: data.step_reached,
@@ -164,7 +164,7 @@ const UpgradeVideo = () => {
       setUserData(prev => ({ ...prev, email: trimmed }));
       restoreFromRecord(data);
 
-      if ((data.step_reached ?? 0) >= 1) {
+      if ((data.step_reached ?? 0) >= 2) {
         setReturningData({
           step_reached: data.step_reached,
           paid_at: data.paid_at,
