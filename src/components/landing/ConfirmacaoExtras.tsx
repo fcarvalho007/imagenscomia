@@ -42,7 +42,7 @@ const ConfirmacaoExtras = ({ webinar }: ConfirmacaoExtrasProps) => {
       <div className="flex items-start gap-3">
         <span className="flex-shrink-0 w-7 h-7 rounded-full bg-ink-100 flex items-center justify-center font-heading font-bold text-[13px] text-ink-600">2</span>
         {(() => {
-          const VIDEO_CAL_URL = "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
+          const VIDEO_CAL_URL = "https://calendar.app.google/kyhFPoficXByZf5S8";
           let calUrl: string;
           if (webinar === "video") {
             calUrl = VIDEO_CAL_URL;
