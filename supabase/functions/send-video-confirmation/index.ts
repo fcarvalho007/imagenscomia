@@ -7,8 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
-
 const GOOGLE_CAL_URL =
   "https://calendar.google.com/calendar/event?action=TEMPLATE&tmeid=MTI2azhxdmZzMWs0OWsxMWhqcHIyODZoYTQgZnJlZGVyaWNvZGlnaXRhbEBt&tmsrc=fredericodigital%40gmail.com";
 
@@ -44,22 +42,7 @@ function determineVariant(history: any): string {
   const paid = !!history.paid_at;
   if ((plan === "masterclass" || plan === "bundle") && paid) return "D";
   if (plan === "premium" && paid) return "C";
-  return "B"; // gratuito or any non-paid
-}
-
-function buildPsBlock(variant: string): string {
-  if (variant === "A") return "";
-
-  const texts: Record<string, string> = {
-    B: "Já nos conhecemos do webinar de Imagens com IA — obrigado por voltares.<br><br>Este webinar cobre um tema diferente: vídeo curto para marketing, com um sistema de delegação que podes aplicar no dia seguinte.",
-    C: "Já és cliente do webinar de Imagens com IA — obrigado pela confiança.<br><br>Como já conheces o formato e a qualidade do trabalho, o Premium Pass deste webinar (€15+IVA) pode fazer sentido para teres também a gravação e o Q&amp;A ao vivo do tema Vídeo.",
-    D: "Já és cliente da Masterclass do webinar de Imagens com IA — obrigado pela confiança contínua.<br><br>Neste webinar vais ver como o sistema de vídeo se integra com o que já aprendeste sobre imagem. São dois lados do mesmo processo de produção de conteúdo.",
-  };
-
-  return `<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
-  <p style="color:#333;font-size:14px;font-weight:700;margin:0 0 8px;">PÓS-ESCRITO</p>
-  <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">${texts[variant]}</p>
-</div>`;
+  return "B";
 }
 
 function buildHtml(fname: string): string {
@@ -104,6 +87,18 @@ function buildHtml(fname: string): string {
 </body></html>`;
 }
 
+async function callSendEmail(supabaseUrl: string, serviceRoleKey: string, to: string, subject: string, html: string) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify({ to, subject, html }),
+  });
+  return await res.json();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -118,18 +113,13 @@ serve(async (req) => {
       });
     }
 
-    const resendKey = Deno.env.get("RESEND_API_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Check subscriber history for personalisation
     const history = await getSubscriberHistory(email, supabaseAdmin);
     const variant = determineVariant(history);
 
-    // Use returning-participant template for variants B/C/D, default for A
     const templateKey = variant !== "A" ? "video_confirmation_returning" : "video_confirmation";
 
     const { data: tpl } = await supabaseAdmin
@@ -142,21 +132,11 @@ serve(async (req) => {
     const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
     const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
 
-    const resendRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: [email],
-        subject: emailSubject,
-        html,
-      }),
-    });
+    const result = await callSendEmail(supabaseUrl, serviceRoleKey, email, emailSubject, html);
+    const ok = result.success === true;
 
-    const resendData = await resendRes.json();
-    console.log("Resend response:", JSON.stringify(resendData));
+    console.log("Send-email response:", JSON.stringify(result));
 
-    // Log to message_logs + email_send_logs
     try {
       const { data: reg } = await supabaseAdmin
         .from("registrations")
@@ -169,11 +149,11 @@ serve(async (req) => {
         await supabaseAdmin.from("message_logs").insert({
           registration_id: reg.id,
           template_key: templateKey,
-          provider: "resend",
+          provider: result.provider || "unknown",
           channel: "email",
-          status: resendRes.ok ? "sent" : "failed",
-          provider_message_id: resendData.id || null,
-          error: resendRes.ok ? null : JSON.stringify(resendData),
+          status: ok ? "sent" : "failed",
+          provider_message_id: result.messageId || null,
+          error: ok ? null : JSON.stringify(result.error || result),
         });
 
         await supabaseAdmin.from("email_send_logs").insert({
@@ -181,9 +161,9 @@ serve(async (req) => {
           email_key: "confirmation",
           recipient_email: email.toLowerCase().trim(),
           fname: fname || "",
-          status: resendRes.ok ? "sent" : "failed",
-          resend_id: resendData.id || null,
-          error_message: resendRes.ok ? null : JSON.stringify(resendData),
+          status: ok ? "sent" : "failed",
+          resend_id: result.messageId || null,
+          error_message: ok ? null : JSON.stringify(result.error || result),
           metadata: JSON.stringify({
             variant,
             had_imagens_history: history !== null,
@@ -196,8 +176,8 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: resendRes.ok, error: resendRes.ok ? undefined : resendData }),
-      { status: resendRes.ok ? 200 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: ok, error: ok ? undefined : result.error }),
+      { status: ok ? 200 : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
     console.error("Error:", error);

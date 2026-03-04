@@ -7,7 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 const TEMPLATE_KEY = "video_postwebinar";
 
 async function getSubscriberHistory(email: string, sb: any) {
@@ -79,7 +78,6 @@ function personaliseHtml(html: string, variant: string): string {
   let result = html;
 
   if (variant === "D") {
-    // Remove MC upsell block and replace with direct contact text
     const mcBlockRegex = /<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">\s*<p[^>]*>Queres ir mais fundo\?<\/p>[\s\S]*?<\/div>\s*<\/div>/;
     result = result.replace(mcBlockRegex, `<div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#555;font-size:14px;line-height:1.6;margin:0;">
@@ -89,13 +87,24 @@ function personaliseHtml(html: string, variant: string): string {
   }
 
   if (variant === "C") {
-    // Add line before Premium Pass block
     const premiumMarker = '<p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres acesso à gravação completa?</p>';
     const extraLine = '<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 12px;">Já conheces o valor do Premium Pass — este cobre o Q&amp;A e gravação específicos do tema Vídeo.</p>\n    ';
     result = result.replace(premiumMarker, extraLine + premiumMarker);
   }
 
   return result;
+}
+
+async function callSendEmail(supabaseUrl: string, serviceRoleKey: string, to: string, subject: string, html: string) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify({ to, subject, html }),
+  });
+  return await res.json();
 }
 
 serve(async (req) => {
@@ -116,8 +125,9 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const resendKey = Deno.env.get("RESEND_API_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const { data: registrants, error: queryErr } = await supabase
       .from("registrations")
@@ -134,7 +144,6 @@ serve(async (req) => {
       });
     }
 
-    // Idempotency
     const regIds = registrants.map((r) => r.id);
     const { data: alreadySent } = await supabase
       .from("message_logs")
@@ -149,49 +158,36 @@ serve(async (req) => {
     let sent = 0;
     let errors = 0;
 
-    // Fetch template from DB
     const { data: tpl } = await supabase
       .from("email_templates")
       .select("subject, html_body")
       .eq("template_key", TEMPLATE_KEY)
       .maybeSingle();
 
-    // Process sequentially with throttling to avoid Resend rate limits
     for (const reg of toSend) {
       await new Promise(r => setTimeout(r, 600));
       try {
-        // Check history for personalisation
         const history = await getSubscriberHistory(reg.email, supabase);
         const variant = determineVariant(history);
 
         const fallbackHtml = buildHtml(reg.first_name || "");
         const rawHtml = tpl?.html_body ?? fallbackHtml;
         let html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
-
-        // Personalise based on variant
         html = personaliseHtml(html, variant);
 
         const emailSubject = (tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: RESEND_FROM,
-            to: [reg.email],
-            subject: emailSubject,
-            html,
-          }),
-        });
-        const resendData = await resendRes.json();
+
+        const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, emailSubject, html);
+        const ok = result.success === true;
 
         await supabase.from("message_logs").insert({
           registration_id: reg.id,
           template_key: TEMPLATE_KEY,
-          provider: "resend",
+          provider: result.provider || "unknown",
           channel: "email",
-          status: resendRes.ok ? "sent" : "failed",
-          provider_message_id: resendData.id || null,
-          error: resendRes.ok ? null : JSON.stringify(resendData),
+          status: ok ? "sent" : "failed",
+          provider_message_id: result.messageId || null,
+          error: ok ? null : JSON.stringify(result.error || result),
         });
 
         await supabase.from("email_send_logs").insert({
@@ -199,9 +195,9 @@ serve(async (req) => {
           email_key: "postwebinar",
           recipient_email: reg.email,
           fname: reg.first_name || "",
-          status: resendRes.ok ? "sent" : "failed",
-          resend_id: resendData.id || null,
-          error_message: resendRes.ok ? null : JSON.stringify(resendData),
+          status: ok ? "sent" : "failed",
+          resend_id: result.messageId || null,
+          error_message: ok ? null : JSON.stringify(result.error || result),
           metadata: JSON.stringify({
             variant,
             had_imagens_history: history !== null,
@@ -209,7 +205,7 @@ serve(async (req) => {
           }),
         });
 
-        if (resendRes.ok) sent++;
+        if (ok) sent++;
         else errors++;
       } catch (err) {
         console.error(`Failed for ${reg.email}:`, err);

@@ -7,13 +7,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 const TEMPLATE_KEY = "video_followup_prewebinar";
 const EMAIL_KEY = "video_followup_prewebinar";
 
-// Date window: only send between 27 Feb and 3 Mar 2026 (inclusive)
 const WINDOW_START = new Date("2026-02-27T00:00:00Z");
-const WINDOW_END = new Date("2026-03-04T00:00:00Z"); // exclusive → 3 Mar inclusive
+const WINDOW_END = new Date("2026-03-04T00:00:00Z");
 
 function buildFallbackHtml(fname: string): string {
   return `<!DOCTYPE html>
@@ -49,13 +47,24 @@ function buildFallbackHtml(fname: string): string {
 </body></html>`;
 }
 
+async function callSendEmail(supabaseUrl: string, serviceRoleKey: string, to: string, subject: string, html: string) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify({ to, subject, html }),
+  });
+  return await res.json();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth guard
     const cronSecret = req.headers.get("x-cron-secret");
     if (cronSecret !== Deno.env.get("CRON_SECRET")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -64,7 +73,6 @@ serve(async (req) => {
       });
     }
 
-    // Date guard
     const now = new Date();
     if (now < WINDOW_START || now >= WINDOW_END) {
       return new Response(
@@ -73,16 +81,12 @@ serve(async (req) => {
       );
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const resendKey = Deno.env.get("RESEND_API_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // 48h ago cutoff
     const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
 
-    // Get eligible recipients
     const { data: registrants, error: queryErr } = await supabase
       .from("registrations")
       .select("id, email, first_name")
@@ -99,7 +103,6 @@ serve(async (req) => {
       );
     }
 
-    // Idempotency: check who already received this email
     const emails = registrants.map((r) => r.email);
     const { data: alreadySent } = await supabase
       .from("email_send_logs")
@@ -118,7 +121,6 @@ serve(async (req) => {
       );
     }
 
-    // Fetch template from DB
     const { data: tpl } = await supabase
       .from("email_templates")
       .select("subject, html_body")
@@ -138,39 +140,27 @@ serve(async (req) => {
         const rawSubject = tpl?.subject ?? "{{fname}}, ainda dá tempo ⏳";
         const emailSubject = rawSubject.replace(/\{\{fname\}\}/g, fname);
 
-        const resendRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: RESEND_FROM,
-            to: [reg.email],
-            subject: emailSubject,
-            html,
-          }),
-        });
-        const resendData = await resendRes.json();
-        const ok = resendRes.ok;
+        const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, emailSubject, html);
+        const ok = result.success === true;
 
-        // Dual logging: message_logs
         await supabase.from("message_logs").insert({
           registration_id: reg.id,
           template_key: TEMPLATE_KEY,
-          provider: "resend",
+          provider: result.provider || "unknown",
           channel: "email",
           status: ok ? "sent" : "failed",
-          provider_message_id: resendData.id || null,
-          error: ok ? null : JSON.stringify(resendData),
+          provider_message_id: result.messageId || null,
+          error: ok ? null : JSON.stringify(result.error || result),
         });
 
-        // Dual logging: email_send_logs
         await supabase.from("email_send_logs").insert({
           webinar: "video",
           email_key: EMAIL_KEY,
           recipient_email: reg.email,
           fname,
           status: ok ? "sent" : "failed",
-          resend_id: resendData.id || null,
-          error_message: ok ? null : JSON.stringify(resendData),
+          resend_id: result.messageId || null,
+          error_message: ok ? null : JSON.stringify(result.error || result),
         });
 
         if (ok) sent++;

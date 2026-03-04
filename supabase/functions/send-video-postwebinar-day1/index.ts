@@ -7,7 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const RESEND_FROM = "Frederico Carvalho <frederico.carvalho@digitalfc.pt>";
 const TEMPLATE_KEY = "video_postwebinar_day1";
 const EMAIL_KEY = "video_postwebinar_day1";
 
@@ -43,6 +42,18 @@ function buildFallbackHtml(fname: string): string {
 </body></html>`;
 }
 
+async function callSendEmail(supabaseUrl: string, serviceRoleKey: string, to: string, subject: string, html: string) {
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${serviceRoleKey}`,
+    },
+    body: JSON.stringify({ to, subject, html }),
+  });
+  return await res.json();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -61,10 +72,10 @@ serve(async (req) => {
       });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const resendKey = Deno.env.get("RESEND_API_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Recipients: all free video registrants, no attended_live_at filter (YouTube public)
     const { data: registrants, error: queryErr } = await supabase
       .from("registrations")
       .select("id, email, first_name")
@@ -80,7 +91,6 @@ serve(async (req) => {
       });
     }
 
-    // Idempotency via email_send_logs
     const emails = registrants.map((r) => r.email);
     const { data: alreadySent } = await supabase
       .from("email_send_logs")
@@ -92,7 +102,6 @@ serve(async (req) => {
     const sentSet = new Set((alreadySent || []).map((m) => m.recipient_email));
     const toSend = registrants.filter((r) => !sentSet.has(r.email));
 
-    // Fetch template from DB
     const { data: tpl } = await supabase
       .from("email_templates")
       .select("subject, html_body")
@@ -110,22 +119,17 @@ serve(async (req) => {
           const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
           const subject = (tpl?.subject ?? "O webinar de hoje, {{fname}}").replace(/\{\{fname\}\}/g, fname);
 
-          const resendRes = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ from: RESEND_FROM, to: [reg.email], subject, html }),
-          });
-          const resendData = await resendRes.json();
-          const ok = resendRes.ok;
+          const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, subject, html);
+          const ok = result.success === true;
 
           await supabase.from("message_logs").insert({
             registration_id: reg.id,
             template_key: TEMPLATE_KEY,
-            provider: "resend",
+            provider: result.provider || "unknown",
             channel: "email",
             status: ok ? "sent" : "failed",
-            provider_message_id: resendData.id || null,
-            error: ok ? null : JSON.stringify(resendData),
+            provider_message_id: result.messageId || null,
+            error: ok ? null : JSON.stringify(result.error || result),
           });
 
           await supabase.from("email_send_logs").insert({
@@ -134,8 +138,8 @@ serve(async (req) => {
             recipient_email: reg.email,
             fname,
             status: ok ? "sent" : "failed",
-            resend_id: resendData.id || null,
-            error_message: ok ? null : JSON.stringify(resendData),
+            resend_id: result.messageId || null,
+            error_message: ok ? null : JSON.stringify(result.error || result),
           });
 
           if (ok) sent++; else errors++;
