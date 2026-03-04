@@ -1,65 +1,95 @@
 
 
-# Melhorar email de notificação de venda (invoice_notification)
+# Auditoria de Emails — Resultados e Correcoes Necessarias
 
-## Problemas identificados
+## Caso luisfmenezes@gmail.com
 
-1. **Email enviado para `info@fredericocarvalho.pt`** em vez de `fredericodigital@gmail.com`
-2. **Plan labels errados** para planos `video-*` (ex: `video-masterclass` não tem label, mostra o identificador técnico)
-3. **Preços errados no totalMap** — não inclui preços video nem totais de grupo
-4. **Sem contexto de grupo** — quando é compra de grupo (6 pessoas, 312€), o email não mostra quem são os participantes
-5. **Informação do cliente incompleta** — falta role, team_size, webinar, registration_source, data de inscrição
-6. **Sem dados de faturação na /comprar** — a página não recolhe invoice_details, por isso o email diz sempre "DADOS EM FALTA"
+O Luis tem 2 registos (imagens + video). O historico de emails do registo **video** e:
 
-## Alterações no `eupago-webhook/index.ts`
+| Email | Data | Estado |
+|---|---|---|
+| video_confirmation | 27 Fev 17:06 | **Enviado** (Resend ID: 751e2a84) |
+| video_followup_prewebinar | 1 Mar 10:00 | **Enviado** (Resend ID: 7aeed7db) |
+| reminder_48h | 3 Mar 10:00 | **Falhou** (rate_limit_exceeded 429) |
 
-### 1. Mudar destinatário
-`to: ["fredericodigital@gmail.com"]`
+**O Luis recebeu a confirmacao e o follow-up pre-webinar**, mas o lembrete de 48h falhou por rate limiting do Resend.
 
-### 2. Expandir plan labels e preços
-Adicionar mapeamento completo incluindo planos video-*:
+---
+
+## Problema Critico: Rate Limiting do Resend
+
+O `reminder_48h` tentou enviar ~165 emails sequencialmente sem qualquer delay. O Resend tem um limite de **2 requests/segundo**. Resultado:
+
+- **76 enviados** (os primeiros ~76 passaram)
+- **89 falharam** (429 rate_limit_exceeded) — incluindo o Luis
+
+Este mesmo problema vai afectar o `reminder_24h` (amanha) e o `reminder_1h` (quinta) porque usam exactamente o mesmo padrao de envio sem throttling.
+
+---
+
+## Correcao: Adicionar Throttling a Todas as Funcoes de Envio em Massa
+
+Adicionar um `await new Promise(r => setTimeout(r, 600))` entre cada envio (maximo ~1.6 req/s, abaixo do limite de 2/s) nas seguintes funcoes:
+
+1. `send-video-reminder-48h/index.ts`
+2. `send-video-reminder-24h/index.ts`
+3. `send-video-reminder-1h/index.ts`
+4. `send-video-postwebinar/index.ts`
+5. `send-video-postwebinar-day1/index.ts`
+6. `send-video-postwebinar-day3/index.ts`
+7. `send-video-postwebinar-closing/index.ts`
+8. `send-video-followup-prewebinar/index.ts`
+
+Em cada uma, dentro do `for` loop, antes ou depois do `fetch` ao Resend, adicionar:
+
+```typescript
+await new Promise(r => setTimeout(r, 600));
 ```
-planLabel: video-premium → "Video Premium", video-masterclass → "Masterclass Vídeo IA", video-bundle → "Masterclass + Gravação Vídeo"
-totalMap: video-premium → "18,45", video-masterclass → "57,81", video-bundle → "70,11"
-```
 
-### 3. Buscar mais dados do cliente
-Na query de `reg`, adicionar: `role, team_size, sources, webinar, registration_source, created_at, first_name, last_name, group_payment_ref, whatsapp`
+---
 
-### 4. Incluir contexto de grupo
-Se `group_payment_ref` existe, buscar todos os membros do grupo e listar no email.
+## Correcao 2: Reenviar os 89 Emails Falhados do reminder_48h
 
-### 5. Usar o valor real do EuPago (`amount`) como total
-Em vez de lookup no totalMap, usar o `amount` recebido no webhook — é o valor real cobrado. Manter o totalMap apenas como referência do preço unitário.
+O reminder_48h so executa dentro da janela 47-49h antes do webinar (ja passou). E necessario reenviar manualmente. Duas opcoes:
 
-### 6. Template de email melhorado
+**Opcao A (recomendada)**: Alargar temporariamente a janela do reminder_48h (remover o time-window check), redeployar, invocar manualmente uma vez, e depois repor o check original.
 
-O email para `fredericodigital@gmail.com` incluirá:
+**Opcao B**: Criar uma funcao one-shot `retry-failed-reminders` que busca os 89 emails falhados do `email_send_logs` e reenvia com throttling.
 
-**Sempre presente:**
-- Nome completo + email do cliente
-- WhatsApp (se disponível)
-- Plano comprado (label legível)
-- Valor total cobrado (do webhook)
-- Preço unitário (do totalMap)
-- Método de pagamento + Ref EuPago + Transaction ID
-- Data/hora do pagamento
-- Webinar (imagens/video)
-- Data de inscrição
-- Fonte de registo (registration_source)
-- Role e team_size (se preenchidos)
+Recomendo **Opcao A** por ser mais simples e rapida.
 
-**Se grupo:**
-- Lista de todos os participantes (nome + email)
-- Número de pessoas
-- Indicação de desconto aplicado
+---
 
-**Se dados de faturação existem:**
-- Nome/Empresa, NIF, Morada, CP, Cidade, Email fatura
+## Correcao 3: Idempotencia Robusta
 
-**Se não existem:**
-- Aviso "Dados de faturação não recolhidos"
+A idempotencia actual verifica `message_logs` com `status = "sent"`. Os 89 falhados foram registados como `status = "failed"`, portanto um reenvio NAO os vai duplicar — isto esta correcto.
 
-### Ficheiro alterado
-`supabase/functions/eupago-webhook/index.ts` — secção ~L541-634
+---
+
+## Estado das Automacoes Futuras
+
+Os cron jobs estao todos configurados correctamente:
+
+| Cron | Funcao | Schedule | Estado |
+|---|---|---|---|
+| reminder_24h | send-video-reminder-24h | 4 Mar 10:00 | **Vai falhar sem throttling** |
+| reminder_1h | send-video-reminder-1h | 5 Mar 09:00-09:30 | **Vai falhar sem throttling** |
+| postwebinar | send-video-postwebinar | 5 Mar 12:30 | **Vai falhar sem throttling** |
+| postwebinar_day1 | send-video-postwebinar-day1 | 5 Mar 13:00 | Vai falhar |
+| postwebinar_day3 | send-video-postwebinar-day3 | 8 Mar 10:00 | Vai falhar |
+| postwebinar_closing | send-video-postwebinar-closing | 10 Mar 10:00 | Vai falhar |
+
+**Urgencia**: O reminder_24h dispara amanha as 10h. Sem o throttling, vai ter o mesmo problema.
+
+---
+
+## Resumo das Alteracoes
+
+| Ficheiro | Alteracao |
+|---|---|
+| 8 Edge Functions de envio em massa | Adicionar `await sleep(600)` no loop de envio |
+| `send-video-reminder-48h/index.ts` | Remover temporariamente time-window para reenvio |
+| Deploy | Redeployar todas as 8 funcoes |
+| Invocacao manual | Invocar `send-video-reminder-48h` uma vez para reenviar os falhados |
+| Restaurar | Repor time-window no reminder_48h apos reenvio |
 
