@@ -1,62 +1,54 @@
 
 
-# Auditoria Final + Correcao do senderId E-goi
+# Fix E-goi senderId — Using Sender ID from Screenshots
 
-## Descoberta principal
+## Discovery
 
-O `senderId` no `send-email/index.ts` esta errado. O codigo envia `"2"` (o ID numerico do remetente), mas a API Transactional V2 da E-goi espera a **hash do remetente**. Confirmei na documentacao oficial:
+From the API documentation for `POST /v2/email/messages/action/send/single`:
+- `senderId` (required, string): "The code identification of the sender profile to be used." Example: `"1234"`
 
-> `senderId` (required, string): "The code identification of the sender profile to be used."
+From the user's screenshots (Remetentes de email):
+- **ID 2**: "Frederico Carvalho | eNews DIGITALFC" — frederico.carvalho@digitalfc.pt — CONFIRMADO
+- **ID 3**: "Frederico Carvalho - DIGITAL FC | Aulas Google Marketing" — frederico.carvalho@digitalfc.pt — CONFIRMADO
 
-O exemplo da docs usa `"senderId": "1234"` — que e a hash, nao o ID sequencial. Tu forneceste a hash correcta da imagem do E-goi: `f345a6c8e09b43ee3ceb18a4519fc9b4`.
+The hash `f345a6c8e09b43ee3ceb18a4519fc9b4` appears to be the **user profile hash** (from the first screenshot — user ID 925825), NOT a sender ID. The Slingshot API expects the **numeric sender ID as a string** (e.g., `"2"`), not the user hash.
 
-**Este e o motivo pelo qual a E-goi falha em 100% dos envios** — o senderId `"2"` nao e reconhecido pelo endpoint transactional.
+**Timeline of the bug:**
+1. Original code had `senderId: "2"` — but `send-email` was missing from config.toml → 404 → never tested
+2. Config.toml was fixed, but senderId was simultaneously changed to the hash → `INVALID_SENDER`
+3. The numeric ID `"2"` was **never tested with a working deployment**
 
-## Sobre o CNAME Transacional
+## Plan
 
-**Nao precisas de criar CNAME.** O CNAME transactional e apenas para branding dos links de tracking nos emails (para que os links mostrem `digitalfc.pt` em vez de `egoiapp.com`). Os emails enviam perfeitamente sem ele. O dominio `digitalfc.pt` ja esta autenticado (SPF/DKIM OK) — isso e o que importa para o envio.
+### 1. Update `send-email/index.ts` — revert to sender ID "2"
 
-## Alteracoes
-
-### Ficheiro: `supabase/functions/send-email/index.ts`
-
-1. **Corrigir senderId**: Mudar de `EGOI_SENDER_ID = 2` para a hash `"f345a6c8e09b43ee3ceb18a4519fc9b4"`
-2. **Adicionar campo `group`**: Aceitar um parametro opcional `group` no request body para categorizar emails no painel E-goi (ex: "confirmation", "reminder")
+Change the sender identification back to the numeric ID from the E-goi senders list:
 
 ```typescript
-// ANTES
-const EGOI_SENDER_ID = 2;
-// ...
-senderId: String(EGOI_SENDER_ID),
-
-// DEPOIS
+// CURRENT (broken)
 const EGOI_SENDER_HASH = "f345a6c8e09b43ee3ceb18a4519fc9b4";
 // ...
 senderId: EGOI_SENDER_HASH,
+
+// FIX
+const EGOI_SENDER_ID = "2";
+// ...
+senderId: EGOI_SENDER_ID,
 ```
 
-### Teste de envio
+Sender ID 2 ("eNews DIGITALFC") is the most appropriate — it's the generic newsletter sender for frederico.carvalho@digitalfc.pt with status CONFIRMADO.
 
-Apos o deploy, invocar `test-send-email` para enviar email de teste para `fredericodigital@gmail.com` e confirmar que a E-goi aceita a hash e entrega o email.
+### 2. Deploy and test
 
-### Reenvio dos emails falhados
+Deploy the updated `send-email` function, then invoke `test-send-email` to send a test to fredericodigital@gmail.com. If ID "2" fails, try ID "3" as fallback.
 
-Apos confirmar o teste, invocar `resend-failed-emails` para os 166 emails pendentes (142 reminder_24h + 17 followup_prewebinar + 6 confirmation + 1 group_confirmation).
+### 3. If test succeeds, resend the 166 failed emails
 
-## Resumo da infraestrutura — tudo OK para amanha
+Invoke `resend-failed-emails` for each failed template to recover the backlog.
 
-| Componente | Estado |
+## File changes
+
+| File | Change |
 |---|---|
-| `send-email` no config.toml | OK |
-| `resend-failed-emails` no config.toml | OK |
-| Auth via service role key | OK (todas as funcoes usam) |
-| Auth via x-cron-secret | OK (para cron jobs) |
-| `reminder_1h` (amanha ~09:00 UTC) | OK — deployado |
-| `postwebinar` (amanha ~12:30 UTC) | OK — deployado |
-| `postwebinar_day1` (06 Mar) | OK — deployado |
-| `postwebinar_day3` (08 Mar) | OK — deployado |
-| `postwebinar_closing` (10 Mar) | OK — deployado |
-| Templates na BD | OK — todas as funcoes leem de `email_templates` com fallback HTML |
-| Deduplicacao | OK — todas verificam `message_logs` antes de enviar |
-| CNAME transacional | Nao necessario |
+| `supabase/functions/send-email/index.ts` | Change `EGOI_SENDER_HASH` to `EGOI_SENDER_ID = "2"` |
 
