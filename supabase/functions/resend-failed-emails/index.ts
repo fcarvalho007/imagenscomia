@@ -14,7 +14,11 @@ serve(async (req) => {
 
   try {
     const cronSecret = req.headers.get("x-cron-secret");
-    if (cronSecret !== Deno.env.get("CRON_SECRET")) {
+    const authHeader = req.headers.get("authorization") || "";
+    const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const isCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
+    const hasServiceRole = srvKey && authHeader.includes(srvKey);
+    if (!isCron && !hasServiceRole) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -24,10 +28,11 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const templateKey = body.template_key || "video_reminder_24h";
     const emailKey = body.email_key || "reminder_24h";
+    const limit = body.limit || 50; // Process in batches to avoid timeout
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, srvKey);
 
     // Get failed message_logs for this template
     const { data: failedLogs, error: logsErr } = await supabase
@@ -69,7 +74,8 @@ serve(async (req) => {
       .from("registrations")
       .select("id, email, first_name")
       .in("id", toResendIds)
-      .eq("do_not_contact", false);
+      .eq("do_not_contact", false)
+      .limit(limit);
 
     if (regErr) throw regErr;
 
@@ -95,7 +101,7 @@ serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
+            Authorization: `Bearer ${srvKey}`,
           },
           body: JSON.stringify({ to: reg.email, subject: emailSubject, html }),
         });
@@ -133,8 +139,9 @@ serve(async (req) => {
       }
     }
 
-    console.log(`resend-failed-emails [${templateKey}]: sent=${sent}, errors=${errors}, total=${registrants?.length || 0}`);
-    return new Response(JSON.stringify({ success: true, sent, errors, total: registrants?.length || 0, results }), {
+    const remaining = toResendIds.length - (registrants?.length || 0);
+    console.log(`resend-failed-emails [${templateKey}]: sent=${sent}, errors=${errors}, total=${registrants?.length || 0}, remaining=${remaining}`);
+    return new Response(JSON.stringify({ success: true, sent, errors, total: registrants?.length || 0, remaining, results }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
