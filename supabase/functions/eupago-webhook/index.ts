@@ -562,45 +562,92 @@ async function processPayment(data: PaymentData) {
 
         const { data: reg } = await supabase
           .from("registrations")
-          .select("email, name, plan_selected, eupago_ref")
+          .select("email, name, plan_selected, eupago_ref, role, team_size, sources, webinar, registration_source, created_at, first_name, last_name, group_payment_ref, whatsapp")
           .eq("id", matchedRegId)
           .maybeSingle();
 
         if (reg && RESEND_API_KEY) {
-          const planLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Premium + Masterclass" } as Record<string, string>)[reg.plan_selected || ""] || reg.plan_selected;
-          const totalMap: Record<string, string> = { premium: "18,45", masterclass: "57,81", bundle: "76,26" };
-          const totalVal = totalMap[reg.plan_selected || ""] || amount;
+          const planLabelMap: Record<string, string> = {
+            premium: "Premium Pass",
+            masterclass: "Masterclass IA",
+            bundle: "Premium + Masterclass",
+            gravacao: "Gravação HD",
+            "video-premium": "Gravação HD — Vídeo com IA",
+            "video-masterclass": "Masterclass — Vídeo com IA",
+            "video-bundle": "Masterclass + Gravação — Vídeo com IA",
+          };
+          const planLabel = planLabelMap[reg.plan_selected || ""] || reg.plan_selected || "—";
+
+          const unitPriceMap: Record<string, string> = {
+            premium: "18,45", masterclass: "57,81", bundle: "76,26", gravacao: "33,21",
+            "video-premium": "18,45", "video-masterclass": "57,81", "video-bundle": "70,11",
+          };
+          const unitPrice = unitPriceMap[reg.plan_selected || ""] || "—";
+          // Use real amount from EuPago webhook
+          const totalVal = amount || unitPrice;
+
+          const fullName = [reg.first_name, reg.last_name].filter(Boolean).join(" ") || reg.name || "—";
+          const createdAt = reg.created_at ? new Date(reg.created_at).toLocaleString("pt-PT", { timeZone: "Europe/Lisbon" }) : "—";
+          const paidDate = new Date().toLocaleString("pt-PT", { timeZone: "Europe/Lisbon" });
+          const webinarLabel = reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA";
+
+          // Build group members section
+          let groupHtml = "";
+          if (reg.group_payment_ref) {
+            const { data: groupMembers } = await supabase
+              .from("registrations")
+              .select("name, email, first_name, last_name")
+              .eq("group_payment_ref", reg.group_payment_ref);
+
+            if (groupMembers && groupMembers.length > 1) {
+              const memberRows = groupMembers.map((m) => {
+                const mName = [m.first_name, m.last_name].filter(Boolean).join(" ") || m.name;
+                return `<li>${mName} — ${m.email}</li>`;
+              }).join("");
+              groupHtml = `<hr/><h3>👥 Compra de Grupo (${groupMembers.length} pessoas)</h3>
+                <p><strong>Desconto grupo:</strong> 10% aplicado</p>
+                <ul>${memberRows}</ul>`;
+            }
+          }
+
+          // Build extra client info
+          const extraRows: string[] = [];
+          if (reg.whatsapp) extraRows.push(`<p><strong>WhatsApp:</strong> ${reg.whatsapp}</p>`);
+          extraRows.push(`<p><strong>Webinar:</strong> ${webinarLabel}</p>`);
+          extraRows.push(`<p><strong>Inscrito em:</strong> ${createdAt}</p>`);
+          if (reg.registration_source) extraRows.push(`<p><strong>Fonte:</strong> ${reg.registration_source}</p>`);
+          if (reg.role) extraRows.push(`<p><strong>Função:</strong> ${reg.role}</p>`);
+          if (reg.team_size) extraRows.push(`<p><strong>Equipa:</strong> ${reg.team_size}</p>`);
 
           let subject: string;
           let htmlBody: string;
-          let templateKey: string;
+          const templateKey = "invoice_notification";
+
+          const commonHeader = `<h2>💰 Novo pagamento confirmado</h2>
+            <p><strong>Cliente:</strong> ${fullName} (${reg.email})</p>
+            ${extraRows.join("\n")}
+            <hr/>
+            <p><strong>Produto:</strong> ${planLabel}</p>
+            <p><strong>Preço unitário:</strong> ${unitPrice} €</p>
+            <p><strong>Total cobrado:</strong> ${totalVal} €</p>
+            <p><strong>Método:</strong> EuPago — Ref: ${reference || "—"} — TX: ${transactionID || "—"}</p>
+            <p><strong>Data/hora:</strong> ${paidDate}</p>`;
 
           if (invoice) {
-            templateKey = "invoice_notification";
-            subject = `FATURA -- ${planLabel} -- ${invoice.invoice_name} -- ${totalVal}EUR`;
-            htmlBody = `<h2>Novo pagamento confirmado</h2>
-              <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
-              <p><strong>Produto:</strong> ${planLabel}</p>
-              <p><strong>Total (c/ IVA):</strong> ${totalVal} EUR</p>
-              <p><strong>Data/hora:</strong> ${new Date().toISOString()}</p>
-              <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
-              <hr/>
-              <h3>Dados de faturação</h3>
+            subject = `💰 VENDA — ${planLabel} — ${fullName} — ${totalVal}€`;
+            htmlBody = `${commonHeader}
+              ${groupHtml}
+              <hr/><h3>🧾 Dados de faturação</h3>
               <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
               <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
               <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
               <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
               <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
           } else {
-            templateKey = "invoice_notification_missing_details";
-            subject = `FATURA -- DADOS EM FALTA -- ${reg.email} -- ${planLabel}`;
-            htmlBody = `<h2>Pagamento confirmado — dados de faturação em falta</h2>
-              <p><strong>Cliente:</strong> ${reg.name} (${reg.email})</p>
-              <p><strong>Produto:</strong> ${planLabel}</p>
-              <p><strong>Total:</strong> ${totalVal} EUR</p>
-              <p><strong>Ref EuPago:</strong> ${transactionID || reference}</p>
-              <hr/>
-              <p><strong>Dados de faturação não recolhidos.</strong> Solicitar ao cliente.</p>`;
+            subject = `💰 VENDA — ${planLabel} — ${fullName} — ${totalVal}€ — SEM FATURA`;
+            htmlBody = `${commonHeader}
+              ${groupHtml}
+              <hr/><p>⚠️ <strong>Dados de faturação não recolhidos.</strong> Solicitar ao cliente.</p>`;
           }
 
           const resendRes = await fetch("https://api.resend.com/emails", {
@@ -608,7 +655,7 @@ async function processPayment(data: PaymentData) {
             headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
               from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-              to: ["info@fredericocarvalho.pt"],
+              to: ["fredericodigital@gmail.com"],
               subject,
               html: htmlBody,
             }),
@@ -626,7 +673,7 @@ async function processPayment(data: PaymentData) {
             error: resendRes.ok ? null : JSON.stringify(resendData),
           });
 
-          console.log(`📧 Invoice email (${templateKey}) ${resendRes.ok ? "sent" : "FAILED"} for ${reg.email}`);
+          console.log(`📧 Invoice email sent to fredericodigital@gmail.com ${resendRes.ok ? "✅" : "❌"} for ${reg.email}`);
         }
       }
     } catch (invoiceErr) {
