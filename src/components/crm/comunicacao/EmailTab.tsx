@@ -14,17 +14,21 @@ interface EmailTabProps {
 }
 
 /* ── Shared filtering logic ── */
-function filterInscritos(list: Inscrito[], webinar: WebinarFilter, plano: PlanoFilter): Inscrito[] {
+function filterInscritos(list: Inscrito[], webinar: WebinarFilter | null, plano: PlanoFilter | null): Inscrito[] {
   return list.filter((i) => {
     if (i.status !== "activo") return false;
     // webinar
-    if (webinar === "imagens" && i.webinar !== "imagens") return false;
-    if (webinar === "video" && i.webinar !== "video") return false;
+    if (webinar && webinar !== "todos") {
+      if (webinar === "imagens" && i.webinar !== "imagens") return false;
+      if (webinar === "video" && i.webinar !== "video") return false;
+    }
     // plano
-    if (plano === "pagos" && !i.paid_at) return false;
-    if (plano === "premium" && i.plan !== "premium") return false;
-    if (plano === "masterclass" && i.plan !== "masterclass" && i.plan !== "bundle") return false;
-    if (plano === "free" && i.paid_at) return false;
+    if (plano && plano !== "todos") {
+      if (plano === "pagos" && !i.paid_at) return false;
+      if (plano === "premium" && i.plan !== "premium") return false;
+      if (plano === "masterclass" && i.plan !== "masterclass" && i.plan !== "bundle") return false;
+      if (plano === "free" && i.paid_at) return false;
+    }
     return true;
   });
 }
@@ -35,8 +39,8 @@ export { filterInscritos, type WebinarFilter, type PlanoFilter };
 export function FilterBar({
   webinar, setWebinar, plano, setPlano, inscritos
 }: {
-  webinar: WebinarFilter; setWebinar: (v: WebinarFilter) => void;
-  plano: PlanoFilter; setPlano: (v: PlanoFilter) => void;
+  webinar: WebinarFilter | null; setWebinar: (v: WebinarFilter | null) => void;
+  plano: PlanoFilter | null; setPlano: (v: PlanoFilter | null) => void;
   inscritos?: Inscrito[];
 }) {
   const counts = useMemo(() => {
@@ -47,7 +51,7 @@ export function FilterBar({
       imagens: active.filter(i => i.webinar === "imagens").length,
       video: active.filter(i => i.webinar === "video").length,
     };
-    const forWebinar = webinar === "todos" ? active : active.filter(i => i.webinar === webinar);
+    const forWebinar = (!webinar || webinar === "todos") ? active : active.filter(i => i.webinar === webinar);
     const pCounts: Record<PlanoFilter, number> = {
       todos: forWebinar.length,
       pagos: forWebinar.filter(i => !!i.paid_at).length,
@@ -69,23 +73,24 @@ export function FilterBar({
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Webinar</span>
         {([["todos", "Todos"], ["imagens", "Imagens IA"], ["video", "Vídeo IA"]] as [WebinarFilter, string][]).map(([v, l]) => (
-          <button key={v} onClick={() => setWebinar(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(webinar === v)}>
+          <button key={v} onClick={() => setWebinar(webinar === v ? null : v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(webinar === v)}>
             {l}{counts ? ` (${counts.w[v]})` : ""}
           </button>
         ))}
+        {webinar === null && <span className="text-[9px] italic text-white/20 ml-1">Sem filtro</span>}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Plano</span>
         {([["todos", "Todos"], ["pagos", "Pagos"], ["premium", "Premium"], ["masterclass", "Masterclass"], ["free", "Free"]] as [PlanoFilter, string][]).map(([v, l]) => (
-          <button key={v} onClick={() => setPlano(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(plano === v)}>
+          <button key={v} onClick={() => setPlano(plano === v ? null : v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(plano === v)}>
             {l}{counts ? ` (${counts.p[v]})` : ""}
           </button>
         ))}
+        {plano === null && <span className="text-[9px] italic text-white/20 ml-1">Sem filtro</span>}
       </div>
     </div>
   );
 }
-
 /* ── Rich text toolbar helpers ── */
 function execCmd(cmd: string, val?: string) {
   document.execCommand(cmd, false, val);
@@ -95,8 +100,8 @@ function execCmd(cmd: string, val?: string) {
 type SendResult = { email: string; nome: string; ok: boolean; error?: string };
 
 export default function EmailTab({ inscritos }: EmailTabProps) {
-  const [webinar, setWebinar] = useState<WebinarFilter>("todos");
-  const [plano, setPlano] = useState<PlanoFilter>("todos");
+  const [webinar, setWebinar] = useState<WebinarFilter | null>("todos");
+  const [plano, setPlano] = useState<PlanoFilter | null>("todos");
   const [recipients, setRecipients] = useState<Inscrito[]>([]);
   const [subject, setSubject] = useState("");
   const [sending, setSending] = useState(false);
