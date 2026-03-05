@@ -20,7 +20,7 @@ interface Props {
   editToken?: string;
 }
 
-/* ── Variante A — Só Gratuito ── */
+/* ── Variante A — Sem extras ── */
 const VariantFree = ({ userName, referralCode }: { userName: string; referralCode: string }) => {
   const [copied, setCopied] = useState(false);
   const referralLink = referralCode
@@ -183,9 +183,9 @@ const VariantPayment = ({
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-2 font-medium text-[15px] text-ink-700">
-              <Check className="w-4 h-4 text-blue-600" /> Webinar ao vivo — 18 Fev · 10h00
+              <Check className="w-4 h-4 text-blue-600" /> Webinar ao vivo (sessão realizada)
             </span>
-            <span className="text-[15px] text-ink-700">€0</span>
+            <span className="text-[14px] text-green-600">Incluído</span>
           </div>
 
           {premium && (

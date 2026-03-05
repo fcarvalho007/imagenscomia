@@ -251,7 +251,7 @@ const CaptureView = ({
       {isPremium ? (
         <>Upgrade para <span className="text-[#22C55E] font-extrabold">Premium</span> & Masterclass</>
       ) : (
-        <>Quero confirmar o meu lugar para o Webinar <span className="text-[#22C55E] font-extrabold">Gratuito</span> — Ao Vivo</>
+        <>Quero aceder à <span className="text-[#22C55E] font-extrabold">Gravação</span> — Vídeo com IA</>
       )}
     </h3>
     <p className="text-[15px] text-ink-500 mb-3">
@@ -368,7 +368,7 @@ const UpsellView = ({
     </p>
 
     <p className="text-[14px] text-ink-500 mb-3">
-      Na participação gratuita, estes extras não estão incluídos:
+      Na inscrição base, estes extras não estão incluídos:
     </p>
 
     <div className="space-y-2 mb-5">
@@ -394,26 +394,13 @@ const UpsellView = ({
         <Sparkles className="w-5 h-5" />
         Sim, quero o Premium (€15 + IVA)
       </motion.button>
-      <p className="text-[14px] text-ink-400 text-center">Pagamento seguro. Acesso imediato após o evento.</p>
-
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={onReferralPath}
-        className="w-full bg-green-50 border border-green-600 text-green-700 font-heading font-semibold text-[14px] py-3 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-green-100"
-      >
-        <Gift className="w-4 h-4" />
-        Prefiro convidar 2 pessoas e obter o Premium
-      </motion.button>
-      <p className="text-[14px] text-ink-400 text-center">
-        Vais receber um link pessoal. Assim que 2 amigos se inscreverem, o Premium fica ativo.
-      </p>
+      <p className="text-[14px] text-ink-400 text-center">Pagamento seguro. Acesso imediato.</p>
 
       <button
         onClick={onContinueFree}
         className="w-full text-sm text-ink-500 hover:text-ink-600 transition-colors py-2 hover:underline underline-offset-4"
       >
-        Continuar com participação gratuita
+        Continuar sem extras →
       </button>
     </div>
   </motion.div>
@@ -445,11 +432,11 @@ const ConfirmationView = ({
   };
 
   const whatsappMsg = referralData
-    ? encodeURIComponent(`Vou participar num webinar gratuito sobre IA para criar imagens profissionais. Inscreve-te aqui: ${referralData.referralLink}`)
+    ? encodeURIComponent(`Vou participar num webinar sobre IA para criar imagens profissionais. Inscreve-te aqui: ${referralData.referralLink}`)
     : "";
 
   const mailtoLink = referralData
-    ? `mailto:?subject=${encodeURIComponent("Webinar gratuito: Imagens IA para empresas")}&body=${encodeURIComponent(`Olá!\n\nVou participar neste webinar gratuito sobre criar imagens profissionais com IA. Acho que te vai interessar.\n\nInscreve-te aqui: ${referralData.referralLink}\n\nAté lá!`)}`
+    ? `mailto:?subject=${encodeURIComponent("Webinar: Imagens IA para empresas")}&body=${encodeURIComponent(`Olá!\n\nVou participar neste webinar sobre criar imagens profissionais com IA. Acho que te vai interessar.\n\nInscreve-te aqui: ${referralData.referralLink}\n\nAté lá!`)}`
     : "";
 
   return (
@@ -502,7 +489,7 @@ const ConfirmationView = ({
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-2">
               <Gift className="w-5 h-5 text-amber-600" />
-              <h4 className="font-heading font-bold text-[15px] text-ink-900">Ou ganha Premium grátis!</h4>
+              <h4 className="font-heading font-bold text-[15px] text-ink-900">Ganha o Premium!</h4>
             </div>
             <p className="text-[14px] text-ink-600 mb-4">
               Convida 2 amigos. Se ambos se registarem, ganhas o Premium Pass (€15) sem pagar.

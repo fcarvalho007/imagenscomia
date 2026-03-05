@@ -70,7 +70,7 @@ export const VideoWebinarVideoArea = () => {
           </div>
         )}
         <p className="text-[13px] text-white/50 mb-5 max-w-sm mx-auto">
-          Webinar gratuito — Vídeo com IA. Duração aproximada: 60 min.
+          Webinar — Vídeo com IA. Duração aproximada: 60 min.
         </p>
         <a
           href={GOOGLE_CAL_URL}
