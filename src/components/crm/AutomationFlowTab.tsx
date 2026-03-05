@@ -1,4 +1,4 @@
-import { useMemo, useState, Fragment } from "react";
+import { useMemo, useState, useEffect, Fragment } from "react";
 import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -542,6 +542,27 @@ function Timeline({
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
+
+  // Custom SMS texts persisted in localStorage
+  const [customSmsTexts, setCustomSmsTexts] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem("crm_sms_drafts");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+
+  const saveCustomSmsText = (key: string, text: string) => {
+    const updated = { ...customSmsTexts, [key]: text };
+    setCustomSmsTexts(updated);
+    localStorage.setItem("crm_sms_drafts", JSON.stringify(updated));
+  };
+
+  const resetCustomSmsText = (key: string) => {
+    const updated = { ...customSmsTexts };
+    delete updated[key];
+    setCustomSmsTexts(updated);
+    localStorage.setItem("crm_sms_drafts", JSON.stringify(updated));
+  };
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
@@ -613,7 +634,7 @@ function Timeline({
     const config = node.smsSendConfig;
     if (!config) return;
     const templateKey = node.templateKeyMatch[0] || "sms_manual";
-    const smsText = customText || config.smsText;
+    const smsText = customText || customSmsTexts[templateKey] || config.smsText;
 
     // Get eligible recipients
     let eligible = inscritos.filter((i) => {
@@ -741,55 +762,110 @@ function Timeline({
           )}
 
           {/* SMS node right side */}
-          {node.channel === "sms" && (
-            <div className="flex flex-col items-end gap-1" style={{ maxWidth: 280 }}>
-              {counts && counts.sent > 0 && (
-                <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
-                  {counts.sent} enviados
-                </span>
-              )}
-              {counts && counts.failed > 0 && (
-                <span className="flex items-center gap-1" style={{ fontSize: 12, color: "#ef4444" }}>
-                  <AlertTriangle size={11} />
-                  {counts.failed} falhas
-                </span>
-              )}
-              {editingSmsKey === node.templateKeyMatch[0] ? (
-                <div className="flex flex-col gap-1.5 w-full mt-1">
-                  <textarea
-                    className="w-full p-2 border border-gray-300 rounded text-[12px] leading-snug resize-y"
-                    rows={3}
-                    value={editedSmsText}
-                    onChange={(e) => setEditedSmsText(e.target.value)}
-                  />
-                  <div className="flex gap-1.5 justify-end">
-                    <button
-                      onClick={() => setEditingSmsKey(null)}
-                      className="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={() => handleBulkSms(node, editedSmsText)}
-                      className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded text-white"
-                      style={{ background: "#16a34a" }}
-                    >
-                      <Send size={10} />
-                      Confirmar envio
-                    </button>
+          {node.channel === "sms" && (() => {
+            const tplKey = node.templateKeyMatch[0] || "sms_manual";
+            const defaultText = node.smsSendConfig?.smsText || "";
+            const currentText = customSmsTexts[tplKey] || defaultText;
+            const isEditing = editingSmsKey === tplKey;
+            const isSending = sendingSmsKey === tplKey;
+            const isCustomized = !!customSmsTexts[tplKey];
+
+            return (
+              <div className="flex flex-col items-end gap-1.5" style={{ maxWidth: 300 }}>
+                {counts && counts.sent > 0 && (
+                  <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
+                    {counts.sent} enviados
+                  </span>
+                )}
+                {counts && counts.failed > 0 && (
+                  <span className="flex items-center gap-1" style={{ fontSize: 12, color: "#ef4444" }}>
+                    <AlertTriangle size={11} />
+                    {counts.failed} falhas
+                  </span>
+                )}
+
+                {/* Always-visible SMS text */}
+                {isEditing ? (
+                  <div className="flex flex-col gap-1.5 w-full mt-1">
+                    <textarea
+                      className="w-full p-2 border rounded text-[12px] leading-snug resize-y"
+                      style={{ borderColor: "#d1d5db", background: "#fafafa" }}
+                      rows={3}
+                      value={editedSmsText}
+                      onChange={(e) => setEditedSmsText(e.target.value.slice(0, 160))}
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px]" style={{ color: editedSmsText.length > 144 ? "#f87171" : "#9ca3af" }}>
+                        {editedSmsText.length}/160
+                      </span>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => setEditingSmsKey(null)}
+                          className="text-[11px] px-2 py-1 rounded border"
+                          style={{ borderColor: "#d1d5db", color: "#6b7280" }}
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (editedSmsText.trim() === defaultText) {
+                              resetCustomSmsText(tplKey);
+                            } else {
+                              saveCustomSmsText(tplKey, editedSmsText.trim());
+                            }
+                            setEditingSmsKey(null);
+                            toast.success("Texto SMS gravado");
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded text-white"
+                          style={{ background: "#2563eb" }}
+                        >
+                          💾 Gravar
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ) : (
+                ) : (
+                  <div
+                    className="relative group w-full mt-1 cursor-pointer"
+                    onClick={() => {
+                      setEditingSmsKey(tplKey);
+                      setEditedSmsText(currentText);
+                    }}
+                  >
+                    <div
+                      className="rounded p-2 text-[11px] leading-relaxed"
+                      style={{
+                        background: isCustomized ? "#eff6ff" : "#f8fafc",
+                        border: `1px solid ${isCustomized ? "#93c5fd" : "#e2e8f0"}`,
+                        color: "#374151",
+                        minHeight: 40,
+                      }}
+                    >
+                      {currentText}
+                    </div>
+                    <span
+                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity text-[10px]"
+                      style={{ color: "#6b7280" }}
+                    >
+                      ✏️
+                    </span>
+                    {isCustomized && (
+                      <span className="text-[9px] mt-0.5 block" style={{ color: "#3b82f6" }}>
+                        ✎ Texto personalizado
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Send button */}
                 <button
-                  onClick={() => {
-                    setEditingSmsKey(node.templateKeyMatch[0]);
-                    setEditedSmsText(node.smsSendConfig?.smsText || "");
-                  }}
-                  disabled={sendingSmsKey === node.templateKeyMatch[0]}
-                  className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors mt-1"
-                  style={{ background: sendingSmsKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a", color: "#fff" }}
+                  onClick={() => handleBulkSms(node, currentText)}
+                  disabled={isSending}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ background: isSending ? "#94a3b8" : "#16a34a", color: "#fff" }}
                 >
-                  {sendingSmsKey === node.templateKeyMatch[0] ? (
+                  {isSending ? (
                     <>
                       <Loader2 size={12} className="animate-spin" />
                       Enviando…
@@ -801,9 +877,9 @@ function Timeline({
                     </>
                   )}
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* Email node right side */}
           {node.type === "email" && !node.channel?.startsWith("sms") && emailStatsLoading && (
