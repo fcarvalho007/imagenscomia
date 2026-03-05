@@ -1,45 +1,44 @@
 
 
-# Verificação da integração InvoiceExpress + Teste com rascunhos
+# Plan: SMS editability + fix double emoji + update post-webinar prices
 
-## Resultado da verificação
+## 1. Fix double phone emoji on SMS nodes
 
-A integração está **correcta** face à API v2 do InvoiceExpress:
+The SMS nodes have `📱` in both the `title` string AND `iconEmoji`. Remove `📱` from the title text for all 3 SMS nodes in `AutomationFlowTab.tsx`.
 
-- **Criar documento**: `POST /invoice_receipts.json` — payload correcto (client, items, tax, date)
-- **Finalizar**: `PUT /invoice_receipts/:id/change-state.json` com `state: "finalized"` — correcto
-- **Enviar email**: `PUT /invoice_receipts/:id/email-document.json` — payload `message` correcto
-- **Webhook EuPago**: chama `create-invoice` automaticamente após pagamento confirmado — correcto
+**Before:** `title: "📱 SMS pós-webinar"` + `iconEmoji: "📱"`
+**After:** `title: "SMS pós-webinar"` + `iconEmoji: "📱"`
 
-**Um ponto a melhorar**: os preços no payload são os valores finais (com IVA incluído), mas o `unit_price` deveria ser o valor **sem IVA** se o InvoiceExpress adiciona IVA por cima. Para 23% IVA, `15€ final` → `unit_price = 12.20€`. Preciso confirmar: **os teus preços (15€, 47€, etc.) já são sem IVA ou com IVA incluído?** Isto afecta o valor da fatura.
+Same for "SMS lembrete Q&A" and "SMS lembrete Masterclass".
 
-## Dados actuais
+## 2. Make SMS text editable before sending
 
-- **37 registos pagos** no total
-- **27 sem fatura emitida** (`invoice_sent = false`)
-- Alguns têm dados de faturação completos (NIF, morada), outros não (usarão "Consumidor Final" / NIF 999999990)
+In `AutomationFlowTab.tsx`, add inline editing to SMS nodes:
+- When clicking "Enviar SMS agora", show a textarea pre-filled with the `smsText` from the config
+- User can edit the text before confirming the send
+- Add a small "Editar" state with a confirm/cancel flow
+- Use local state per SMS node to track the edited text and whether the editor is open
 
-## Plano para teste com 2 rascunhos
+Implementation: Add state `editingSmsKey` and `editedSmsText` to the `Timeline` component. When "Enviar SMS agora" is clicked, instead of immediately calling `handleBulkSms`, open an inline editor. On confirm, send with the edited text.
 
-### Alteração na edge function `create-invoice`
+## 3. Update post-webinar email prices (€15 -> €27 after today)
 
-Adicionar parâmetro `draft_only: boolean` (default `false`):
-- Se `draft_only = true`: cria o documento mas **não finaliza** nem envia email — fica como rascunho no InvoiceExpress para tu validares manualmente
-- Se `draft_only = false`: comportamento actual (cria → finaliza → envia)
+The following edge functions have fallback HTML with hardcoded "€15+IVA":
+- `send-video-postwebinar-day1/index.ts` (sends March 6) -- change to €27+IVA
+- `send-video-postwebinar-day3/index.ts` (sends March 8) -- change to €27+IVA
+- `send-video-postwebinar-closing/index.ts` (sends March 10) -- change to €27+IVA
 
-### Execução do teste
+In each fallback HTML and CTA buttons, replace:
+- `€15+IVA` with `€27+IVA`
+- `Premium Pass — €15+IVA` with `Premium Pass — €27+IVA`
 
-1. Invocar `create-invoice` com `draft_only: true` para **2 registos** com dados de faturação completos:
-   - **ANDRE CUNHA** (NIF: 515913359, ACBC UNIPESSOAL LDA) — video-premium, 15€
-   - **Andreia Amaral** (NIF: 236923595) — video-premium, 15€
+Note: `send-video-postwebinar/index.ts` (day 0, today March 5) keeps €15+IVA since it's still valid today.
 
-2. Os rascunhos ficam no painel InvoiceExpress em `fomentarsonhos.app.invoicexpress.com` para validação
+Also update the CTA link text in each function accordingly.
 
-3. Após confirmação, posso:
-   - Apagar os rascunhos via API (`state: "deleted"`)
-   - Ou finalizá-los e enviar
-   - E depois processar os restantes 25 em lote
-
-### Ficheiro editado
-- `supabase/functions/create-invoice/index.ts` — adicionar suporte a `draft_only`
+### Files to edit
+- `src/components/crm/AutomationFlowTab.tsx` -- fix emoji + add SMS text editing
+- `supabase/functions/send-video-postwebinar-day1/index.ts` -- €15 -> €27
+- `supabase/functions/send-video-postwebinar-day3/index.ts` -- €15 -> €27
+- `supabase/functions/send-video-postwebinar-closing/index.ts` -- €15 -> €27
 
