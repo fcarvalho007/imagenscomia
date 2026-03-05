@@ -1,44 +1,32 @@
 
 
-# Plan: SMS editability + fix double emoji + update post-webinar prices
+# Fix: Filtros de Comunicação + Deselecção de destinatários
 
-## 1. Fix double phone emoji on SMS nodes
+## Problemas identificados
 
-The SMS nodes have `📱` in both the `title` string AND `iconEmoji`. Remove `📱` from the title text for all 3 SMS nodes in `AutomationFlowTab.tsx`.
+1. **Filtro "Imagens IA" mostra 0 resultados**: O CRM.tsx já filtra os inscritos pelo contexto do webinar activo (ex: "video") via `filterByWebinar()` antes de os passar ao ComunicacaoView. Dentro do EmailTab/SmsTab existe um **segundo filtro** de webinar. Resultado: se o contexto é "Vídeo", seleccionar "Imagens IA" no filtro interno filtra uma lista que já só tem registos de vídeo — dá 0.
 
-**Before:** `title: "📱 SMS pós-webinar"` + `iconEmoji: "📱"`
-**After:** `title: "SMS pós-webinar"` + `iconEmoji: "📱"`
+2. **Planos no contexto Vídeo**: Os planos são normalizados (`video-premium` → `premium`), por isso os filtros de plano funcionam. Mas o pool está pré-filtrado pelo contexto, limitando a visibilidade.
 
-Same for "SMS lembrete Q&A" and "SMS lembrete Masterclass".
+3. **Impossível desmarcar destinatários em lote**: Não existe botão para limpar todos os destinatários seleccionados, nem forma de desmarcar os filtros para enviar individualmente.
 
-## 2. Make SMS text editable before sending
+## Solução
 
-In `AutomationFlowTab.tsx`, add inline editing to SMS nodes:
-- When clicking "Enviar SMS agora", show a textarea pre-filled with the `smsText` from the config
-- User can edit the text before confirming the send
-- Add a small "Editar" state with a confirm/cancel flow
-- Use local state per SMS node to track the edited text and whether the editor is open
+### 1. Passar todos os inscritos ao ComunicacaoView (sem pré-filtragem)
 
-Implementation: Add state `editingSmsKey` and `editedSmsText` to the `Timeline` component. When "Enviar SMS agora" is clicked, instead of immediately calling `handleBulkSms`, open an inline editor. On confirm, send with the edited text.
+Em `CRM.tsx`, passar `inscritos` (não `filteredInscritos`) ao ComunicacaoView, uma vez que este componente já tem os seus próprios filtros internos de webinar e plano.
 
-## 3. Update post-webinar email prices (€15 -> €27 after today)
+### 2. Adicionar botão "Limpar todos" nos destinatários
 
-The following edge functions have fallback HTML with hardcoded "€15+IVA":
-- `send-video-postwebinar-day1/index.ts` (sends March 6) -- change to €27+IVA
-- `send-video-postwebinar-day3/index.ts` (sends March 8) -- change to €27+IVA
-- `send-video-postwebinar-closing/index.ts` (sends March 10) -- change to €27+IVA
+Em `EmailTab.tsx` e `SmsTab.tsx`, ao lado de "Seleccionar todos", adicionar um botão "Limpar todos" que esvazia a lista de destinatários. Aparece apenas quando há destinatários seleccionados.
 
-In each fallback HTML and CTA buttons, replace:
-- `€15+IVA` with `€27+IVA`
-- `Premium Pass — €15+IVA` with `Premium Pass — €27+IVA`
+### 3. Sincronizar contadores do filtro
 
-Note: `send-video-postwebinar/index.ts` (day 0, today March 5) keeps €15+IVA since it's still valid today.
+Na `FilterBar`, mostrar o número de inscritos que correspondem a cada opção de filtro (ex: "Imagens IA (42)", "Premium (12)") para feedback imediato. Isto requer passar a lista completa de inscritos à FilterBar.
 
-Also update the CTA link text in each function accordingly.
+## Ficheiros a editar
 
-### Files to edit
-- `src/components/crm/AutomationFlowTab.tsx` -- fix emoji + add SMS text editing
-- `supabase/functions/send-video-postwebinar-day1/index.ts` -- €15 -> €27
-- `supabase/functions/send-video-postwebinar-day3/index.ts` -- €15 -> €27
-- `supabase/functions/send-video-postwebinar-closing/index.ts` -- €15 -> €27
+- `src/pages/CRM.tsx` — passar `inscritos` em vez de `filteredInscritos` ao ComunicacaoView
+- `src/components/crm/comunicacao/EmailTab.tsx` — adicionar "Limpar todos", contadores nos filtros
+- `src/components/crm/comunicacao/SmsTab.tsx` — mesmo: "Limpar todos", contadores nos filtros
 
