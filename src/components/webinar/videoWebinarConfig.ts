@@ -4,8 +4,8 @@ export const VIDEO_WEBINAR_CONFIG = {
   summary: "De briefing a clip publicável em minutos — com método e exemplos reais.",
   startDate: new Date("2026-03-05T10:00:00+00:00"),
   durationMinutes: 60,
-  isLive: false,
-  YOUTUBE_VIDEO_ID: "",
+  isLive: true,
+  YOUTUBE_VIDEO_ID: "gmEFoOugl6k",
   masterclassDate: new Date("2026-03-12T10:00:00+00:00"),
   INSTAGRAM_URL: "https://www.instagram.com/frederico.m.carvalho/",
 } as const;
