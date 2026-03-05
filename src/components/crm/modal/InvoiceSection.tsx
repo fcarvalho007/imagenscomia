@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { Copy, Check, FileText } from "lucide-react";
+import { Copy, Check, FileText, Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface InvoiceSectionProps {
   registrationId: string;
@@ -12,6 +14,7 @@ export default function InvoiceSection({ registrationId, invoiceSent, onToggleIn
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -33,6 +36,37 @@ export default function InvoiceSection({ registrationId, invoiceSent, onToggleIn
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCreateInvoice = async () => {
+    setCreatingInvoice(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("create-invoice", {
+        body: { registration_id: registrationId, send_email: true },
+      });
+
+      if (error) throw error;
+
+      if (result?.success) {
+        toast({
+          title: "Fatura criada ✅",
+          description: `Documento #${result.document_id} criado${result.email_sent ? " e enviado por email" : ""}.`,
+        });
+        // Auto-mark as sent
+        if (!invoiceSent) onToggleInvoiceSent();
+      } else {
+        throw new Error(result?.error || "Erro desconhecido");
+      }
+    } catch (err: any) {
+      console.error("Create invoice error:", err);
+      toast({
+        title: "Erro ao criar fatura",
+        description: err.message || "Tenta novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingInvoice(false);
+    }
+  };
+
   if (loading) return null;
 
   const hasData = !!data;
@@ -51,18 +85,36 @@ export default function InvoiceSection({ registrationId, invoiceSent, onToggleIn
             {hasData ? "Completo" : "Em falta"}
           </span>
         </div>
-        <button
-          onClick={onToggleInvoiceSent}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium border transition-colors ${
-            invoiceSent
-              ? "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-              : "bg-muted text-muted-foreground border-border hover:bg-accent"
-          }`}
-          aria-label="Assinalar fatura enviada"
-        >
-          {invoiceSent ? <Check size={12} /> : <FileText size={12} />}
-          {invoiceSent ? "Fatura enviada ✓" : "Assinalar fatura enviada"}
-        </button>
+        <div className="flex items-center gap-2">
+          {hasData && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleCreateInvoice}
+              disabled={creatingInvoice}
+              className="h-7 text-[12px] gap-1.5"
+            >
+              {creatingInvoice ? (
+                <Loader2 size={12} className="animate-spin" />
+              ) : (
+                <Send size={12} />
+              )}
+              {creatingInvoice ? "A criar..." : "Emitir fatura"}
+            </Button>
+          )}
+          <button
+            onClick={onToggleInvoiceSent}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-medium border transition-colors ${
+              invoiceSent
+                ? "bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                : "bg-muted text-muted-foreground border-border hover:bg-accent"
+            }`}
+            aria-label="Assinalar fatura enviada"
+          >
+            {invoiceSent ? <Check size={12} /> : <FileText size={12} />}
+            {invoiceSent ? "Fatura enviada ✓" : "Assinalar fatura enviada"}
+          </button>
+        </div>
       </div>
       {!hasData ? (
         <p className="text-[13px] text-muted-foreground">Sem dados de faturação</p>
