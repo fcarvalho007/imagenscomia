@@ -1,50 +1,79 @@
 
 
-# Análise: Email pós-webinar — o que aconteceu
+# Auditoria: Referências a "Gratuito" que devem ser removidas/actualizadas
 
-## Situação actual (dados reais da base de dados)
+O webinar já decorreu — todas as referências a "gratuito", "grátis" e "€0" nas páginas públicas e nos funis de upgrade são inconsistentes e prejudicam a imagem do projecto. Segue a lista completa de ficheiros afectados e as correcções propostas.
 
-| Métrica | Valor |
-|---------|-------|
-| Emails já enviados | **162** |
-| Inscritos gratuitos restantes (não receberam) | **91** |
-| Total de inscritos gratuitos | 253 |
-| Inscritos com `attended_live_at` | 161 |
+---
 
-## O que aconteceu
+## Ficheiros a corrigir (13 ficheiros, ~40 ocorrências)
 
-O botão **"Enviar agora"** no CRM é manual — alguém o clicou, e a função executou. Não há cron associado a esta função, portanto **não foi automático**. A discrepância entre os 79 que o ecrã mostrava e os 162 reais deve-se ao timing: a função processa com 600ms entre cada envio, e os contadores do CRM actualizam-se ao recarregar a página. Provavelmente o ecrã foi capturado a meio da execução.
+### 1. `src/components/landing/RegistrationModal.tsx` (modal partilhado — screenshot do user)
+- **L254**: Título "Webinar **Gratuito** — Ao Vivo" → adaptar para contexto pós-webinar (ex: "Quero aceder à **Gravação** — Vídeo com IA")
+- **L371**: "Na participação gratuita…" → remover bloco ou adaptar
+- **L416**: "Continuar com participação gratuita" → remover
+- **L448/452**: Mensagens de partilha WhatsApp/email com "webinar gratuito" → actualizar copy
+- **L505**: "Ou ganha Premium grátis!" → remover referral path (já não se aplica)
 
-## Problema real: falta de filtro `attended_live_at`
+### 2. `src/pages/VideoLP.tsx` (landing page /video — 10+ ocorrências)
+- **L200-201**: Meta title/description "Webinar Gratuito" → "Webinar Vídeo com IA"
+- **L246/264**: Botões "Garantir inscrição gratuita" → "Garantir acesso à gravação"
+- **L291**: Badge "WEBINAR GRATUITO · AO VIVO" → "WEBINAR · VÍDEO COM IA"
+- **L343**: Box "INVESTIMENTO: Gratuito" → remover ou mostrar preço
+- **L367-368**: "inscrever-me grátis/gratuitamente" → adaptar CTA
+- **L677**: "inscrever-me grátis!" → adaptar
+- **L857/869**: Footer CTA "inscrição gratuita" → adaptar
 
-A UI diz "Só para quem assistiu ao vivo (attended_live_at)", mas **a Edge Function não aplica esse filtro**. No código (`send-video-postwebinar/index.ts`, linha 128-133), a query apenas filtra por:
-- `webinar = 'video'`
-- `paid_at IS NULL`
-- `do_not_contact = false`
+### 3. `src/pages/WebinarLiveVideo.tsx`
+- **L45**: "Webinar gratuito" → "Webinar · Vídeo com IA"
 
-**Não filtra por `attended_live_at IS NOT NULL`**. Resultado: enviou para todos os 162 inscritos gratuitos processados, incluindo quem **não assistiu ao vivo**.
+### 4. `src/components/webinar/VideoWebinarVideoArea.tsx`
+- **L73**: "Webinar gratuito — Vídeo com IA" → "Webinar — Vídeo com IA"
 
-## O que pode ser feito
+### 5. `src/components/upgrade/StepMasterclass.tsx`
+- **L148**: "ou continuar com inscrição gratuita →" → "ou continuar só com o pack →"
 
-### Opção A — Não corrigir (aceitar o envio)
-Os 162 emails já foram entregues. O conteúdo é relevante (upsell gravação + masterclass), aplica-se a qualquer inscrito. Os 91 restantes não receberiam nada.
+### 6. `src/components/upgrade/StepVideoPremium.tsx`
+- **L162**: "ou continuar com inscrição gratuita →" → "ou continuar sem este extra →"
 
-### Opção B — Corrigir a função e reenviar só para quem assistiu
-Adicionar `.not("attended_live_at", "is", null)` à query. Dos 91 restantes, apenas os que têm `attended_live_at` receberiam.
+### 7. `src/components/upgrade/StepPremium.tsx`
+- **L105**: "Continuar com inscrição gratuita →" → "Continuar sem extras →"
 
-### Opção C — Enviar aos 91 restantes sem restrição
-Manter a lógica actual e reexecutar para os 91 que faltam (a função já tem deduplicação — não reenvia a quem já recebeu).
+### 8. `src/components/upgrade/SummaryPanel.tsx`
+- **L49**: "Webinar Gratuito" → "Webinar ao vivo"
+- **L53-54**: "€0" / "Gratuito" → remover linha ou mostrar "Incluído"
 
-## Ficheiro a alterar (se quiser corrigir)
+### 9. `src/components/upgrade/StepConfirmation.tsx`
+- **L23**: Comentário "Variante A — Só Gratuito" → renomear
+- **L188**: "€0" → remover ou adaptar
 
-**`supabase/functions/send-video-postwebinar/index.ts`** — adicionar filtro `attended_live_at` na query (linha 133):
-```typescript
-.not("attended_live_at", "is", null)
-```
+### 10. `src/components/landing/ConfirmacaoExtras.tsx`
+- **L14**: Share text "webinar gratuito" → "webinar"
 
-## Resumo
-- Ninguém recebeu email duplicado (a função deduplica)
-- 162 já receberam, 91 ainda podem ser contactados
-- O envio foi manual (botão), não automático
-- O filtro de "assistiu ao vivo" nunca estava implementado na função, apenas mencionado na UI
+### 11. `src/components/landing/PricingCardsSection.tsx`
+- **L27**: "PARTICIPAÇÃO GRATUITA — €0" → toda a secção deve ser repensada (já não há opção gratuita)
+- **L30**: "€0" → remover
+- **L52**: "garantir vaga grátis!" → adaptar
+
+### 12. `src/components/landing/HeroSection.tsx` (landing /imagens)
+- **L96**: "WEBINAR GRATUITO" → "WEBINAR · IMAGENS COM IA"
+- **L137**: "INVESTIMENTO: Gratuito" → remover ou preço
+- **L187**: "garantir a minha vaga grátis" → adaptar
+
+### 13. `src/pages/Inicial.tsx`
+- **L22-23**: Meta title/description "Webinar Gratuito" → actualizar
+
+---
+
+## Ficheiros que NÃO precisam de correcção (uso interno/contextual)
+- **CRM StatusBlock/templateLabels** — labels internos de plano ("Gratuito" como status de inscrição é correcto)
+- **FAQSection** — "ferramentas gratuitas e pagas" refere-se a software, não ao webinar
+- **WebinarContent/Sidebar** — "ferramentas gratuitas e pagas" é descrição de conteúdo
+- **TermosContent** — documento legal, pode manter referência histórica
+- **FollowUpOverview** — lógica interna `isFree()`
+
+---
+
+## Abordagem de implementação
+Cada ficheiro será editado para substituir copy "gratuito/grátis/€0" por linguagem adequada ao contexto pós-webinar (compra de gravação, pack, masterclass). As CTAs passam a direccionar para compra, não para inscrição gratuita.
 
