@@ -1,16 +1,18 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import {
   Check, Clock, XCircle, Layers,
-  Calendar, Timer, Sparkles, Video, Play, FileText, MessageCircle,
+  Calendar, Timer, Sparkles,
   Zap, BarChart3, Repeat, BookOpen,
 } from "lucide-react";
 import { motion, useInView } from "framer-motion";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useCountdown } from "@/hooks/useCountdown";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import ElectricBorder from "@/components/landing/ElectricBorder";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { RegistrationModalProvider, useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { RegistrationModal } from "@/components/landing/RegistrationModal";
@@ -18,11 +20,6 @@ import { FooterSection } from "@/components/landing/FooterSection";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import fredericoPhoto from "@/assets/frederico-carvalho.jpg";
 import { LogoMarquee } from "@/components/landing/LogoMarquee";
-
-/* ── Dynamic pricing ── */
-const EARLY_BIRD_END = new Date("2026-03-06T00:00:00+00:00"); // until end of March 5
-const getPrice = () => new Date() < EARLY_BIRD_END ? 15 : 27;
-const isEarlyBird = () => new Date() < EARLY_BIRD_END;
 
 /* ── Reduced motion check ── */
 const prefersReduced = () =>
@@ -37,6 +34,11 @@ const fadeUp = {
 const wordReveal = {
   hidden: { opacity: 0, y: 20, filter: "blur(6px)" },
   visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+};
+
+const slideFromLeft = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0 },
 };
 
 const staggerContainer = (stagger = 0.1) => ({
@@ -68,6 +70,16 @@ const StaggeredWords = ({ text, startDelay = 0.3 }: { text: string; startDelay?:
   );
 };
 
+/* ── Countdown Block ── */
+const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
+  <div className="flex flex-col items-center">
+    <span className="bg-white/20 rounded px-2 py-1 font-heading font-bold text-[16px] max-sm:text-[14px] text-white min-w-[34px] max-sm:min-w-[28px] text-center">
+      {String(value).padStart(2, "0")}
+    </span>
+    <span className="text-[10px] text-white/70 mt-0.5">{label}</span>
+  </div>
+);
+
 /* ── Google badge ── */
 const GoogleBadge = () => (
   <div className="inline-flex items-center gap-[10px] rounded-[10px] px-[14px] py-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}>
@@ -86,6 +98,13 @@ const GoogleBadge = () => (
       <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)" }}>1 194 avaliações no Google</span>
     </div>
   </div>
+);
+
+/* ── Eyebrow label ── */
+const Eyebrow = ({ children, light = false }: { children: React.ReactNode; light?: boolean }) => (
+  <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: light ? "#2563EB" : "#60A5FA" }}>
+    {children}
+  </p>
 );
 
 /* ── Section title ── */
@@ -115,6 +134,7 @@ const notFor = [
   "Quem quer vídeos longos e complexos (aqui é clip curto, objectivo claro).",
   "Quem procura «milagre» sem processos.",
 ];
+
 
 const videoAgenda = [
   {
@@ -162,44 +182,29 @@ const speakerCredentials = [
 const faqs = [
   { q: "Preciso de experiência com IA?", a: "Não, de todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
   { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes sociais. Vais ver exemplos dos dois casos." },
-  { q: "Posso ver a gravação quando quiser?", a: "Sim. Após a compra, recebes acesso imediato à gravação completa em HD + todo o pack de apoio. Sem prazo de expiração." },
-  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além da gravação, há uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso durante o processo de compra." },
-  { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois de veres a sessão, já consegues produzir os primeiros clips e repetir semanalmente." },
+  { q: "E se não conseguir assistir ao vivo?", a: "Inscreve-te na mesma — recebes instruções e próximos passos por email. Se quiseres acesso à gravação integral + guia de apoio, o Premium Pass (15 EUR + IVA) garante isso." },
+  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além do webinar gratuito, haverá uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso já, durante o processo de inscrição neste webinar, ou inscrever-te depois." },
+  { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois do webinar, já consegues produzir os primeiros clips e repetir semanalmente." },
 ];
 
-const packItems = [
-  { Icon: Play, title: "Gravação completa em HD", desc: "~45 min de sessão prática, sem cortes." },
-  { Icon: FileText, title: "Guia de prompts para vídeo", desc: "Templates prontos a usar para os teus primeiros clips." },
-  { Icon: MessageCircle, title: "Sessão Q&A ao vivo", desc: "10 de Março, 14h30 — tira dúvidas em directo com o Frederico." },
-];
-
-const DARK_950 = "#020617";
+const DARK_950 = "#020617"; // slate-950
+const DARK_900 = "#0f172a"; // slate-900
+const DARK_CARD = "#1e293b"; // slate-800
 const DARK_BORDER = "rgba(255,255,255,0.08)";
 
 /* ══════════════════════════════════════════════════════ */
 
 const VideoPageInner = () => {
   const { open } = useRegistrationModal();
-  const [price, setPrice] = useState(getPrice);
-  const [earlyBird, setEarlyBird] = useState(isEarlyBird);
-
   usePageMeta({
-    title: "Gravação — Cria Vídeo Profissional com IA | Webinar 5 Março",
-    description: `Acede à gravação completa da sessão prática de vídeo com IA + pack de apoio. ${getPrice()}€ + IVA.`,
+    title: "Cria Vídeo Profissional com IA — Webinar Gratuito 5 Março 10h",
+    description: "Sessão prática ao vivo: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Março, 10h.",
     ogImage: "https://imagenscomia.com/video-social-card.jpg",
     ogUrl: "https://imagenscomia.com/video",
   });
 
+  const { days, hours, minutes, seconds } = useCountdown(new Date("2026-03-05T10:00:00"));
   const openModal = () => open("free");
-
-  /* Refresh price every minute */
-  useEffect(() => {
-    const id = setInterval(() => {
-      setPrice(getPrice());
-      setEarlyBird(isEarlyBird());
-    }, 60_000);
-    return () => clearInterval(id);
-  }, []);
 
   /* Sticky mobile CTA visibility */
   const [showMobileCta, setShowMobileCta] = useState(false);
@@ -209,42 +214,37 @@ const VideoPageInner = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const ctaText = `Garantir acesso (${price} €)`;
-
   return (
     <div className="min-h-screen pt-[52px] overflow-x-hidden" style={{ background: DARK_950, color: "#e2e8f0" }}>
 
-      {/* ═══ STICKY TOP BAR ═══ */}
+      {/* ═══ STICKY TOP BAR WITH COUNTDOWN ═══ */}
       <motion.div
         initial={{ y: -50 }}
         animate={{ y: 0 }}
         className="fixed top-0 left-0 right-0 z-50"
         style={{ background: "linear-gradient(90deg, #020617 0%, rgba(37,99,235,0.15) 50%, #1e3a8a 100%)" }}
       >
-        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 font-heading text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.5px] text-white/90">
-              <Play className="w-3.5 h-3.5" style={{ color: "#4ade80" }} />
-              GRAVAÇÃO DISPONÍVEL
-            </span>
-            {earlyBird && (
-              <span className="hidden sm:inline-flex text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "rgba(250,204,21,0.15)", color: "#facc15", border: "1px solid rgba(250,204,21,0.3)" }}>
-                Early Bird
-              </span>
-            )}
+        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between max-sm:justify-center gap-3 max-sm:gap-2">
+          <div className="flex items-center gap-1.5">
+            <CountdownBlock value={days} label="dias" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={hours} label="horas" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={minutes} label="min" />
+            <span className="text-white/60 font-bold text-sm">:</span>
+            <CountdownBlock value={seconds} label="seg" />
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:block text-[14px] font-heading font-bold text-white">
-              {price} € <span className="text-white/50 font-normal text-[12px]">+ IVA</span>
-            </span>
-            <button
-              onClick={openModal}
-              className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
-            >
-              {ctaText}
-            </button>
-          </div>
+          <p className="hidden sm:block text-[13px] text-white/90 font-medium tracking-wide">
+            AO VIVO · 10H00
+          </p>
+
+          <button
+            onClick={openModal}
+            className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer hidden sm:block focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
+          >
+            Garantir inscrição gratuita
+          </button>
         </div>
       </motion.div>
 
@@ -261,49 +261,38 @@ const VideoPageInner = () => {
           className="w-full font-heading font-bold text-white text-[15px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
-          {ctaText}
+          Garantir inscrição gratuita
         </button>
-        {earlyBird && (
-          <p className="text-center text-[11px] mt-1.5 font-semibold uppercase tracking-wider" style={{ color: "#facc15" }}>
-            Early Bird — só hoje
-          </p>
-        )}
       </motion.div>
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ HERO (slate-950) ═══ */}
       <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "100vh", background: DARK_950, paddingTop: 80, paddingBottom: 80 }}>
         {/* Background video */}
         <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.35, objectFit: "cover" }}>
           <source src="/videos/hero-vidro.mp4" type="video/mp4" />
         </video>
-        {/* Animated orbs */}
+        {/* Animated orbs background */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
           <div className="absolute rounded-full hero-orb-1" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.12, top: "-5%", left: "-8%", filter: "blur(80px)" }} />
           <div className="absolute rounded-full hero-orb-2" style={{ width: 400, height: 400, background: "#1d4ed8", opacity: 0.09, top: "10%", right: "-5%", filter: "blur(80px)" }} />
           <div className="absolute rounded-full hero-orb-3" style={{ width: 350, height: 350, background: "#7c3aed", opacity: 0.07, bottom: "5%", left: "50%", transform: "translateX(-50%)", filter: "blur(80px)" }} />
         </div>
-        {/* Noise grain */}
+        {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
         <div className="relative px-5 text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 1200 }}>
-          {/* Badge */}
+          {/* Live badge pill */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
-            <span className="inline-flex items-center gap-2 font-heading text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-4 whitespace-nowrap max-w-[90vw]" style={{ border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
-              <Play className="w-3 h-3" />
-              GRAVAÇÃO DISPONÍVEL
+            <span className="inline-flex items-center gap-2 font-heading text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-6 whitespace-nowrap max-w-[90vw]" style={{ border: "1px solid rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.04)" }}>
+              <span className="relative flex h-[6px] w-[6px]">
+                <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
+                <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
+              </span>
+              WEBINAR GRATUITO · AO VIVO · 5 MARÇO, 10H
             </span>
           </motion.div>
 
-          {/* Early bird badge */}
-          {earlyBird && (
-            <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.15 }}>
-              <span className="inline-flex items-center gap-1.5 font-heading text-[11px] font-bold uppercase tracking-[1.5px] px-3 py-1 rounded-full mb-6" style={{ background: "rgba(250,204,21,0.12)", border: "1px solid rgba(250,204,21,0.25)", color: "#facc15" }}>
-                ⚡ Early Bird — só hoje · {price} € + IVA
-              </span>
-            </motion.div>
-          )}
-
-          {/* Headline */}
+          {/* Headline — wider container to fit 2 lines on desktop */}
           <h1
             className="font-heading leading-[1.05] text-white mb-4 max-w-[1100px] mx-auto text-[38px] md:text-[52px] lg:text-[72px]"
             style={{ fontWeight: 900, textShadow: "0 0 80px rgba(22,163,74,0.15)" }}
@@ -328,29 +317,30 @@ const VideoPageInner = () => {
             </motion.span>
           </h1>
 
-          {/* Subtitle — post-event */}
+          {/* Supporting line */}
           <motion.p
             initial="hidden" animate="visible"
             variants={fadeUp} transition={{ ...defaultTransition, delay: 0.9 }}
-            className="font-medium mb-2 max-w-[680px] mx-auto text-[15px] lg:text-[18px]"
-            style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.45 }}
+            className="font-medium mb-2 max-w-[960px] mx-auto text-[15px] lg:text-[18px]"
+            style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.35 }}
           >
-            O webinar já aconteceu — acede agora à gravação completa + pack de apoio.
+            Adquires um sistema, ferramentas e templates prontos (briefing → gerar → rever → publicar)
           </motion.p>
 
           <div className="mb-9" />
 
-          {/* Info boxes — post-event */}
+          {/* 4 Info boxes */}
           <motion.div
             initial="hidden" animate="visible"
             variants={staggerContainer(0.1)}
             transition={{ delayChildren: 1.2 }}
-            className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-10 max-w-[520px] mx-auto"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-10 max-w-[700px] mx-auto"
           >
             {([
-              { Icon: Play, label: "FORMATO", value: "Gravação HD" },
-              { Icon: Timer, label: "DURAÇÃO", value: "~45 min" },
-              { Icon: Sparkles, label: "INVESTIMENTO", value: `${price} € + IVA` },
+              { Icon: Calendar, label: "DATA", value: "5 de Março" },
+              { Icon: Clock, label: "HORÁRIO", value: "10h00" },
+              { Icon: Timer, label: "DURAÇÃO", value: "45 min" },
+              { Icon: Sparkles, label: "INVESTIMENTO", value: "Gratuito" },
             ] as const).map((box) => (
               <motion.div
                 key={box.label}
@@ -374,7 +364,8 @@ const VideoPageInner = () => {
                 className="font-heading text-white text-[16px] sm:text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full whitespace-nowrap"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 20px", borderRadius: 10, maxWidth: 500, minWidth: 0 }}
               >
-                {ctaText}
+                <span className="hidden sm:inline">Sim, quero inscrever-me grátis</span>
+                <span className="sm:hidden">Inscrever-me gratuitamente</span>
               </button>
             </ElectricBorder>
           </motion.div>
@@ -424,25 +415,31 @@ const VideoPageInner = () => {
 
       {/* ═══ SECTION 1 — "Vídeo é o formato que o mercado exige" ═══ */}
       <section className="relative overflow-hidden py-24 md:py-32" style={{ background: "#0a0a0f" }}>
+        {/* Background video — rosa */}
         <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.7, objectFit: "cover", objectPosition: "center 40%", transform: "scale(1.06)" }}>
           <source src="/videos/rosa-video.mp4" type="video/mp4" />
         </video>
+        {/* Radial overlay — transparent centre so the pink ball shows */}
         <div className="absolute inset-0" style={{ zIndex: 1, background: "radial-gradient(ellipse 50% 60% at 50% 50%, transparent 0%, rgba(10,10,15,0.65) 55%, rgba(10,10,15,0.88) 100%)" }} />
         <div className="relative mx-auto max-w-6xl px-5" style={{ zIndex: 2 }}>
           <ScrollReveal>
             <div className="text-center mb-14 md:mb-20">
               <h2 className="font-heading font-extrabold text-[30px] sm:text-[36px] lg:text-[48px] leading-[1.1] text-white" style={{ letterSpacing: "-1px" }}>
                 O mercado exige{" "}
-                <span className="glitch" data-text="Vídeo.">Vídeo.</span>
+                <span className="glitch" data-text="Vídeo.">
+                  Vídeo.
+                </span>
               </h2>
             </div>
           </ScrollReveal>
 
+          {/* 2 | centre (video shows through) | 2 */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={vpOnce}
             variants={staggerContainer(0.12)}
             className="grid grid-cols-2 lg:grid-cols-[1fr_1.2fr_1fr] gap-5 lg:gap-6"
           >
+            {/* Left column — cards 1 & 2 */}
             <div className="flex flex-col gap-5 lg:gap-6">
               {whenItMakesSense.slice(0, 2).map(({ Icon, label, desc }, i) => (
                 <motion.div key={i} variants={fadeUp} transition={defaultTransition}>
@@ -457,7 +454,11 @@ const VideoPageInner = () => {
                 </motion.div>
               ))}
             </div>
+
+            {/* Centre spacer — desktop only, lets the video ball show */}
             <div className="hidden lg:block" />
+
+            {/* Right column — cards 3 & 4 */}
             <div className="flex flex-col gap-5 lg:gap-6">
               {whenItMakesSense.slice(2, 4).map(({ Icon, label, desc }, i) => (
                 <motion.div key={i + 2} variants={fadeUp} transition={defaultTransition}>
@@ -489,6 +490,8 @@ const VideoPageInner = () => {
           .pain-card:hover .pain-card-icon {
             filter: drop-shadow(0 0 8px rgba(168,85,247,0.5));
           }
+
+          /* Glitch effect */
           .glitch {
             position: relative;
             display: inline-block;
@@ -498,29 +501,83 @@ const VideoPageInner = () => {
             background-clip: text;
             animation: glitch-idle 4s ease-in-out infinite;
           }
-          .glitch::before, .glitch::after {
+          .glitch::before,
+          .glitch::after {
             content: attr(data-text);
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             -webkit-text-fill-color: initial;
             background: none;
             -webkit-background-clip: initial;
             background-clip: initial;
           }
-          .glitch::before { animation: glitch-2 3s infinite linear alternate-reverse; color: #a855f7; z-index: -1; opacity: 0.7; }
-          .glitch::after { animation: glitch-3 2s infinite linear alternate-reverse; color: #22d3ee; z-index: -2; opacity: 0.7; }
-          @keyframes glitch-idle { 0%, 90%, 100% { transform: none; } 92% { transform: skew(-0.3deg); } 94% { transform: none; } 96% { transform: skew(0.3deg); } 98% { transform: none; } }
-          @keyframes glitch-2 { 0% { transform: none; } 7% { transform: translate(-2px, -3px); } 10% { transform: none; } 27% { transform: none; } 30% { transform: translate(-5px, -2px); } 35% { transform: none; } 52% { transform: none; } 55% { transform: translate(-1px, -1px); } 50% { transform: none; } 72% { transform: none; } 75% { transform: translate(-2px, -6px); } 80% { transform: none; } 100% { transform: none; } }
-          @keyframes glitch-3 { 0% { transform: none; } 7% { transform: translate(2px, 3px); } 10% { transform: none; } 27% { transform: none; } 30% { transform: translate(5px, 2px); } 35% { transform: none; } 52% { transform: none; } 55% { transform: translate(1px, 1px); } 50% { transform: none; } 72% { transform: none; } 75% { transform: translate(2px, 6px); } 80% { transform: none; } 100% { transform: none; } }
+          .glitch::before {
+            animation: glitch-2 3s infinite linear alternate-reverse;
+            color: #a855f7;
+            z-index: -1;
+            opacity: 0.7;
+          }
+          .glitch::after {
+            animation: glitch-3 2s infinite linear alternate-reverse;
+            color: #22d3ee;
+            z-index: -2;
+            opacity: 0.7;
+          }
+          .glitch:hover::before,
+          .glitch:hover::after {
+            opacity: 1;
+          }
+          @keyframes glitch-idle {
+            0%, 90%, 100% { transform: none; }
+            92% { transform: skew(-0.3deg); }
+            94% { transform: none; }
+            96% { transform: skew(0.3deg); }
+            98% { transform: none; }
+          }
+          @keyframes glitch-2 {
+            0% { transform: none; }
+            7% { transform: translate(-2px, -3px); }
+            10% { transform: none; }
+            27% { transform: none; }
+            30% { transform: translate(-5px, -2px); }
+            35% { transform: none; }
+            52% { transform: none; }
+            55% { transform: translate(-1px, -1px); }
+            50% { transform: none; }
+            72% { transform: none; }
+            75% { transform: translate(-2px, -6px); }
+            80% { transform: none; }
+            100% { transform: none; }
+          }
+          @keyframes glitch-3 {
+            0% { transform: none; }
+            7% { transform: translate(2px, 3px); }
+            10% { transform: none; }
+            27% { transform: none; }
+            30% { transform: translate(5px, 2px); }
+            35% { transform: none; }
+            52% { transform: none; }
+            55% { transform: translate(1px, 1px); }
+            50% { transform: none; }
+            72% { transform: none; }
+            75% { transform: translate(2px, 6px); }
+            80% { transform: none; }
+            100% { transform: none; }
+          }
         `}</style>
       </section>
 
-      {/* ═══ "Para quem é" ═══ */}
+      {/* ═══ SECTION 2 — "Para quem é" (slate-950 + grain) ═══ */}
       <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "linear-gradient(to bottom, #020617, #0f172a)" }}>
+        {/* Noise grain overlay */}
         <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
         <div className="relative z-10 mx-auto max-w-5xl px-5">
           <ScrollReveal delay={0.08}>
             <div className="grid md:grid-cols-2 gap-5">
+              {/* Card: Certo para */}
               <div>
                 <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] text-white mb-4" style={{ letterSpacing: "-0.5px" }}>Para quem é</h3>
                 <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-yes" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
@@ -534,6 +591,7 @@ const VideoPageInner = () => {
                   </ul>
                 </div>
               </div>
+              {/* Card: Não é para */}
               <div>
                 <h3 className="font-heading font-extrabold text-[22px] sm:text-[26px] mb-4" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "-0.5px" }}>Não é para…</h3>
                 <div className="rounded-2xl p-6 sm:p-8 transition-all duration-200 audience-card-no" style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}>
@@ -558,19 +616,20 @@ const VideoPageInner = () => {
         `}</style>
       </section>
 
-      {/* ═══ AGENDA ═══ */}
+
+      {/* ═══ SECTION 4 — AGENDA (Light, ProgramSection style) ═══ */}
       <section className="py-16 md:py-24 bg-off-white">
         <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
           <ScrollReveal>
             <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] text-blue-600 text-center mb-2">
-              CONTEÚDO DA SESSÃO · ~45 MIN
+              AGENDA · 45 MIN
             </p>
             <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
-              O que está incluído na gravação
+              O que acontece durante a sessão
             </h2>
             <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto leading-[1.7]">
               <span className="block">3 blocos práticos.</span>
-              <span className="block italic">Demos reais.</span>
+              <span className="block italic">Demos ao vivo.</span>
               <span className="block">Resultados no dia seguinte.</span>
             </p>
           </ScrollReveal>
@@ -584,6 +643,9 @@ const VideoPageInner = () => {
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="font-heading font-semibold text-lg text-ink-900">{s.title}</h3>
+                        <span className="shrink-0 bg-blue-50 text-blue-600 font-heading font-semibold text-[14px] px-2.5 py-1 rounded-full">
+                          AO VIVO
+                        </span>
                       </div>
                       <p className="text-[17px] text-ink-500 leading-relaxed mb-4">{s.desc}</p>
                       <div className="space-y-1.5 mb-3">
@@ -612,98 +674,68 @@ const VideoPageInner = () => {
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
               >
-                {ctaText}
+                Sim, quero inscrever-me grátis!
               </motion.button>
             </div>
           </ScrollReveal>
         </div>
       </section>
 
-      {/* ═══ PACK INCLUÍDO ═══ */}
-      <section className="relative py-20 md:py-28 overflow-hidden" style={{ background: "linear-gradient(to bottom, #0f172a, #020617)" }}>
-        <div className="absolute inset-0 pointer-events-none" style={{ opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
-        <div className="relative z-10 mx-auto max-w-3xl px-5">
-          <ScrollReveal>
-            <div className="text-center mb-12">
-              <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-3" style={{ color: "#4ade80" }}>
-                O QUE RECEBES
-              </p>
-              <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white mb-2" style={{ letterSpacing: "-0.5px" }}>
-                Pack completo por {price} € <span className="text-white/50 text-[20px] font-normal">+ IVA</span>
-              </h2>
-              {earlyBird && (
-                <p className="text-[14px] font-semibold" style={{ color: "#facc15" }}>
-                  ⚡ Preço Early Bird — válido até ao final do dia de hoje
-                </p>
-              )}
-              {!earlyBird && (
-                <p className="text-[14px]" style={{ color: "rgba(255,255,255,0.5)" }}>
-                  Acesso imediato após a compra
-                </p>
-              )}
-            </div>
-          </ScrollReveal>
-
-          <div className="space-y-4">
-            {packItems.map((item, i) => (
-              <ScrollReveal key={i} delay={i * 0.08}>
-                <div
-                  className="flex items-start gap-4 rounded-2xl p-6 transition-all duration-200"
-                  style={{ background: "rgba(255,255,255,0.04)", border: `1px solid ${DARK_BORDER}` }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(74,222,128,0.3)"; e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = DARK_BORDER; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)" }}>
-                    <item.Icon className="w-5 h-5" style={{ color: "#4ade80" }} />
-                  </div>
-                  <div>
-                    <p className="font-heading font-bold text-[16px] text-white mb-1">{item.title}</p>
-                    <p className="text-[14px] leading-[1.6]" style={{ color: "rgba(255,255,255,0.55)" }}>{item.desc}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-
-          <ScrollReveal delay={0.3}>
-            <div className="text-center mt-10">
-              <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10} style={{ display: "inline-block" }}>
-                <button
-                  onClick={openModal}
-                  className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] text-[17px]"
-                  style={{ background: "#16A34A", fontWeight: 700, padding: "16px 36px", borderRadius: 10, minWidth: 280 }}
-                >
-                  {ctaText}
-                </button>
-              </ElectricBorder>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* ═══ SPEAKER ═══ */}
+      {/* ═══ SECTION 5 — SPEAKER (White bg) ═══ */}
       <section className="py-14 md:py-20 px-4" style={{ background: "#ffffff", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
         <div className="mx-auto max-w-[1060px]">
           <div className="flex flex-col md:flex-row items-center gap-9 md:gap-16">
+            {/* Photo column */}
             <ScrollReveal className="w-full md:w-[380px] shrink-0">
               <div className="relative rounded-[20px] overflow-hidden">
-                <img src={fredericoPhoto} alt="Frederico Carvalho" loading="lazy" className="w-full h-[320px] md:h-[460px] object-cover object-top rounded-[20px]" />
-                <div className="absolute bottom-5 left-5 rounded-xl px-4 py-3" style={{ background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
-                  <p className="font-heading font-bold text-[14px]" style={{ color: "#0a0a0f" }}>⭐ 5,0 · 1 194 avaliações no Google</p>
-                  <p className="text-[14px] mt-[2px]" style={{ color: "#64748b" }}>Frederico Carvalho · DIGITALFC</p>
+                <img
+                  src={fredericoPhoto}
+                  alt="Frederico Carvalho"
+                  loading="lazy"
+                  className="w-full h-[320px] md:h-[460px] object-cover object-top rounded-[20px]"
+                />
+                {/* Badge */}
+                <div
+                  className="absolute bottom-5 left-5 rounded-xl px-4 py-3"
+                  style={{
+                    background: "rgba(255,255,255,0.95)",
+                    backdropFilter: "blur(8px)",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                  }}
+                >
+                  <p className="font-heading font-bold text-[14px]" style={{ color: "#0a0a0f" }}>
+                    ⭐ 5,0 · 1 194 avaliações no Google
+                  </p>
+                  <p className="text-[14px] mt-[2px]" style={{ color: "#64748b" }}>
+                    Frederico Carvalho · DIGITALFC
+                  </p>
                 </div>
               </div>
             </ScrollReveal>
 
+            {/* Text column */}
             <ScrollReveal delay={0.1} className="flex-grow w-full">
               <div className="text-center md:text-left">
-                <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] mb-2" style={{ color: "#2563EB" }}>QUEM APRESENTA</p>
-                <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] mb-1" style={{ color: "#0a0a0f" }}>Frederico Carvalho</h2>
-                <p className="font-medium text-[17px] leading-[1.5] mb-7" style={{ color: "#64748b" }}>20 anos de experiência em marketing digital para empresas</p>
+                <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.1em] mb-2" style={{ color: "#2563EB" }}>
+                  QUEM APRESENTA
+                </p>
+                <h2 className="font-heading font-extrabold text-[24px] sm:text-[30px] md:text-[34px] mb-1" style={{ color: "#0a0a0f" }}>
+                  Frederico Carvalho
+                </h2>
+                <p className="font-medium text-[17px] leading-[1.5] mb-7" style={{ color: "#64748b" }}>
+                  20 anos de experiência em marketing digital para empresas
+                </p>
+
                 <div className="mb-7" style={{ borderTop: "1px solid rgba(0,0,0,0.08)" }} />
+
+                {/* Credentials grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-left">
                   {speakerCredentials.map((c, i) => (
-                    <div key={i} className="flex items-start gap-2.5 rounded-[10px] p-3.5" style={{ background: "#f8f9fa", border: "1px solid rgba(0,0,0,0.06)" }}>
+                    <div
+                      key={i}
+                      className="flex items-start gap-2.5 rounded-[10px] p-3.5"
+                      style={{ background: "#f8f9fa", border: "1px solid rgba(0,0,0,0.06)" }}
+                    >
                       <span className="text-[20px] leading-none shrink-0">{c.emoji}</span>
                       <div>
                         <p className="font-heading font-semibold text-[14px]" style={{ color: "#0a0a0f" }}>{c.title}</p>
@@ -718,14 +750,20 @@ const VideoPageInner = () => {
         </div>
       </section>
 
-      {/* ═══ TESTEMUNHOS ═══ */}
+      {/* ═══ SECTION 5.5 — TESTEMUNHOS ═══ */}
       <section style={{ background: "#0f172a" }} className="py-14 md:py-20 px-4">
         <div className="mx-auto max-w-[1080px]">
           <ScrollReveal>
             <div className="text-center mb-12">
-              <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>AVALIAÇÕES PÚBLICAS</p>
-              <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white" style={{ letterSpacing: "-0.5px" }}>Testemunhos de quem participou no último webinar</h2>
-              <div className="mt-4"><GoogleBadge /></div>
+              <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>
+                AVALIAÇÕES PÚBLICAS
+              </p>
+              <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white" style={{ letterSpacing: "-0.5px" }}>
+                Testemunhos de quem participou no último webinar
+              </h2>
+              <div className="mt-4">
+                <GoogleBadge />
+              </div>
             </div>
           </ScrollReveal>
 
@@ -762,7 +800,7 @@ const VideoPageInner = () => {
         </div>
       </section>
 
-      {/* ═══ FAQ ═══ */}
+      {/* ═══ SECTION 6 — FAQ (Light bg) ═══ */}
       <section className="py-20 md:py-28" style={{ background: "#f8f9fa" }}>
         <div className="mx-auto max-w-2xl px-5">
           <ScrollReveal>
@@ -792,10 +830,16 @@ const VideoPageInner = () => {
 
       {/* ═══ FINAL CTA ═══ */}
       <section className="relative overflow-hidden py-20 md:py-28" style={{ background: "#050709" }}>
+        {/* Animated gradient orb */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
             className="absolute w-[800px] h-[800px] rounded-full final-cta-orb"
-            style={{ background: "radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
+            style={{
+              background: "radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
           />
           <style>{`
             @media (prefers-reduced-motion: no-preference) {
@@ -810,20 +854,11 @@ const VideoPageInner = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-5 text-center">
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white leading-[1.15] mb-4" style={{ letterSpacing: "-0.5px" }}>
-            Acede à gravação completa
+            Garantir inscrição gratuita
           </h2>
-          <p className="text-[17px] mb-2 max-w-[540px] mx-auto" style={{ color: "rgba(255,255,255,0.70)" }}>
-            Gravação HD + guia de prompts + sessão Q&A ao vivo.
+          <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
+            Sem compromisso. Evento ao vivo, a 5 de março de 2026, às 10h.
           </p>
-          <p className="text-[24px] font-heading font-bold text-white mb-1">
-            {price} € <span className="text-white/50 text-[16px] font-normal">+ IVA</span>
-          </p>
-          {earlyBird && (
-            <p className="text-[13px] font-semibold mb-8" style={{ color: "#facc15" }}>
-              ⚡ Preço Early Bird — válido até ao final do dia
-            </p>
-          )}
-          {!earlyBird && <div className="mb-8" />}
           <div className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
               <button
@@ -831,7 +866,7 @@ const VideoPageInner = () => {
                 className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 36px", borderRadius: 10, maxWidth: 420, minWidth: 280 }}
               >
-                {ctaText}
+                Garantir inscrição gratuita
               </button>
             </ElectricBorder>
           </div>
@@ -846,10 +881,10 @@ const VideoPageInner = () => {
   );
 };
 
-const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Gravação — Vídeo com IA" webinar="video">
+const VideoLPPage = () => (
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Quarta-feira, 5 de Março, 10h" webinar="video">
     <VideoPageInner />
   </RegistrationModalProvider>
 );
 
-export default VideoPage;
+export default VideoLPPage;
