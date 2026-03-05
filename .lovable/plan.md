@@ -1,34 +1,18 @@
 
 
-# Integrar Brevo como provider de email transacional
+# Testar envio via Brevo e recuperar emails falhados
 
-## Contexto
-E-goi tem saldo negativo e Resend atingiu quota diária. Precisamos de um provider funcional para enviar os emails em falha.
-
-## Alteração
-
-**Ficheiro**: `supabase/functions/send-email/index.ts`
-
-- Adicionar função `sendViaBrevo` que usa a API SMTP transacional da Brevo (`https://api.brevo.com/v3/smtp/email`)
-- Requer header `api-key` com a chave da Brevo
-- Remetente: `Frederico Carvalho <frederico.carvalho@digitalfc.pt>` (domínio já verificado na Brevo ou a verificar)
-- Inserir Brevo como **provider primário** na cadeia: Brevo → E-goi → Resend
-- Actualizar o tipo `SendEmailResponse` para incluir `"brevo"` como provider
-
-## Secret necessário
-
-- `BREVO_API_KEY` — chave de API da Brevo (obtida em app.brevo.com → SMTP & API → API Keys)
-- Será pedida via ferramenta de secrets antes de implementar
+## Situação actual
+- Brevo já integrada como provider primário no `send-email`
+- IPs desbloqueados na Brevo
+- Remetente `frederico.carvalho@digitalfc.pt` verificado
+- `BREVO_API_KEY` configurada
 
 ## Passos
 
-1. Pedir o secret `BREVO_API_KEY`
-2. Adicionar `sendViaBrevo()` ao `send-email/index.ts`
-3. Alterar a cadeia de fallback: Brevo primeiro, depois E-goi, depois Resend
-4. Deploy da função
-5. Testar com `test-send-email`
-6. Executar `resend-failed-emails` para recuperar os emails em falha
+1. **Testar envio** — Invocar `test-send-email` para confirmar que a Brevo está a funcionar
+2. **Se sucesso** — Executar `resend-failed-emails` para recuperar as confirmações de pagamento falhadas (templates `video_payment_premium` e `video_payment_masterclass`)
+3. **Verificar resultados** — Confirmar nos logs quantos emails foram reenviados com sucesso
 
-## Nota sobre domínio
-O remetente `frederico.carvalho@digitalfc.pt` precisa estar verificado na Brevo (domínio `digitalfc.pt`). Se ainda não estiver, será necessário adicionar os registos DNS (DKIM/SPF) na Brevo antes de enviar.
+Nenhuma alteração de código necessária — apenas invocação das funções existentes.
 
