@@ -1,79 +1,34 @@
 
 
-# Auditoria: Referências a "Gratuito" que devem ser removidas/actualizadas
+# Corrigir /video: remover "gravação" e posicionar como sessão prática de 70 min
 
-O webinar já decorreu — todas as referências a "gratuito", "grátis" e "€0" nas páginas públicas e nos funis de upgrade são inconsistentes e prejudicam a imagem do projecto. Segue a lista completa de ficheiros afectados e as correcções propostas.
+## Alterações em `src/pages/VideoLP.tsx`
 
----
+### 1. Meta tags (L200-201)
+- Descrição: "Pack completo disponível" → "70 min de sessão prática sem cortes. De briefing a clip publicável."
 
-## Ficheiros a corrigir (13 ficheiros, ~40 ocorrências)
+### 2. Duração no hero (L342)
+- "45 min" → "70 min"
 
-### 1. `src/components/landing/RegistrationModal.tsx` (modal partilhado — screenshot do user)
-- **L254**: Título "Webinar **Gratuito** — Ao Vivo" → adaptar para contexto pós-webinar (ex: "Quero aceder à **Gravação** — Vídeo com IA")
-- **L371**: "Na participação gratuita…" → remover bloco ou adaptar
-- **L416**: "Continuar com participação gratuita" → remover
-- **L448/452**: Mensagens de partilha WhatsApp/email com "webinar gratuito" → actualizar copy
-- **L505**: "Ou ganha Premium grátis!" → remover referral path (já não se aplica)
+### 3. Info box "FORMATO" (L343)
+- "Pack Completo" → "Sessão prática"
 
-### 2. `src/pages/VideoLP.tsx` (landing page /video — 10+ ocorrências)
-- **L200-201**: Meta title/description "Webinar Gratuito" → "Webinar Vídeo com IA"
-- **L246/264**: Botões "Garantir inscrição gratuita" → "Garantir acesso à gravação"
-- **L291**: Badge "WEBINAR GRATUITO · AO VIVO" → "WEBINAR · VÍDEO COM IA"
-- **L343**: Box "INVESTIMENTO: Gratuito" → remover ou mostrar preço
-- **L367-368**: "inscrever-me grátis/gratuitamente" → adaptar CTA
-- **L677**: "inscrever-me grátis!" → adaptar
-- **L857/869**: Footer CTA "inscrição gratuita" → adaptar
+### 4. CTAs — substituir "acesso à gravação" por "o meu lugar" (L246, L264)
+- "Garantir acesso à gravação" → "Garantir o meu lugar"
 
-### 3. `src/pages/WebinarLiveVideo.tsx`
-- **L45**: "Webinar gratuito" → "Webinar · Vídeo com IA"
+### 5. CTAs gerais — "Garantir o meu acesso" (L367-368, L677, L857, L869)
+- Manter "Garantir o meu lugar" em todos
 
-### 4. `src/components/webinar/VideoWebinarVideoArea.tsx`
-- **L73**: "Webinar gratuito — Vídeo com IA" → "Webinar — Vídeo com IA"
+### 6. FAQ (L185) — remover menção a "gravação"
+- Reformular: "Recebes instruções e próximos passos por email. O Premium Pass (15 EUR + IVA) inclui materiais de apoio e guia completo."
 
-### 5. `src/components/upgrade/StepMasterclass.tsx`
-- **L148**: "ou continuar com inscrição gratuita →" → "ou continuar só com o pack →"
+### 7. FAQ (L186) — remover "webinar gratuito"
+- "Além do webinar gratuito" → "Além do webinar"
 
-### 6. `src/components/upgrade/StepVideoPremium.tsx`
-- **L162**: "ou continuar com inscrição gratuita →" → "ou continuar sem este extra →"
-
-### 7. `src/components/upgrade/StepPremium.tsx`
-- **L105**: "Continuar com inscrição gratuita →" → "Continuar sem extras →"
-
-### 8. `src/components/upgrade/SummaryPanel.tsx`
-- **L49**: "Webinar Gratuito" → "Webinar ao vivo"
-- **L53-54**: "€0" / "Gratuito" → remover linha ou mostrar "Incluído"
-
-### 9. `src/components/upgrade/StepConfirmation.tsx`
-- **L23**: Comentário "Variante A — Só Gratuito" → renomear
-- **L188**: "€0" → remover ou adaptar
-
-### 10. `src/components/landing/ConfirmacaoExtras.tsx`
-- **L14**: Share text "webinar gratuito" → "webinar"
-
-### 11. `src/components/landing/PricingCardsSection.tsx`
-- **L27**: "PARTICIPAÇÃO GRATUITA — €0" → toda a secção deve ser repensada (já não há opção gratuita)
-- **L30**: "€0" → remover
-- **L52**: "garantir vaga grátis!" → adaptar
-
-### 12. `src/components/landing/HeroSection.tsx` (landing /imagens)
-- **L96**: "WEBINAR GRATUITO" → "WEBINAR · IMAGENS COM IA"
-- **L137**: "INVESTIMENTO: Gratuito" → remover ou preço
-- **L187**: "garantir a minha vaga grátis" → adaptar
-
-### 13. `src/pages/Inicial.tsx`
-- **L22-23**: Meta title/description "Webinar Gratuito" → actualizar
+### 8. Footer copy (L859-860)
+- "Sem compromisso. Evento ao vivo…" → "70 min de sessão prática sem cortes. Especialização em vídeo com IA."
 
 ---
 
-## Ficheiros que NÃO precisam de correcção (uso interno/contextual)
-- **CRM StatusBlock/templateLabels** — labels internos de plano ("Gratuito" como status de inscrição é correcto)
-- **FAQSection** — "ferramentas gratuitas e pagas" refere-se a software, não ao webinar
-- **WebinarContent/Sidebar** — "ferramentas gratuitas e pagas" é descrição de conteúdo
-- **TermosContent** — documento legal, pode manter referência histórica
-- **FollowUpOverview** — lógica interna `isFree()`
-
----
-
-## Abordagem de implementação
-Cada ficheiro será editado para substituir copy "gratuito/grátis/€0" por linguagem adequada ao contexto pós-webinar (compra de gravação, pack, masterclass). As CTAs passam a direccionar para compra, não para inscrição gratuita.
+**Total: ~12 alterações num único ficheiro**, todas de copy. Nenhuma mudança estrutural.
 
