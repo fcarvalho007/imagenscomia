@@ -1,39 +1,50 @@
 
 
-# Bug: /recursos dá "Erro de ligação" para utilizadores com inscrição em dois webinars
+# Análise: Email pós-webinar — o que aconteceu
 
-## Causa raiz
+## Situação actual (dados reais da base de dados)
 
-A query em `RecursosLogin.tsx` (e em `Recursos.tsx` na re-validação) usa `.maybeSingle()` sem filtrar por webinar. Utilizadores inscritos em **ambos** os webinars (imagens + vídeo) têm 2 linhas na tabela `registrations`. O `.maybeSingle()` do Supabase retorna **erro** quando há mais de 1 resultado — e o código interpreta esse erro como "network", mostrando "Erro de ligação".
+| Métrica | Valor |
+|---------|-------|
+| Emails já enviados | **162** |
+| Inscritos gratuitos restantes (não receberam) | **91** |
+| Total de inscritos gratuitos | 253 |
+| Inscritos com `attended_live_at` | 161 |
 
-Isto afecta todos os utilizadores com inscrição dupla (confirmado: fredericodigital@gmail.com, amargaridapregueiro@gmail.com, e muitos outros).
+## O que aconteceu
 
-## Solução
+O botão **"Enviar agora"** no CRM é manual — alguém o clicou, e a função executou. Não há cron associado a esta função, portanto **não foi automático**. A discrepância entre os 79 que o ecrã mostrava e os 162 reais deve-se ao timing: a função processa com 600ms entre cada envio, e os contadores do CRM actualizam-se ao recarregar a página. Provavelmente o ecrã foi capturado a meio da execução.
 
-A página de recursos pertence ao webinar de **imagens**. Adicionar `.eq("webinar", "imagens")` à query garante que retorna no máximo 1 linha. Adicionalmente, como fallback para utilizadores que só têm inscrição no webinar de vídeo com acesso pago, podemos tentar o outro webinar se o primeiro não tiver acesso.
+## Problema real: falta de filtro `attended_live_at`
 
-**Abordagem mais simples e robusta:** trocar `.maybeSingle()` por `.limit(1)` com ordenação que priorize registos com acesso pago, sem filtrar por webinar — assim funciona para qualquer utilizador com acesso em qualquer webinar.
+A UI diz "Só para quem assistiu ao vivo (attended_live_at)", mas **a Edge Function não aplica esse filtro**. No código (`send-video-postwebinar/index.ts`, linha 128-133), a query apenas filtra por:
+- `webinar = 'video'`
+- `paid_at IS NULL`
+- `do_not_contact = false`
 
-### Ficheiros a alterar
+**Não filtra por `attended_live_at IS NOT NULL`**. Resultado: enviou para todos os 162 inscritos gratuitos processados, incluindo quem **não assistiu ao vivo**.
 
-**1. `src/components/recursos/RecursosLogin.tsx`** (linhas 34-38)
-- Substituir `.maybeSingle()` por `.order("paid_at", { ascending: false, nullsFirst: false }).order("premium_granted_at", { ascending: false, nullsFirst: false }).limit(1)` e usar `data[0]`
-- Isto prioriza o registo que tem `paid_at` ou `premium_granted_at` preenchido
+## O que pode ser feito
 
-**2. `src/pages/Recursos.tsx`** (linhas 33-38, re-validação silenciosa)
-- Mesma correcção: trocar `.maybeSingle()` por query com `.limit(1)` e ordenação que priorize acesso pago
+### Opção A — Não corrigir (aceitar o envio)
+Os 162 emails já foram entregues. O conteúdo é relevante (upsell gravação + masterclass), aplica-se a qualquer inscrito. Os 91 restantes não receberiam nada.
 
-### Detalhe técnico
+### Opção B — Corrigir a função e reenviar só para quem assistiu
+Adicionar `.not("attended_live_at", "is", null)` à query. Dos 91 restantes, apenas os que têm `attended_live_at` receberiam.
 
+### Opção C — Enviar aos 91 restantes sem restrição
+Manter a lógica actual e reexecutar para os 91 que faltam (a função já tem deduplicação — não reenvia a quem já recebeu).
+
+## Ficheiro a alterar (se quiser corrigir)
+
+**`supabase/functions/send-video-postwebinar/index.ts`** — adicionar filtro `attended_live_at` na query (linha 133):
 ```typescript
-// Antes (falha com 2+ linhas):
-.eq("email", email).maybeSingle()
-
-// Depois (prioriza registo com acesso):
-.eq("email", email)
-.order("paid_at", { ascending: false, nullsFirst: false })
-.order("premium_granted_at", { ascending: false, nullsFirst: false })
-.limit(1)
-// e usar data?.[0] em vez de data
+.not("attended_live_at", "is", null)
 ```
+
+## Resumo
+- Ninguém recebeu email duplicado (a função deduplica)
+- 162 já receberam, 91 ainda podem ser contactados
+- O envio foi manual (botão), não automático
+- O filtro de "assistiu ao vivo" nunca estava implementado na função, apenas mencionado na UI
 
