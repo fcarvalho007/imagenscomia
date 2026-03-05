@@ -1,0 +1,304 @@
+import { useState } from "react";
+import {
+  Clock, LogOut,
+  Mail, MessageCircle, Play, Headphones, FileText, Layers, BookOpen,
+} from "lucide-react";
+import RecursosVideoUpsell from "./RecursosVideoUpsell";
+
+// ─── Configuração de conteúdo — actualizar após o webinar ─────────────────────
+const VIDEO_RECURSOS_CONFIG = {
+  vimeoEmbedUrl: "", // placeholder — preencher com URL Vimeo após webinar
+  resumoPdfUrl: "#",
+  audioUrl: "#",
+  sopPromptsUrl: "#",
+  extraResourceUrl: "#",
+  chapters: [
+    { time: "00:00", label: "Introdução e panorama do vídeo com IA" },
+    { time: "10:00", label: "Método: do briefing ao clip" },
+    { time: "25:00", label: "Demos ao vivo com ferramentas" },
+    { time: "45:00", label: "Q&A e casos práticos" },
+  ],
+};
+
+interface UserData {
+  email: string;
+  token: string | null;
+  plan: string | null;
+  name: string | null;
+}
+
+interface Props {
+  userData: UserData;
+  onLogout: () => void;
+}
+
+export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
+  const [activeChapter, setActiveChapter] = useState<number>(0);
+
+  const firstName = userData.name?.split(" ")[0] || "amigo";
+  const hasMasterclass = ["masterclass", "bundle"].includes(userData.plan ?? "");
+
+  const hasVideo = !!VIDEO_RECURSOS_CONFIG.vimeoEmbedUrl;
+
+  return (
+    <div
+      className="min-h-screen"
+      style={{ background: "linear-gradient(160deg, #F4FAF6 0%, #EAF5EE 100%)" }}
+    >
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-green-600 rounded-md flex items-center justify-center">
+              <Play size={10} fill="white" className="text-white ml-0.5" />
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Vídeo com IA — Recursos</p>
+          </div>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            <LogOut size={13} />
+            Sair
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main ── */}
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-8 md:py-10">
+
+        {/* Title row */}
+        <div className="mb-8">
+          <p className="text-[11px] font-semibold text-green-600 uppercase tracking-widest mb-1">Área Reservada</p>
+          <h1 className="font-bold text-[26px] sm:text-[30px] text-gray-900 leading-tight">
+            Olá, {firstName}! 👋
+          </h1>
+          <p className="text-gray-500 text-[15px] mt-1">Aqui estão os teus recursos do webinar Vídeo com IA.</p>
+        </div>
+
+        {/* 2-col grid */}
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+
+          {/* ── Main column ── */}
+          <div className="flex-1 min-w-0">
+
+            {/* Player Vimeo */}
+            {hasVideo ? (
+              <div className="rounded-2xl overflow-hidden shadow-lg mb-4" style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+                <iframe
+                  src={VIDEO_RECURSOS_CONFIG.vimeoEmbedUrl}
+                  frameBorder="0"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+                  title="Webinar — Vídeo com IA · 5 Mar · Frederico Carvalho"
+                />
+              </div>
+            ) : (
+              <div className="rounded-2xl overflow-hidden shadow-lg mb-4 bg-gray-900 flex items-center justify-center" style={{ aspectRatio: "16/9" }}>
+                <div className="text-center text-white/60">
+                  <Play size={40} className="mx-auto mb-2 opacity-40" />
+                  <p className="text-sm font-medium">Gravação disponível em breve</p>
+                  <p className="text-xs mt-1 opacity-60">O webinar decorreu a 5 de Março</p>
+                </div>
+              </div>
+            )}
+
+            {/* Card: Índice + Apoio */}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+              <div className="p-5">
+
+                {/* Índice */}
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+                  <Clock size={11} /> Índice da sessão
+                </p>
+                <ul className="space-y-1 mb-6">
+                  {VIDEO_RECURSOS_CONFIG.chapters.map((ch, i) => (
+                    <li
+                      key={i}
+                      onClick={() => setActiveChapter(i)}
+                      className={`group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
+                        activeChapter === i
+                          ? "bg-green-50 border border-green-100"
+                          : "hover:bg-gray-50 border border-transparent"
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                        activeChapter === i ? "bg-green-600" : "bg-gray-100 group-hover:bg-gray-200"
+                      }`}>
+                        {activeChapter === i ? (
+                          <Play size={9} fill="white" className="text-white ml-0.5" />
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400">{i + 1}</span>
+                        )}
+                      </div>
+                      <span className={`font-mono text-xs shrink-0 w-10 ${activeChapter === i ? "text-green-500" : "text-gray-300"}`}>
+                        {ch.time}
+                      </span>
+                      <span className={`text-sm flex-1 ${activeChapter === i ? "font-medium text-green-900" : "text-gray-700"}`}>
+                        {ch.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100 mb-5" />
+
+                {/* Apoio ao conhecimento */}
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
+                  <BookOpen size={11} /> Apoio ao conhecimento
+                </p>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed select-none">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-gray-600 block">Guia de Apoio Vídeo com IA</span>
+                      <span className="text-[11px] text-gray-400">Em preparação</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full shrink-0">
+                      Em breve
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed select-none">
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-gray-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-gray-600 block">Guia de Prompts para Vídeo</span>
+                      <span className="text-[11px] text-gray-400">Disponível em breve</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                      Em breve
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          {/* ── Sidebar ── */}
+          <aside className="w-full lg:w-[280px] flex-shrink-0">
+            <div className="lg:sticky lg:top-[72px] space-y-4">
+
+              {/* Recursos */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recursos</p>
+                <div className="space-y-2">
+
+                  <a
+                    href={VIDEO_RECURSOS_CONFIG.resumoPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
+                      <span className="text-[11px] text-gray-500">PDF · Em breve</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href={VIDEO_RECURSOS_CONFIG.audioUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Headphones size={14} className="text-gray-500" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Áudio do Webinar</span>
+                      <span className="text-[11px] text-gray-500">MP3 · Em breve</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href={VIDEO_RECURSOS_CONFIG.sopPromptsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-violet-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">SOP de Prompts Vídeo</span>
+                      <span className="text-[11px] text-gray-500">Em breve</span>
+                    </div>
+                  </a>
+
+                  <a
+                    href={VIDEO_RECURSOS_CONFIG.extraResourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Layers size={14} className="text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900 block">Recurso Extra</span>
+                      <span className="text-[11px] text-gray-500">Em breve</span>
+                    </div>
+                  </a>
+
+                </div>
+              </div>
+
+              {/* Suporte */}
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Suporte</p>
+                <p className="text-[12px] text-gray-400 mb-3">Resposta em 24–48h úteis.</p>
+                <div className="flex gap-2">
+                  <a
+                    href="https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20os%20recursos%20V%C3%ADdeo%20com%20IA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[12px] font-medium text-green-700 bg-green-50 border border-green-200 hover:bg-green-100 transition-colors"
+                  >
+                    <MessageCircle size={13} style={{ color: "#25D366" }} />
+                    WhatsApp
+                  </a>
+                  <a
+                    href="mailto:frederico@digitalfc.pt?subject=Ajuda%20Recursos%20V%C3%ADdeo%20com%20IA"
+                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-[12px] font-medium text-gray-600 bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+                  >
+                    <Mail size={13} className="text-gray-400" />
+                    Email
+                  </a>
+                </div>
+              </div>
+
+              {/* Masterclass Upsell */}
+              <RecursosVideoUpsell hasMasterclass={hasMasterclass} compact />
+
+            </div>
+          </aside>
+
+        </div>
+
+        {/* Bottom logout */}
+        <div className="flex justify-center pt-12 pb-4">
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <LogOut size={12} />
+            Sair desta área
+          </button>
+        </div>
+
+      </main>
+    </div>
+  );
+}
