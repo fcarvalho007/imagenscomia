@@ -72,7 +72,7 @@ serve(async (req) => {
       const fname = reg.first_name || "participante";
       const link = `${SITE_URL}/fatura?rid=${reg.id}&t=${reg.edit_token}`;
 
-      const subject = `Precisamos dos teus dados para a fatura, ${fname}`;
+      const subject = `${fname}, precisamos dos teus dados de faturação`;
       const html = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -81,20 +81,23 @@ serve(async (req) => {
   <div style="background:#ffffff;border-radius:12px;padding:32px 28px;border:1px solid #e5e7eb;">
     <h1 style="font-size:20px;color:#111827;margin:0 0 12px;">Olá ${fname} 👋</h1>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Obrigado pela tua compra no webinar <strong>Cria Vídeo Profissional com IA</strong>!
+      Obrigado pela tua participação no webinar <strong>Cria Vídeo Profissional com IA</strong>!
     </p>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Para podermos emitir a tua fatura, precisamos dos teus dados de faturação — NIF, morada e restantes campos.
+      Apercebemo-nos que, no momento da tua inscrição, o nosso sistema actualizado de recolha de dados de faturação ainda não estava activo — e por isso os teus dados não ficaram registados.
     </p>
-    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 24px;">
-      Clica no botão abaixo para preencher (demora menos de 1 minuto):
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+      Pedimos desculpa pelo incómodo. 🙏 Para podermos emitir a tua fatura, precisamos que preenchas os dados abaixo — <strong>demora menos de 1 minuto</strong>:
     </p>
     <div style="text-align:center;margin:0 0 24px;">
       <a href="${link}" style="display:inline-block;background:#7c3aed;color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;">
         Preencher dados de faturação →
       </a>
     </div>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;margin:0;">
+    <p style="font-size:13px;color:#6b7280;line-height:1.5;margin:0 0 8px;">
+      Dados necessários: Nome/Empresa, NIF, Morada, Código Postal, Localidade e Email de faturação.
+    </p>
+    <p style="font-size:12px;color:#9ca3af;text-align:center;margin:16px 0 0;">
       Se tiveres dúvidas, responde directamente a este email.
     </p>
   </div>
