@@ -1,34 +1,47 @@
 
 
-# Revisão da página /video — remover "gravação" e corrigir duração
+# Rascunho de fatura — último pagamento + correcção de descrições
 
-## Problema
-A página /video usa repetidamente a palavra "gravação", o que a faz parecer um produto secundário em vez de um produto único e autónomo. A duração está errada (45 min em vez de 70 min).
+## Último pagamento encontrado
+- **Cliente**: Jessica Castro (jessica@xistoazul.pt)
+- **Plano**: `video-premium` (Sessão HD + Pack Apoio — Vídeo com IA)
+- **Valor**: 15,00€ + IVA
+- **Dados de faturação**: Não preenchidos (será emitida como "Consumidor Final", NIF 999999990)
 
-## Alterações no ficheiro `src/pages/Video.tsx`
+## Alterações no `create-invoice/index.ts`
 
-### Duração: 45 → 70 min
-- **Linha 171**: `packItems` — `"~45 min de sessão prática, sem cortes."` → `"~70 min de sessão prática, sem cortes."`
-- **Linha 352**: Info box hero — `"~45 min"` → `"~70 min"`
-- **Linha 566**: Agenda subtitle — `"CONTEÚDO DA SESSÃO · ~45 MIN"` → `"CONTEÚDO DA SESSÃO · ~70 MIN"`
+### 1. Actualizar `PLAN_LABELS` — remover "Gravação", começar sempre com "Formação"
+```
+premium:          "Formação — Premium Pass · Imagens com IA"
+masterclass:      "Formação — Masterclass · Imagens com IA"
+bundle:           "Formação — Premium + Masterclass · Imagens com IA"
+gravacao:         "Formação — Sessão HD + Pack Apoio · Imagens com IA"
+video-premium:    "Formação — Sessão HD + Pack Apoio · Vídeo com IA"
+video-masterclass:"Formação — Masterclass · Vídeo com IA"
+video-bundle:     "Formação — Masterclass + Sessão · Vídeo com IA"
+```
 
-### Substituir "gravação" por linguagem de produto
-- **Linha 187**: Meta title — `"Gravação — Cria Vídeo..."` → `"Cria Vídeo Profissional com IA | Sessão Completa"`
-- **Linha 188**: Meta description — `"Acede à gravação completa..."` → `"Sessão completa de vídeo com IA + pack de apoio."`
-- **Linha 228**: Sticky bar — `"GRAVAÇÃO DISPONÍVEL"` → `"ACESSO DISPONÍVEL"`
-- **Linha 293**: Hero badge — `"GRAVAÇÃO DISPONÍVEL"` → `"ACESSO DISPONÍVEL"`
-- **Linha 338**: Subtitle — `"acede agora à gravação completa + pack de apoio"` → `"acede agora à sessão completa + pack de apoio"`
-- **Linha 351**: Info box — `"Gravação HD"` → `"Sessão HD"`
-- **Linha 171**: Pack item title — `"Gravação completa em HD"` → `"Sessão completa em HD"`
-- **Linha 569**: Agenda heading — `"O que está incluído na gravação"` → `"O que está incluído na sessão"`
-- **Linha 813**: Final CTA title — `"Acede à gravação completa"` → `"Acede à sessão completa"`
-- **Linha 816**: Final CTA subtitle — `"Gravação HD + guia..."` → `"Sessão HD + guia..."`
-- **Linha 850**: RegistrationModalProvider subtitle — `"Gravação — Vídeo com IA"` → `"Sessão — Vídeo com IA"`
+### 2. Ajustar campo `description` do item
+Actualmente: `"Formação online — ${itemDescription}"` → redundante porque o label já terá "Formação".
 
-### FAQs
-- **Linha 165**: `"Posso ver a gravação quando quiser?"` → `"Posso ver a sessão quando quiser?"` e resposta: `"gravação completa"` → `"sessão completa"`
-- **Linha 166**: `"Além da gravação"` → `"Além da sessão"`
+Novo: usar o label directamente como `name` e a `description` como um resumo curto:
+- `name`: label completo (ex: "Formação — Sessão HD + Pack Apoio · Vídeo com IA")
+- `description`: resumo do conteúdo (ex: "Acesso à sessão completa em HD + materiais de apoio")
 
-### Ficheiro único
-- `src/pages/Video.tsx` — todas as alterações acima
+Mapa de descrições por plano para o campo `description`:
+```
+premium:           "Acesso premium ao webinar Imagens com IA"
+masterclass:       "Masterclass online de 3h · Imagens com IA"
+bundle:            "Acesso premium + Masterclass · Imagens com IA"
+gravacao:          "Sessão completa em HD + pack de apoio · Imagens com IA"
+video-premium:     "Sessão completa em HD + pack de apoio · Vídeo com IA"
+video-masterclass: "Masterclass online de 3h · Vídeo com IA"
+video-bundle:      "Masterclass + sessão completa · Vídeo com IA"
+```
+
+### 3. Criar rascunho de teste
+Após deploy, invocar a função com `draft_only: true` para o registo da Jessica Castro para verificar que os campos estão correctos no InvoiceExpress.
+
+## Ficheiro a editar
+- `supabase/functions/create-invoice/index.ts`
 
