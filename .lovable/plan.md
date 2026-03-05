@@ -1,49 +1,33 @@
 
 
-# SMS pré-preenchido e editável nos nodes de Automações
+# Filtros deseleccionáveis na Comunicação
 
 ## Problema
-Actualmente o texto SMS só aparece ao clicar "Enviar SMS agora →". O utilizador quer ver o texto sempre visível, poder editá-lo, e gravá-lo — sem ser obrigado a enviar imediatamente.
+Clicar em "Todos" (ou qualquer filtro já activo) não faz nada. O utilizador quer poder desmarcar tudo — incluindo "Todos" — para não ter nenhum filtro de grupo activo, permitindo seleccionar destinatários individualmente.
 
-## Alterações em `src/components/crm/AutomationFlowTab.tsx`
+## Alterações em `src/components/crm/comunicacao/EmailTab.tsx`
 
-### 1. Estado para textos SMS personalizados
-No componente `Timeline`, adicionar um `useState<Record<string, string>>` (`customSmsTexts`) que guarda textos editados por `templateKey`. Inicializar vazio — quando vazio, usa o default de `smsSendConfig.smsText`.
+### 1. Tipos — permitir `null` como estado
+- `WebinarFilter` → `WebinarFilter | null` nos props e state
+- `PlanoFilter` → `PlanoFilter | null` nos props e state
 
-### 2. Mostrar sempre o texto SMS no card
-No `renderNodeCard`, para nodes com `channel === "sms"`, mostrar sempre:
-- Uma `<textarea>` (ou `<p>` em modo leitura) com o texto actual (custom ou default)
-- Um botão "Editar" (ícone lápis) que alterna para modo edição inline
-- Em modo edição: textarea editável + botões "Gravar" e "Cancelar"
-- "Gravar" guarda no state `customSmsTexts[key]` (persistência local — `localStorage` com chave `crm_sms_drafts`)
-- Botão "Enviar SMS agora →" usa o texto gravado (ou default)
+### 2. Toggle nos botões (FilterBar)
+- Webinar: `onClick={() => setWebinar(webinar === v ? null : v)}`
+- Plano: `onClick={() => setPlano(plano === v ? null : v)}`
 
-### 3. Persistência em localStorage
-- Ao gravar, guardar em `localStorage("crm_sms_drafts")` como JSON `{ [templateKey]: text }`
-- Ao montar o componente, carregar de localStorage para `customSmsTexts`
-- Isto garante que textos editados sobrevivem a refresh
+### 3. Estilo "nenhum seleccionado"
+Quando `webinar === null` ou `plano === null`, nenhum chip fica highlight (todos ficam no estilo inactivo). Sem alteração visual extra necessária — basta que nenhum tenha o estilo `active`.
 
-### 4. Layout do card SMS (novo)
-```
-┌─────────────────────────────────────────────────┐
-│ 📱 SMS lembrete Q&A — 10 Mar        2 enviados │
-│    30 min antes · Premium Pass       0 falhas   │
-│    ┌─────────────────────────────────────┐      │
-│    │ Lembrete: a sessao Q&A comeca...   │ ✏️   │
-│    └─────────────────────────────────────┘      │
-│    [10 MAR · 14H00]        [Enviar SMS agora →] │
-└─────────────────────────────────────────────────┘
-```
+### 4. `filterInscritos` — tratar `null`
+- `webinar === null` → sem filtro de webinar (equivalente a "todos")
+- `plano === null` → sem filtro de plano (equivalente a "todos")
 
-Em modo edição:
-```
-│    ┌─────────────────────────────────────┐      │
-│    │ [textarea editável]                │      │
-│    └─────────────────────────────────────┘      │
-│    120/160              [Cancelar] [💾 Gravar]  │
-│                         [Enviar SMS agora →]    │
-```
+### 5. Contagens no FilterBar
+- Quando `webinar === null`, as contagens de plano usam todos os activos (mesmo comportamento de "todos")
+
+### 6. "Seleccionar todos" — comportamento com `null`
+O botão "Seleccionar todos (N)" continua a funcionar normalmente — usa `filteredPool` que com `null` retorna todos os activos.
 
 ### Ficheiro único
-- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/comunicacao/EmailTab.tsx`
 
