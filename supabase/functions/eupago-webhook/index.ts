@@ -668,12 +668,13 @@ async function processPayment(data: PaymentData) {
               <hr/><p>⚠️ <strong>Dados de faturação não recolhidos.</strong> Solicitar ao cliente.</p>`;
           }
 
-          const resendRes = await fetch("https://api.resend.com/emails", {
+          const invSupabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const invSrvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const resendRes = await fetch(`${invSupabaseUrl}/functions/v1/send-email`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+            headers: { Authorization: `Bearer ${invSrvKey}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-              from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-              to: ["fredericodigital@gmail.com"],
+              to: "fredericodigital@gmail.com",
               subject,
               html: htmlBody,
             }),
@@ -683,15 +684,15 @@ async function processPayment(data: PaymentData) {
           await supabase.from("message_logs").insert({
             registration_id: matchedRegId,
             channel: "email",
-            provider: "resend",
+            provider: resendData.provider || "unknown",
             template_key: templateKey,
-            status: resendRes.ok ? "sent" : "failed",
-            provider_message_id: resendData.id || null,
+            status: resendData.success ? "sent" : "failed",
+            provider_message_id: resendData.messageId || null,
             payment_url: null,
-            error: resendRes.ok ? null : JSON.stringify(resendData),
+            error: resendData.success ? null : JSON.stringify(resendData.error || resendData),
           });
 
-          console.log(`📧 Invoice email sent to fredericodigital@gmail.com ${resendRes.ok ? "✅" : "❌"} for ${reg.email}`);
+          console.log(`📧 Invoice email sent to fredericodigital@gmail.com ${resendData.success ? "✅" : "❌"} for ${reg.email} via ${resendData.provider || "unknown"}`);
         }
       }
     } catch (invoiceErr) {
@@ -754,12 +755,13 @@ async function processPayment(data: PaymentData) {
             const finalSubject = (dbTpl?.subject || tpl.subject).replace(/\{\{fname\}\}/g, fname);
             const finalHtml = (dbTpl?.html_body || tpl.htmlFallback).replace(/\{\{fname\}\}/g, fname);
 
-            const custRes = await fetch("https://api.resend.com/emails", {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            const custRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
               method: "POST",
-              headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
+              headers: { Authorization: `Bearer ${srvKey}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-                to: [regCust.email],
+                to: regCust.email,
                 subject: finalSubject,
                 html: finalHtml,
               }),
@@ -770,12 +772,12 @@ async function processPayment(data: PaymentData) {
             await supabase.from("message_logs").insert({
               registration_id: matchedRegId,
               channel: "email",
-              provider: "resend",
+              provider: custData.provider || "unknown",
               template_key: tpl.templateKey,
-              status: custRes.ok ? "sent" : "failed",
-              provider_message_id: custData.id || null,
+              status: custData.success ? "sent" : "failed",
+              provider_message_id: custData.messageId || null,
               payment_url: null,
-              error: custRes.ok ? null : JSON.stringify(custData),
+              error: custData.success ? null : JSON.stringify(custData.error || custData),
             });
 
             await supabase.from("email_send_logs").insert({
@@ -783,12 +785,12 @@ async function processPayment(data: PaymentData) {
               recipient_email: regCust.email,
               fname: fname,
               webinar: "video",
-              status: custRes.ok ? "sent" : "failed",
-              resend_id: custData.id || null,
-              error_message: custRes.ok ? null : JSON.stringify(custData),
+              status: custData.success ? "sent" : "failed",
+              resend_id: custData.messageId || null,
+              error_message: custData.success ? null : JSON.stringify(custData.error || custData),
             });
 
-            console.log(`📧 ${tpl.templateKey} ${custRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+            console.log(`📧 ${tpl.templateKey} ${custData.success ? "sent" : "FAILED"} to ${regCust.email} via ${custData.provider || "unknown"}`);
           }
         } else {
           // ── Imagens webinar: existing generic template ──
@@ -829,12 +831,13 @@ async function processPayment(data: PaymentData) {
               <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
               <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
 
-            const customerRes = await fetch("https://api.resend.com/emails", {
+            const imgSupabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const imgSrvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            const customerRes = await fetch(`${imgSupabaseUrl}/functions/v1/send-email`, {
               method: "POST",
-              headers: { Authorization: `Bearer ${RESEND_API_KEY_CUST}`, "Content-Type": "application/json" },
+              headers: { Authorization: `Bearer ${imgSrvKey}`, "Content-Type": "application/json" },
               body: JSON.stringify({
-                from: "Frederico Carvalho <frederico.carvalho@digitalfc.pt>",
-                to: [regCust.email],
+                to: regCust.email,
                 subject: customerSubject,
                 html: customerHtml,
               }),
@@ -844,15 +847,15 @@ async function processPayment(data: PaymentData) {
             await supabase.from("message_logs").insert({
               registration_id: matchedRegId,
               channel: "email",
-              provider: "resend",
+              provider: customerData.provider || "unknown",
               template_key: "payment_confirmed_customer",
-              status: customerRes.ok ? "sent" : "failed",
-              provider_message_id: customerData.id || null,
+              status: customerData.success ? "sent" : "failed",
+              provider_message_id: customerData.messageId || null,
               payment_url: null,
-              error: customerRes.ok ? null : JSON.stringify(customerData),
+              error: customerData.success ? null : JSON.stringify(customerData.error || customerData),
             });
 
-            console.log(`📧 Customer confirmation ${customerRes.ok ? "sent" : "FAILED"} to ${regCust.email}`);
+            console.log(`📧 Customer confirmation ${customerData.success ? "sent" : "FAILED"} to ${regCust.email} via ${customerData.provider || "unknown"}`);
           }
         }
       }
