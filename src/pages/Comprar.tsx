@@ -71,7 +71,7 @@ const PLANS: Record<Plan, {
       "Gravação da Masterclass incluída",
       "Gravação HD do Webinar Vídeo com IA",
       "Pack de apoio completo (checklists + templates)",
-      "Sessão Q&A em grupo · 10 de Março · 14h30",
+      "Sessão Q&A ao vivo em grupo · 10 de Março · 14h30–15h30",
     ],
     dateBox: "12 de Março · 10h00–13h00",
     ctaLabel: "Quero o Bundle completo →",
@@ -89,7 +89,7 @@ const PLANS: Record<Plan, {
     benefits: [
       "Gravação HD do Webinar Vídeo com IA",
       "Pack de apoio completo (checklists + templates)",
-      "Sessão Q&A em grupo · 10 de Março · 14h30",
+      "Sessão Q&A ao vivo em grupo · 10 de Março · 14h30–15h30",
     ],
     ctaLabel: "Quero a gravação →",
     planLabel: "Gravação HD + Pack de Apoio · €15",
