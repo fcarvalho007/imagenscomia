@@ -1,72 +1,55 @@
 
 
-# Reajuste dos 3 emails pós-webinar
+# Adicionar dados de faturação ao /comprar + estratégia para quem já pagou sem dados
 
-## Resumo das alterações
+## Problema
+A página `/comprar` (via `PurchaseModal`) envia o utilizador directamente para o EuPago sem recolher dados de faturação. O fluxo `/upgrade-video` já usa o componente `InvoiceForm` no step de checkout.
 
-### 1. `video_postwebinar` (enviar hoje às 13h)
+## Passo 1 — Integrar InvoiceForm no PurchaseModal
 
-**Assunto actual:** "Obrigado por estares presente 🙏 — e o que vem a seguir"
-**Novo assunto:** "O webinar já decorreu — e o que vem a seguir"
+**Ficheiro:** `src/components/webinar/PurchaseModal.tsx`
 
-**Corpo — alterações principais:**
-- Remover "Obrigado por teres estado presente hoje" (não sabemos se estiveram)
-- Substituir por: "O webinar 'Cria Vídeo Profissional com IA' já decorreu. Em breve receberás um email com o workbook-resumo da sessão."
-- **Preço early-bird hoje:** Premium Pass a **€15+IVA** (apenas até ao final do dia de hoje)
-- Mencionar que amanhã o preço sobe para €27+IVA
-- Manter bloco Masterclass (12 Março, €97+IVA, 3 horas)
-- Manter personalização por variante (A/B/C/D)
-- Actualizar CTA: "Obter acesso à gravação — €15+IVA (só hoje) →"
+Alterações:
+- Após o utilizador preencher nome/email e antes do botão "Confirmar e pagar", inserir o componente `<InvoiceForm>` (já existente em `src/components/upgrade/InvoiceForm.tsx`)
+- O `InvoiceForm` faz auto-save via edge function `invoice-upsert` com debounce de 600ms
+- Desabilitar o botão "Confirmar e pagar" até `InvoiceForm` reportar `onValidChange(true)`
+- Passar `userEmail={email}` para o InvoiceForm fazer lookup automático do `registration_id` + `edit_token`
+- Ajuste: como o `register-free` é chamado no submit, precisamos chamá-lo primeiro (on blur do email ou ao abrir o invoice form) para que exista um `registration_id` antes do InvoiceForm tentar guardar. Solução: chamar `register-free` assim que nome+email estejam válidos (com debounce), para criar o registo antes do pagamento.
 
-**Filtro:** Remover `.not("attended_live_at", "is", null)` — enviar a TODOS os inscritos não-pagos (não sabemos quem esteve presente)
+Fluxo revisado no PurchaseModal:
+1. Utilizador preenche nome + email
+2. Ao sair do campo email (com dados válidos), chamar `register-free` silenciosamente para criar/obter o registo
+3. Mostrar `InvoiceForm` com `userEmail={email}` — faz lookup do `registration_id` e `edit_token` automaticamente
+4. Botão "Confirmar e pagar" só fica activo quando `invoiceValid === true`
+5. No submit, chamar `create-payment` (o `register-free` já correu)
 
-**Cron:** Reagendar para as 13:00 UTC de hoje (5 Março)
+## Passo 2 — Estratégia para quem já pagou sem dados de faturação
 
----
+Para os 14 pagamentos já realizados via `/comprar` sem invoice_details:
 
-### 2. `video_postwebinar_day1` (enviar amanhã, 6 Março)
+**Criar edge function `send-invoice-request`** que:
+1. Busca registos com `paid_at IS NOT NULL` e `webinar = 'video'` que **não têm** entrada na tabela `invoice_details`
+2. Envia email personalizado a cada um com link para preencher os dados: `{origin}/pagar?o={order_id}` (página que já existe e permite acesso via `order_id` + `edit_token`)
+3. Alternativa mais simples: enviar link directo para um formulário standalone
 
-**Assunto actual:** "O webinar de hoje, {{fname}}"
-**Novo assunto:** "A gravação do webinar, {{fname}}"
+**Criar página `/fatura`** (rota leve):
+- Recebe `?rid={id}&t={token}` nos query params
+- Mostra apenas o `InvoiceForm` com os dados pré-preenchidos
+- Permite ao utilizador preencher/actualizar os dados de faturação sem necessidade de login
+- Após guardar com sucesso, mostra confirmação "Dados guardados ✓"
 
-**Corpo — alterações principais:**
-- Remover "O webinar de hoje foi intenso — cobrimos muito terreno em pouco tempo"
-- Substituir por contexto pós-evento: "Ontem fizemos uma sessão de 70 minutos sobre vídeo com IA — desde briefing até clip publicável."
-- **Preço:** €27+IVA (preço normal, já não é early-bird)
-- Destacar benefícios do Premium Pass:
-  - Gravação HD completa (70 min)
-  - Sessão Q&A ao vivo (10 Março, 14h30)
-  - Guia de prompts para vídeo (PDF)
-- Adicionar menção à **Masterclass de 3 horas** (12 Março) como opção para quem quer ir mais fundo
-- Actualizar CTA: "Obter acesso à gravação — €27+IVA →"
+**Email template `video_invoice_request`:**
+- Assunto: "Precisamos dos teus dados para a fatura, {{fname}}"
+- Corpo: explicar que para emitir a fatura precisa de preencher NIF, morada, etc.
+- CTA: link para `/fatura?rid={id}&t={token}`
 
----
+## Resumo técnico
 
-### 3. `video_postwebinar_day3` (enviar 8 Março)
-
-**Assunto actual:** "Antes que feche, {{fname}}"
-**Novo assunto:** "Último email sobre o Premium Pass, {{fname}}"
-
-**Corpo — alterações principais:**
-- Remover referência a "early bird" (não existe)
-- Tom de reforço final: este é o último email sobre o Premium Pass
-- Manter preço €27+IVA
-- Destacar datas importantes:
-  - Q&A ao vivo: 10 Março, 14h30
-  - Masterclass Vídeo com IA (3h): 12 Março, 10h00
-- Incluir benefícios resumidos do Premium Pass
-- CTA: "Garantir o Premium Pass — €27+IVA →"
-
----
-
-## Alterações técnicas
-
-| Ficheiro | O que muda |
+| Acção | Ficheiro |
 |---|---|
-| `send-video-postwebinar/index.ts` | Novo HTML fallback, novo subject, remover filtro `attended_live_at` |
-| `send-video-postwebinar-day1/index.ts` | Novo HTML fallback, novo subject |
-| `send-video-postwebinar-day3/index.ts` | Novo HTML fallback, novo subject |
-| Cron job `postwebinar` | Reagendar de 12:30 para 13:00 UTC |
-
-Nenhuma alteração estrutural nas funções (auth, logging, dedup mantêm-se).
+| Integrar InvoiceForm no PurchaseModal | `src/components/webinar/PurchaseModal.tsx` |
+| Chamar register-free antes do pagamento (on blur) | `src/components/webinar/PurchaseModal.tsx` |
+| Criar página /fatura standalone | `src/pages/Fatura.tsx` + rota em `App.tsx` |
+| Criar edge function send-invoice-request | `supabase/functions/send-invoice-request/index.ts` |
+| Invocar send-invoice-request para os 14 pagos | Manual, após deploy |
 
