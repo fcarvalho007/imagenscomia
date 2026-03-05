@@ -15,8 +15,15 @@ serve(async (req) => {
   try {
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("authorization") || "";
-    const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const isCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
+
+    const body = await req.json().catch(() => ({}));
+    const templateKey = body.template_key || "video_reminder_24h";
+    const emailKey = body.email_key || "reminder_24h";
+    const limit = body.limit || 50;
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const hasServiceRole = srvKey && authHeader.includes(srvKey);
     if (!isCron && !hasServiceRole) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -25,13 +32,6 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const templateKey = body.template_key || "video_reminder_24h";
-    const emailKey = body.email_key || "reminder_24h";
-    const limit = body.limit || 50; // Process in batches to avoid timeout
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, srvKey);
 
     // Get failed message_logs for this template
