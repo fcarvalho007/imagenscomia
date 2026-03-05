@@ -20,9 +20,45 @@ interface SendEmailRequest {
 
 interface SendEmailResponse {
   success: boolean;
-  provider: "egoi" | "resend";
+  provider: "brevo" | "egoi" | "resend";
   messageId: string | null;
   error?: string;
+}
+
+async function sendViaBrevo(to: string, subject: string, html: string): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
+  const apiKey = Deno.env.get("BREVO_API_KEY");
+  if (!apiKey) return { ok: false, messageId: null, error: "BREVO_API_KEY not configured" };
+
+  try {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({
+        sender: { name: "Frederico Carvalho", email: "frederico.carvalho@digitalfc.pt" },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      const messageId = data?.messageId || data?.id || null;
+      console.log(`Brevo sent to ${to}: ${messageId}`);
+      return { ok: true, messageId };
+    }
+
+    console.warn(`Brevo failed (${res.status}) for ${to}:`, JSON.stringify(data));
+    return { ok: false, messageId: null, error: `Brevo ${res.status}: ${JSON.stringify(data)}` };
+  } catch (err) {
+    console.warn(`Brevo exception for ${to}:`, err);
+    return { ok: false, messageId: null, error: `Brevo exception: ${err}` };
+  }
 }
 
 async function sendViaEgoi(to: string, subject: string, html: string): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
@@ -124,7 +160,22 @@ serve(async (req) => {
 
     const fromAddress = from || DEFAULT_FROM;
 
-    // Try E-goi first
+    // Try Brevo first
+    const brevoResult = await sendViaBrevo(to, subject, html);
+    if (brevoResult.ok) {
+      const response: SendEmailResponse = {
+        success: true,
+        provider: "brevo",
+        messageId: brevoResult.messageId,
+      };
+      return new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Fallback to E-goi
+    console.log(`Brevo failed, falling back to E-goi for ${to}`);
     const egoiResult = await sendViaEgoi(to, subject, html);
     if (egoiResult.ok) {
       const response: SendEmailResponse = {
