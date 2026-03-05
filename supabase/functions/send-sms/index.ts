@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-crm-admin-email, x-cron-secret",
+    "authorization, x-client-info, apikey, content-type, x-crm-admin-email, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const ALLOWED_ADMIN = "fredericodigital@gmail.com";
@@ -53,16 +53,24 @@ async function sendViaEgoi(to: string, text: string): Promise<{ ok: boolean; mes
   const apiKey = Deno.env.get("EGOI_API_KEY");
   if (!apiKey) return { ok: false, messageId: null, error: "EGOI_API_KEY not configured" };
 
-  const res = await fetch("https://api.egoiapp.com/campaigns/sms/actions/send", {
+  // Format phone as "351-XXXXXXXXX" for E-goi transactional API
+  const digits = to.replace(/\D/g, "");
+  const egoiPhone = digits.startsWith("351")
+    ? `${digits.slice(0, 3)}-${digits.slice(3)}`
+    : `351-${digits}`;
+
+  const res = await fetch("https://slingshot.egoiapp.com/api/v2/sms/messages/action/send/single", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Apikey": apiKey,
+      "ApiKey": apiKey,
     },
     body: JSON.stringify({
-      sms_text: text,
-      cellphone: to,
-      sender_id: "915015508",
+      to: egoiPhone,
+      from: "6",
+      textBody: text,
+      encoding: "unicode",
+      maxCount: 1,
     }),
   });
 
@@ -71,7 +79,7 @@ async function sendViaEgoi(to: string, text: string): Promise<{ ok: boolean; mes
 
   try {
     const json = JSON.parse(body);
-    return { ok: true, messageId: json?.message_id || json?.id || null };
+    return { ok: true, messageId: json?.messageId || json?.id || null };
   } catch {
     return { ok: true, messageId: null };
   }
