@@ -1,6 +1,7 @@
-import { Clock, CalendarPlus, ExternalLink } from "lucide-react";
+import { Clock, CalendarPlus, ExternalLink, CheckCircle2 } from "lucide-react";
 import { useCountdown } from "@/hooks/useCountdown";
 import { VIDEO_WEBINAR_CONFIG } from "./videoWebinarConfig";
+import { Link } from "react-router-dom";
 
 const CountdownBlock = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col items-center">
@@ -15,7 +16,39 @@ const GOOGLE_CAL_URL = "https://calendar.app.google/kyhFPoficXByZf5S8";
 
 export const VideoWebinarVideoArea = () => {
   const countdown = useCountdown(VIDEO_WEBINAR_CONFIG.startDate);
-  const { isLive, YOUTUBE_VIDEO_ID } = VIDEO_WEBINAR_CONFIG;
+  const { isLive, isEnded, YOUTUBE_VIDEO_ID } = VIDEO_WEBINAR_CONFIG;
+
+  if (isEnded) {
+    return (
+      <div className="aspect-video rounded-xl bg-gradient-to-br from-[#0a0f1e] via-[#0f1b33] to-[#0a1628] border border-white/[0.06] flex items-center justify-center mb-4 relative overflow-hidden shadow-2xl">
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+        <div className="relative z-10 text-center px-6 max-w-lg mx-auto">
+          <div className="inline-flex items-center gap-2 bg-white/10 text-white/70 text-[13px] font-medium px-3 py-1 rounded-full mb-5">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Transmissão concluída
+          </div>
+          <h2 className="font-heading font-bold text-[20px] sm:text-[26px] leading-tight text-white mb-3">
+            Agradecemos por participar!
+          </h2>
+          <p className="text-[13px] sm:text-[15px] text-white/60 mb-6 leading-relaxed">
+            A gravação em alta definição + materiais de suporte (sumários, listas de verificação e instruções) estão disponíveis por 27&nbsp;€.
+          </p>
+          <Link
+            to="/gravacao"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[14px] px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Assistir ao vídeo gravado com Inteligência Artificial →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLive && YOUTUBE_VIDEO_ID) {
     return (
