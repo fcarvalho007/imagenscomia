@@ -38,23 +38,23 @@ function buildHtml(fname: string): string {
 <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">O webinar <strong>"Cria Vídeo Profissional com IA"</strong> já decorreu.</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Em breve receberás um email com o workbook-resumo da sessão.</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Podes rever a sessão completa (70 min, sem cortes) com o Premium Pass.</p>
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
-    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres acesso à gravação completa?</p>
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Gravação HD da sessão completa</p>
+    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Premium Pass</p>
+    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">€15+IVA</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa (70 min, sem cortes)</p>
     <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A em grupo</p>
     <p style="color:#333;font-size:15px;margin:0 0 4px;">&nbsp;&nbsp;&nbsp;📅 Terça-feira, 10 de Março às 14h30</p>
     <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Guia de prompts para vídeo (PDF)</p>
     <div style="text-align:center;">
-      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter acesso à gravação — €27+IVA →</a>
+      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €15+IVA →</a>
     </div>
   </div>
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres ir mais fundo?</p>
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — €97+IVA</p>
+    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — €47+IVA</p>
     <p style="color:#555;font-size:15px;margin:0 0 12px;">Sessão avançada ao vivo, 3 horas com demonstrações e casos reais.</p>
     <p style="color:#333;font-size:15px;margin:0 0 16px;">📅 Quinta-feira, 12 de Março às 10h00</p>
     <div style="text-align:center;">
@@ -83,8 +83,8 @@ function personaliseHtml(html: string, variant: string): string {
   }
 
   if (variant === "C") {
-    const premiumMarker = '<p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres acesso à gravação completa?</p>';
-    const extraLine = '<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 12px;">Já conheces o valor do Premium Pass — este cobre o Q&amp;A e gravação específicos do tema Vídeo.</p>\n    ';
+    const premiumMarker = '<p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Premium Pass</p>';
+    const extraLine = '<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 12px;">Já conheces o valor do Premium Pass — este cobre a sessão completa e materiais específicos do tema Vídeo.</p>\n    ';
     result = result.replace(premiumMarker, extraLine + premiumMarker);
   }
 
@@ -130,8 +130,7 @@ serve(async (req) => {
       .select("id, email, first_name")
       .eq("webinar", "video")
       .is("paid_at", null)
-      .eq("do_not_contact", false)
-      .not("attended_live_at", "is", null);
+      .eq("do_not_contact", false);
 
     if (queryErr) throw queryErr;
     if (!registrants || registrants.length === 0) {
