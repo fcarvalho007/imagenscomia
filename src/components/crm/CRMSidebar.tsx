@@ -1,10 +1,10 @@
-import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, CONSOLIDADO_COLOR, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 
-export type CRMView = "dashboard" | "pipeline" | "tabela" | "templates" | "lixo";
+export type CRMView = "dashboard" | "pipeline" | "tabela" | "templates" | "comunicacao" | "lixo";
 interface CRMSidebarProps {
   activeView: CRMView;
   onChangeView: (v: CRMView) => void;
@@ -16,6 +16,7 @@ const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[
   { icon: Columns, label: "Pipeline", view: "pipeline" },
   { icon: Table, label: "Tabela", view: "tabela" },
   { icon: Zap, label: "Automações", view: "templates" },
+  { icon: MessageSquare, label: "Comunicação", view: "comunicacao" },
   { icon: Trash2, label: "Lixo", view: "lixo" },
 ];
 
