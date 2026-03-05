@@ -33,11 +33,31 @@ export { filterInscritos, type WebinarFilter, type PlanoFilter };
 
 /* ── Filter bar component (reusable) ── */
 export function FilterBar({
-  webinar, setWebinar, plano, setPlano
+  webinar, setWebinar, plano, setPlano, inscritos
 }: {
   webinar: WebinarFilter; setWebinar: (v: WebinarFilter) => void;
   plano: PlanoFilter; setPlano: (v: PlanoFilter) => void;
+  inscritos?: Inscrito[];
 }) {
+  const counts = useMemo(() => {
+    if (!inscritos) return null;
+    const active = inscritos.filter(i => i.status === "activo");
+    const wCounts: Record<WebinarFilter, number> = {
+      todos: active.length,
+      imagens: active.filter(i => i.webinar === "imagens").length,
+      video: active.filter(i => i.webinar === "video").length,
+    };
+    const forWebinar = webinar === "todos" ? active : active.filter(i => i.webinar === webinar);
+    const pCounts: Record<PlanoFilter, number> = {
+      todos: forWebinar.length,
+      pagos: forWebinar.filter(i => !!i.paid_at).length,
+      premium: forWebinar.filter(i => i.plan === "premium").length,
+      masterclass: forWebinar.filter(i => i.plan === "masterclass" || i.plan === "bundle").length,
+      free: forWebinar.filter(i => !i.paid_at).length,
+    };
+    return { w: wCounts, p: pCounts };
+  }, [inscritos, webinar]);
+
   const chip = (active: boolean) => ({
     background: active ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
     color: active ? "#93c5fd" : "rgba(255,255,255,0.4)",
@@ -49,13 +69,17 @@ export function FilterBar({
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Webinar</span>
         {([["todos", "Todos"], ["imagens", "Imagens IA"], ["video", "Vídeo IA"]] as [WebinarFilter, string][]).map(([v, l]) => (
-          <button key={v} onClick={() => setWebinar(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(webinar === v)}>{l}</button>
+          <button key={v} onClick={() => setWebinar(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(webinar === v)}>
+            {l}{counts ? ` (${counts.w[v]})` : ""}
+          </button>
         ))}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Plano</span>
         {([["todos", "Todos"], ["pagos", "Pagos"], ["premium", "Premium"], ["masterclass", "Masterclass"], ["free", "Free"]] as [PlanoFilter, string][]).map(([v, l]) => (
-          <button key={v} onClick={() => setPlano(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(plano === v)}>{l}</button>
+          <button key={v} onClick={() => setPlano(v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(plano === v)}>
+            {l}{counts ? ` (${counts.p[v]})` : ""}
+          </button>
         ))}
       </div>
     </div>
@@ -169,7 +193,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
       </div>
 
       {/* Filters */}
-      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} />
+      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />
 
       <div className="space-y-5 max-w-3xl">
         {/* Recipients */}
@@ -178,11 +202,18 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
             <label className="block text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>
               Destinatários ({recipients.length})
             </label>
-            {filteredPool.length > 0 && (
-              <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
-                <Users size={10} /> Seleccionar todos ({filteredPool.length})
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {recipients.length > 0 && (
+                <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#f87171" }}>
+                  <X size={10} /> Limpar todos
+                </button>
+              )}
+              {filteredPool.length > 0 && (
+                <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
+                  <Users size={10} /> Seleccionar todos ({filteredPool.length})
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Chips */}

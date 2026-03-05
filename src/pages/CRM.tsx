@@ -76,7 +76,7 @@ function CRMInner() {
           <FollowUpView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} />
         )}
         {activeView === "comunicacao" && (
-          <ComunicacaoView inscritos={filteredInscritos} />
+          <ComunicacaoView inscritos={inscritos} />
         )}
         {activeView === "lixo" && (
           <TrashView
