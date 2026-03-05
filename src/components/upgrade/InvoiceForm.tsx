@@ -18,6 +18,8 @@ interface Props {
   userEmail: string;
   registrationId?: string;
   editToken?: string;
+  webinar?: string;
+  defaultName?: string;
   onValidChange: (valid: boolean) => void;
   onSaveError?: (hasError: boolean) => void;
 }
@@ -31,9 +33,9 @@ const AUTOCOMPLETE_MAP: Record<keyof InvoiceData, string> = {
   invoice_email: "email",
 };
 
-export function InvoiceForm({ userEmail, registrationId, editToken, onValidChange, onSaveError }: Props) {
+export function InvoiceForm({ userEmail, registrationId, editToken, webinar, defaultName, onValidChange, onSaveError }: Props) {
   const [form, setForm] = useState<InvoiceData>({
-    invoice_name: "",
+    invoice_name: defaultName || "",
     invoice_vat: "",
     invoice_address: "",
     invoice_zip: "",
@@ -47,13 +49,29 @@ export function InvoiceForm({ userEmail, registrationId, editToken, onValidChang
   const [saveError, setSaveError] = useState(false);
   const [regId, setRegId] = useState<string | null>(registrationId || null);
   const [token, setToken] = useState<string | null>(editToken || null);
+  const [prefilled, setPrefilled] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync props → state when they change (critical fix)
+  useEffect(() => {
+    if (registrationId) setRegId(registrationId);
+  }, [registrationId]);
+
+  useEffect(() => {
+    if (editToken) setToken(editToken);
+  }, [editToken]);
+
+  // Pre-fill defaultName into invoice_name if user hasn't typed yet
+  useEffect(() => {
+    if (defaultName && !touched.invoice_name && !prefilled) {
+      setForm((f) => ({ ...f, invoice_name: f.invoice_name || defaultName }));
+    }
+  }, [defaultName, touched.invoice_name, prefilled]);
 
   // Lookup registration_id + edit_token + pre-fill
   useEffect(() => {
     if (regId && token) {
-      // Already have both, just pre-fill
       (async () => {
         const { data: inv } = await supabase
           .from("invoice_details" as any)
@@ -63,24 +81,26 @@ export function InvoiceForm({ userEmail, registrationId, editToken, onValidChang
         if (inv) {
           const d = inv as any;
           setForm({
-            invoice_name: d.invoice_name || "",
+            invoice_name: d.invoice_name || defaultName || "",
             invoice_vat: d.invoice_vat || "",
             invoice_address: d.invoice_address || "",
             invoice_zip: d.invoice_zip || "",
             invoice_city: d.invoice_city || "",
             invoice_email: d.invoice_email || userEmail,
           });
+          setPrefilled(true);
         }
       })();
       return;
     }
     if (!userEmail) return;
     (async () => {
-      const { data: reg } = await supabase
+      let query = supabase
         .from("registrations")
         .select("id, edit_token")
-        .eq("email", userEmail)
-        .maybeSingle();
+        .eq("email", userEmail);
+      if (webinar) query = query.eq("webinar", webinar);
+      const { data: reg } = await query.maybeSingle();
       if (!reg) return;
       setRegId(reg.id);
       setToken((reg as any).edit_token || null);
@@ -93,16 +113,17 @@ export function InvoiceForm({ userEmail, registrationId, editToken, onValidChang
       if (inv) {
         const d = inv as any;
         setForm({
-          invoice_name: d.invoice_name || "",
+          invoice_name: d.invoice_name || defaultName || "",
           invoice_vat: d.invoice_vat || "",
           invoice_address: d.invoice_address || "",
           invoice_zip: d.invoice_zip || "",
           invoice_city: d.invoice_city || "",
           invoice_email: d.invoice_email || userEmail,
         });
+        setPrefilled(true);
       }
     })();
-  }, [userEmail, regId, token]);
+  }, [userEmail, regId, token, webinar]);
 
   // Validate on form change
   useEffect(() => {
