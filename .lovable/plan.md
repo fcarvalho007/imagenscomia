@@ -1,22 +1,40 @@
 
 
-# Corrigir mensagem de confirmação no /upgrade-video
+# Design consistency /recursos-video vs /recursos + WhatsApp global
 
-## Problema
-Quando o utilizador compra (gravação ou masterclass), o step 7 mostra "Estás inscrito, Frederico" e "Webinar Vídeo com IA · 5 de Março · 10h00" — como se fosse apenas uma inscrição gratuita. Isto não faz sentido para quem acabou de pagar.
+## 1. Design comparison: /recursos vs /recursos-video
 
-## Alteração em `src/pages/UpgradeVideo.tsx` (função `renderConfirmation`, linhas 319-418)
+After reviewing both components, they are **already structurally identical** — same layout (header, 2-col grid, sidebar, footer logout), same card styles, same section hierarchy. The only differences are intentional branding:
 
-### Lógica condicional baseada no estado da compra
+- `/recursos`: blue accent (bg blue-600, blue-50 highlights)
+- `/recursos-video`: green accent (bg green-600, green-50 highlights, greenish gradient background)
 
-**Se comprou algo** (`orderState.videoPremium || orderState.masterclass`):
-- Título: "Compra confirmada, {nome}! 🎉"
-- Subtítulo: resumo do que comprou (ex: "Gravação + Pack de Apoio" ou "Masterclass + Gravação")
-- Mensagem: "Receberás os acessos por email em breve."
+This is consistent and correct — no design discrepancies to fix.
 
-**Se não comprou** (inscrição gratuita, step 7 sem extras):
-- Manter o actual: "Estás inscrito, {nome}." + "Webinar Vídeo com IA · 5 de Março · 10h00"
+## 2. WhatsApp button missing from several pages
 
-### Ficheiro único
-- `src/pages/UpgradeVideo.tsx` — ~10 linhas alteradas no bloco `renderConfirmation`
+Currently missing `<WhatsAppSupportButton />` on:
+- `src/pages/Recursos.tsx`
+- `src/pages/RecursosVideo.tsx`
+- `src/pages/Confirmacao.tsx`
+- `src/pages/Fatura.tsx`
+- `src/pages/Pagar.tsx`
+- `src/pages/Termos.tsx`
+- `src/pages/UpgradeSucesso.tsx`
+- `src/pages/NotFound.tsx`
+
+(CRM excluded — admin page)
+
+### Implementation
+Add `import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton"` and render `<WhatsAppSupportButton />` at the end of each page's JSX return. For `Recursos.tsx` and `RecursosVideo.tsx`, add it in the page-level component (not inside the login/content sub-components) so it shows in all states.
+
+### Files to edit (8 files)
+- `src/pages/Recursos.tsx`
+- `src/pages/RecursosVideo.tsx`
+- `src/pages/Confirmacao.tsx`
+- `src/pages/Fatura.tsx`
+- `src/pages/Pagar.tsx`
+- `src/pages/Termos.tsx`
+- `src/pages/UpgradeSucesso.tsx`
+- `src/pages/NotFound.tsx`
 
