@@ -81,18 +81,29 @@ serve(async (req) => {
     };
 
     const PLAN_LABELS: Record<string, string> = {
-      premium: "Premium Pass — Imagens com IA",
-      masterclass: "Masterclass — Imagens com IA",
-      bundle: "Premium + Masterclass — Imagens com IA",
-      gravacao: "Gravação HD — Imagens com IA",
-      "video-premium": "Gravação HD + Pack Apoio — Vídeo com IA",
-      "video-masterclass": "Masterclass — Vídeo com IA",
-      "video-bundle": "Masterclass + Gravação — Vídeo com IA",
+      premium: "Formação — Premium Pass · Imagens com IA",
+      masterclass: "Formação — Masterclass · Imagens com IA",
+      bundle: "Formação — Premium + Masterclass · Imagens com IA",
+      gravacao: "Formação — Sessão HD + Pack Apoio · Imagens com IA",
+      "video-premium": "Formação — Sessão HD + Pack Apoio · Vídeo com IA",
+      "video-masterclass": "Formação — Masterclass · Vídeo com IA",
+      "video-bundle": "Formação — Masterclass + Sessão · Vídeo com IA",
+    };
+
+    const PLAN_DESCRIPTIONS: Record<string, string> = {
+      premium: "Acesso premium ao webinar Imagens com IA",
+      masterclass: "Masterclass online de 3h · Imagens com IA",
+      bundle: "Acesso premium + Masterclass · Imagens com IA",
+      gravacao: "Sessão completa em HD + pack de apoio · Imagens com IA",
+      "video-premium": "Sessão completa em HD + pack de apoio · Vídeo com IA",
+      "video-masterclass": "Masterclass online de 3h · Vídeo com IA",
+      "video-bundle": "Masterclass + sessão completa · Vídeo com IA",
     };
 
     const planKey = reg.plan_selected || "premium";
     const unitPrice = PRICES[planKey] || 15.00;
     const itemDescription = PLAN_LABELS[planKey] || planKey;
+    const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
 
     // ── Determine tax ──
     // Portuguese NIF → 23% IVA, foreign → tax exempt
@@ -124,7 +135,7 @@ serve(async (req) => {
         items: [
           {
             name: itemDescription,
-            description: `Formação online — ${itemDescription}`,
+            description: itemDetail,
             unit_price: unitPrice.toFixed(2),
             quantity: "1",
             unit: "service",
