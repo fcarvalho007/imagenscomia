@@ -1,40 +1,57 @@
 
 
-# Email pós-evento para novos inscritos
+# Transformar `/video` em página de venda da gravação (post-evento)
 
-## Problema
-Quem se inscreve agora (após 5 de Março) recebe o email de confirmação original com links de calendário e "Até dia 5 de Março" — que já não faz sentido porque o evento já aconteceu.
+## Contexto
+A mesma estratégia usada no webinar de imagens: a landing page de inscrição gratuita transforma-se numa página de venda do pack de gravação, agora que o evento já aconteceu.
 
-## Solução
-Modificar a `send-video-confirmation` para detectar se o webinar já decorreu e enviar um template diferente.
+## Alterações
 
-### 1. Nova lógica na edge function `send-video-confirmation/index.ts`
-- Verificar se a data actual é posterior a `2026-03-05T11:00:00Z` (fim do webinar)
-- Se sim: usar template `video_confirmation_post_event` (ou fallback HTML dedicado)
-- Se não: manter comportamento actual (template `video_confirmation`)
+### 1. Criar `/video-lp` — Arquivo da landing page original
+- Copiar `src/pages/Video.tsx` para `src/pages/VideoLP.tsx`
+- Exportar como `VideoLPPage`
+- Adicionar rota `/video-lp` no `App.tsx`
 
-### 2. Novo fallback HTML `buildPostEventHtml(fname)`
-Conteúdo do email:
-- "O webinar já decorreu" — tom informativo
-- Oferta Premium Pass com preço dinâmico:
-  - Se `new Date() < 2026-03-06T00:00:00Z` (até final de hoje 5 Março): **€15+IVA** (early bird)
-  - Caso contrário: **€27+IVA**
-- Inclui: gravação HD, sessão Q&A (10 Março 14h30), guia de prompts
-- CTA: link para `/upgrade-video`
-- Bloco opcional da Masterclass (12 Março, €47+IVA → €97+IVA)
-- Assinatura Frederico Carvalho / DIGITALFC
+### 2. Transformar `/video` — De inscrição gratuita para venda da gravação
+Adaptar o conteúdo existente (mantendo o design dark/cinemático do vídeo) com estas mudanças:
 
-### 3. Novo template DB `video_confirmation_post_event`
-- Inserir na tabela `email_templates` com subject e html_body
-- Subject: "O webinar já decorreu — mas ainda podes aceder à gravação, {{fname}}"
-- HTML com `{{fname}}` e `{{price}}` como variáveis
+**Hero:**
+- Badge: "WEBINAR GRATUITO · AO VIVO · 5 MARÇO" → "GRAVAÇÃO DISPONÍVEL"
+- Remover countdown
+- Headline mantém "Aprende a criar vídeos com IA" mas subtítulo muda para "O webinar já aconteceu — acede agora à gravação completa + pack de apoio"
+- CTA: "Garantir inscrição gratuita" → "Garantir acesso (15 €)" ou "Garantir acesso (27 €)" (dinâmico)
 
-### 4. Preço dinâmico
-A edge function calcula o preço com base na data:
-- Até 5 Março 23:59 (Lisboa, UTC+0): €15+IVA → texto "Early Bird — só hoje"
+**Preço dinâmico:**
+- Até 5 Março 23:59 (hoje): €15+IVA — badge "Early Bird — só hoje"
 - A partir de 6 Março: €27+IVA
 
+**Sticky bars:**
+- Top bar: remover countdown, mostrar "GRAVAÇÃO DISPONÍVEL" + preço + CTA
+- Mobile bottom CTA: actualizar texto e preço
+
+**Secções mantidas (com ajustes mínimos):**
+- Logo marquee (igual)
+- "O mercado exige Vídeo" (igual)
+- "Para quem é / Não é para" (igual)
+- Agenda "O que acontece durante a sessão" (igual — descreve o conteúdo da gravação)
+- Testemunhos (igual)
+- FAQ (actualizar "assistir ao vivo" → já está gravado)
+- Presenter/Frederico (igual)
+
+**Secção nova: Pack incluído** (antes do CTA final)
+- Lista dos entregáveis: gravação HD ~60min, guia de prompts, sessão Q&A (10 Março 14h30)
+- Inspirado na secção de pack da `/gravacao`
+
+**Fluxo de compra:**
+- Clicar no CTA abre modal de registo (nome + email + whatsapp + termos)
+- Após registo: redireciona para `/upgrade-video` (funil existente com checkout)
+- `registrationSource: "video"` mantido
+
+### 3. Actualizar `App.tsx`
+- Adicionar rota `/video-lp` → `VideoLPPage`
+
 ### Ficheiros alterados
-- `supabase/functions/send-video-confirmation/index.ts` — adicionar detecção pós-evento + fallback HTML + preço dinâmico
-- DB: inserir template `video_confirmation_post_event` na tabela `email_templates`
+- `src/pages/VideoLP.tsx` — **novo** (cópia do Video.tsx actual)
+- `src/pages/Video.tsx` — transformado em página de venda
+- `src/App.tsx` — nova rota `/video-lp`
 
