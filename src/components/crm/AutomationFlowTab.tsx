@@ -1,5 +1,5 @@
 import { useMemo, useState, Fragment } from "react";
-import { Users, Mail, CheckCircle2, Send, AlertTriangle } from "lucide-react";
+import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -54,6 +54,13 @@ const TAG_BORDER: Record<TagType, string> = {
   "NAO ENVIADO": "#ef4444",
 };
 
+interface SmsSendConfig {
+  planFilter: string[]; // e.g. ["free"] or ["premium"] or ["masterclass", "bundle"]
+  webinarFilter: "current" | "all"; // "current" = only this webinar, "all" = both webinars
+  smsText: string;
+  requirePhone?: boolean;
+}
+
 interface NodeDef {
   type: "trigger" | "email" | "end";
   title: string;
@@ -69,6 +76,8 @@ interface NodeDef {
   infoBox?: string;
   isPaymentBlock?: boolean;
   iconEmoji?: string;
+  channel?: "email" | "sms";
+  smsSendConfig?: SmsSendConfig;
 }
 
 function getNodes(webinar: WebinarKey): NodeDef[] {
@@ -255,6 +264,24 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
     },
+    // ── SMS NODES ──
+    {
+      type: "email",
+      title: "📱 SMS pós-webinar",
+      subtitle: "Envio manual · todos os inscritos com telefone",
+      templateKeyMatch: ["sms_postwebinar"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#8b5cf6",
+      customTag: { label: "MANUAL", bg: "#fef3c7", color: "#d97706" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["free"],
+        webinarFilter: "current",
+        smsText: "O webinar Video com IA ja decorreu! Acede ao workbook e materiais em imagenscomia.com/recursos — Frederico Carvalho",
+        requirePhone: true,
+      },
+    },
     // ── SECTION 4: FECHO DE LEADS ──
     {
       type: "email",
@@ -267,6 +294,41 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#ef4444",
       customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
+    },
+    // ── SMS REMINDERS ──
+    {
+      type: "email",
+      title: "📱 SMS lembrete Q&A — 10 Mar",
+      subtitle: "30 min antes · Premium Pass (imagens + vídeo)",
+      templateKeyMatch: ["sms_reminder_qa"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#3b82f6",
+      customTag: { label: "10 MAR · 14H00", bg: "#dbeafe", color: "#1d4ed8" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["premium"],
+        webinarFilter: "all",
+        smsText: "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico",
+        requirePhone: true,
+      },
+    },
+    {
+      type: "email",
+      title: "📱 SMS lembrete Masterclass — 12 Mar",
+      subtitle: "30 min antes · Masterclass + Bundle (imagens + vídeo)",
+      templateKeyMatch: ["sms_reminder_masterclass"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#7c3aed",
+      customTag: { label: "12 MAR · 09H30", bg: "#f3e8ff", color: "#7c3aed" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["masterclass", "bundle"],
+        webinarFilter: "all",
+        smsText: "Lembrete: a Masterclass comeca as 10:00. O link de acesso foi enviado por email. Ate ja! — Frederico",
+        requirePhone: true,
+      },
     },
     // ── END ──
     {
@@ -476,6 +538,8 @@ function Timeline({
   onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
 }) {
   const [sendingPost, setSendingPost] = useState(false);
+  const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
+  const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
@@ -492,6 +556,19 @@ function Timeline({
     for (let idx = 0; idx < nodes.length; idx++) {
       const n = nodes[idx];
       if (n.type !== "email") continue;
+
+      // For SMS nodes, count from message_logs with channel=sms
+      if (n.channel === "sms") {
+        let sent = 0, failed = 0;
+        for (const l of logs) {
+          if (matchTemplate(l.template_key, n.templateKeyMatch)) {
+            if (l.status === "sent") sent++;
+            if (l.status === "failed") failed++;
+          }
+        }
+        result[idx] = { sent, failed };
+        continue;
+      }
 
       // Derive email_key from templateKeyMatch
       const rawKey = n.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
@@ -527,6 +604,76 @@ function Timeline({
       toast.error("Erro ao enviar: " + (e.message || "erro desconhecido"));
     } finally {
       setSendingPost(false);
+    }
+  };
+
+  const handleBulkSms = async (node: NodeDef) => {
+    const config = node.smsSendConfig;
+    if (!config) return;
+    const templateKey = node.templateKeyMatch[0] || "sms_manual";
+
+    // Get eligible recipients
+    let eligible = inscritos.filter((i) => {
+      // Must have phone
+      if (!i.whatsapp) return false;
+      // Must not be do_not_contact
+      if (i.do_not_contact) return false;
+      // Webinar filter
+      if (config.webinarFilter === "current" && i.webinar !== webinar) return false;
+      // Plan filter
+      const plan = i.plan || "free";
+      return config.planFilter.includes(plan);
+    });
+
+    if (eligible.length === 0) {
+      toast.error("Nenhum destinatário elegível com telefone encontrado.");
+      return;
+    }
+
+    if (!confirm(`Enviar SMS a ${eligible.length} pessoa(s)?\n\nTexto:\n"${config.smsText}"`)) return;
+
+    setSendingSmsKey(templateKey);
+    setSmsResult(null);
+    const adminEmail = sessionStorage.getItem("crm_admin_email") || "";
+    let sent = 0, failed = 0;
+
+    for (const person of eligible) {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-crm-admin-email": adminEmail,
+            },
+            body: JSON.stringify({
+              to: person.whatsapp,
+              text: config.smsText,
+              provider: "egoi",
+              registrationId: person.id,
+            }),
+          }
+        );
+        const data = await res.json();
+        if (data.success) {
+          sent++;
+        } else {
+          failed++;
+          console.warn(`SMS failed for ${person.nome}:`, data.error);
+        }
+      } catch (err) {
+        failed++;
+        console.error(`SMS error for ${person.nome}:`, err);
+      }
+    }
+
+    setSendingSmsKey(null);
+    setSmsResult({ sent, failed, total: eligible.length });
+    if (failed === 0) {
+      toast.success(`✅ ${sent} SMS enviados com sucesso!`);
+    } else {
+      toast.warning(`📱 ${sent} enviados, ${failed} falharam de ${eligible.length} total`);
     }
   };
 
@@ -592,7 +739,44 @@ function Timeline({
           {node.type === "trigger" && (
             <span style={{ fontSize: 12, color: "#888" }}>{inscritosCount} inscrições</span>
           )}
-          {node.type === "email" && emailStatsLoading && (
+
+          {/* SMS node right side */}
+          {node.channel === "sms" && (
+            <div className="flex flex-col items-end gap-1">
+              {counts && counts.sent > 0 && (
+                <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
+                  {counts.sent} enviados
+                </span>
+              )}
+              {counts && counts.failed > 0 && (
+                <span className="flex items-center gap-1" style={{ fontSize: 12, color: "#ef4444" }}>
+                  <AlertTriangle size={11} />
+                  {counts.failed} falhas
+                </span>
+              )}
+              <button
+                onClick={() => handleBulkSms(node)}
+                disabled={sendingSmsKey === node.templateKeyMatch[0]}
+                className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors mt-1"
+                style={{ background: sendingSmsKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a", color: "#fff" }}
+              >
+                {sendingSmsKey === node.templateKeyMatch[0] ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Enviando…
+                  </>
+                ) : (
+                  <>
+                    <Smartphone size={12} />
+                    Enviar SMS agora →
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Email node right side */}
+          {node.type === "email" && !node.channel?.startsWith("sms") && emailStatsLoading && (
             <span style={{ fontSize: 12, color: "#94A3B8" }}>
               <span className="inline-flex gap-0.5">
                 <span className="animate-pulse">·</span>
@@ -601,7 +785,7 @@ function Timeline({
               </span>
             </span>
           )}
-          {node.type === "email" && !emailStatsLoading && counts && (
+          {node.type === "email" && node.channel !== "sms" && !emailStatsLoading && counts && (
             <div className="flex flex-col items-end gap-0.5">
               {counts.sent > 0 ? (
                 <button
@@ -639,7 +823,7 @@ function Timeline({
               })()}
             </div>
           )}
-          {node.type === "email" && !node.isPostWebinar && (
+          {node.type === "email" && node.channel !== "sms" && !node.isPostWebinar && (
             <button
               onClick={() => {
                 const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
