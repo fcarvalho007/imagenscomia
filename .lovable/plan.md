@@ -1,34 +1,13 @@
 
 
-# Verificação e correcções para o webinar de amanhã
+# Actualizar horário do Q&A na página /comprar
 
-## 1. Email "Começa em 1 hora" — ✅ Tudo a postos
+Alteração simples em `src/pages/Comprar.tsx`: actualizar o texto do benefício "Sessão Q&A" nos planos `gravacao` (linha 92) e `bundle` (linha 74) para incluir o horário completo 14:30–15:30 e reforçar que é ao vivo e em grupo.
 
-- **Template na BD** (`video_reminder_1h`): CTA aponta para `https://imagenscomia.com/live-video` ✓
-- **Fallback hardcoded** na Edge Function: mesmo URL ✓
-- **Cron**: configurado para disparar às 09:00 UTC (janela 08:30-09:30) ✓
-- **E-goi**: domínio corrigido, envios a funcionar ✓
-- **Filtro**: `webinar = 'video'` + deduplicação via `message_logs` ✓
+### Alterações
 
-Sem alterações necessárias.
+**Ficheiro**: `src/pages/Comprar.tsx`
 
-## 2. Página `/live-video` — CTAs da sidebar a corrigir
-
-**Problema**: Os dois botões ("Garantir Premium Pass" e "Garantir lugar na Masterclass") chamam `open("premium")` — que abre um modal de registo. A página não tem sequer um `RegistrationModalProvider`, logo o clique não faz nada. O utilizador quer que ambos naveguem para `/comprar`.
-
-### Alteração: `src/components/webinar/VideoWebinarSidebar.tsx`
-
-Substituir `useRegistrationModal` por `useNavigate` do React Router:
-
-```typescript
-// Remover: import { useRegistrationModal } from "@/hooks/useRegistrationModal";
-// Adicionar: import { useNavigate } from "react-router-dom";
-
-const navigate = useNavigate();
-
-// Ambos os CTAs:
-onCtaClick={() => navigate("/comprar")}
-```
-
-Isto aplica-se às duas instâncias de `open("premium")` (linhas 129 e 155).
+- **Linha 74** (bundle): `"Sessão Q&A em grupo · 10 de Março · 14h30"` → `"Sessão Q&A ao vivo em grupo · 10 de Março · 14h30–15h30"`
+- **Linha 92** (gravacao): `"Sessão Q&A em grupo · 10 de Março · 14h30"` → `"Sessão Q&A ao vivo em grupo · 10 de Março · 14h30–15h30"`
 
