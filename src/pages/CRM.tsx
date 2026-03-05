@@ -7,6 +7,7 @@ import PipelineView from "@/components/crm/PipelineView";
 import TableView from "@/components/crm/TableView";
 import TrashView from "@/components/crm/TrashView";
 import FollowUpView from "@/components/crm/FollowUpView";
+import ComunicacaoView from "@/components/crm/ComunicacaoView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -73,6 +74,9 @@ function CRMInner() {
         )}
         {activeView === "templates" && (
           <FollowUpView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} />
+        )}
+        {activeView === "comunicacao" && (
+          <ComunicacaoView inscritos={filteredInscritos} />
         )}
         {activeView === "lixo" && (
           <TrashView
