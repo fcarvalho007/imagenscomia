@@ -1,57 +1,35 @@
 
 
-# Transformar `/video` em página de venda da gravação (post-evento)
+# Bug: /upgrade-gravacao Step 1 bloqueado — botão "Próximo passo" nunca activa
 
-## Contexto
-A mesma estratégia usada no webinar de imagens: a landing page de inscrição gratuita transforma-se numa página de venda do pack de gravação, agora que o evento já aconteceu.
+## Causa raiz
 
-## Alterações
+O componente `StepQualification` tem esta condição para permitir avançar:
 
-### 1. Criar `/video-lp` — Arquivo da landing page original
-- Copiar `src/pages/Video.tsx` para `src/pages/VideoLP.tsx`
-- Exportar como `VideoLPPage`
-- Adicionar rota `/video-lp` no `App.tsx`
+```js
+const canProceed = !!(role && teamSize && (!isOtherRole || otherRole.trim()));
+```
 
-### 2. Transformar `/video` — De inscrição gratuita para venda da gravação
-Adaptar o conteúdo existente (mantendo o design dark/cinemático do vídeo) com estas mudanças:
+No entanto, a página `UpgradeGravacao` **não passa** as props `role`, `setRole`, `teamSize` nem `setTeamSize` ao componente. Como `role` e `teamSize` são `undefined`, `canProceed` é **sempre `false`**, e o botão fica permanentemente desactivado (cinzento).
 
-**Hero:**
-- Badge: "WEBINAR GRATUITO · AO VIVO · 5 MARÇO" → "GRAVAÇÃO DISPONÍVEL"
-- Remover countdown
-- Headline mantém "Aprende a criar vídeos com IA" mas subtítulo muda para "O webinar já aconteceu — acede agora à gravação completa + pack de apoio"
-- CTA: "Garantir inscrição gratuita" → "Garantir acesso (15 €)" ou "Garantir acesso (27 €)" (dinâmico)
+Este bug foi introduzido quando o `StepQualification` foi actualizado para suportar o funil de vídeo (com role/teamSize obrigatórios), mas o funil de gravação (imagens) não foi actualizado para passar essas props.
 
-**Preço dinâmico:**
-- Até 5 Março 23:59 (hoje): €15+IVA — badge "Early Bird — só hoje"
-- A partir de 6 Março: €27+IVA
+## Solução
 
-**Sticky bars:**
-- Top bar: remover countdown, mostrar "GRAVAÇÃO DISPONÍVEL" + preço + CTA
-- Mobile bottom CTA: actualizar texto e preço
+No funil `/upgrade-gravacao`, o Step 1 só precisa das **sources** (como soubeste da formação). Não precisa de role/teamSize.
 
-**Secções mantidas (com ajustes mínimos):**
-- Logo marquee (igual)
-- "O mercado exige Vídeo" (igual)
-- "Para quem é / Não é para" (igual)
-- Agenda "O que acontece durante a sessão" (igual — descreve o conteúdo da gravação)
-- Testemunhos (igual)
-- FAQ (actualizar "assistir ao vivo" → já está gravado)
-- Presenter/Frederico (igual)
+**Ficheiro:** `src/components/upgrade/StepQualification.tsx`
 
-**Secção nova: Pack incluído** (antes do CTA final)
-- Lista dos entregáveis: gravação HD ~60min, guia de prompts, sessão Q&A (10 Março 14h30)
-- Inspirado na secção de pack da `/gravacao`
+Alterar a lógica de `canProceed` para que, quando `setRole` não é fornecido (modo gravação/imagens), o botão avance sem exigir role e teamSize:
 
-**Fluxo de compra:**
-- Clicar no CTA abre modal de registo (nome + email + whatsapp + termos)
-- Após registo: redireciona para `/upgrade-video` (funil existente com checkout)
-- `registrationSource: "video"` mantido
+```js
+const canProceed = setRole
+  ? !!(role && teamSize && (!isOtherRole || otherRole.trim()))
+  : true; // sources mode — always allow (optional question)
+```
 
-### 3. Actualizar `App.tsx`
-- Adicionar rota `/video-lp` → `VideoLPPage`
+Esta alteração de 1 linha corrige o bloqueio sem afectar o funil de vídeo (`/upgrade-video`), onde `setRole` é passado e as perguntas de role/teamSize continuam obrigatórias.
 
 ### Ficheiros alterados
-- `src/pages/VideoLP.tsx` — **novo** (cópia do Video.tsx actual)
-- `src/pages/Video.tsx` — transformado em página de venda
-- `src/App.tsx` — nova rota `/video-lp`
+- `src/components/upgrade/StepQualification.tsx` — corrigir lógica de `canProceed`
 
