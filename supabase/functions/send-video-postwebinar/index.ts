@@ -130,7 +130,8 @@ serve(async (req) => {
       .select("id, email, first_name")
       .eq("webinar", "video")
       .is("paid_at", null)
-      .eq("do_not_contact", false);
+      .eq("do_not_contact", false)
+      .not("attended_live_at", "is", null);
 
     if (queryErr) throw queryErr;
     if (!registrants || registrants.length === 0) {
