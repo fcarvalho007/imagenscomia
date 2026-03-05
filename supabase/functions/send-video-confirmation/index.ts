@@ -7,6 +7,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const WEBINAR_END = new Date("2026-03-05T11:00:00Z");
+const EARLY_BIRD_END = new Date("2026-03-06T00:00:00Z"); // midnight UTC = midnight Lisbon (UTC+0 in winter)
+
 const GOOGLE_CAL_URL = "https://calendar.app.google/kyhFPoficXByZf5S8";
 
 const ICS_CONTENT = `BEGIN:VCALENDAR
@@ -42,6 +45,21 @@ function determineVariant(history: any): string {
   if ((plan === "masterclass" || plan === "bundle") && paid) return "D";
   if (plan === "premium" && paid) return "C";
   return "B";
+}
+
+function isPostEvent(): boolean {
+  return new Date() > WEBINAR_END;
+}
+
+function isEarlyBird(): boolean {
+  return new Date() < EARLY_BIRD_END;
+}
+
+function getPriceInfo(): { price: string; priceLabel: string } {
+  if (isEarlyBird()) {
+    return { price: "€15+IVA", priceLabel: "Early Bird — só hoje" };
+  }
+  return { price: "€27+IVA", priceLabel: "" };
 }
 
 function buildHtml(fname: string): string {
@@ -86,6 +104,46 @@ function buildHtml(fname: string): string {
 </body></html>`;
 }
 
+function buildPostEventHtml(fname: string, price: string, priceLabel: string): string {
+  const earlyBirdBadge = priceLabel
+    ? `<span style="display:inline-block;background:#f59e0b;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px;margin-left:8px;">${priceLabel}</span>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 8px;">Obrigado pela inscrição. ✅</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">O webinar <strong>"Cria Vídeo Profissional com IA"</strong> já decorreu no dia 5 de Março — mas a boa notícia é que ainda podes aceder à gravação completa.</p>
+
+  <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:24px;margin:0 0 24px;">
+    <p style="color:#166534;font-size:18px;font-weight:700;margin:0 0 12px;">🎬 Premium Pass — ${price} ${earlyBirdBadge}</p>
+    <ul style="color:#333;font-size:15px;line-height:1.8;margin:0 0 16px;padding-left:20px;">
+      <li>Gravação HD completa do webinar</li>
+      <li>Sessão Q&A ao vivo — 10 de Março, 14h30</li>
+      <li>Guia de prompts para vídeo com IA</li>
+    </ul>
+    <div style="text-align:center;">
+      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:16px;">Aceder à gravação →</a>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #eee;padding-top:20px;margin:0 0 24px;">
+    <p style="color:#333;font-size:15px;font-weight:700;margin:0 0 8px;">🎓 Masterclass — 12 de Março</p>
+    <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">Sessão avançada de 3 horas com exercícios práticos e feedback personalizado. Inclui tudo do Premium Pass.</p>
+    <p style="color:#555;font-size:14px;margin:0;">Preço: <strong>€47+IVA</strong> (depois passa a €97+IVA)</p>
+  </div>
+
+  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:32px;">
+    <p style="color:#333;font-size:16px;margin:0 0 4px;">Abraço,</p>
+    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 4px;">Frederico Carvalho</p>
+    <p style="color:#999;font-size:12px;margin:0;">DIGITALFC</p>
+  </div>
+</div>
+</body></html>`;
+}
+
 async function callSendEmail(supabaseUrl: string, serviceRoleKey: string, to: string, subject: string, html: string) {
   const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
     method: "POST",
@@ -116,10 +174,19 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
+    const postEvent = isPostEvent();
     const history = await getSubscriberHistory(email, supabaseAdmin);
     const variant = determineVariant(history);
 
-    const templateKey = variant !== "A" ? "video_confirmation_returning" : "video_confirmation";
+    // Determine template key
+    let templateKey: string;
+    if (postEvent) {
+      templateKey = "video_confirmation_post_event";
+    } else if (variant !== "A") {
+      templateKey = "video_confirmation_returning";
+    } else {
+      templateKey = "video_confirmation";
+    }
 
     const { data: tpl } = await supabaseAdmin
       .from("email_templates")
@@ -127,14 +194,27 @@ serve(async (req) => {
       .eq("template_key", templateKey)
       .maybeSingle();
 
-    const emailSubject = (tpl?.subject ?? "Inscrição confirmada ✅ — Vídeo com IA para marketing").replace(/\{\{fname\}\}/g, fname || "");
-    const rawHtml = tpl?.html_body ?? buildHtml(fname || "");
-    const html = rawHtml.replace(/\{\{fname\}\}/g, fname || "");
+    // Build subject and HTML with dynamic pricing for post-event
+    const { price, priceLabel } = getPriceInfo();
+
+    const emailSubject = (tpl?.subject ?? (postEvent
+      ? `O webinar já decorreu — mas ainda podes aceder à gravação, ${fname || ""}`
+      : "Inscrição confirmada ✅ — Vídeo com IA para marketing"
+    )).replace(/\{\{fname\}\}/g, fname || "").replace(/\{\{price\}\}/g, price);
+
+    const rawHtml = tpl?.html_body ?? (postEvent
+      ? buildPostEventHtml(fname || "", price, priceLabel)
+      : buildHtml(fname || "")
+    );
+    const html = rawHtml
+      .replace(/\{\{fname\}\}/g, fname || "")
+      .replace(/\{\{price\}\}/g, price)
+      .replace(/\{\{priceLabel\}\}/g, priceLabel);
 
     const result = await callSendEmail(supabaseUrl, serviceRoleKey, email, emailSubject, html);
     const ok = result.success === true;
 
-    console.log("Send-email response:", JSON.stringify(result));
+    console.log(`[${templateKey}] Send-email response:`, JSON.stringify(result));
 
     try {
       const { data: reg } = await supabaseAdmin
@@ -165,6 +245,8 @@ serve(async (req) => {
           error_message: ok ? null : JSON.stringify(result.error || result),
           metadata: JSON.stringify({
             variant,
+            post_event: postEvent,
+            early_bird: isEarlyBird(),
             had_imagens_history: history !== null,
             imagens_plan: history?.plan_selected || null,
           }),
