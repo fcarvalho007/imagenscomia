@@ -31,11 +31,15 @@ export default function RecursosLogin({ onAuthed }: RecursosLoginProps) {
     setError(null);
 
     try {
-      const { data, error: dbError } = await supabase
+      const { data: rows, error: dbError } = await supabase
         .from("registrations")
         .select("edit_token, first_name, plan_selected, paid_at, premium_granted_at")
         .eq("email", email.toLowerCase().trim())
-        .maybeSingle();
+        .order("paid_at", { ascending: false, nullsFirst: false })
+        .order("premium_granted_at", { ascending: false, nullsFirst: false })
+        .limit(1);
+
+      const data = rows?.[0] ?? null;
 
       if (dbError) {
         setError("network");

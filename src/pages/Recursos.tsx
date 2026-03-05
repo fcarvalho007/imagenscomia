@@ -29,12 +29,16 @@ export default function Recursos() {
     // Silent re-validation
     const validate = async () => {
       try {
-        const { data } = await supabase
+        const { data: rows } = await supabase
           .from("registrations")
           .select("paid_at, plan_selected, first_name, premium_granted_at")
           .eq("email", email)
           .eq("edit_token", token)
-          .maybeSingle();
+          .order("paid_at", { ascending: false, nullsFirst: false })
+          .order("premium_granted_at", { ascending: false, nullsFirst: false })
+          .limit(1);
+
+        const data = rows?.[0] ?? null;
 
         const hasAccess = !!(data?.paid_at || (data as any)?.premium_granted_at);
         if (hasAccess) {
