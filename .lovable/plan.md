@@ -1,70 +1,42 @@
 
 
-# Melhorar tab Email em Comunicação
+# Criar página /recursos-video
 
-## Objectivo
+## Contexto
 
-Alinhar a tab Email com a qualidade da tab SMS: editor de texto rico (negrito, itálico, sublinhado, listas), filtros por lista/webinar, selecção múltipla de destinatários com chips, e modal de confirmação de envio.
+A página `/recursos` actual é dedicada ao **webinar Imagens com IA** (18 Fev). Precisa de uma versão duplicada em `/recursos-video` para o **webinar Vídeo com IA** (5 Mar), com conteúdo diferente (vídeo Vimeo, capítulos, recursos PDF, etc.) mas mantendo a mesma estrutura visual e lógica de autenticação.
 
-## Alterações
+## Plano
 
-### 1. `src/components/crm/ComunicacaoView.tsx`
+### 1. Novo ficheiro `src/pages/RecursosVideo.tsx`
+Duplicar `Recursos.tsx` mas com:
+- SessionStorage keys separadas: `recursos_video_token`, `recursos_video_email`, etc.
+- Query filtrada por `webinar = 'video'` na validação
+- Importar `RecursosVideoLogin` e `RecursosVideoConteudo`
 
-**Extrair EmailTab** para ficheiro próprio `src/components/crm/comunicacao/EmailTab.tsx` (consistência com SmsTab).
+### 2. Novo ficheiro `src/components/recursos/RecursosVideoLogin.tsx`
+Duplicar `RecursosLogin.tsx` com:
+- Branding "Vídeo com IA" em vez de "Imagens com IA"
+- Cor verde (#16a34a) em vez de azul
+- SessionStorage keys com prefixo `recursos_video_`
 
-### 2. `src/components/crm/comunicacao/EmailTab.tsx` (novo)
+### 3. Novo ficheiro `src/components/recursos/RecursosVideoConteudo.tsx`
+Duplicar `RecursosConteudo.tsx` com:
+- Título: "Vídeo com IA — Recursos"
+- Cor primária verde em vez de azul
+- `VIDEO_RECURSOS_CONFIG` com:
+  - Vimeo embed URL: placeholder (a preencher depois — webinar ainda a decorrer)
+  - Capítulos do webinar vídeo (placeholders)
+  - Recursos sidebar: PDFs/links do webinar vídeo (placeholders por agora)
+- Header e badge adaptados ao branding "Vídeo com IA"
+- Upsell na sidebar: referência à masterclass de 12 Março
 
-**a) Filtros de lista** — barra de toggles no topo:
-- **Webinar**: "Imagens IA" | "Vídeo IA" | "Todos"
-- **Plano**: "Todos" | "Pagos" | "Premium" | "Masterclass" | "Free"
-- Filtra a lista de inscritos disponível no dropdown de pesquisa
+### 4. Rota em `src/App.tsx`
+Adicionar `<Route path="/recursos-video" element={<RecursosVideo />} />`
 
-**b) Selecção múltipla de destinatários** — mudar de `to: string` para `recipients: Inscrito[]`:
-- Chips com avatar, nome e X para remover
-- Pesquisa filtra por nome/email nos inscritos filtrados
-- Botão "Seleccionar todos os filtrados" quando há filtro activo
+### Ficheiros
+- **Novos**: `src/pages/RecursosVideo.tsx`, `src/components/recursos/RecursosVideoLogin.tsx`, `src/components/recursos/RecursosVideoConteudo.tsx`
+- **Editado**: `src/App.tsx` (1 linha — nova rota)
 
-**c) Editor de texto rico** — substituir o `<textarea>` HTML por um editor com toolbar:
-- Toolbar com botões: **B**, *I*, U, lista, link
-- Usa `contentEditable` div com `execCommand` (simples, sem dependência extra)
-- Gera HTML automaticamente para o campo `html` do envio
-- Manter opção de alternar para "modo HTML raw" via toggle
-
-**d) Envio em lote** — se múltiplos destinatários:
-- Itera sobre cada recipient e invoca `send-email` individualmente
-- Mostra progresso (X/Y)
-
-**e) Modal de resultado** — após envio:
-- Overlay animado com ícone de sucesso/falha
-- Lista de destinatários com status individual
-- Botão "Enviar outro" e "Fechar"
-
-### 3. `src/components/crm/comunicacao/SmsTab.tsx`
-
-**Adicionar os mesmos filtros** para consistência:
-- Toggle de webinar: "Imagens IA" | "Vídeo IA" | "Todos"
-- Toggle de plano: "Todos" | "Pagos" | "Premium" | "Masterclass" | "Free"
-- Selecção múltipla de destinatários (chips) — envio em lote
-
-### 4. Lógica de filtragem (partilhada)
-
-```text
-webinar="imagens" → i.webinar === "imagens" || !i.webinar
-webinar="video"   → i.webinar === "video"
-webinar="todos"   → sem filtro
-
-plano="pagos"       → i.paid_at !== null
-plano="premium"     → i.plan === "premium"
-plano="masterclass" → i.plan === "masterclass" || i.plan === "bundle"
-plano="free"        → i.paid_at === null
-plano="todos"       → sem filtro
-```
-
-## Resumo
-- 1 ficheiro novo (`EmailTab.tsx`)
-- 2 ficheiros editados (`ComunicacaoView.tsx`, `SmsTab.tsx`)
-- Editor rich-text com toolbar (sem dependências externas)
-- Filtros por webinar e plano em ambas as tabs
-- Selecção múltipla + envio em lote
-- Modal de resultado animado
+Os conteúdos (URL Vimeo, PDFs, capítulos) ficam como placeholders editáveis no `VIDEO_RECURSOS_CONFIG`, prontos para actualizar quando o webinar terminar.
 
