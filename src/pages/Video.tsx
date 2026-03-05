@@ -162,13 +162,13 @@ const speakerCredentials = [
 const faqs = [
   { q: "Preciso de experiência com IA?", a: "Não, de todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
   { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes sociais. Vais ver exemplos dos dois casos." },
-  { q: "Posso ver a gravação quando quiser?", a: "Sim. Após a compra, recebes acesso imediato à gravação completa em HD + todo o pack de apoio. Sem prazo de expiração." },
-  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além da gravação, há uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso durante o processo de compra." },
+  { q: "Posso ver a sessão quando quiser?", a: "Sim. Após a compra, recebes acesso imediato à sessão completa em HD + todo o pack de apoio. Sem prazo de expiração." },
+  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além da sessão, há uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso durante o processo de compra." },
   { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois de veres a sessão, já consegues produzir os primeiros clips e repetir semanalmente." },
 ];
 
 const packItems = [
-  { Icon: Play, title: "Gravação completa em HD", desc: "~45 min de sessão prática, sem cortes." },
+  { Icon: Play, title: "Sessão completa em HD", desc: "~70 min de sessão prática, sem cortes." },
   { Icon: FileText, title: "Guia de prompts para vídeo", desc: "Templates prontos a usar para os teus primeiros clips." },
   { Icon: MessageCircle, title: "Sessão Q&A ao vivo", desc: "10 de Março, 14h30 — tira dúvidas em directo com o Frederico." },
 ];
@@ -184,8 +184,8 @@ const VideoPageInner = () => {
   const [earlyBird, setEarlyBird] = useState(isEarlyBird);
 
   usePageMeta({
-    title: "Gravação — Cria Vídeo Profissional com IA | Webinar 5 Março",
-    description: `Acede à gravação completa da sessão prática de vídeo com IA + pack de apoio. ${getPrice()}€ + IVA.`,
+    title: "Cria Vídeo Profissional com IA | Sessão Completa",
+    description: `Sessão completa de vídeo com IA + pack de apoio. ${getPrice()}€ + IVA.`,
     ogImage: "https://imagenscomia.com/video-social-card.jpg",
     ogUrl: "https://imagenscomia.com/video",
   });
@@ -225,7 +225,7 @@ const VideoPageInner = () => {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 font-heading text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.5px] text-white/90">
               <Play className="w-3.5 h-3.5" style={{ color: "#4ade80" }} />
-              GRAVAÇÃO DISPONÍVEL
+              ACESSO DISPONÍVEL
             </span>
             {earlyBird && (
               <span className="hidden sm:inline-flex text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "rgba(250,204,21,0.15)", color: "#facc15", border: "1px solid rgba(250,204,21,0.3)" }}>
@@ -290,7 +290,7 @@ const VideoPageInner = () => {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
             <span className="inline-flex items-center gap-2 font-heading text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-4 whitespace-nowrap max-w-[90vw]" style={{ border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
               <Play className="w-3 h-3" />
-              GRAVAÇÃO DISPONÍVEL
+              ACESSO DISPONÍVEL
             </span>
           </motion.div>
 
@@ -335,7 +335,7 @@ const VideoPageInner = () => {
             className="font-medium mb-2 max-w-[680px] mx-auto text-[15px] lg:text-[18px]"
             style={{ color: "rgba(255,255,255,0.75)", letterSpacing: "-0.3px", lineHeight: 1.45 }}
           >
-            O webinar já aconteceu — acede agora à gravação completa + pack de apoio.
+            O webinar já aconteceu — acede agora à sessão completa + pack de apoio.
           </motion.p>
 
           <div className="mb-9" />
@@ -348,8 +348,8 @@ const VideoPageInner = () => {
             className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-10 max-w-[520px] mx-auto"
           >
             {([
-              { Icon: Play, label: "FORMATO", value: "Gravação HD" },
-              { Icon: Timer, label: "DURAÇÃO", value: "~45 min" },
+              { Icon: Play, label: "FORMATO", value: "Sessão HD" },
+              { Icon: Timer, label: "DURAÇÃO", value: "~70 min" },
               { Icon: Sparkles, label: "INVESTIMENTO", value: `${price} € + IVA` },
             ] as const).map((box) => (
               <motion.div
@@ -563,10 +563,10 @@ const VideoPageInner = () => {
         <div className="container mx-auto px-4 sm:px-6 max-w-[960px]">
           <ScrollReveal>
             <p className="font-heading font-semibold text-[11px] uppercase tracking-[0.14em] text-blue-600 text-center mb-2">
-              CONTEÚDO DA SESSÃO · ~45 MIN
+              CONTEÚDO DA SESSÃO · ~70 MIN
             </p>
             <h2 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[34px] tracking-[-0.01em] text-center text-ink-900 mb-2">
-              O que está incluído na gravação
+              O que está incluído na sessão
             </h2>
             <p className="text-[17px] text-ink-500 text-center mb-12 max-w-lg mx-auto leading-[1.7]">
               <span className="block">3 blocos práticos.</span>
@@ -810,10 +810,10 @@ const VideoPageInner = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-5 text-center">
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white leading-[1.15] mb-4" style={{ letterSpacing: "-0.5px" }}>
-            Acede à gravação completa
+            Acede à sessão completa
           </h2>
           <p className="text-[17px] mb-2 max-w-[540px] mx-auto" style={{ color: "rgba(255,255,255,0.70)" }}>
-            Gravação HD + guia de prompts + sessão Q&A ao vivo.
+            Sessão HD + guia de prompts + sessão Q&A ao vivo.
           </p>
           <p className="text-[24px] font-heading font-bold text-white mb-1">
             {price} € <span className="text-white/50 text-[16px] font-normal">+ IVA</span>
@@ -847,7 +847,7 @@ const VideoPageInner = () => {
 };
 
 const VideoPage = () => (
-  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Gravação — Vídeo com IA" webinar="video">
+  <RegistrationModalProvider redirectPath="/upgrade-video" subtitle="Sessão — Vídeo com IA" webinar="video">
     <VideoPageInner />
   </RegistrationModalProvider>
 );
