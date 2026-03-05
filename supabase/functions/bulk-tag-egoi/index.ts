@@ -53,16 +53,19 @@ serve(async (req) => {
     }[] = [];
 
     for (const buyer of buyers || []) {
-      const plan = buyer.plan_selected;
+      const rawPlan = buyer.plan_selected ?? "";
       const webinar = (buyer as any).webinar || "imagens";
       const tags = TAG_MAP[webinar] ?? TAG_MAP.imagens;
 
+      // Normalise plan: strip "video-" prefix so "video-premium" → "premium"
+      const plan = rawPlan.replace(/^video-/, "");
+
       // Determine tags to apply
       const tagsToApply: number[] = [];
-      if (["premium", "bundle"].includes(plan ?? "") || buyer.premium_granted_at) {
+      if (["premium", "bundle", "gravacao"].includes(plan) || buyer.premium_granted_at) {
         tagsToApply.push(tags.premium);
       }
-      if (["masterclass", "bundle"].includes(plan ?? "")) {
+      if (["masterclass", "bundle"].includes(plan)) {
         tagsToApply.push(tags.masterclass);
       }
 
