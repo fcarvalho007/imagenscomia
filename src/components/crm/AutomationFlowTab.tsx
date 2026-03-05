@@ -237,12 +237,12 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     {
       type: "email",
       title: "Email pós-webinar — Dia 1",
-      subtitle: "5 de Março · 13h00 · todos os inscritos gratuitos",
+      subtitle: "6 de Março · 13h00 · todos os inscritos gratuitos",
       templateKeyMatch: ["video_postwebinar_day1"],
       sendOffsetHours: null,
       iconEmoji: "📧",
       borderColorOverride: "#f59e0b",
-      customTag: { label: "5 MAR · 13H", bg: "#fef3c7", color: "#d97706" },
+      customTag: { label: "6 MAR · 13H", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui quem não assistiu ao vivo",
     },
     {
