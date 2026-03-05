@@ -1,18 +1,38 @@
 
 
-# Testar envio via Brevo e recuperar emails falhados
+# Resultado da auditoria EuPago vs Base de Dados
 
-## Situação actual
-- Brevo já integrada como provider primário no `send-email`
-- IPs desbloqueados na Brevo
-- Remetente `frederico.carvalho@digitalfc.pt` verificado
-- `BREVO_API_KEY` configurada
+## Conclusão: Todos os pagamentos estão correctamente reconciliados
 
-## Passos
+Cruzei as 20 linhas do ficheiro EuPago com a base de dados. Todos os 14 pagamentos com estado "paga" no canal "Webinars IA" têm `paid_at` preenchido na base de dados.
 
-1. **Testar envio** — Invocar `test-send-email` para confirmar que a Brevo está a funcionar
-2. **Se sucesso** — Executar `resend-failed-emails` para recuperar as confirmações de pagamento falhadas (templates `video_payment_premium` e `video_payment_masterclass`)
-3. **Verificar resultados** — Confirmar nos logs quantos emails foram reenviados com sucesso
+## Detalhe por transacção
 
-Nenhuma alteração de código necessária — apenas invocação das funções existentes.
+### Pagamentos confirmados (OK)
+- **Jessica Castro** (€18.45 premium) — paga ✓
+- **ACBC / Andre Cunha** (€18.45 premium) — paga ✓
+- **Diogo Nunes** (€18.45 premium) — paga ✓
+- **Júlio Silva / GROUP** (€57.81 masterclass) — paga ✓
+- **Andreia Amaral** (€18.45 premium) — paga ✓
+- **Né Eme** (€18.45 premium) — paga ✓
+- **Marisa Jordao** (€57.81 masterclass) — paga ✓ (paid_at: 05/03 10:31)
+- **Soraia Silva** (€18.45 premium) — paga ✓
+- **Hermana Noronha** (€70.11 bundle) — paga ✓
+- **Daniela Panta** (€70.11 bundle) — paga ✓
+- **Nuno Carvalho** (€70.11 bundle) — paga ✓
+- **Pedro Marques** (€18.45 premium) — paga ✓
+- **jorge isabelinho** (€70.11 bundle) — paga ✓
+- **GROUP-efbe272406c3** (€312.17, 6 pessoas) — paga ✓
+
+### Pendente/Expirado (correcto não ter paid_at)
+- **Susana Vieira** (ORDER-c120bc5bed9a, €70.11) — "pendente" no EuPago, sem paid_at ✓
+  - Nota: tem 2 registos com emails diferentes (`susana.vieira@` e `susana.vieira3@`), nenhum pago
+- **Frederico Correia** (ORDER-feddbdd1850e) — "expirada" no EuPago ✓
+- **Ana Lagos** (ORDER-0d159f6211e2) — "expirada" no EuPago ✓
+
+### Transacções SMSonline.pt (não são deste sistema)
+- Refs 2428, 2429, 2430 — são de outro serviço, não se aplicam
+
+## Resultado
+Nenhuma acção necessária. O webhook de reconciliação funcionou correctamente para todos os pagamentos, incluindo os da página `/comprar`. A Marisa Jordao está correctamente marcada como paga com masterclass.
 
