@@ -1,40 +1,29 @@
 
 
-# Design consistency /recursos-video vs /recursos + WhatsApp global
+# Reordenar fallback de email: Brevo → Resend → E-goi
 
-## 1. Design comparison: /recursos vs /recursos-video
+## Estado actual
+`send-email/index.ts` já usa Brevo como primário. O fallback actual é:
+1. **Brevo** (primário) ✅
+2. **E-goi** (fallback 1) ← trocar
+3. **Resend** (fallback 2) ← trocar
 
-After reviewing both components, they are **already structurally identical** — same layout (header, 2-col grid, sidebar, footer logout), same card styles, same section hierarchy. The only differences are intentional branding:
+## Alteração
+Trocar a ordem dos fallbacks em `supabase/functions/send-email/index.ts`: após Brevo falhar, tentar **Resend** antes de **E-goi**.
 
-- `/recursos`: blue accent (bg blue-600, blue-50 highlights)
-- `/recursos-video`: green accent (bg green-600, green-50 highlights, greenish gradient background)
+### Linhas ~175-195 — inverter blocos
+```
+Brevo falhou → Resend (fallback 1) → E-goi (fallback 2)
+```
 
-This is consistent and correct — no design discrepancies to fix.
+## Nota importante
+Há 3 edge functions que chamam o Resend directamente (sem passar pelo `send-email`):
+- `eupago-webhook` (emails de pagamento)
+- `send-payment-link`
+- `followup-abandoned`
 
-## 2. WhatsApp button missing from several pages
+Estas não beneficiam do fallback. Migrar para usar `send-email` seria ideal mas é uma alteração maior — fora do scope deste pedido.
 
-Currently missing `<WhatsAppSupportButton />` on:
-- `src/pages/Recursos.tsx`
-- `src/pages/RecursosVideo.tsx`
-- `src/pages/Confirmacao.tsx`
-- `src/pages/Fatura.tsx`
-- `src/pages/Pagar.tsx`
-- `src/pages/Termos.tsx`
-- `src/pages/UpgradeSucesso.tsx`
-- `src/pages/NotFound.tsx`
-
-(CRM excluded — admin page)
-
-### Implementation
-Add `import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton"` and render `<WhatsAppSupportButton />` at the end of each page's JSX return. For `Recursos.tsx` and `RecursosVideo.tsx`, add it in the page-level component (not inside the login/content sub-components) so it shows in all states.
-
-### Files to edit (8 files)
-- `src/pages/Recursos.tsx`
-- `src/pages/RecursosVideo.tsx`
-- `src/pages/Confirmacao.tsx`
-- `src/pages/Fatura.tsx`
-- `src/pages/Pagar.tsx`
-- `src/pages/Termos.tsx`
-- `src/pages/UpgradeSucesso.tsx`
-- `src/pages/NotFound.tsx`
+### Ficheiro único
+- `supabase/functions/send-email/index.ts`
 
