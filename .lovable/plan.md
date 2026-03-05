@@ -1,40 +1,29 @@
 
 
-# Reenviar confirmações de pagamento falhadas (2 clientes)
+# Actualizar recursos do webinar Vídeo com IA
 
-## Diagnóstico
+## Alterações em `src/components/recursos/RecursosVideoConteudo.tsx`
 
-Encontrei exactamente **2 clientes** que pagaram no dia 5 de Março e **não receberam** o email de confirmação de pagamento:
+### 1. Configuração (`VIDEO_RECURSOS_CONFIG`)
+- `vimeoEmbedUrl` → `"https://player.vimeo.com/video/1170832797?badge=0&autopause=0&player_id=0&app_id=58479"`
+- `resumoPdfUrl` → remover (não mencionado pelo user)
+- `audioUrl` → `"https://drive.google.com/file/d/1X4dLWqXg0w4In-n7QFWdM_0Ajh6p7lxp/view?usp=sharing"`
+- Adicionar novos campos:
+  - `workbookUrl` → `"https://drive.google.com/file/d/1qX_t_Sh3qadFj2PviOZkGvOHTQPzapPW/view?usp=sharing"`
+  - `guiaGemsUrl` → `"https://drive.google.com/file/d/18o9LPR9st0I1lZaQUBqgi-9-Wp2W0Y2x/view?usp=sharing"`
+  - `ficheiroGemUrl` → `"https://drive.google.com/file/d/13UsoucnxmGSYY1UhDLo7SjqFIjkQ4Xyk/view?usp=sharing"`
 
-| Cliente | Email | Plano | Hora pgto | Erro |
-|---------|-------|-------|-----------|------|
-| Vanessa | a.vanessamaral@gmail.com | video-premium | 21:19 | Resend quota diária excedida |
-| José | josemmoreira1@gmail.com | video-premium | 15:53 | Resend quota diária excedida |
+### 2. Secção "Apoio ao conhecimento" (main column)
+Substituir os 2 placeholders "Em breve" por recursos activos:
+- **Workbook Vídeo com IA** (link workbook)
+- **Guia de Apoio GEMs - Google Gemini** (link guia GEMs)
+- **Ficheiro para anexar ao GEM** (link ficheiro GEM)
 
-**Causa**: O webhook `eupago-webhook` chama o Resend directamente (não usa o `send-email` centralizado com fallback Brevo/E-goi), por isso quando a quota do Resend esgotou, não houve fallback.
+### 3. Sidebar "Recursos"
+- Manter **Resumo da sessão** (ainda "Em breve" — não foi fornecido)
+- **Áudio do Webinar** → link real, remover "Em breve"
+- Substituir **SOP de Prompts** e **Recurso Extra** pelos novos recursos (workbook, guia GEMs, ficheiro GEM)
 
-Todos os outros compradores de vídeo receberam a confirmação com sucesso.
-
-## Solução imediata
-
-Usar a função `resend-failed-emails` que já existe e já usa o `send-email` centralizado (Brevo → Resend → E-goi) para reenviar:
-
-```
-template_key: "video_payment_premium"
-email_key: "video_payment_premium"
-```
-
-Isto vai detectar automaticamente os 2 registos com falha, confirmar que não têm envio bem-sucedido, e reenviar via Brevo.
-
-## Melhoria estrutural (opcional, recomendada)
-
-Migrar o bloco de envio de emails ao cliente no `eupago-webhook` (linhas 701-861) para usar `send-email` centralizado em vez de chamar Resend directamente. Isto garante que futuros pagamentos nunca falham por quota de um único provider.
-
-### Ficheiro a editar
-- `supabase/functions/eupago-webhook/index.ts` — substituir chamadas directas a `api.resend.com` por chamadas a `send-email`
-
-## Plano de acção
-
-1. **Reenviar agora** os 2 emails falhados via `resend-failed-emails`
-2. **Migrar** o webhook para usar `send-email` centralizado (previne recorrência)
+### Ficheiro a editar (1)
+- `src/components/recursos/RecursosVideoConteudo.tsx`
 
