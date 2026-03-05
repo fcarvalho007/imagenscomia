@@ -1,15 +1,29 @@
 
 
-# Activar YouTube Live em /live-video
+# Auto-refresh para forçar actualização do player
 
-## Alterações
+## Problema
+Utilizadores que abriram `/live-video` antes do deploy ainda vêem o countdown. Precisam de refresh automático.
 
-### 1. `src/components/webinar/videoWebinarConfig.ts`
-- `YOUTUBE_VIDEO_ID: "gmEFoOugl6k"`
-- `isLive: true`
+## Solução
 
-### 2. `src/components/webinar/VideoWebinarVideoArea.tsx`
-- Ler `isLive` e `YOUTUBE_VIDEO_ID` da config
-- Se `isLive` e ID preenchido → mostrar iframe YouTube embed (`https://www.youtube.com/embed/gmEFoOugl6k`) em 16:9 + botão "Abrir no YouTube" como fallback (padrão já usado em `WebinarVideoArea.tsx`)
-- Caso contrário → manter countdown actual
+**Ficheiro**: `src/components/webinar/VideoWebinarVideoArea.tsx`
+
+Adicionar um `useEffect` que, quando `isLive` é `false` (código antigo em cache) OU quando não há iframe YouTube visível, faz `window.location.reload()` após 30 segundos. Como o código novo já tem `isLive: true`, após o reload carregam a versão actualizada com o player.
+
+Abordagem mais simples e imediata: adicionar ao componente `LiveVideoGate` ou à página `WebinarLiveVideo` um intervalo de auto-reload de 60s que pára assim que o iframe YouTube estiver presente no DOM.
+
+```tsx
+useEffect(() => {
+  const interval = setInterval(() => {
+    const hasIframe = document.querySelector('iframe[src*="youtube"]');
+    if (!hasIframe) {
+      window.location.reload();
+    }
+  }, 30_000);
+  return () => clearInterval(interval);
+}, []);
+```
+
+Isto garante que qualquer utilizador que tenha a versão antiga em cache recebe reload automático em até 30 segundos sem afectar quem já vê o player.
 
