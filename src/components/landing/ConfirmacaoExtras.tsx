@@ -11,7 +11,7 @@ interface ConfirmacaoExtrasProps {
 
 const ConfirmacaoExtras = ({ webinar }: ConfirmacaoExtrasProps) => {
   const config = webinar === "video" ? VIDEO_WEBINAR_CONFIG : WEBINAR_CONFIG;
-  const SHARE_TEXT = `Vou assistir ao webinar gratuito "${config.title}" com Frederico Carvalho! 🚀`;
+  const SHARE_TEXT = `Vou assistir ao webinar "${config.title}" com Frederico Carvalho! 🚀`;
   const [copied, setCopied] = useState(false);
 
   const handleCopyLink = () => {

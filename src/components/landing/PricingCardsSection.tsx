@@ -24,13 +24,13 @@ export const PricingCardsSection = () => {
         <div className="max-w-[420px] mx-auto">
           <ScrollReveal>
             <div className="bg-background border border-border rounded-lg p-8 sm:p-10 flex flex-col shadow-card">
-              <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-500 mb-1">PARTICIPAÇÃO GRATUITA — €0</p>
-              <p className="font-heading font-medium text-[12px] uppercase tracking-[0.1em] text-ink-400 mb-3">AO VIVO · 18 FEV · 10H00 · 60 MIN</p>
+              <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-500 mb-1">PACK COMPLETO</p>
+              <p className="font-heading font-medium text-[12px] uppercase tracking-[0.1em] text-ink-400 mb-3">GRAVAÇÃO + GUIA + TEMPLATES</p>
               <div className="flex items-baseline gap-2 mb-1">
-                <span className="font-heading font-extrabold text-4xl text-ink-900">€0</span>
-                <span className="text-[12px] font-semibold text-green-600 bg-green-600/10 px-2 py-0.5 rounded-full">vaga garantida</span>
+                <span className="font-heading font-extrabold text-4xl text-ink-900">€27</span>
+                <span className="text-[14px] text-ink-400">+ IVA</span>
               </div>
-              <p className="text-[14px] text-ink-500 font-medium mb-4">Para assistir ao vivo e aplicar o método no dia seguinte.</p>
+              <p className="text-[14px] text-ink-500 font-medium mb-4">Acesso à gravação completa e todos os materiais de apoio.</p>
 
               <div className="w-full h-px bg-border mb-6" />
 
@@ -47,11 +47,11 @@ export const PricingCardsSection = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => open("free")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] transition-all"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-heading font-bold text-base py-4 rounded-xl shadow-[0_4px_14px_0_rgba(37,99,235,0.35)] transition-all"
               >
-                Sim, garantir vaga grátis!
+                Garantir o meu acesso
               </motion.button>
-              <p className="text-center text-[13px] text-ink-400 mt-2">Nota: a gravação está disponível apenas no Premium Pass.</p>
+              <p className="text-center text-[13px] text-ink-400 mt-2">🔒 Pagamento seguro · Acesso imediato</p>
             </div>
           </ScrollReveal>
         </div>

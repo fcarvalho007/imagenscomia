@@ -145,7 +145,7 @@ export const StepMasterclass = ({ onAddMasterclass, onSkip }: Props) => {
             onMouseEnter={(e) => (e.currentTarget.style.color = "#374151")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
           >
-            ou continuar com inscrição gratuita →
+            ou continuar sem este extra →
           </button>
         </div>
       </div>

@@ -46,12 +46,11 @@ export const SummaryPanel = ({ orderState, total, onRemove }: Props) => {
         {/* Line 1 — always visible */}
         <div className="flex justify-between items-start py-3 border-b border-border">
           <div>
-            <p className="font-semibold text-[14px] text-ink-900">Webinar Gratuito</p>
-            <p className="text-[14px] text-ink-400 mt-0.5">18 Fev · 10h00</p>
+            <p className="font-semibold text-[14px] text-ink-900">Webinar ao vivo</p>
+            <p className="text-[14px] text-ink-400 mt-0.5">Sessão realizada</p>
           </div>
           <div className="text-right">
-            <p className="font-heading font-bold text-[16px] text-ink-900">€0</p>
-            <p className="text-[14px] text-green-600 mt-0.5">Gratuito</p>
+            <p className="text-[14px] text-green-600 mt-0.5">Incluído</p>
           </div>
         </div>
 

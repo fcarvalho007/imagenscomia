@@ -42,7 +42,7 @@ const WebinarLiveVideo = () => {
         <main className="max-w-[1200px] mx-auto px-4 sm:px-6 py-6 md:py-10">
           <div className="mb-6 md:mb-8">
             <p className="text-[13px] text-ink-400 uppercase tracking-widest font-medium mb-2">
-              Webinar gratuito
+              Webinar · Vídeo com IA
             </p>
             <h1 className="font-heading font-bold text-[24px] sm:text-[30px] md:text-[36px] leading-[1.15] text-ink-900 mb-2">
               {VIDEO_WEBINAR_CONFIG.title}

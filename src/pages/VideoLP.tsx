@@ -197,8 +197,8 @@ const DARK_BORDER = "rgba(255,255,255,0.08)";
 const VideoPageInner = () => {
   const { open } = useRegistrationModal();
   usePageMeta({
-    title: "Cria Vídeo Profissional com IA — Webinar Gratuito 5 Março 10h",
-    description: "Sessão prática ao vivo: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Gratuito, 5 de Março, 10h.",
+    title: "Cria Vídeo Profissional com IA — Webinar Vídeo com IA",
+    description: "Sessão prática: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Pack completo disponível.",
     ogImage: "https://imagenscomia.com/video-social-card.jpg",
     ogUrl: "https://imagenscomia.com/video",
   });
@@ -243,7 +243,7 @@ const VideoPageInner = () => {
             onClick={openModal}
             className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer hidden sm:block focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
           >
-            Garantir inscrição gratuita
+            Garantir acesso à gravação
           </button>
         </div>
       </motion.div>
@@ -261,7 +261,7 @@ const VideoPageInner = () => {
           className="w-full font-heading font-bold text-white text-[15px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
-          Garantir inscrição gratuita
+           Garantir acesso à gravação
         </button>
       </motion.div>
 
@@ -288,7 +288,7 @@ const VideoPageInner = () => {
                 <span className="absolute inset-0 rounded-full hero-live-dot" style={{ background: "#16a34a" }} />
                 <span className="absolute inset-0 rounded-full hero-live-dot-ping" style={{ background: "#16a34a" }} />
               </span>
-              WEBINAR GRATUITO · AO VIVO · 5 MARÇO, 10H
+              WEBINAR · VÍDEO COM IA · 5 MARÇO, 10H
             </span>
           </motion.div>
 
@@ -340,7 +340,7 @@ const VideoPageInner = () => {
               { Icon: Calendar, label: "DATA", value: "5 de Março" },
               { Icon: Clock, label: "HORÁRIO", value: "10h00" },
               { Icon: Timer, label: "DURAÇÃO", value: "45 min" },
-              { Icon: Sparkles, label: "INVESTIMENTO", value: "Gratuito" },
+              { Icon: Sparkles, label: "FORMATO", value: "Pack Completo" },
             ] as const).map((box) => (
               <motion.div
                 key={box.label}
@@ -364,8 +364,8 @@ const VideoPageInner = () => {
                 className="font-heading text-white text-[16px] sm:text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full whitespace-nowrap"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 20px", borderRadius: 10, maxWidth: 500, minWidth: 0 }}
               >
-                <span className="hidden sm:inline">Sim, quero inscrever-me grátis</span>
-                <span className="sm:hidden">Inscrever-me gratuitamente</span>
+                <span className="hidden sm:inline">Sim, quero garantir o meu acesso</span>
+                <span className="sm:hidden">Garantir o meu acesso</span>
               </button>
             </ElectricBorder>
           </motion.div>
@@ -674,7 +674,7 @@ const VideoPageInner = () => {
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
               >
-                Sim, quero inscrever-me grátis!
+                Sim, quero garantir o meu acesso!
               </motion.button>
             </div>
           </ScrollReveal>
@@ -854,7 +854,7 @@ const VideoPageInner = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-5 text-center">
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white leading-[1.15] mb-4" style={{ letterSpacing: "-0.5px" }}>
-            Garantir inscrição gratuita
+            Garantir o meu acesso
           </h2>
           <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
             Sem compromisso. Evento ao vivo, a 5 de março de 2026, às 10h.
@@ -866,7 +866,7 @@ const VideoPageInner = () => {
                 className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 36px", borderRadius: 10, maxWidth: 420, minWidth: 280 }}
               >
-                Garantir inscrição gratuita
+                Garantir o meu acesso
               </button>
             </ElectricBorder>
           </div>

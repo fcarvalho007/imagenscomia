@@ -93,7 +93,7 @@ export const HeroSection = () => {
                 boxShadow: "0 0 12px rgba(59,130,246,0.35), 0 0 32px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06)",
               }}
             >
-              WEBINAR GRATUITO
+              WEBINAR · IMAGENS COM IA
             </span>
           </div>
         </motion.div>
@@ -134,7 +134,7 @@ export const HeroSection = () => {
               { icon: Calendar, label: "ONLINE & AO VIVO", value: "18 de Fevereiro" },
               { icon: Clock, label: "HORÁRIO", value: "10h00 (Portugal)" },
               { icon: Timer, label: "DURAÇÃO", value: "60 minutos" },
-              { icon: GraduationCap, label: "INVESTIMENTO", value: "Gratuito" },
+              { icon: GraduationCap, label: "FORMATO", value: "Pack Completo" },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -184,7 +184,7 @@ export const HeroSection = () => {
                   width: "100%",
                 }}
               >
-                Sim, quero garantir a minha vaga grátis
+                Sim, quero garantir o meu acesso
               </button>
             </ElectricBorder>
           </div>
