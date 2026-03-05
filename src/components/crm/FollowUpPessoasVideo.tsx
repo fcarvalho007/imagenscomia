@@ -59,7 +59,7 @@ function fmtDateTime(iso: string | null) {
 
 // GAP 2 — Hardcoded schedule dates
 const WEBINAR_DATE = new Date("2026-03-05T10:00:00Z");
-const POSTWEBINAR_DAY1 = new Date("2026-03-05T13:00:00Z");
+const POSTWEBINAR_DAY1 = new Date("2026-03-06T13:00:00Z");
 const POSTWEBINAR_DAY3 = new Date("2026-03-08T10:00:00Z");
 const CLOSING_DATE = new Date("2026-03-10T10:00:00Z");
 
