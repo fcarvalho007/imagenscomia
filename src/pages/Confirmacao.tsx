@@ -6,6 +6,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 const PLAN_PRICES: Record<string, number> = {
   premium: 18.45,
@@ -126,6 +127,7 @@ const Confirmacao = () => {
           </p>
         </motion.div>
       </motion.div>
+      <WhatsAppSupportButton />
     </div>
   );
 };

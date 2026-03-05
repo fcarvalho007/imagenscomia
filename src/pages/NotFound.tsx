@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 const NotFound = () => {
   usePageMeta({ title: "Página não encontrada — Webinar Imagens com IA", description: "A página que procuras não existe." });
@@ -19,6 +20,7 @@ const NotFound = () => {
           Return to Home
         </a>
       </div>
+      <WhatsAppSupportButton />
     </div>
   );
 };

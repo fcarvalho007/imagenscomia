@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { InvoiceForm } from "@/components/upgrade/InvoiceForm";
 import { Check } from "lucide-react";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 export default function Fatura() {
   const [params] = useSearchParams();
@@ -37,6 +38,7 @@ export default function Fatura() {
           </div>
         )}
       </div>
+      <WhatsAppSupportButton />
     </div>
   );
 }

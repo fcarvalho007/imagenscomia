@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 const Termos = () => (
   <div className="min-h-screen bg-[#060D1A] text-white/80">
@@ -87,6 +88,7 @@ const Termos = () => (
         </Section>
       </div>
     </div>
+    <WhatsAppSupportButton />
   </div>
 );
 
