@@ -360,12 +360,12 @@ export function useInscritos() {
       provider: "internal",
       channel: "email",
     } as any);
-    // Apply E-goi Tag 32 when granting (not when revoking)
+    // Apply E-goi premium tag (32 imagens / 35 video) when granting (not when revoking)
     if (!isGranted) {
       const { error: egoiErr } = await supabase.functions.invoke("grant-premium-egoi", {
         body: { registration_id: inscritoId },
       });
-      if (egoiErr) console.error("Error applying E-goi tag 32:", egoiErr);
+      if (egoiErr) console.error("Error applying E-goi premium tag:", egoiErr);
     }
     setInscritos((prev) =>
       prev.map((i) =>
