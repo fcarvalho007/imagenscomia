@@ -1,71 +1,70 @@
 
 
-# Adicionar nodes SMS ao fluxo de Automações
+# Melhorar tab Email em Comunicação
 
-## O que vamos fazer
+## Objectivo
 
-Adicionar 3 novos nodes SMS na timeline de automações do webinar Vídeo, com botão "Enviar agora" para envio manual:
+Alinhar a tab Email com a qualidade da tab SMS: editor de texto rico (negrito, itálico, sublinhado, listas), filtros por lista/webinar, selecção múltipla de destinatários com chips, e modal de confirmação de envio.
 
-1. **SMS pós-webinar** — "O webinar já decorreu, já podes aceder ao workbook" (envio manual, todos os inscritos free)
-2. **SMS lembrete Q&A** — 30min antes da Q&A de 10 Março 14:30, para quem comprou Premium (ambos webinars)
-3. **SMS lembrete Masterclass** — 30min antes da Masterclass de 12 Março 10:00, para quem comprou Masterclass/Bundle (ambos webinars)
+## Alterações
 
-## Ficheiros a editar
+### 1. `src/components/crm/ComunicacaoView.tsx`
 
-### `src/components/crm/AutomationFlowTab.tsx`
+**Extrair EmailTab** para ficheiro próprio `src/components/crm/comunicacao/EmailTab.tsx` (consistência com SmsTab).
 
-**1. Expandir o tipo NodeDef** — adicionar campo opcional `channel: "email" | "sms"` (default "email") e `smsSendConfig` com os dados necessários para o envio (filtro de plano, texto pré-definido).
+### 2. `src/components/crm/comunicacao/EmailTab.tsx` (novo)
 
-**2. Adicionar 3 nodes SMS no array `getNodes("video")`:**
+**a) Filtros de lista** — barra de toggles no topo:
+- **Webinar**: "Imagens IA" | "Vídeo IA" | "Todos"
+- **Plano**: "Todos" | "Pagos" | "Premium" | "Masterclass" | "Free"
+- Filtra a lista de inscritos disponível no dropdown de pesquisa
 
-Após a secção "APÓS O WEBINAR":
+**b) Selecção múltipla de destinatários** — mudar de `to: string` para `recipients: Inscrito[]`:
+- Chips com avatar, nome e X para remover
+- Pesquisa filtra por nome/email nos inscritos filtrados
+- Botão "Seleccionar todos os filtrados" quando há filtro activo
+
+**c) Editor de texto rico** — substituir o `<textarea>` HTML por um editor com toolbar:
+- Toolbar com botões: **B**, *I*, U, lista, link
+- Usa `contentEditable` div com `execCommand` (simples, sem dependência extra)
+- Gera HTML automaticamente para o campo `html` do envio
+- Manter opção de alternar para "modo HTML raw" via toggle
+
+**d) Envio em lote** — se múltiplos destinatários:
+- Itera sobre cada recipient e invoca `send-email` individualmente
+- Mostra progresso (X/Y)
+
+**e) Modal de resultado** — após envio:
+- Overlay animado com ícone de sucesso/falha
+- Lista de destinatários com status individual
+- Botão "Enviar outro" e "Fechar"
+
+### 3. `src/components/crm/comunicacao/SmsTab.tsx`
+
+**Adicionar os mesmos filtros** para consistência:
+- Toggle de webinar: "Imagens IA" | "Vídeo IA" | "Todos"
+- Toggle de plano: "Todos" | "Pagos" | "Premium" | "Masterclass" | "Free"
+- Selecção múltipla de destinatários (chips) — envio em lote
+
+### 4. Lógica de filtragem (partilhada)
+
+```text
+webinar="imagens" → i.webinar === "imagens" || !i.webinar
+webinar="video"   → i.webinar === "video"
+webinar="todos"   → sem filtro
+
+plano="pagos"       → i.paid_at !== null
+plano="premium"     → i.plan === "premium"
+plano="masterclass" → i.plan === "masterclass" || i.plan === "bundle"
+plano="free"        → i.paid_at === null
+plano="todos"       → sem filtro
 ```
-📱 SMS pós-webinar
-   "Envio manual · todos os inscritos gratuitos"
-   Tag: MANUAL
-   Botão: "Enviar SMS agora →"
-```
-
-Na secção "FECHO DE LEADS" (antes do email de fecho):
-```
-📱 SMS lembrete Q&A — 10 Mar
-   "30 min antes · Premium Pass (imagens + vídeo)"
-   Tag: 10 MAR · 14H00
-
-📱 SMS lembrete Masterclass — 12 Mar
-   "30 min antes · Masterclass + Bundle (imagens + vídeo)"  
-   Tag: 12 MAR · 09H30
-```
-
-**3. Criar função `handleBulkSms`** que:
-- Recebe filtro de plano e texto SMS
-- Busca inscritos elegíveis (ambos webinars se aplicável)
-- Mostra confirm() com contagem
-- Itera e invoca `send-sms` para cada destinatário via E-goi
-- Mostra resultado (X enviados, Y falhas) em toast ou modal
-
-**4. Adaptar `renderNodeCard`** para nodes SMS:
-- Ícone 📱 em vez de ✉️
-- Cor roxa/azul diferenciada
-- Botão "Enviar SMS agora →" (verde) quando `channel === "sms"`
-
-### `supabase/functions/send-sms/index.ts`
-- Sem alterações — já suporta envio individual via E-goi
-
-## Textos SMS pré-definidos
-
-**Pós-webinar:**
-> "O webinar Video com IA ja decorreu! Acede ao workbook e materiais em imagenscomia.com/recursos — Frederico Carvalho"
-
-**Lembrete Q&A (10 Mar):**
-> "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico"
-
-**Lembrete Masterclass (12 Mar):**
-> "Lembrete: a Masterclass comeca as 10:00. O link de acesso foi enviado por email. Ate ja! — Frederico"
 
 ## Resumo
-- 1 ficheiro editado (`AutomationFlowTab.tsx`)
-- 3 nodes SMS adicionados à timeline
-- Envio em lote via botão manual com confirmação
-- Usa E-goi como provider (SMSEasy com credenciais pendentes)
+- 1 ficheiro novo (`EmailTab.tsx`)
+- 2 ficheiros editados (`ComunicacaoView.tsx`, `SmsTab.tsx`)
+- Editor rich-text com toolbar (sem dependências externas)
+- Filtros por webinar e plano em ambas as tabs
+- Selecção múltipla + envio em lote
+- Modal de resultado animado
 
