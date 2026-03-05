@@ -1,6 +1,6 @@
 import { Sparkles, Video, FileText, Headphones, CalendarDays, Instagram } from "lucide-react";
 import { VIDEO_WEBINAR_CONFIG } from "./videoWebinarConfig";
-import { useRegistrationModal } from "@/hooks/useRegistrationModal";
+import { useNavigate } from "react-router-dom";
 import { useCountdown } from "@/hooks/useCountdown";
 
 const OfferCard = ({
@@ -100,7 +100,7 @@ const DateBox = ({
 );
 
 export const VideoWebinarSidebar = () => {
-  const { open } = useRegistrationModal();
+  const navigate = useNavigate();
 
   return (
     <div className="lg:sticky lg:top-[72px] space-y-4">
@@ -126,7 +126,7 @@ export const VideoWebinarSidebar = () => {
           { icon: <FileText className="w-4 h-4" />, text: "Manual de apoio ao conhecimento em vídeo (passo a passo)" },
         ]}
         ctaLabel="Garantir Premium Pass"
-        onCtaClick={() => open("premium")}
+        onCtaClick={() => navigate("/comprar")}
         priceNote={
           <>
             <span className="block">Early bird: €15 + IVA</span>
@@ -152,7 +152,7 @@ export const VideoWebinarSidebar = () => {
           { icon: <FileText className="w-4 h-4" />, text: "Prompts para vídeo + gravação incluída" },
         ]}
         ctaLabel="Garantir lugar na Masterclass"
-        onCtaClick={() => open("premium")}
+        onCtaClick={() => navigate("/comprar")}
         priceNote={
           <>
             <span className="block">Early bird: €47 + IVA</span>
