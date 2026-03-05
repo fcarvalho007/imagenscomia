@@ -1,49 +1,40 @@
 
 
-# Corrigir mapeamento de tags E-goi para webinar Vídeo
+# Reenviar confirmações de pagamento falhadas (2 clientes)
 
-## Problema identificado
+## Diagnóstico
 
-A screenshot mostra a Tag 35 (`premium_pass_webinar_video_com_ia_5_março`) com **0 contactos** no E-goi. Isto porque:
+Encontrei exactamente **2 clientes** que pagaram no dia 5 de Março e **não receberam** o email de confirmação de pagamento:
 
-### Mapeamento actual das tags E-goi
+| Cliente | Email | Plano | Hora pgto | Erro |
+|---------|-------|-------|-----------|------|
+| Vanessa | a.vanessamaral@gmail.com | video-premium | 21:19 | Resend quota diária excedida |
+| José | josemmoreira1@gmail.com | video-premium | 15:53 | Resend quota diária excedida |
 
-| Tag ID | Nome | Webinar |
-|--------|------|---------|
-| 31 | webinar_imagens_com_ia_18_fev | Imagens (inscrição) |
-| 32 | premium_pass_webinar_imagens | Imagens (premium) |
-| 33 | masterclass_webinar_imagens | Imagens (masterclass) |
-| 34 | webinar_video_com_ia_5_março | Vídeo (inscrição) |
-| **35** | **premium_pass_webinar_video** | **Vídeo (premium)** ← vazia |
+**Causa**: O webhook `eupago-webhook` chama o Resend directamente (não usa o `send-email` centralizado com fallback Brevo/E-goi), por isso quando a quota do Resend esgotou, não houve fallback.
 
-### O que está errado
+Todos os outros compradores de vídeo receberam a confirmação com sucesso.
 
-1. **`eupago-webhook`** — **correcto**: já usa `{ imagens: { premium: 32 }, video: { premium: 35 } }`. Mas se nenhum pagamento de vídeo passou por aqui, a tag nunca foi aplicada.
+## Solução imediata
 
-2. **`grant-premium-egoi`** — **errado**: usa sempre Tag 32 (imagens), mesmo para registos do webinar vídeo. Não distingue o webinar.
+Usar a função `resend-failed-emails` que já existe e já usa o `send-email` centralizado (Brevo → Resend → E-goi) para reenviar:
 
-3. **`bulk-tag-egoi`** — **errado**: usa sempre Tag 32 para premium, ignora o webinar. Deveria usar Tag 35 para registos de vídeo.
+```
+template_key: "video_payment_premium"
+email_key: "video_payment_premium"
+```
 
-## Alterações
+Isto vai detectar automaticamente os 2 registos com falha, confirmar que não têm envio bem-sucedido, e reenviar via Brevo.
 
-### 1. `supabase/functions/grant-premium-egoi/index.ts`
-- Buscar também o campo `webinar` do registo (além do `email`)
-- Se `webinar === 'video'` → aplicar Tag 35
-- Se `webinar === 'imagens'` ou outro → aplicar Tag 32
+## Melhoria estrutural (opcional, recomendada)
 
-### 2. `supabase/functions/bulk-tag-egoi/index.ts`
-- Buscar o campo `webinar` de cada registo
-- Usar mapeamento: `{ imagens: { premium: 32, masterclass: 33 }, video: { premium: 35, masterclass: 33 } }`
-- Aplicar a tag correcta conforme o webinar
+Migrar o bloco de envio de emails ao cliente no `eupago-webhook` (linhas 701-861) para usar `send-email` centralizado em vez de chamar Resend directamente. Isto garante que futuros pagamentos nunca falham por quota de um único provider.
 
-### 3. `src/hooks/useInscritos.ts`
-- Actualizar o comentário (linha 363) de "Tag 32" para "Tag premium (32 ou 35)"
+### Ficheiro a editar
+- `supabase/functions/eupago-webhook/index.ts` — substituir chamadas directas a `api.resend.com` por chamadas a `send-email`
 
-### Ficheiros a editar (3)
-- `supabase/functions/grant-premium-egoi/index.ts`
-- `supabase/functions/bulk-tag-egoi/index.ts`
-- `src/hooks/useInscritos.ts` (apenas comentário)
+## Plano de acção
 
-### Nota
-Após o deploy, será necessário correr o `bulk-tag-egoi` para aplicar retroactivamente a Tag 35 aos compradores de vídeo premium que ficaram sem tag.
+1. **Reenviar agora** os 2 emails falhados via `resend-failed-emails`
+2. **Migrar** o webhook para usar `send-email` centralizado (previne recorrência)
 
