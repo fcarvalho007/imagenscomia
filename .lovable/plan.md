@@ -1,47 +1,49 @@
 
 
-# Rascunho de fatura — último pagamento + correcção de descrições
+# SMS pré-preenchido e editável nos nodes de Automações
 
-## Último pagamento encontrado
-- **Cliente**: Jessica Castro (jessica@xistoazul.pt)
-- **Plano**: `video-premium` (Sessão HD + Pack Apoio — Vídeo com IA)
-- **Valor**: 15,00€ + IVA
-- **Dados de faturação**: Não preenchidos (será emitida como "Consumidor Final", NIF 999999990)
+## Problema
+Actualmente o texto SMS só aparece ao clicar "Enviar SMS agora →". O utilizador quer ver o texto sempre visível, poder editá-lo, e gravá-lo — sem ser obrigado a enviar imediatamente.
 
-## Alterações no `create-invoice/index.ts`
+## Alterações em `src/components/crm/AutomationFlowTab.tsx`
 
-### 1. Actualizar `PLAN_LABELS` — remover "Gravação", começar sempre com "Formação"
+### 1. Estado para textos SMS personalizados
+No componente `Timeline`, adicionar um `useState<Record<string, string>>` (`customSmsTexts`) que guarda textos editados por `templateKey`. Inicializar vazio — quando vazio, usa o default de `smsSendConfig.smsText`.
+
+### 2. Mostrar sempre o texto SMS no card
+No `renderNodeCard`, para nodes com `channel === "sms"`, mostrar sempre:
+- Uma `<textarea>` (ou `<p>` em modo leitura) com o texto actual (custom ou default)
+- Um botão "Editar" (ícone lápis) que alterna para modo edição inline
+- Em modo edição: textarea editável + botões "Gravar" e "Cancelar"
+- "Gravar" guarda no state `customSmsTexts[key]` (persistência local — `localStorage` com chave `crm_sms_drafts`)
+- Botão "Enviar SMS agora →" usa o texto gravado (ou default)
+
+### 3. Persistência em localStorage
+- Ao gravar, guardar em `localStorage("crm_sms_drafts")` como JSON `{ [templateKey]: text }`
+- Ao montar o componente, carregar de localStorage para `customSmsTexts`
+- Isto garante que textos editados sobrevivem a refresh
+
+### 4. Layout do card SMS (novo)
 ```
-premium:          "Formação — Premium Pass · Imagens com IA"
-masterclass:      "Formação — Masterclass · Imagens com IA"
-bundle:           "Formação — Premium + Masterclass · Imagens com IA"
-gravacao:         "Formação — Sessão HD + Pack Apoio · Imagens com IA"
-video-premium:    "Formação — Sessão HD + Pack Apoio · Vídeo com IA"
-video-masterclass:"Formação — Masterclass · Vídeo com IA"
-video-bundle:     "Formação — Masterclass + Sessão · Vídeo com IA"
-```
-
-### 2. Ajustar campo `description` do item
-Actualmente: `"Formação online — ${itemDescription}"` → redundante porque o label já terá "Formação".
-
-Novo: usar o label directamente como `name` e a `description` como um resumo curto:
-- `name`: label completo (ex: "Formação — Sessão HD + Pack Apoio · Vídeo com IA")
-- `description`: resumo do conteúdo (ex: "Acesso à sessão completa em HD + materiais de apoio")
-
-Mapa de descrições por plano para o campo `description`:
-```
-premium:           "Acesso premium ao webinar Imagens com IA"
-masterclass:       "Masterclass online de 3h · Imagens com IA"
-bundle:            "Acesso premium + Masterclass · Imagens com IA"
-gravacao:          "Sessão completa em HD + pack de apoio · Imagens com IA"
-video-premium:     "Sessão completa em HD + pack de apoio · Vídeo com IA"
-video-masterclass: "Masterclass online de 3h · Vídeo com IA"
-video-bundle:      "Masterclass + sessão completa · Vídeo com IA"
+┌─────────────────────────────────────────────────┐
+│ 📱 SMS lembrete Q&A — 10 Mar        2 enviados │
+│    30 min antes · Premium Pass       0 falhas   │
+│    ┌─────────────────────────────────────┐      │
+│    │ Lembrete: a sessao Q&A comeca...   │ ✏️   │
+│    └─────────────────────────────────────┘      │
+│    [10 MAR · 14H00]        [Enviar SMS agora →] │
+└─────────────────────────────────────────────────┘
 ```
 
-### 3. Criar rascunho de teste
-Após deploy, invocar a função com `draft_only: true` para o registo da Jessica Castro para verificar que os campos estão correctos no InvoiceExpress.
+Em modo edição:
+```
+│    ┌─────────────────────────────────────┐      │
+│    │ [textarea editável]                │      │
+│    └─────────────────────────────────────┘      │
+│    120/160              [Cancelar] [💾 Gravar]  │
+│                         [Enviar SMS agora →]    │
+```
 
-## Ficheiro a editar
-- `supabase/functions/create-invoice/index.ts`
+### Ficheiro único
+- `src/components/crm/AutomationFlowTab.tsx`
 
