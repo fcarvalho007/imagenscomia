@@ -17,14 +17,18 @@ function formatPhone(raw: string): string {
 }
 
 async function sendViaSmsEasy(to: string, text: string): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
-  const apiKey = Deno.env.get("SMSONLINE_API_KEY");
-  if (!apiKey) return { ok: false, messageId: null, error: "SMSONLINE_API_KEY not configured" };
+  const credentials = Deno.env.get("SMSONLINE_API_KEY");
+  if (!credentials) return { ok: false, messageId: null, error: "SMSONLINE_API_KEY not configured" };
+
+  // Support both raw "user:pass" and pre-encoded Base64
+  const isBase64 = !credentials.includes(":");
+  const b64 = isBase64 ? credentials : btoa(credentials);
 
   const res = await fetch("https://login.smsonline.pt/Api/rest/message", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Basic ${apiKey}`,
+      "Authorization": `Basic ${b64}`,
     },
     body: JSON.stringify({
       to: [to],
