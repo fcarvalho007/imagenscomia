@@ -24,7 +24,7 @@ function buildFallbackHtml(fname: string): string {
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Mas se ainda tens interesse, esta é a última oportunidade para garantir o Premium Pass com acesso à gravação, Q&A e guia de prompts.</p>
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €15+IVA</p>
+    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
     <div style="text-align:center;">
       <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Última oportunidade — Obter acesso →</a>
     </div>
