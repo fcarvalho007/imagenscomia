@@ -1,53 +1,72 @@
 
 
-# Análise dos emails falhados e plano de reenvio
+# Relatório: Tags E-goi incorrectas + Plano de correcção
 
-## Situação actual (4 de Março, 16:15 — webinar amanhã às 10:00)
+## Causa raiz
 
-231 inscritos no webinar de vídeo. O sistema de email só começou a funcionar correctamente hoje (domínio E-goi corrigido para `mkt.digitalfc.pt`). Resultado: muitos emails falharam antes da correcção.
+A função `register-free` chama **sempre** a função `sync-egoi` (linhas 216-238), independentemente do webinar. A função `sync-egoi` aplica a tag 31 (`webinar_imagens_com_ia_18_fev`) a **todos** os contactos.
 
-### Emails pendentes (falhados sem reenvio bem-sucedido)
+Resultado: quem se registou **apenas** no vídeo recebeu indevidamente a tag de imagens.
 
-| Template | Pendentes | Relevância agora | Acção |
-|---|---|---|---|
-| `video_reminder_24h` | 141 | **Muito relevante** — webinar é amanhã. Este é o email mais importante. | **Reenviar já** |
-| `video_followup_prewebinar` | 17 | **Relevante** — upsell pré-webinar, ainda há tempo para converter. | **Reenviar já** |
-| `video_confirmation` | 7 | Moderada — o webinar é amanhã, a confirmação em si é menos urgente, mas reforça a presença. | **Reenviar** |
-| `video_confirmation_returning` | 2 | Idem. | **Reenviar** |
-| `video_payment_masterclass` | 5 | **Crítico** — são clientes que pagaram e não receberam confirmação de compra. | **Reenviar** |
-| `video_group_confirmation_payer` | 1 | **Crítico** — pagador de grupo sem confirmação. | **Reenviar** |
+A função `bulk-sync-egoi` tem o mesmo problema — não filtra por webinar.
 
-### Automações agendadas que ainda vão correr
+## Relatório de inscrições cruzadas
 
-- **Lembrete 1h** (`video_reminder_1h`): Cron `0 * * * *` — dispara a cada hora. Janela activa: 08:30-09:30 UTC amanhã (5 de Março). Está correctamente configurado e agora o E-goi funciona, portanto vai enviar sem problemas.
-- **Pós-webinar**: Todos agendados para 5, 8 e 10 de Março. Sem acção necessária.
+```text
+┌─────────────────┬───────┐
+│ Categoria       │ Total │
+├─────────────────┼───────┤
+│ Só Imagens      │  197  │
+│ Só Vídeo        │  208  │
+│ Ambos           │   39  │
+├─────────────────┼───────┤
+│ Total inscritos │  444  │
+└─────────────────┴───────┘
+```
 
-### Conclusão: o `video_reminder_48h` não precisa de reenvio
-
-Tinha 88 falhas mas 0 pendentes — todos já foram cobertos pelo envio bem-sucedido do reminder_48h (201 enviados). Nada a fazer.
+- **197** pessoas inscreveram-se apenas no webinar de Imagens — tag 31 correcta
+- **39** pessoas inscreveram-se em ambos — tags 31 + 34 correctas
+- **208** pessoas inscreveram-se apenas no Vídeo — têm tag 31 **indevidamente**, devem ter apenas tag 34
 
 ## Plano de execução
 
-Invocar a função `resend-failed-emails` sequencialmente para cada template, por ordem de prioridade:
+### 1. Corrigir `register-free/index.ts` (prevenir novas ocorrências)
 
-1. **`video_reminder_24h`** (141 pessoas) — prioridade máxima
-2. **`video_payment_masterclass`** (5 pessoas) — clientes pagantes sem confirmação
-3. **`video_group_confirmation_payer`** (1 pessoa) — pagante de grupo
-4. **`video_followup_prewebinar`** (17 pessoas) — upsell
-5. **`video_confirmation`** (7 pessoas) — confirmação de inscrição
-6. **`video_confirmation_returning`** (2 pessoas) — confirmação returning
+Envolver a chamada a `sync-egoi` (linhas 52-75 e 216-238) numa condição que só executa quando `webinar !== "video"`:
 
-Total: ~173 emails a reenviar. Com o delay de 600ms por email, isto leva ~2 minutos.
+```typescript
+// Linha 52 e 216: adicionar condição
+if ((webinar || "imagens") !== "video") {
+  // chamada a sync-egoi (tag imagens)
+}
+```
 
-### Detalhe técnico
+### 2. Corrigir `bulk-sync-egoi/index.ts`
 
-A função `resend-failed-emails` já faz exactamente o que é necessário:
-- Busca `message_logs` com `status=failed` para o `template_key`
-- Exclui quem já recebeu com sucesso (deduplicação)
-- Exclui `do_not_contact=true`
-- Lê o template da tabela `email_templates`
-- Envia via `send-email` (agora a usar E-goi com domínio correcto)
-- Regista em `message_logs` e `email_send_logs`
+Adicionar filtro `.eq("webinar", "imagens")` à query de registrations (linha 22).
 
-Cada invocação usa os parâmetros `template_key` e `email_key`. Não é necessária nenhuma alteração de código — apenas invocar a função 6 vezes com os parâmetros correctos.
+### 3. Criar edge function `cleanup-egoi-tags/index.ts`
+
+Nova função que:
+1. Busca os 208 emails que existem na BD apenas com `webinar = 'video'`
+2. Para cada um, encontra o `contact_id` na E-goi via API
+3. Usa o endpoint `POST /lists/5/contacts/actions/detach-tag` com `tag_id: 31` para remover a tag de imagens
+4. Reporta resultados (removidos / não encontrados / erros)
+
+A API E-goi de detach-tag funciona de forma idêntica ao attach-tag:
+```
+POST /lists/5/contacts/actions/detach-tag
+{ "tag_id": 31, "contacts": ["contact_id"] }
+```
+
+### 4. Invocar a função de cleanup
+
+Executar `cleanup-egoi-tags` uma vez para limpar os 208 contactos incorrectos.
+
+### Resultado esperado
+
+Após execução:
+- **Só Imagens (197)**: tag 31 ✓
+- **Só Vídeo (208)**: tag 34 ✓, tag 31 removida ✓
+- **Ambos (39)**: tags 31 + 34 ✓ (sem alteração)
 
