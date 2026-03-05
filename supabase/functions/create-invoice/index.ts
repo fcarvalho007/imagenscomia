@@ -14,6 +14,8 @@ interface InvoiceRequest {
   registration_id: string;
   /** If true, also send the invoice by email via InvoiceExpress */
   send_email?: boolean;
+  /** If true, create as draft only — do not finalize or send email */
+  draft_only?: boolean;
 }
 
 serve(async (req) => {
@@ -30,7 +32,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body: InvoiceRequest = await req.json();
-    const { registration_id, send_email = true } = body;
+    const { registration_id, send_email = true, draft_only = false } = body;
 
     if (!registration_id) {
       return new Response(JSON.stringify({ error: "registration_id required" }), {
@@ -155,63 +157,68 @@ serve(async (req) => {
     const documentId = createData.invoice_receipt?.id || createData.id;
     console.log(`✅ Invoice-receipt created: ID=${documentId}`);
 
-    // ── Step 2: Finalize the invoice-receipt ──
-    const stateRes = await fetch(
-      `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ invoice: { state: "finalized" } }),
-      }
-    );
-
-    if (!stateRes.ok) {
-      const stateData = await stateRes.text();
-      console.error("InvoiceExpress finalize error:", stateData);
-      return new Response(JSON.stringify({ error: "InvoiceExpress finalize failed", document_id: documentId, details: stateData }), {
-        status: stateRes.status,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    console.log(`✅ Invoice-receipt ${documentId} finalized`);
-
-    // ── Step 3: Send by email (optional) ──
     let emailSent = false;
-    if (send_email && clientEmail) {
-      // Small delay for InvoiceExpress to process
-      await new Promise((r) => setTimeout(r, 2000));
 
-      const emailRes = await fetch(
-        `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+    if (!draft_only) {
+      // ── Step 2: Finalize the invoice-receipt ──
+      const stateRes = await fetch(
+        `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
-            message: {
-              client: { email: clientEmail, save: "0" },
-              subject: `Fatura-Recibo — ${itemDescription}`,
-              body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
-              logo: "0",
-            },
-          }),
+          body: JSON.stringify({ invoice: { state: "finalized" } }),
         }
       );
 
-      emailSent = emailRes.ok;
-      console.log(`📧 Invoice email ${emailSent ? "sent" : "FAILED"} to ${clientEmail}`);
-    }
+      if (!stateRes.ok) {
+        const stateData = await stateRes.text();
+        console.error("InvoiceExpress finalize error:", stateData);
+        return new Response(JSON.stringify({ error: "InvoiceExpress finalize failed", document_id: documentId, details: stateData }), {
+          status: stateRes.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
-    // ── Step 4: Mark invoice_sent in registrations ──
-    await supabase
-      .from("registrations")
-      .update({ invoice_sent: true })
-      .eq("id", registration_id);
+      console.log(`✅ Invoice-receipt ${documentId} finalized`);
+
+      // ── Step 3: Send by email (optional) ──
+      if (send_email && clientEmail) {
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const emailRes = await fetch(
+          `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              message: {
+                client: { email: clientEmail, save: "0" },
+                subject: `Fatura-Recibo — ${itemDescription}`,
+                body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+                logo: "0",
+              },
+            }),
+          }
+        );
+
+        emailSent = emailRes.ok;
+        console.log(`📧 Invoice email ${emailSent ? "sent" : "FAILED"} to ${clientEmail}`);
+      }
+
+      // ── Step 4: Mark invoice_sent in registrations ──
+      await supabase
+        .from("registrations")
+        .update({ invoice_sent: true })
+        .eq("id", registration_id);
+    } else {
+      console.log(`📝 Draft mode — skipping finalize, email, and invoice_sent update`);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         document_id: documentId,
+        draft_only,
         email_sent: emailSent,
         client_email: clientEmail,
       }),
