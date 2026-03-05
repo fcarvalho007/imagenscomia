@@ -1,0 +1,231 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const ACCOUNT = "fomentarsonhos";
+const BASE_URL = `https://${ACCOUNT}.app.invoicexpress.com`;
+
+interface InvoiceRequest {
+  registration_id: string;
+  /** If true, also send the invoice by email via InvoiceExpress */
+  send_email?: boolean;
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const API_KEY = Deno.env.get("INVOICEEXPRESS_API_KEY");
+    if (!API_KEY) throw new Error("INVOICEEXPRESS_API_KEY not configured");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const body: InvoiceRequest = await req.json();
+    const { registration_id, send_email = true } = body;
+
+    if (!registration_id) {
+      return new Response(JSON.stringify({ error: "registration_id required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Fetch registration + invoice_details ──
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref")
+      .eq("id", registration_id)
+      .maybeSingle();
+
+    if (!reg) {
+      return new Response(JSON.stringify({ error: "Registration not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: invoice } = await supabase
+      .from("invoice_details")
+      .select("*")
+      .eq("registration_id", registration_id)
+      .maybeSingle();
+
+    // ── Build client data ──
+    const clientName = invoice?.invoice_name || reg.name || "Consumidor Final";
+    const clientEmail = invoice?.invoice_email || reg.email;
+    const clientVat = invoice?.invoice_vat || "999999990"; // consumidor final
+    const clientAddress = invoice?.invoice_address || "";
+    const clientZip = invoice?.invoice_zip || "";
+    const clientCity = invoice?.invoice_city || "";
+
+    // ── Price map ──
+    const PRICES: Record<string, number> = {
+      premium: 15.00,
+      masterclass: 47.00,
+      bundle: 62.00,
+      gravacao: 27.00,
+      "video-premium": 15.00,
+      "video-masterclass": 47.00,
+      "video-bundle": 57.00,
+    };
+
+    const PLAN_LABELS: Record<string, string> = {
+      premium: "Premium Pass — Imagens com IA",
+      masterclass: "Masterclass — Imagens com IA",
+      bundle: "Premium + Masterclass — Imagens com IA",
+      gravacao: "Gravação HD — Imagens com IA",
+      "video-premium": "Gravação HD + Pack Apoio — Vídeo com IA",
+      "video-masterclass": "Masterclass — Vídeo com IA",
+      "video-bundle": "Masterclass + Gravação — Vídeo com IA",
+    };
+
+    const planKey = reg.plan_selected || "premium";
+    const unitPrice = PRICES[planKey] || 15.00;
+    const itemDescription = PLAN_LABELS[planKey] || planKey;
+
+    // ── Determine tax ──
+    // Portuguese NIF → 23% IVA, foreign → tax exempt
+    const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
+    const taxName = isPortuguese ? "IVA23" : "IVA0";
+    const taxExemption = isPortuguese ? undefined : "M01";
+
+    const today = new Date();
+    const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+
+    // ── Step 1: Create invoice-receipt (simplified invoice) ──
+    const invoicePayload = {
+      invoice: {
+        date: dateStr,
+        due_date: dateStr,
+        reference: reg.eupago_ref || registration_id.slice(0, 12),
+        observations: `Webinar: ${reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}`,
+        ...(taxExemption ? { tax_exemption: taxExemption } : {}),
+        client: {
+          name: clientName,
+          code: reg.email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
+          email: clientEmail,
+          fiscal_id: clientVat,
+          address: clientAddress,
+          postal_code: clientZip,
+          city: clientCity,
+          country: "Portugal",
+        },
+        items: [
+          {
+            name: itemDescription,
+            description: `Formação online — ${itemDescription}`,
+            unit_price: unitPrice.toFixed(2),
+            quantity: "1",
+            unit: "service",
+            tax: {
+              name: taxName,
+            },
+          },
+        ],
+      },
+    };
+
+    console.log(`📄 Creating invoice-receipt for ${reg.email} — plan: ${planKey}, price: ${unitPrice}€`);
+
+    const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(invoicePayload),
+    });
+
+    const createData = await createRes.json();
+
+    if (!createRes.ok) {
+      console.error("InvoiceExpress create error:", JSON.stringify(createData));
+      return new Response(JSON.stringify({ error: "InvoiceExpress create failed", details: createData }), {
+        status: createRes.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const documentId = createData.invoice_receipt?.id || createData.id;
+    console.log(`✅ Invoice-receipt created: ID=${documentId}`);
+
+    // ── Step 2: Finalize the invoice-receipt ──
+    const stateRes = await fetch(
+      `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ invoice: { state: "finalized" } }),
+      }
+    );
+
+    if (!stateRes.ok) {
+      const stateData = await stateRes.text();
+      console.error("InvoiceExpress finalize error:", stateData);
+      return new Response(JSON.stringify({ error: "InvoiceExpress finalize failed", document_id: documentId, details: stateData }), {
+        status: stateRes.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log(`✅ Invoice-receipt ${documentId} finalized`);
+
+    // ── Step 3: Send by email (optional) ──
+    let emailSent = false;
+    if (send_email && clientEmail) {
+      // Small delay for InvoiceExpress to process
+      await new Promise((r) => setTimeout(r, 2000));
+
+      const emailRes = await fetch(
+        `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            message: {
+              client: { email: clientEmail, save: "0" },
+              subject: `Fatura-Recibo — ${itemDescription}`,
+              body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+              logo: "0",
+            },
+          }),
+        }
+      );
+
+      emailSent = emailRes.ok;
+      console.log(`📧 Invoice email ${emailSent ? "sent" : "FAILED"} to ${clientEmail}`);
+    }
+
+    // ── Step 4: Mark invoice_sent in registrations ──
+    await supabase
+      .from("registrations")
+      .update({ invoice_sent: true })
+      .eq("id", registration_id);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        document_id: documentId,
+        email_sent: emailSent,
+        client_email: clientEmail,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (error: unknown) {
+    console.error("create-invoice error:", error);
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

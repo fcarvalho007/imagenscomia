@@ -458,6 +458,24 @@ async function processPayment(data: PaymentData) {
 
   // ── Post-match processing ─────────────────────────────────────────────────
 
+  // ── Auto-create InvoiceExpress invoice-receipt (non-blocking) ──
+  if (matchedRegId) {
+    try {
+      const invoiceRes = await fetch(`${supabaseUrl}/functions/v1/create-invoice`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({ registration_id: matchedRegId, send_email: true }),
+      });
+      const invoiceData = await invoiceRes.json();
+      console.log(`📄 Auto-invoice: ${invoiceRes.ok ? "✅" : "❌"} doc=${invoiceData.document_id || "—"} email=${invoiceData.email_sent || false}`);
+    } catch (invErr) {
+      console.error("Auto-invoice error (non-blocking):", invErr);
+    }
+  }
+
   // Log payment_confirmed event
   if (matchedRegId) {
     await supabase.from("payment_events").insert({
