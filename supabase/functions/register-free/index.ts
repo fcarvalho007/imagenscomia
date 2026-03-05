@@ -49,29 +49,31 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existing) {
-      // Sync to E-goi for existing registrations (non-blocking)
-      try {
-        const egoiResponse = await fetch(
-          `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            },
-            body: JSON.stringify({
-              first_name: existing.first_name || "",
-              last_name: existing.last_name || "",
-              email: email.toLowerCase().trim(),
-              cellphone: existing.whatsapp || null,
-              referral_code: existing.referral_code,
-            }),
-          }
-        );
-        const egoiResult = await egoiResponse.text();
-        console.log(`E-goi sync (existing) result: ${egoiResponse.status} - ${egoiResult}`);
-      } catch (egoiError) {
-        console.error("E-goi sync failed for existing registration (non-blocking):", egoiError);
+      // Sync to E-goi for existing registrations (non-blocking) — only for imagens webinar
+      if (targetWebinar !== "video") {
+        try {
+          const egoiResponse = await fetch(
+            `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              },
+              body: JSON.stringify({
+                first_name: existing.first_name || "",
+                last_name: existing.last_name || "",
+                email: email.toLowerCase().trim(),
+                cellphone: existing.whatsapp || null,
+                referral_code: existing.referral_code,
+              }),
+            }
+          );
+          const egoiResult = await egoiResponse.text();
+          console.log(`E-goi sync (existing) result: ${egoiResponse.status} - ${egoiResult}`);
+        } catch (egoiError) {
+          console.error("E-goi sync failed for existing registration (non-blocking):", egoiError);
+        }
       }
 
       // Video webinar: sync to E-goi with video tag (non-blocking)
@@ -212,29 +214,31 @@ serve(async (req) => {
       }
     }
 
-    // Sync to E-goi (non-blocking — don't fail registration if E-goi fails)
-    try {
-      const egoiResponse = await fetch(
-        `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({
-            first_name: firstName.trim(),
-            last_name: (lastName || "").trim(),
-            email: email.toLowerCase().trim(),
-            cellphone: cleanPhone || null,
-            referral_code: referralCode,
-          }),
-        }
-      );
-      const egoiResult = await egoiResponse.text();
-      console.log(`E-goi sync result: ${egoiResponse.status} - ${egoiResult}`);
-    } catch (egoiError) {
-      console.error("E-goi sync failed (non-blocking):", egoiError);
+    // Sync to E-goi (non-blocking) — only for imagens webinar
+    if ((webinar || "imagens") !== "video") {
+      try {
+        const egoiResponse = await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/sync-egoi`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              first_name: firstName.trim(),
+              last_name: (lastName || "").trim(),
+              email: email.toLowerCase().trim(),
+              cellphone: cleanPhone || null,
+              referral_code: referralCode,
+            }),
+          }
+        );
+        const egoiResult = await egoiResponse.text();
+        console.log(`E-goi sync result: ${egoiResponse.status} - ${egoiResult}`);
+      } catch (egoiError) {
+        console.error("E-goi sync failed (non-blocking):", egoiError);
+      }
     }
 
     // Video webinar: sync to E-goi with video tag (non-blocking)

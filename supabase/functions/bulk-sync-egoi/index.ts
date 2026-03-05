@@ -20,6 +20,7 @@ serve(async (req) => {
     const { data: registrations, error } = await supabase
       .from("registrations")
       .select("first_name, last_name, email, whatsapp, referral_code")
+      .eq("webinar", "imagens")
       .order("created_at", { ascending: true });
 
     if (error) {
