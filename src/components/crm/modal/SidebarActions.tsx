@@ -1,7 +1,8 @@
-import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard } from "lucide-react";
+import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SmsComposer from "./SmsComposer";
 
 interface SidebarActionsProps {
   inscrito: Inscrito;
@@ -25,6 +26,7 @@ export default function SidebarActions({
 }: SidebarActionsProps) {
   const [backlogSending, setBacklogSending] = useState(false);
   const [backlogSent, setBacklogSent] = useState(false);
+  const [showSms, setShowSms] = useState(false);
 
   const linkAgeMs = inscrito.payment_link_created_at
     ? Date.now() - new Date(inscrito.payment_link_created_at).getTime()
@@ -109,6 +111,26 @@ export default function SidebarActions({
         >
           <Mail size={13} /> Enviar Email
         </button>
+        {inscrito.whatsapp && (
+          <button
+            onClick={() => setShowSms(!showSms)}
+            className={btnBase}
+            style={{
+              background: showSms ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.06)",
+              color: showSms ? "#93c5fd" : "rgba(255,255,255,0.70)",
+            }}
+          >
+            <MessageSquare size={13} /> Enviar SMS
+          </button>
+        )}
+        {showSms && inscrito.whatsapp && (
+          <SmsComposer
+            phone={inscrito.whatsapp}
+            registrationId={inscrito.id}
+            nome={inscrito.primeiro_nome || inscrito.nome}
+            onClose={() => setShowSms(false)}
+          />
+        )}
         <button
           onClick={() => onToggleFollowUp(inscrito.id)}
           className={btnBase}
