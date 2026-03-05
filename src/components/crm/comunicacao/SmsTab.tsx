@@ -109,7 +109,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
       </div>
 
       {/* Filters */}
-      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} />
+      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-8">
         {/* LEFT — Form */}
@@ -156,11 +156,18 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>Destinatários ({recipients.length})</label>
-              {filteredPool.length > 0 && (
-                <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
-                  <Users size={10} /> Seleccionar todos ({filteredPool.length})
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {recipients.length > 0 && (
+                  <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#f87171" }}>
+                    <X size={10} /> Limpar todos
+                  </button>
+                )}
+                {filteredPool.length > 0 && (
+                  <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
+                    <Users size={10} /> Seleccionar todos ({filteredPool.length})
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Chips */}
