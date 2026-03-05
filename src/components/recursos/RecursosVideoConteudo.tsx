@@ -7,11 +7,11 @@ import RecursosVideoUpsell from "./RecursosVideoUpsell";
 
 // ─── Configuração de conteúdo — actualizar após o webinar ─────────────────────
 const VIDEO_RECURSOS_CONFIG = {
-  vimeoEmbedUrl: "", // placeholder — preencher com URL Vimeo após webinar
-  resumoPdfUrl: "#",
-  audioUrl: "#",
-  sopPromptsUrl: "#",
-  extraResourceUrl: "#",
+  vimeoEmbedUrl: "https://player.vimeo.com/video/1170832797?badge=0&autopause=0&player_id=0&app_id=58479",
+  audioUrl: "https://drive.google.com/file/d/1X4dLWqXg0w4In-n7QFWdM_0Ajh6p7lxp/view?usp=sharing",
+  workbookUrl: "https://drive.google.com/file/d/1qX_t_Sh3qadFj2PviOZkGvOHTQPzapPW/view?usp=sharing",
+  guiaGemsUrl: "https://drive.google.com/file/d/18o9LPR9st0I1lZaQUBqgi-9-Wp2W0Y2x/view?usp=sharing",
+  ficheiroGemUrl: "https://drive.google.com/file/d/13UsoucnxmGSYY1UhDLo7SjqFIjkQ4Xyk/view?usp=sharing",
   chapters: [
     { time: "00:00", label: "Introdução e panorama do vídeo com IA" },
     { time: "10:00", label: "Método: do briefing ao clip" },
@@ -151,31 +151,35 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                 </p>
 
                 <div className="space-y-2.5">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed select-none">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={14} className="text-gray-400" />
+                  <a href={VIDEO_RECURSOS_CONFIG.workbookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-green-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-600 block">Guia de Apoio Vídeo com IA</span>
-                      <span className="text-[11px] text-gray-400">Em preparação</span>
+                      <span className="text-sm font-medium text-gray-900 block">Workbook Vídeo com IA</span>
+                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full shrink-0">
-                      Em breve
-                    </span>
-                  </div>
+                  </a>
 
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100 opacity-60 cursor-not-allowed select-none">
-                    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={14} className="text-gray-400" />
+                  <a href={VIDEO_RECURSOS_CONFIG.guiaGemsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors">
+                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
+                      <FileText size={14} className="text-violet-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-600 block">Guia de Prompts para Vídeo</span>
-                      <span className="text-[11px] text-gray-400">Disponível em breve</span>
+                      <span className="text-sm font-medium text-gray-900 block">Guia de Apoio GEMs — Google Gemini</span>
+                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
                     </div>
-                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
-                      Em breve
-                    </span>
-                  </div>
+                  </a>
+
+                  <a href={VIDEO_RECURSOS_CONFIG.ficheiroGemUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-100 transition-colors">
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Layers size={14} className="text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-gray-900 block">Ficheiro para anexar ao GEM</span>
+                      <span className="text-[11px] text-gray-500">Google Drive</span>
+                    </div>
+                  </a>
                 </div>
 
               </div>
@@ -193,37 +197,37 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                 <div className="space-y-2">
 
                   <a
-                    href={VIDEO_RECURSOS_CONFIG.resumoPdfUrl}
+                    href={VIDEO_RECURSOS_CONFIG.audioUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
                   >
                     <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={14} className="text-green-600" />
+                      <Headphones size={14} className="text-green-600" />
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-900 block">Resumo da sessão</span>
-                      <span className="text-[11px] text-gray-500">PDF · Em breve</span>
+                      <span className="text-sm font-medium text-gray-900 block">Áudio do Webinar</span>
+                      <span className="text-[11px] text-gray-500">MP3 · Google Drive</span>
                     </div>
                   </a>
 
                   <a
-                    href={VIDEO_RECURSOS_CONFIG.audioUrl}
+                    href={VIDEO_RECURSOS_CONFIG.workbookUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
                   >
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                      <Headphones size={14} className="text-gray-500" />
+                      <FileText size={14} className="text-gray-500" />
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-900 block">Áudio do Webinar</span>
-                      <span className="text-[11px] text-gray-500">MP3 · Em breve</span>
+                      <span className="text-sm font-medium text-gray-900 block">Workbook Vídeo com IA</span>
+                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
                     </div>
                   </a>
 
                   <a
-                    href={VIDEO_RECURSOS_CONFIG.sopPromptsUrl}
+                    href={VIDEO_RECURSOS_CONFIG.guiaGemsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
@@ -232,23 +236,23 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                       <FileText size={14} className="text-violet-600" />
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-900 block">SOP de Prompts Vídeo</span>
-                      <span className="text-[11px] text-gray-500">Em breve</span>
+                      <span className="text-sm font-medium text-gray-900 block">Guia GEMs — Gemini</span>
+                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
                     </div>
                   </a>
 
                   <a
-                    href={VIDEO_RECURSOS_CONFIG.extraResourceUrl}
+                    href={VIDEO_RECURSOS_CONFIG.ficheiroGemUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-100 transition-colors"
                   >
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                      <Layers size={14} className="text-green-600" />
+                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Layers size={14} className="text-amber-600" />
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-900 block">Recurso Extra</span>
-                      <span className="text-[11px] text-gray-500">Em breve</span>
+                      <span className="text-sm font-medium text-gray-900 block">Ficheiro para o GEM</span>
+                      <span className="text-[11px] text-gray-500">Google Drive</span>
                     </div>
                   </a>
 
