@@ -1,42 +1,45 @@
 
 
-# Criar página /recursos-video
+# Verificação da integração InvoiceExpress + Teste com rascunhos
 
-## Contexto
+## Resultado da verificação
 
-A página `/recursos` actual é dedicada ao **webinar Imagens com IA** (18 Fev). Precisa de uma versão duplicada em `/recursos-video` para o **webinar Vídeo com IA** (5 Mar), com conteúdo diferente (vídeo Vimeo, capítulos, recursos PDF, etc.) mas mantendo a mesma estrutura visual e lógica de autenticação.
+A integração está **correcta** face à API v2 do InvoiceExpress:
 
-## Plano
+- **Criar documento**: `POST /invoice_receipts.json` — payload correcto (client, items, tax, date)
+- **Finalizar**: `PUT /invoice_receipts/:id/change-state.json` com `state: "finalized"` — correcto
+- **Enviar email**: `PUT /invoice_receipts/:id/email-document.json` — payload `message` correcto
+- **Webhook EuPago**: chama `create-invoice` automaticamente após pagamento confirmado — correcto
 
-### 1. Novo ficheiro `src/pages/RecursosVideo.tsx`
-Duplicar `Recursos.tsx` mas com:
-- SessionStorage keys separadas: `recursos_video_token`, `recursos_video_email`, etc.
-- Query filtrada por `webinar = 'video'` na validação
-- Importar `RecursosVideoLogin` e `RecursosVideoConteudo`
+**Um ponto a melhorar**: os preços no payload são os valores finais (com IVA incluído), mas o `unit_price` deveria ser o valor **sem IVA** se o InvoiceExpress adiciona IVA por cima. Para 23% IVA, `15€ final` → `unit_price = 12.20€`. Preciso confirmar: **os teus preços (15€, 47€, etc.) já são sem IVA ou com IVA incluído?** Isto afecta o valor da fatura.
 
-### 2. Novo ficheiro `src/components/recursos/RecursosVideoLogin.tsx`
-Duplicar `RecursosLogin.tsx` com:
-- Branding "Vídeo com IA" em vez de "Imagens com IA"
-- Cor verde (#16a34a) em vez de azul
-- SessionStorage keys com prefixo `recursos_video_`
+## Dados actuais
 
-### 3. Novo ficheiro `src/components/recursos/RecursosVideoConteudo.tsx`
-Duplicar `RecursosConteudo.tsx` com:
-- Título: "Vídeo com IA — Recursos"
-- Cor primária verde em vez de azul
-- `VIDEO_RECURSOS_CONFIG` com:
-  - Vimeo embed URL: placeholder (a preencher depois — webinar ainda a decorrer)
-  - Capítulos do webinar vídeo (placeholders)
-  - Recursos sidebar: PDFs/links do webinar vídeo (placeholders por agora)
-- Header e badge adaptados ao branding "Vídeo com IA"
-- Upsell na sidebar: referência à masterclass de 12 Março
+- **37 registos pagos** no total
+- **27 sem fatura emitida** (`invoice_sent = false`)
+- Alguns têm dados de faturação completos (NIF, morada), outros não (usarão "Consumidor Final" / NIF 999999990)
 
-### 4. Rota em `src/App.tsx`
-Adicionar `<Route path="/recursos-video" element={<RecursosVideo />} />`
+## Plano para teste com 2 rascunhos
 
-### Ficheiros
-- **Novos**: `src/pages/RecursosVideo.tsx`, `src/components/recursos/RecursosVideoLogin.tsx`, `src/components/recursos/RecursosVideoConteudo.tsx`
-- **Editado**: `src/App.tsx` (1 linha — nova rota)
+### Alteração na edge function `create-invoice`
 
-Os conteúdos (URL Vimeo, PDFs, capítulos) ficam como placeholders editáveis no `VIDEO_RECURSOS_CONFIG`, prontos para actualizar quando o webinar terminar.
+Adicionar parâmetro `draft_only: boolean` (default `false`):
+- Se `draft_only = true`: cria o documento mas **não finaliza** nem envia email — fica como rascunho no InvoiceExpress para tu validares manualmente
+- Se `draft_only = false`: comportamento actual (cria → finaliza → envia)
+
+### Execução do teste
+
+1. Invocar `create-invoice` com `draft_only: true` para **2 registos** com dados de faturação completos:
+   - **ANDRE CUNHA** (NIF: 515913359, ACBC UNIPESSOAL LDA) — video-premium, 15€
+   - **Andreia Amaral** (NIF: 236923595) — video-premium, 15€
+
+2. Os rascunhos ficam no painel InvoiceExpress em `fomentarsonhos.app.invoicexpress.com` para validação
+
+3. Após confirmação, posso:
+   - Apagar os rascunhos via API (`state: "deleted"`)
+   - Ou finalizá-los e enviar
+   - E depois processar os restantes 25 em lote
+
+### Ficheiro editado
+- `supabase/functions/create-invoice/index.ts` — adicionar suporte a `draft_only`
 
