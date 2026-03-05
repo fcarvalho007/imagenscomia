@@ -1,45 +1,41 @@
 
-# Integração SMS via SMSEasySms no CRM
 
-## Contexto
-O provider é **SMSEasySms** (smsonline.pt), com API REST simples:
-- **Endpoint:** `POST https://login.smsonline.pt/Api/rest/message`
-- **Auth:** HTTP Basic (`DigitalFC:BUkn93@%` → Base64)
-- **Body:** `{"to":["351XXXXXXXXX"], "text":"...", "from":"DigitalFC", "coding":"gsm-pt"}`
+# Avaliação do /comprar — dados de faturação
 
-## Plano de implementação
+## Estado actual
 
-### 1. Guardar credenciais como segredo
-- Criar segredo `SMSONLINE_API_KEY` com o valor `DigitalFC:BUkn93@%` (username:password) codificado em Base64
+O `InvoiceForm` **já está integrado** no `PurchaseModal` (linhas 244-254). O fluxo funciona:
+1. Utilizador preenche nome + email
+2. Debounce de 800ms chama `register-free` para criar registo
+3. InvoiceForm aparece quando os campos do comprador são válidos
+4. Botão "Confirmar e pagar" fica desabilitado até `invoiceValid === true`
 
-### 2. Criar edge function `send-sms`
-**Ficheiro:** `supabase/functions/send-sms/index.ts`
+## Problemas identificados
 
-- Recebe `{ to: string, text: string, registrationId?: string }`
-- Valida `x-cron-secret` ou admin auth
-- Formata o número (garante prefixo `351`)
-- Faz POST para `https://login.smsonline.pt/Api/rest/message` com Basic Auth
-- Usa `coding: "gsm-pt"` para suporte a caracteres portugueses (ç, ã, etc.)
-- Loga o resultado na tabela `message_logs` (channel: `sms`)
-- Retorna sucesso/erro
+### 1. Bug crítico: `registrationId`/`editToken` não propagam para o InvoiceForm
+O `InvoiceForm` usa `useState(registrationId || null)` na inicialização (linha 48-49). Quando o `PurchaseModal` obtém o `registrationId` após o `register-free` assíncrono, a prop muda **mas o state interno do InvoiceForm não actualiza** — `useState` só usa o valor inicial. Resultado: o InvoiceForm pode nunca conseguir guardar porque `regId` fica `null`.
 
-### 3. Adicionar botão "Enviar SMS" no modal do CRM
-**Ficheiro:** `src/components/crm/modal/SidebarActions.tsx`
+**Fix:** Adicionar um `useEffect` no `InvoiceForm` para sincronizar `regId`/`token` quando as props mudam.
 
-- Novo botão junto ao "Enviar Email" com ícone `MessageSquare`
-- Abre um mini-diálogo inline para escrever a mensagem (campo textarea, max 160 chars, contador)
-- Envia via `supabase.functions.invoke("send-sms", { body: { to, text, registrationId } })`
-- Mostra toast de sucesso/erro
-- Só aparece se o inscrito tiver `whatsapp` preenchido (campo usado para número de telemóvel)
+### 2. Lookup por email sem filtrar por webinar
+O `InvoiceForm` (linha 79-83) faz `.eq("email", userEmail).maybeSingle()` sem filtrar por `webinar`. Se alguém tem registos em vários webinars, pode apanhar o registo errado.
 
-### 4. Registar config no `supabase/config.toml`
-- Adicionar `[functions.send-sms]` com `verify_jwt = false`
+**Fix:** Aceitar prop `webinar` no InvoiceForm e adicionar `.eq("webinar", webinar)` ao query. Alternativa mais simples: como o PurchaseModal já passa `registrationId` directamente, o fix do ponto 1 torna este lookup desnecessário nesse contexto.
 
-## Resumo de ficheiros
+### 3. Grupo: faturação ausente
+Quando `groupMode === true`, o InvoiceForm é escondido (linha 244: `&& !groupMode`). Compras de grupo não recolhem dados de faturação.
 
-| Acção | Ficheiro |
+**Fix:** Mover o InvoiceForm para fora da condição `!groupMode`, ou integrá-lo dentro do `GroupCheckoutForm`.
+
+### 4. UX: formulário extenso no modal
+O modal já tem 3 campos (nome, apelido, email) + 6 campos de faturação = 9 campos antes do botão. Em mobile, o scroll pode ser longo e o utilizador pode não ver o CTA.
+
+**Fix suave:** Pré-preencher `invoice_email` com o email do comprador (já acontece) e `invoice_name` com `firstName + lastName` para reduzir fricção.
+
+## Plano de alterações
+
+| Ficheiro | Alteração |
 |---|---|
-| Novo segredo | `SMSONLINE_API_KEY` (Base64 de `DigitalFC:BUkn93@%`) |
-| Nova edge function | `supabase/functions/send-sms/index.ts` |
-| Botão SMS no modal | `src/components/crm/modal/SidebarActions.tsx` |
-| Config | `supabase/config.toml` |
+| `src/components/upgrade/InvoiceForm.tsx` | Adicionar `useEffect` para sincronizar `regId`/`token` com props; aceitar prop opcional `webinar` para filtrar lookup; pré-preencher `invoice_name` a partir de novo prop `defaultName` |
+| `src/components/webinar/PurchaseModal.tsx` | Passar `webinar` ao InvoiceForm; passar `defaultName`; mostrar InvoiceForm também em `groupMode` (antes do GroupCheckoutForm) |
+
