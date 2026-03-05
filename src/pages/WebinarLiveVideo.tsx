@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { VideoWebinarVideoArea } from "@/components/webinar/VideoWebinarVideoArea";
 import { VideoWebinarSidebar } from "@/components/webinar/VideoWebinarSidebar";
@@ -12,6 +13,17 @@ const WebinarLiveVideo = () => {
     title: `${VIDEO_WEBINAR_CONFIG.title} — DIGITALFC`,
     description: VIDEO_WEBINAR_CONFIG.summary,
   });
+
+  // Auto-refresh: if old cached version has no YouTube iframe, reload every 30s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const hasIframe = document.querySelector('iframe[src*="youtube"]');
+      if (!hasIframe) {
+        window.location.reload();
+      }
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <LiveVideoGate>
