@@ -1,16 +1,53 @@
 
 
-# Atualizar segredo SMSONLINE_API_KEY
+# Nova secção "Comunicação" no CRM
 
-Quando eu voltar ao modo de implementação, vou usar a ferramenta `add_secret` para te pedir o novo valor do `SMSONLINE_API_KEY`.
+## Objectivo
+Adicionar uma nova view `comunicacao` ao CRM sidebar, com dois modos: **Redigir Email** e **Enviar SMS**. Esta secção é independente do modal do inscrito — serve para envios manuais/avulsos.
 
-**O que precisas ter pronto:**
-- As credenciais correctas do painel SMSOnline (formato `utilizador:password`)
-- Eu converto automaticamente para Base64 no código, por isso podes colar no formato raw `user:pass` ou já em Base64
+## Estrutura
 
-**Passos:**
-1. Actualizar o segredo `SMSONLINE_API_KEY` com o valor correcto
-2. Testar o envio via `curl_edge_functions` para confirmar que a autenticação passa (já não dá código 103)
+### 1. Sidebar — adicionar item "Comunicação"
+- Ficheiro: `src/components/crm/CRMSidebar.tsx`
+- Adicionar `"comunicacao"` ao type `CRMView`
+- Novo nav item com ícone `MessageSquare` e label "Comunicação"
 
-Nenhuma alteração de código é necessária — a edge function `send-sms` já suporta ambos os formatos (raw e Base64).
+### 2. Novo componente `ComunicacaoView.tsx`
+- Ficheiro: `src/components/crm/ComunicacaoView.tsx`
+- Layout com duas tabs no topo: **Email** | **SMS**
+- Background escuro consistente com o resto do CRM
+
+#### Tab Email
+- Campo "Para" (input de email ou selecção de inscritos)
+- Campo "Assunto"
+- Campo "Corpo" (textarea HTML)
+- Botão "Enviar Email" — invoca `send-email` edge function
+- Possibilidade de seleccionar destinatários da lista de inscritos (dropdown/autocomplete)
+
+#### Tab SMS
+Inspirada nos prints do SMSOnline:
+- **Selector de provider** (dois cards):
+  - **IMAGENSIA** — SMSEasy — remetente alfanumérico (não permite numérico)
+  - **915 015 508** — E-goi — remetente numérico (não permite alfanumérico)
+- **Campo "Para"**: input de número de telefone manual OU selecção de inscrito(s) com telefone
+- **Campo "Mensagem"**: textarea com contador de caracteres (0/160, 1 SMS)
+- **Referência do envio** (opcional, para logging)
+- Botão "Enviar SMS" — invoca `send-sms` edge function existente
+- Nota visual a indicar as restrições de cada provider (alfanumérico vs numérico)
+
+### 3. Routing no CRM.tsx
+- Ficheiro: `src/pages/CRM.tsx`
+- Importar `ComunicacaoView`
+- Renderizar quando `activeView === "comunicacao"`
+- Passar `inscritos` (filtrados por webinar) para permitir selecção de destinatários
+
+### 4. Reutilização
+- A lógica de envio SMS reutiliza a edge function `send-sms` existente (sem alterações)
+- A lógica de envio email reutiliza `send-email` existente
+- O componente `SmsComposer` do modal serve de base mas a versão na Comunicação terá tema claro e suporte para selecção de contactos
+
+## Detalhes técnicos
+- O `CRMView` type passa de `"dashboard" | "pipeline" | "tabela" | "templates" | "lixo"` para incluir `"comunicacao"`
+- Nenhuma alteração de base de dados necessária — usa as edge functions e tabelas de logs existentes
+- Autenticação mantém o padrão `x-crm-admin-email` via sessionStorage
 
