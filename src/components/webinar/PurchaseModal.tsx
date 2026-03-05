@@ -241,12 +241,14 @@ export const PurchaseModal = ({
           </div>
 
           {/* Invoice form — shown when buyer fields are valid */}
-          {buyerFieldsValid && !groupMode && (
+          {buyerFieldsValid && (
             <div className="mt-4">
               <InvoiceForm
                 userEmail={email.trim()}
                 registrationId={registrationId}
                 editToken={editToken}
+                webinar={webinar}
+                defaultName={`${firstName.trim()} ${lastName.trim()}`.trim()}
                 onValidChange={setInvoiceValid}
                 onSaveError={setInvoiceSaveError}
               />
