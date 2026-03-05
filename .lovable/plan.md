@@ -1,27 +1,40 @@
 
-# Corrigir datas do email pós-webinar Dia 1
+# Redesign visual da tab SMS na secção Comunicação
 
-## Problema
-O cron job está correcto (6 de Março às 13h), mas o CRM mostra a data errada em dois locais:
+## Objectivo
+Transformar a tab SMS actual (funcional mas básica) numa interface premium, altamente visual e apelativa, mantendo toda a lógica de envio existente (dois providers: SMSEasy/IMAGENSIA e E-goi/915015508).
 
-1. **AutomationFlowTab.tsx** (linha 240): subtitle diz "5 de Março · 13h00" — deve ser **"6 de Março · 13h00"**
-2. **AutomationFlowTab.tsx** (linha 245): tag diz "5 MAR · 13H" — deve ser **"6 MAR · 13H"**
-3. **FollowUpPessoasVideo.tsx** (linha 62): `POSTWEBINAR_DAY1` está definido como `2026-03-05T13:00:00Z` — deve ser **`2026-03-06T13:00:00Z`**
+## Alterações — `src/components/crm/ComunicacaoView.tsx`
 
-## Validação completa
+### Provider Cards (redesign completo)
+- Cards com gradiente subtil, ícone de antena/sinal, glow effect no card activo
+- Badge animado "ACTIVO" no provider seleccionado
+- Informação técnica visível: tipo de remetente (alfanumérico vs numérico), limites
+- Hover com scale e transição suave
 
-| Email | Cron (UTC) | Data real | UI actual | Estado |
-|-------|-----------|-----------|-----------|--------|
-| Pós-webinar (manual) | 5 Mar 13h | 5 Mar 13h | ✅ Correcto | OK |
-| Dia 1 | **6 Mar 13h** | 6 Mar 13h | ❌ Diz "5 Mar" | **Corrigir** |
-| Dia 3 | 8 Mar 10h | 8 Mar 10h | ✅ Correcto | OK |
-| Fecho | 10 Mar 10h | 10 Mar 10h | ✅ Correcto | OK |
+### Área de destinatário
+- Input com ícone de telefone integrado, pill/chip visual ao seleccionar inscrito (com nome + número + botão X para limpar)
+- Dropdown de pesquisa com avatares (iniciais coloridas) e highlight do match
 
-O email pós-webinar "manual" permanece como está — sem alteração.
+### Composer de mensagem
+- Textarea com fundo glassmorphism
+- Barra de progresso visual colorida para contagem de caracteres (verde → amarelo → vermelho)
+- Indicador de "partes SMS" (1 SMS, 2 SMS…) com ícone
+- Preview simulada de telemóvel (bolha de mensagem estilo chat) ao lado do composer
 
-## Ficheiros a alterar
-- `src/components/crm/AutomationFlowTab.tsx` — corrigir subtitle e tag do Day 1
-- `src/components/crm/FollowUpPessoasVideo.tsx` — corrigir data POSTWEBINAR_DAY1
+### Phone Preview (elemento visual diferenciador)
+- Mini mockup de ecrã de telemóvel (moldura arredondada, notch) mostrando a mensagem em tempo real como bolha de SMS
+- Mostra o remetente (IMAGENSIA ou 915015508) no topo
+- Actualiza em tempo real à medida que o utilizador escreve
 
-## Detalhes técnicos
-As Edge Functions e os cron jobs estão correctos — o envio real vai acontecer na data certa. O problema é apenas visual no CRM.
+### Botão de envio
+- Botão com gradiente azul, ícone animado (avião de papel), estado de loading com shimmer
+- Disabled state com opacity e tooltip explicativo
+
+### Layout geral
+- Grid 2 colunas em desktop: esquerda = formulário, direita = phone preview
+- Mobile: stack vertical, preview colapsável
+- Header da tab com ícone gradient e descrição
+
+## Ficheiros alterados
+- `src/components/crm/ComunicacaoView.tsx` — redesign completo da `SmsTab`
