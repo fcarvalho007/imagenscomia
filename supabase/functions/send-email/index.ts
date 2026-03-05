@@ -174,14 +174,14 @@ serve(async (req) => {
       });
     }
 
-    // Fallback to E-goi
-    console.log(`Brevo failed, falling back to E-goi for ${to}`);
-    const egoiResult = await sendViaEgoi(to, subject, html);
-    if (egoiResult.ok) {
+    // Fallback 1: Resend
+    console.log(`Brevo failed, falling back to Resend for ${to}`);
+    const resendResult = await sendViaResend(to, subject, html, fromAddress);
+    if (resendResult.ok) {
       const response: SendEmailResponse = {
         success: true,
-        provider: "egoi",
-        messageId: egoiResult.messageId,
+        provider: "resend",
+        messageId: resendResult.messageId,
       };
       return new Response(JSON.stringify(response), {
         status: 200,
@@ -189,19 +189,19 @@ serve(async (req) => {
       });
     }
 
-    // Fallback to Resend
-    console.log(`E-goi failed, falling back to Resend for ${to}`);
-    const resendResult = await sendViaResend(to, subject, html, fromAddress);
+    // Fallback 2: E-goi
+    console.log(`Resend failed, falling back to E-goi for ${to}`);
+    const egoiResult = await sendViaEgoi(to, subject, html);
 
     const response: SendEmailResponse = {
-      success: resendResult.ok,
-      provider: "resend",
-      messageId: resendResult.messageId,
-      error: resendResult.ok ? undefined : resendResult.error,
+      success: egoiResult.ok,
+      provider: "egoi",
+      messageId: egoiResult.messageId,
+      error: egoiResult.ok ? undefined : egoiResult.error,
     };
 
     return new Response(JSON.stringify(response), {
-      status: resendResult.ok ? 200 : 502,
+      status: egoiResult.ok ? 200 : 502,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
