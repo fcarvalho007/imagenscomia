@@ -1,35 +1,27 @@
 
+# Corrigir datas do email pós-webinar Dia 1
 
-# Bug: /upgrade-gravacao Step 1 bloqueado — botão "Próximo passo" nunca activa
+## Problema
+O cron job está correcto (6 de Março às 13h), mas o CRM mostra a data errada em dois locais:
 
-## Causa raiz
+1. **AutomationFlowTab.tsx** (linha 240): subtitle diz "5 de Março · 13h00" — deve ser **"6 de Março · 13h00"**
+2. **AutomationFlowTab.tsx** (linha 245): tag diz "5 MAR · 13H" — deve ser **"6 MAR · 13H"**
+3. **FollowUpPessoasVideo.tsx** (linha 62): `POSTWEBINAR_DAY1` está definido como `2026-03-05T13:00:00Z` — deve ser **`2026-03-06T13:00:00Z`**
 
-O componente `StepQualification` tem esta condição para permitir avançar:
+## Validação completa
 
-```js
-const canProceed = !!(role && teamSize && (!isOtherRole || otherRole.trim()));
-```
+| Email | Cron (UTC) | Data real | UI actual | Estado |
+|-------|-----------|-----------|-----------|--------|
+| Pós-webinar (manual) | 5 Mar 13h | 5 Mar 13h | ✅ Correcto | OK |
+| Dia 1 | **6 Mar 13h** | 6 Mar 13h | ❌ Diz "5 Mar" | **Corrigir** |
+| Dia 3 | 8 Mar 10h | 8 Mar 10h | ✅ Correcto | OK |
+| Fecho | 10 Mar 10h | 10 Mar 10h | ✅ Correcto | OK |
 
-No entanto, a página `UpgradeGravacao` **não passa** as props `role`, `setRole`, `teamSize` nem `setTeamSize` ao componente. Como `role` e `teamSize` são `undefined`, `canProceed` é **sempre `false`**, e o botão fica permanentemente desactivado (cinzento).
+O email pós-webinar "manual" permanece como está — sem alteração.
 
-Este bug foi introduzido quando o `StepQualification` foi actualizado para suportar o funil de vídeo (com role/teamSize obrigatórios), mas o funil de gravação (imagens) não foi actualizado para passar essas props.
+## Ficheiros a alterar
+- `src/components/crm/AutomationFlowTab.tsx` — corrigir subtitle e tag do Day 1
+- `src/components/crm/FollowUpPessoasVideo.tsx` — corrigir data POSTWEBINAR_DAY1
 
-## Solução
-
-No funil `/upgrade-gravacao`, o Step 1 só precisa das **sources** (como soubeste da formação). Não precisa de role/teamSize.
-
-**Ficheiro:** `src/components/upgrade/StepQualification.tsx`
-
-Alterar a lógica de `canProceed` para que, quando `setRole` não é fornecido (modo gravação/imagens), o botão avance sem exigir role e teamSize:
-
-```js
-const canProceed = setRole
-  ? !!(role && teamSize && (!isOtherRole || otherRole.trim()))
-  : true; // sources mode — always allow (optional question)
-```
-
-Esta alteração de 1 linha corrige o bloqueio sem afectar o funil de vídeo (`/upgrade-video`), onde `setRole` é passado e as perguntas de role/teamSize continuam obrigatórias.
-
-### Ficheiros alterados
-- `src/components/upgrade/StepQualification.tsx` — corrigir lógica de `canProceed`
-
+## Detalhes técnicos
+As Edge Functions e os cron jobs estão correctos — o envio real vai acontecer na data certa. O problema é apenas visual no CRM.
