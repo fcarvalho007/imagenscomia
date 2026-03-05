@@ -16,7 +16,7 @@ function buildFallbackHtml(fname: string): string {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Ontem fizemos uma sessão de 70 minutos sobre vídeo com IA — desde briefing até clip publicável.</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Ontem fizemos uma sessão sobre vídeo com IA — desde briefing até clip publicável.</p>
 
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Se quiseres rever tudo com calma, a gravação completa está disponível no Premium Pass.</p>
 
