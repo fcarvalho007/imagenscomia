@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Lock, Zap, Mail, Users } from "lucide-react";
 import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
+import { InvoiceForm } from "@/components/upgrade/InvoiceForm";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -50,8 +51,51 @@ export const PurchaseModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [groupMode, setGroupMode] = useState(false);
+  const [invoiceValid, setInvoiceValid] = useState(false);
+  const [invoiceSaveError, setInvoiceSaveError] = useState(false);
+  const [registrationReady, setRegistrationReady] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | undefined>();
+  const [editToken, setEditToken] = useState<string | undefined>();
+  const registerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showGroupToggle = plan === "masterclass" || plan === "bundle" || plan === "gravacao";
+
+  // Early register-free call when name+email are valid
+  const tryEarlyRegister = useCallback(async (fName: string, lName: string, em: string) => {
+    const trimmedFirst = fName.trim();
+    const trimmedLast = lName.trim();
+    const trimmedEmail = em.trim();
+    if (!trimmedFirst || !trimmedLast || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) return;
+
+    try {
+      await supabase.functions.invoke("register-free", {
+        body: { firstName: trimmedFirst, lastName: trimmedLast, email: trimmedEmail, webinar },
+      });
+      // Lookup registration_id + edit_token
+      const { data: reg } = await supabase
+        .from("registrations")
+        .select("id, edit_token")
+        .eq("email", trimmedEmail.toLowerCase())
+        .eq("webinar", webinar)
+        .maybeSingle();
+      if (reg) {
+        setRegistrationId(reg.id);
+        setEditToken((reg as any).edit_token || undefined);
+        setRegistrationReady(true);
+      }
+    } catch {
+      // Silent — will retry on submit
+    }
+  }, [webinar]);
+
+  // Debounced early registration
+  useEffect(() => {
+    if (registerDebounceRef.current) clearTimeout(registerDebounceRef.current);
+    registerDebounceRef.current = setTimeout(() => {
+      tryEarlyRegister(firstName, lastName, email);
+    }, 800);
+    return () => { if (registerDebounceRef.current) clearTimeout(registerDebounceRef.current); };
+  }, [firstName, lastName, email, tryEarlyRegister]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,17 +113,19 @@ export const PurchaseModal = ({
       setError("Por favor, introduza um email válido.");
       return;
     }
+    if (!invoiceValid) {
+      setError("Por favor, preencha os dados de faturação.");
+      return;
+    }
 
     setLoading(true);
     try {
-      await supabase.functions.invoke("register-free", {
-        body: {
-          firstName: trimmedFirst,
-          lastName: trimmedLast,
-          email: trimmedEmail,
-          webinar,
-        },
-      });
+      // Ensure registration exists (may already exist from early call)
+      if (!registrationReady) {
+        await supabase.functions.invoke("register-free", {
+          body: { firstName: trimmedFirst, lastName: trimmedLast, email: trimmedEmail, webinar },
+        });
+      }
 
       const paymentPlan = webinar === "video"
         ? { gravacao: "video-premium", masterclass: "video-masterclass", bundle: "video-bundle" }[plan] || plan
@@ -116,6 +162,9 @@ export const PurchaseModal = ({
       setLoading(false);
     }
   };
+
+  // Check if buyer fields are valid (for showing invoice form)
+  const buyerFieldsValid = firstName.trim().length > 0 && lastName.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setGroupMode(false); }}>
@@ -191,6 +240,19 @@ export const PurchaseModal = ({
             </div>
           </div>
 
+          {/* Invoice form — shown when buyer fields are valid */}
+          {buyerFieldsValid && !groupMode && (
+            <div className="mt-4">
+              <InvoiceForm
+                userEmail={email.trim()}
+                registrationId={registrationId}
+                editToken={editToken}
+                onValidChange={setInvoiceValid}
+                onSaveError={setInvoiceSaveError}
+              />
+            </div>
+          )}
+
           {/* Group toggle */}
           {showGroupToggle && (
             <button
@@ -245,7 +307,7 @@ export const PurchaseModal = ({
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (!invoiceValid && buyerFieldsValid) || invoiceSaveError}
                 className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
                   background: ctaBg(plan),
