@@ -1,29 +1,34 @@
 
 
-# Auto-refresh para forçar actualização do player
+# Integrar Brevo como provider de email transacional
 
-## Problema
-Utilizadores que abriram `/live-video` antes do deploy ainda vêem o countdown. Precisam de refresh automático.
+## Contexto
+E-goi tem saldo negativo e Resend atingiu quota diária. Precisamos de um provider funcional para enviar os emails em falha.
 
-## Solução
+## Alteração
 
-**Ficheiro**: `src/components/webinar/VideoWebinarVideoArea.tsx`
+**Ficheiro**: `supabase/functions/send-email/index.ts`
 
-Adicionar um `useEffect` que, quando `isLive` é `false` (código antigo em cache) OU quando não há iframe YouTube visível, faz `window.location.reload()` após 30 segundos. Como o código novo já tem `isLive: true`, após o reload carregam a versão actualizada com o player.
+- Adicionar função `sendViaBrevo` que usa a API SMTP transacional da Brevo (`https://api.brevo.com/v3/smtp/email`)
+- Requer header `api-key` com a chave da Brevo
+- Remetente: `Frederico Carvalho <frederico.carvalho@digitalfc.pt>` (domínio já verificado na Brevo ou a verificar)
+- Inserir Brevo como **provider primário** na cadeia: Brevo → E-goi → Resend
+- Actualizar o tipo `SendEmailResponse` para incluir `"brevo"` como provider
 
-Abordagem mais simples e imediata: adicionar ao componente `LiveVideoGate` ou à página `WebinarLiveVideo` um intervalo de auto-reload de 60s que pára assim que o iframe YouTube estiver presente no DOM.
+## Secret necessário
 
-```tsx
-useEffect(() => {
-  const interval = setInterval(() => {
-    const hasIframe = document.querySelector('iframe[src*="youtube"]');
-    if (!hasIframe) {
-      window.location.reload();
-    }
-  }, 30_000);
-  return () => clearInterval(interval);
-}, []);
-```
+- `BREVO_API_KEY` — chave de API da Brevo (obtida em app.brevo.com → SMTP & API → API Keys)
+- Será pedida via ferramenta de secrets antes de implementar
 
-Isto garante que qualquer utilizador que tenha a versão antiga em cache recebe reload automático em até 30 segundos sem afectar quem já vê o player.
+## Passos
+
+1. Pedir o secret `BREVO_API_KEY`
+2. Adicionar `sendViaBrevo()` ao `send-email/index.ts`
+3. Alterar a cadeia de fallback: Brevo primeiro, depois E-goi, depois Resend
+4. Deploy da função
+5. Testar com `test-send-email`
+6. Executar `resend-failed-emails` para recuperar os emails em falha
+
+## Nota sobre domínio
+O remetente `frederico.carvalho@digitalfc.pt` precisa estar verificado na Brevo (domínio `digitalfc.pt`). Se ainda não estiver, será necessário adicionar os registos DNS (DKIM/SPF) na Brevo antes de enviar.
 
