@@ -182,8 +182,8 @@ const speakerCredentials = [
 const faqs = [
   { q: "Preciso de experiência com IA?", a: "Não, de todo. Tudo é mostrado passo a passo, de forma simples. Se usas WhatsApp, consegues acompanhar." },
   { q: "Funciona para B2B e B2C?", a: "Sim! O método aplica-se a ambos — anúncios, demos de produto, prova social, conteúdo para redes sociais. Vais ver exemplos dos dois casos." },
-  { q: "E se não conseguir assistir ao vivo?", a: "Inscreve-te na mesma — recebes instruções e próximos passos por email. Se quiseres acesso à gravação integral + guia de apoio, o Premium Pass (15 EUR + IVA) garante isso." },
-  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além do webinar gratuito, haverá uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso já, durante o processo de inscrição neste webinar, ou inscrever-te depois." },
+  { q: "E se não conseguir assistir ao vivo?", a: "Recebes instruções e próximos passos por email. O Premium Pass (15 EUR + IVA) inclui materiais de apoio e guia completo." },
+  { q: "Existe alguma formação mais aprofundada sobre vídeo?", a: "Sim. Além do webinar, haverá uma Masterclass de 3 horas dedicada a vídeo com IA — com ferramentas, templates e acompanhamento próximo. Podes garantir o teu acesso já, durante o processo de inscrição neste webinar, ou inscrever-te depois." },
   { q: "Quanto tempo demora a aplicar?", a: "O sistema é desenhado para começar pequeno. Depois do webinar, já consegues produzir os primeiros clips e repetir semanalmente." },
 ];
 
@@ -198,7 +198,7 @@ const VideoPageInner = () => {
   const { open } = useRegistrationModal();
   usePageMeta({
     title: "Cria Vídeo Profissional com IA — Webinar Vídeo com IA",
-    description: "Sessão prática: de briefing a clip publicável em minutos. Para gestores e profissionais de marketing. Pack completo disponível.",
+    description: "70 min de sessão prática sem cortes. De briefing a clip publicável. Para gestores e profissionais de marketing.",
     ogImage: "https://imagenscomia.com/video-social-card.jpg",
     ogUrl: "https://imagenscomia.com/video",
   });
@@ -243,7 +243,7 @@ const VideoPageInner = () => {
             onClick={openModal}
             className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)] cursor-pointer hidden sm:block focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
           >
-            Garantir acesso à gravação
+            Garantir o meu lugar
           </button>
         </div>
       </motion.div>
@@ -261,7 +261,7 @@ const VideoPageInner = () => {
           className="w-full font-heading font-bold text-white text-[15px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
-           Garantir acesso à gravação
+           Garantir o meu lugar
         </button>
       </motion.div>
 
@@ -339,8 +339,8 @@ const VideoPageInner = () => {
             {([
               { Icon: Calendar, label: "DATA", value: "5 de Março" },
               { Icon: Clock, label: "HORÁRIO", value: "10h00" },
-              { Icon: Timer, label: "DURAÇÃO", value: "45 min" },
-              { Icon: Sparkles, label: "FORMATO", value: "Pack Completo" },
+              { Icon: Timer, label: "DURAÇÃO", value: "70 min" },
+              { Icon: Sparkles, label: "FORMATO", value: "Sessão prática" },
             ] as const).map((box) => (
               <motion.div
                 key={box.label}
@@ -364,8 +364,8 @@ const VideoPageInner = () => {
                 className="font-heading text-white text-[16px] sm:text-[20px] transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full whitespace-nowrap"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 20px", borderRadius: 10, maxWidth: 500, minWidth: 0 }}
               >
-                <span className="hidden sm:inline">Sim, quero garantir o meu acesso</span>
-                <span className="sm:hidden">Garantir o meu acesso</span>
+                <span className="hidden sm:inline">Sim, quero garantir o meu lugar</span>
+                <span className="sm:hidden">Garantir o meu lugar</span>
               </button>
             </ElectricBorder>
           </motion.div>
@@ -674,7 +674,7 @@ const VideoPageInner = () => {
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto text-center bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base px-10 py-4 rounded-xl shadow-neon-purple transition-all focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2"
               >
-                Sim, quero garantir o meu acesso!
+                Sim, quero garantir o meu lugar!
               </motion.button>
             </div>
           </ScrollReveal>
@@ -854,10 +854,10 @@ const VideoPageInner = () => {
         </div>
         <div className="relative z-10 mx-auto max-w-4xl px-5 text-center">
           <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] text-white leading-[1.15] mb-4" style={{ letterSpacing: "-0.5px" }}>
-            Garantir o meu acesso
+            Garantir o meu lugar
           </h2>
           <p className="text-[15px] mb-8 max-w-[500px] mx-auto" style={{ color: "rgba(255,255,255,0.50)" }}>
-            Sem compromisso. Evento ao vivo, a 5 de março de 2026, às 10h.
+            70 min de sessão prática sem cortes. Especialização em vídeo com IA.
           </p>
           <div className="flex justify-center">
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={10}>
@@ -866,7 +866,7 @@ const VideoPageInner = () => {
                 className="font-heading text-white transition-all duration-200 cursor-pointer hover:scale-[1.02] w-full text-[17px]"
                 style={{ background: "#16A34A", fontWeight: 700, padding: "16px 36px", borderRadius: 10, maxWidth: 420, minWidth: 280 }}
               >
-                Garantir o meu acesso
+                Garantir o meu lugar
               </button>
             </ElectricBorder>
           </div>
