@@ -37,22 +37,19 @@ function buildHtml(fname: string): string {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Obrigado por teres estado presente hoje.</p>
-
-  <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 12px;">Resumo do que cobrimos:</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 4px;">→ Sistema de delegação: briefing + checklist + critérios de qualidade</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 4px;">→ Ferramentas recomendadas e como combiná-las</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 24px;">→ O que a IA faz bem e onde precisas de controlo humano</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">O webinar <strong>"Cria Vídeo Profissional com IA"</strong> já decorreu.</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Em breve receberás um email com o workbook-resumo da sessão.</p>
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres acesso à gravação completa?</p>
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Gravação HD da sessão completa</p>
+    <p style="color:#d97706;font-size:15px;font-weight:700;margin:0 0 4px;">⏰ Só hoje: Premium Pass — €15+IVA</p>
+    <p style="color:#555;font-size:14px;margin:0 0 12px;">Amanhã o preço sobe para €27+IVA.</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Gravação HD da sessão completa (70 min)</p>
     <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A em grupo</p>
     <p style="color:#333;font-size:15px;margin:0 0 4px;">&nbsp;&nbsp;&nbsp;📅 Terça-feira, 10 de Março às 14h30</p>
     <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Guia de prompts para vídeo (PDF)</p>
     <div style="text-align:center;">
-      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter acesso à gravação — €27+IVA →</a>
+      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter acesso à gravação — €15+IVA (só hoje) →</a>
     </div>
   </div>
 
@@ -133,8 +130,8 @@ serve(async (req) => {
       .from("registrations")
       .select("id, email, first_name")
       .eq("webinar", "video")
-      .eq("do_not_contact", false)
-      .not("attended_live_at", "is", null);
+      .is("paid_at", null)
+      .eq("do_not_contact", false);
 
     if (queryErr) throw queryErr;
     if (!registrants || registrants.length === 0) {
@@ -175,7 +172,7 @@ serve(async (req) => {
         let html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
         html = personaliseHtml(html, variant);
 
-        const emailSubject = (tpl?.subject ?? "Obrigado por estares presente 🙏 — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const emailSubject = (tpl?.subject ?? "O webinar já decorreu — e o que vem a seguir").replace(/\{\{fname\}\}/g, reg.first_name || "");
 
         const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, emailSubject, html);
         const ok = result.success === true;

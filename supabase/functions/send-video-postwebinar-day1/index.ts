@@ -16,22 +16,27 @@ function buildFallbackHtml(fname: string): string {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
 <div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
   <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">O webinar de hoje foi intenso — cobrimos muito terreno em pouco tempo.</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Ontem fizemos uma sessão de 70 minutos sobre vídeo com IA — desde briefing até clip publicável.</p>
 
-  <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 12px;">Resumo rápido:</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 4px;">→ Sistema de delegação: briefing + checklist + critérios de qualidade</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 4px;">→ Ferramentas recomendadas e como combiná-las</p>
-  <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 24px;">→ O que a IA faz bem e onde precisas de controlo humano</p>
-
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Se quiseres rever tudo com calma, a gravação completa está disponível no Premium Pass.</p>
+  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Se quiseres rever tudo com calma, a gravação completa está disponível no Premium Pass.</p>
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Gravação HD da sessão completa</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A em grupo (10 Mar, 14h30)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Gravação HD completa (70 min)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A ao vivo (10 Março, 14h30)</p>
     <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Guia de prompts para vídeo (PDF)</p>
     <div style="text-align:center;">
       <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter acesso à gravação — €27+IVA →</a>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
+    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres ir mais fundo?</p>
+    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — 3 horas ao vivo</p>
+    <p style="color:#555;font-size:15px;margin:0 0 12px;">Demonstrações avançadas, casos reais e acompanhamento personalizado.</p>
+    <p style="color:#333;font-size:15px;margin:0 0 16px;">📅 Quinta-feira, 12 de Março às 10h00</p>
+    <div style="text-align:center;">
+      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Saber mais sobre a Masterclass →</a>
     </div>
   </div>
 
@@ -117,7 +122,7 @@ serve(async (req) => {
           const fname = reg.first_name || "";
           const rawHtml = tpl?.html_body ?? buildFallbackHtml(fname);
           const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
-          const subject = (tpl?.subject ?? "O webinar de hoje, {{fname}}").replace(/\{\{fname\}\}/g, fname);
+          const subject = (tpl?.subject ?? "A gravação do webinar, {{fname}}").replace(/\{\{fname\}\}/g, fname);
 
           const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, subject, html);
           const ok = result.success === true;
