@@ -38,7 +38,9 @@ export const StepQualification = forwardRef<HTMLDivElement, Props>(
     const [otherRole, setOtherRole] = useState("");
     const firstName = userName?.trim().split(" ")[0] || "";
     const isOtherRole = role === "Outra função";
-    const canProceed = !!(role && teamSize && (!isOtherRole || otherRole.trim()));
+    const canProceed = setRole
+      ? !!(role && teamSize && (!isOtherRole || otherRole.trim()))
+      : true;
 
     const toggle = (val: string) => {
       if (!sources || !setSources) return;
