@@ -1,72 +1,34 @@
 
 
-# Relatório: Tags E-goi incorrectas + Plano de correcção
+# Verificação e correcções para o webinar de amanhã
 
-## Causa raiz
+## 1. Email "Começa em 1 hora" — ✅ Tudo a postos
 
-A função `register-free` chama **sempre** a função `sync-egoi` (linhas 216-238), independentemente do webinar. A função `sync-egoi` aplica a tag 31 (`webinar_imagens_com_ia_18_fev`) a **todos** os contactos.
+- **Template na BD** (`video_reminder_1h`): CTA aponta para `https://imagenscomia.com/live-video` ✓
+- **Fallback hardcoded** na Edge Function: mesmo URL ✓
+- **Cron**: configurado para disparar às 09:00 UTC (janela 08:30-09:30) ✓
+- **E-goi**: domínio corrigido, envios a funcionar ✓
+- **Filtro**: `webinar = 'video'` + deduplicação via `message_logs` ✓
 
-Resultado: quem se registou **apenas** no vídeo recebeu indevidamente a tag de imagens.
+Sem alterações necessárias.
 
-A função `bulk-sync-egoi` tem o mesmo problema — não filtra por webinar.
+## 2. Página `/live-video` — CTAs da sidebar a corrigir
 
-## Relatório de inscrições cruzadas
+**Problema**: Os dois botões ("Garantir Premium Pass" e "Garantir lugar na Masterclass") chamam `open("premium")` — que abre um modal de registo. A página não tem sequer um `RegistrationModalProvider`, logo o clique não faz nada. O utilizador quer que ambos naveguem para `/comprar`.
 
-```text
-┌─────────────────┬───────┐
-│ Categoria       │ Total │
-├─────────────────┼───────┤
-│ Só Imagens      │  197  │
-│ Só Vídeo        │  208  │
-│ Ambos           │   39  │
-├─────────────────┼───────┤
-│ Total inscritos │  444  │
-└─────────────────┴───────┘
-```
+### Alteração: `src/components/webinar/VideoWebinarSidebar.tsx`
 
-- **197** pessoas inscreveram-se apenas no webinar de Imagens — tag 31 correcta
-- **39** pessoas inscreveram-se em ambos — tags 31 + 34 correctas
-- **208** pessoas inscreveram-se apenas no Vídeo — têm tag 31 **indevidamente**, devem ter apenas tag 34
-
-## Plano de execução
-
-### 1. Corrigir `register-free/index.ts` (prevenir novas ocorrências)
-
-Envolver a chamada a `sync-egoi` (linhas 52-75 e 216-238) numa condição que só executa quando `webinar !== "video"`:
+Substituir `useRegistrationModal` por `useNavigate` do React Router:
 
 ```typescript
-// Linha 52 e 216: adicionar condição
-if ((webinar || "imagens") !== "video") {
-  // chamada a sync-egoi (tag imagens)
-}
+// Remover: import { useRegistrationModal } from "@/hooks/useRegistrationModal";
+// Adicionar: import { useNavigate } from "react-router-dom";
+
+const navigate = useNavigate();
+
+// Ambos os CTAs:
+onCtaClick={() => navigate("/comprar")}
 ```
 
-### 2. Corrigir `bulk-sync-egoi/index.ts`
-
-Adicionar filtro `.eq("webinar", "imagens")` à query de registrations (linha 22).
-
-### 3. Criar edge function `cleanup-egoi-tags/index.ts`
-
-Nova função que:
-1. Busca os 208 emails que existem na BD apenas com `webinar = 'video'`
-2. Para cada um, encontra o `contact_id` na E-goi via API
-3. Usa o endpoint `POST /lists/5/contacts/actions/detach-tag` com `tag_id: 31` para remover a tag de imagens
-4. Reporta resultados (removidos / não encontrados / erros)
-
-A API E-goi de detach-tag funciona de forma idêntica ao attach-tag:
-```
-POST /lists/5/contacts/actions/detach-tag
-{ "tag_id": 31, "contacts": ["contact_id"] }
-```
-
-### 4. Invocar a função de cleanup
-
-Executar `cleanup-egoi-tags` uma vez para limpar os 208 contactos incorrectos.
-
-### Resultado esperado
-
-Após execução:
-- **Só Imagens (197)**: tag 31 ✓
-- **Só Vídeo (208)**: tag 34 ✓, tag 31 removida ✓
-- **Ambos (39)**: tags 31 + 34 ✓ (sem alteração)
+Isto aplica-se às duas instâncias de `open("premium")` (linhas 129 e 155).
 
