@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { Shield, CheckCircle, AlertCircle, RefreshCw, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 type PageStatus = "loading" | "redirecting" | "timeout" | "paid" | "error";
 type ErrorType = "not_found" | "network" | "generic" | "link_invalid";
@@ -222,6 +223,7 @@ const Pagar = () => {
           </div>
         )}
       </div>
+      <WhatsAppSupportButton />
     </div>
   );
 };

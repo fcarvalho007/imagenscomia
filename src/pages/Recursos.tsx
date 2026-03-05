@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import RecursosLogin from "@/components/recursos/RecursosLogin";
 import RecursosConteudo from "@/components/recursos/RecursosConteudo";
 
@@ -75,15 +76,18 @@ export default function Recursos() {
 
   if (state === "loading") {
     return (
-      <div className="min-h-screen bg-[hsl(var(--off-white))] flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-[hsl(var(--ink-300))]" />
-      </div>
+      <>
+        <div className="min-h-screen bg-[hsl(var(--off-white))] flex items-center justify-center">
+          <Loader2 size={24} className="animate-spin text-[hsl(var(--ink-300))]" />
+        </div>
+        <WhatsAppSupportButton />
+      </>
     );
   }
 
   if (state === "login") {
-    return <RecursosLogin onAuthed={handleAuthed} />;
+    return <><RecursosLogin onAuthed={handleAuthed} /><WhatsAppSupportButton /></>;
   }
 
-  return <RecursosConteudo userData={userData!} onLogout={handleLogout} />;
+  return <><RecursosConteudo userData={userData!} onLogout={handleLogout} /><WhatsAppSupportButton /></>;
 }

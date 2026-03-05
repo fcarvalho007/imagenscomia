@@ -5,6 +5,7 @@ import { Check, Loader2, XCircle, ArrowLeft, Mail, Calendar, MessageCircle } fro
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
 
 const WHATSAPP_URL = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
@@ -216,6 +217,7 @@ const UpgradeSucesso = () => {
           </p>
         </div>
       </motion.div>
+      <WhatsAppSupportButton />
     </div>
   );
 };
