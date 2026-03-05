@@ -1,55 +1,45 @@
 
+# Integração SMS via SMSEasySms no CRM
 
-# Adicionar dados de faturação ao /comprar + estratégia para quem já pagou sem dados
+## Contexto
+O provider é **SMSEasySms** (smsonline.pt), com API REST simples:
+- **Endpoint:** `POST https://login.smsonline.pt/Api/rest/message`
+- **Auth:** HTTP Basic (`DigitalFC:BUkn93@%` → Base64)
+- **Body:** `{"to":["351XXXXXXXXX"], "text":"...", "from":"DigitalFC", "coding":"gsm-pt"}`
 
-## Problema
-A página `/comprar` (via `PurchaseModal`) envia o utilizador directamente para o EuPago sem recolher dados de faturação. O fluxo `/upgrade-video` já usa o componente `InvoiceForm` no step de checkout.
+## Plano de implementação
 
-## Passo 1 — Integrar InvoiceForm no PurchaseModal
+### 1. Guardar credenciais como segredo
+- Criar segredo `SMSONLINE_API_KEY` com o valor `DigitalFC:BUkn93@%` (username:password) codificado em Base64
 
-**Ficheiro:** `src/components/webinar/PurchaseModal.tsx`
+### 2. Criar edge function `send-sms`
+**Ficheiro:** `supabase/functions/send-sms/index.ts`
 
-Alterações:
-- Após o utilizador preencher nome/email e antes do botão "Confirmar e pagar", inserir o componente `<InvoiceForm>` (já existente em `src/components/upgrade/InvoiceForm.tsx`)
-- O `InvoiceForm` faz auto-save via edge function `invoice-upsert` com debounce de 600ms
-- Desabilitar o botão "Confirmar e pagar" até `InvoiceForm` reportar `onValidChange(true)`
-- Passar `userEmail={email}` para o InvoiceForm fazer lookup automático do `registration_id` + `edit_token`
-- Ajuste: como o `register-free` é chamado no submit, precisamos chamá-lo primeiro (on blur do email ou ao abrir o invoice form) para que exista um `registration_id` antes do InvoiceForm tentar guardar. Solução: chamar `register-free` assim que nome+email estejam válidos (com debounce), para criar o registo antes do pagamento.
+- Recebe `{ to: string, text: string, registrationId?: string }`
+- Valida `x-cron-secret` ou admin auth
+- Formata o número (garante prefixo `351`)
+- Faz POST para `https://login.smsonline.pt/Api/rest/message` com Basic Auth
+- Usa `coding: "gsm-pt"` para suporte a caracteres portugueses (ç, ã, etc.)
+- Loga o resultado na tabela `message_logs` (channel: `sms`)
+- Retorna sucesso/erro
 
-Fluxo revisado no PurchaseModal:
-1. Utilizador preenche nome + email
-2. Ao sair do campo email (com dados válidos), chamar `register-free` silenciosamente para criar/obter o registo
-3. Mostrar `InvoiceForm` com `userEmail={email}` — faz lookup do `registration_id` e `edit_token` automaticamente
-4. Botão "Confirmar e pagar" só fica activo quando `invoiceValid === true`
-5. No submit, chamar `create-payment` (o `register-free` já correu)
+### 3. Adicionar botão "Enviar SMS" no modal do CRM
+**Ficheiro:** `src/components/crm/modal/SidebarActions.tsx`
 
-## Passo 2 — Estratégia para quem já pagou sem dados de faturação
+- Novo botão junto ao "Enviar Email" com ícone `MessageSquare`
+- Abre um mini-diálogo inline para escrever a mensagem (campo textarea, max 160 chars, contador)
+- Envia via `supabase.functions.invoke("send-sms", { body: { to, text, registrationId } })`
+- Mostra toast de sucesso/erro
+- Só aparece se o inscrito tiver `whatsapp` preenchido (campo usado para número de telemóvel)
 
-Para os 14 pagamentos já realizados via `/comprar` sem invoice_details:
+### 4. Registar config no `supabase/config.toml`
+- Adicionar `[functions.send-sms]` com `verify_jwt = false`
 
-**Criar edge function `send-invoice-request`** que:
-1. Busca registos com `paid_at IS NOT NULL` e `webinar = 'video'` que **não têm** entrada na tabela `invoice_details`
-2. Envia email personalizado a cada um com link para preencher os dados: `{origin}/pagar?o={order_id}` (página que já existe e permite acesso via `order_id` + `edit_token`)
-3. Alternativa mais simples: enviar link directo para um formulário standalone
-
-**Criar página `/fatura`** (rota leve):
-- Recebe `?rid={id}&t={token}` nos query params
-- Mostra apenas o `InvoiceForm` com os dados pré-preenchidos
-- Permite ao utilizador preencher/actualizar os dados de faturação sem necessidade de login
-- Após guardar com sucesso, mostra confirmação "Dados guardados ✓"
-
-**Email template `video_invoice_request`:**
-- Assunto: "Precisamos dos teus dados para a fatura, {{fname}}"
-- Corpo: explicar que para emitir a fatura precisa de preencher NIF, morada, etc.
-- CTA: link para `/fatura?rid={id}&t={token}`
-
-## Resumo técnico
+## Resumo de ficheiros
 
 | Acção | Ficheiro |
 |---|---|
-| Integrar InvoiceForm no PurchaseModal | `src/components/webinar/PurchaseModal.tsx` |
-| Chamar register-free antes do pagamento (on blur) | `src/components/webinar/PurchaseModal.tsx` |
-| Criar página /fatura standalone | `src/pages/Fatura.tsx` + rota em `App.tsx` |
-| Criar edge function send-invoice-request | `supabase/functions/send-invoice-request/index.ts` |
-| Invocar send-invoice-request para os 14 pagos | Manual, após deploy |
-
+| Novo segredo | `SMSONLINE_API_KEY` (Base64 de `DigitalFC:BUkn93@%`) |
+| Nova edge function | `supabase/functions/send-sms/index.ts` |
+| Botão SMS no modal | `src/components/crm/modal/SidebarActions.tsx` |
+| Config | `supabase/config.toml` |
