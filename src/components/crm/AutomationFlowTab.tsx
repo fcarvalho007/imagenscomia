@@ -267,7 +267,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     // ── SMS NODES ──
     {
       type: "email",
-      title: "📱 SMS pós-webinar",
+      title: "SMS pós-webinar",
       subtitle: "Envio manual · todos os inscritos com telefone",
       templateKeyMatch: ["sms_postwebinar"],
       sendOffsetHours: null,
@@ -298,7 +298,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     // ── SMS REMINDERS ──
     {
       type: "email",
-      title: "📱 SMS lembrete Q&A — 10 Mar",
+      title: "SMS lembrete Q&A — 10 Mar",
       subtitle: "30 min antes · Premium Pass (imagens + vídeo)",
       templateKeyMatch: ["sms_reminder_qa"],
       sendOffsetHours: null,
@@ -315,7 +315,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     },
     {
       type: "email",
-      title: "📱 SMS lembrete Masterclass — 12 Mar",
+      title: "SMS lembrete Masterclass — 12 Mar",
       subtitle: "30 min antes · Masterclass + Bundle (imagens + vídeo)",
       templateKeyMatch: ["sms_reminder_masterclass"],
       sendOffsetHours: null,
@@ -540,6 +540,8 @@ function Timeline({
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
+  const [editedSmsText, setEditedSmsText] = useState("");
   const nodes = useMemo(() => getNodes(webinar), [webinar]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
@@ -607,20 +609,17 @@ function Timeline({
     }
   };
 
-  const handleBulkSms = async (node: NodeDef) => {
+  const handleBulkSms = async (node: NodeDef, customText?: string) => {
     const config = node.smsSendConfig;
     if (!config) return;
     const templateKey = node.templateKeyMatch[0] || "sms_manual";
+    const smsText = customText || config.smsText;
 
     // Get eligible recipients
     let eligible = inscritos.filter((i) => {
-      // Must have phone
       if (!i.whatsapp) return false;
-      // Must not be do_not_contact
       if (i.do_not_contact) return false;
-      // Webinar filter
       if (config.webinarFilter === "current" && i.webinar !== webinar) return false;
-      // Plan filter
       const plan = i.plan || "free";
       return config.planFilter.includes(plan);
     });
@@ -630,9 +629,10 @@ function Timeline({
       return;
     }
 
-    if (!confirm(`Enviar SMS a ${eligible.length} pessoa(s)?\n\nTexto:\n"${config.smsText}"`)) return;
+    if (!confirm(`Enviar SMS a ${eligible.length} pessoa(s)?\n\nTexto:\n"${smsText}"`)) return;
 
     setSendingSmsKey(templateKey);
+    setEditingSmsKey(null);
     setSmsResult(null);
     const adminEmail = sessionStorage.getItem("crm_admin_email") || "";
     let sent = 0, failed = 0;
@@ -649,7 +649,7 @@ function Timeline({
             },
             body: JSON.stringify({
               to: person.whatsapp,
-              text: config.smsText,
+              text: smsText,
               provider: "egoi",
               registrationId: person.id,
             }),
@@ -742,7 +742,7 @@ function Timeline({
 
           {/* SMS node right side */}
           {node.channel === "sms" && (
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1" style={{ maxWidth: 280 }}>
               {counts && counts.sent > 0 && (
                 <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
                   {counts.sent} enviados
@@ -754,24 +754,54 @@ function Timeline({
                   {counts.failed} falhas
                 </span>
               )}
-              <button
-                onClick={() => handleBulkSms(node)}
-                disabled={sendingSmsKey === node.templateKeyMatch[0]}
-                className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors mt-1"
-                style={{ background: sendingSmsKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a", color: "#fff" }}
-              >
-                {sendingSmsKey === node.templateKeyMatch[0] ? (
-                  <>
-                    <Loader2 size={12} className="animate-spin" />
-                    Enviando…
-                  </>
-                ) : (
-                  <>
-                    <Smartphone size={12} />
-                    Enviar SMS agora →
-                  </>
-                )}
-              </button>
+              {editingSmsKey === node.templateKeyMatch[0] ? (
+                <div className="flex flex-col gap-1.5 w-full mt-1">
+                  <textarea
+                    className="w-full p-2 border border-gray-300 rounded text-[12px] leading-snug resize-y"
+                    rows={3}
+                    value={editedSmsText}
+                    onChange={(e) => setEditedSmsText(e.target.value)}
+                  />
+                  <div className="flex gap-1.5 justify-end">
+                    <button
+                      onClick={() => setEditingSmsKey(null)}
+                      className="text-[11px] px-2 py-1 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleBulkSms(node, editedSmsText)}
+                      className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded text-white"
+                      style={{ background: "#16a34a" }}
+                    >
+                      <Send size={10} />
+                      Confirmar envio
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingSmsKey(node.templateKeyMatch[0]);
+                    setEditedSmsText(node.smsSendConfig?.smsText || "");
+                  }}
+                  disabled={sendingSmsKey === node.templateKeyMatch[0]}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors mt-1"
+                  style={{ background: sendingSmsKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a", color: "#fff" }}
+                >
+                  {sendingSmsKey === node.templateKeyMatch[0] ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Enviando…
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone size={12} />
+                      Enviar SMS agora →
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
 
