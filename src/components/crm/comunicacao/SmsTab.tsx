@@ -20,8 +20,8 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [webinar, setWebinar] = useState<WebinarFilter>("todos");
-  const [plano, setPlano] = useState<PlanoFilter>("todos");
+  const [webinar, setWebinar] = useState<WebinarFilter | null>("todos");
+  const [plano, setPlano] = useState<PlanoFilter | null>("todos");
 
   const filteredPool = useMemo(() => filterInscritos(inscritos, webinar, plano).filter(i => !!i.whatsapp), [inscritos, webinar, plano]);
 
