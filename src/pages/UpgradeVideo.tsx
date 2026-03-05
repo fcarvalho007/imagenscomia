@@ -334,11 +334,19 @@ const UpgradeVideo = () => {
       <div style={{ height: 20 }} />
 
       <h2 className="max-sm:text-[24px]" style={{ fontSize: 28, fontWeight: 700, color: "#111827" }}>
-        Estás inscrito{firstName ? `, ${firstName}` : ""}.
+        {orderState.videoPremium || orderState.masterclass
+          ? `Compra confirmada${firstName ? `, ${firstName}` : ""}! 🎉`
+          : `Estás inscrito${firstName ? `, ${firstName}` : ""}.`}
       </h2>
 
       <p style={{ fontSize: 15, color: "#6b7280", marginTop: 8 }}>
-        Webinar Vídeo com IA · 5 de Março · 10h00
+        {orderState.videoPremium || orderState.masterclass
+          ? (orderState.videoPremium && orderState.masterclass
+              ? "Gravação + Pack de Apoio e Masterclass"
+              : orderState.masterclass
+                ? "Masterclass Online"
+                : "Gravação + Pack de Apoio")
+          : "Webinar Vídeo com IA · 5 de Março · 10h00"}
       </p>
 
       <div className="max-sm:h-[18px]" style={{ height: 24 }} />
@@ -354,7 +362,9 @@ const UpgradeVideo = () => {
         }}
       >
         <p style={{ fontSize: 14, color: "#166534", lineHeight: 1.6 }}>
-          Vais receber um email de confirmação em breve com o link de acesso.
+          {orderState.videoPremium || orderState.masterclass
+            ? "Receberás os acessos por email em breve."
+            : "Vais receber um email de confirmação em breve com o link de acesso."}
         </p>
       </div>
 
