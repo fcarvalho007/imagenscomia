@@ -6,8 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TAG_PREMIUM = 32;
-const TAG_MASTERCLASS = 33;
+const TAG_MAP: Record<string, { premium: number; masterclass: number }> = {
+  imagens: { premium: 32, masterclass: 33 },
+  video: { premium: 35, masterclass: 33 },
+};
 const EGOI_LIST_ID = 5;
 const DELAY_MS = 300;
 
@@ -33,7 +35,7 @@ serve(async (req) => {
     // 1. Fetch all buyers (paid or premium-granted)
     const { data: buyers, error } = await supabase
       .from("registrations")
-      .select("email, plan_selected, paid_at, premium_granted_at")
+      .select("email, plan_selected, paid_at, premium_granted_at, webinar")
       .or("paid_at.not.is.null,premium_granted_at.not.is.null");
 
     if (error) {
@@ -52,14 +54,16 @@ serve(async (req) => {
 
     for (const buyer of buyers || []) {
       const plan = buyer.plan_selected;
+      const webinar = (buyer as any).webinar || "imagens";
+      const tags = TAG_MAP[webinar] ?? TAG_MAP.imagens;
 
       // Determine tags to apply
       const tagsToApply: number[] = [];
       if (["premium", "bundle"].includes(plan ?? "") || buyer.premium_granted_at) {
-        tagsToApply.push(TAG_PREMIUM);
+        tagsToApply.push(tags.premium);
       }
       if (["masterclass", "bundle"].includes(plan ?? "")) {
-        tagsToApply.push(TAG_MASTERCLASS);
+        tagsToApply.push(tags.masterclass);
       }
 
       if (tagsToApply.length === 0) {

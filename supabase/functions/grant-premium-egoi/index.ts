@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const TAG_PREMIUM = 32;
+const TAG_MAP: Record<string, number> = {
+  imagens: 32,
+  video: 35,
+};
 const EGOI_LIST_ID = 5;
 
 serve(async (req) => {
@@ -37,7 +40,7 @@ serve(async (req) => {
     // 1. Fetch registration email
     const { data: reg, error: regError } = await supabase
       .from("registrations")
-      .select("email")
+      .select("email, webinar")
       .eq("id", registration_id)
       .maybeSingle();
 
@@ -62,19 +65,21 @@ serve(async (req) => {
       });
     }
 
-    // 3. Attach Tag 32 (Premium)
+    // 3. Attach premium tag (32 for imagens, 35 for video)
+    const webinar = reg.webinar || "imagens";
+    const tagId = TAG_MAP[webinar] ?? TAG_MAP.imagens;
     const tagRes = await fetch(
       `https://api.egoiapp.com/lists/${EGOI_LIST_ID}/contacts/actions/attach-tag`,
       {
         method: "POST",
         headers: { "Apikey": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({ tag_id: TAG_PREMIUM, contacts: [contactId] }),
+        body: JSON.stringify({ tag_id: tagId, contacts: [contactId] }),
       }
     );
     const tagText = await tagRes.text();
-    console.log(`[grant-premium-egoi] tag ${TAG_PREMIUM} → ${tagRes.status}: ${tagText}`);
+    console.log(`[grant-premium-egoi] tag ${tagId} (${webinar}) → ${tagRes.status}: ${tagText}`);
 
-    return new Response(JSON.stringify({ ok: tagRes.ok, email: reg.email, contactId, tagStatus: tagRes.status }), {
+    return new Response(JSON.stringify({ ok: tagRes.ok, email: reg.email, contactId, tagId, webinar, tagStatus: tagRes.status }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
