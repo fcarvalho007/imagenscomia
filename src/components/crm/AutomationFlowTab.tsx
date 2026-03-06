@@ -1537,6 +1537,19 @@ function Timeline({
 
   return (
     <div className="relative max-w-[800px] mx-auto">
+      {/* Hidden CSV file input */}
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && pendingImportKey.current) {
+            handleCsvImport(file, pendingImportKey.current);
+          }
+        }}
+      />
       {groups.map((group, gIdx) => {
         const isLastGroup = gIdx === groups.length - 1;
         const isEndGroup = group.groupKey === "end";
