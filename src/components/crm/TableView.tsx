@@ -550,8 +550,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       {(() => {
-                        const wKey = (i.webinar === "video" ? "video" : "imagens");
-                        const cutoff = (await import("@/config/webinarConfig")).WEBINAR_CONFIG[wKey as "video" | "imagens"].postEventCutoff;
+                        const wKey = (i.webinar === "video" ? "video" : "imagens") as const;
+                        const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
                         const isPost = new Date(i.timestamp).getTime() >= cutoff.getTime();
                         return (
                           <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${isPost ? "bg-ink-100 text-ink-700" : "bg-surface text-ink-400"}`}>
