@@ -516,8 +516,8 @@ function getPostEventNodes(): NodeDef[] {
     // ── SEQUÊNCIA DE CONVERSÃO ──
     {
       type: "email",
-      title: "Email Day 1 — Gravação + Premium Pass",
-      subtitle: "24h após inscrição · sessão 70min + oferta Premium",
+      title: "Email Day 1 — Sessão prática + Premium Pass",
+      subtitle: "24h após inscrição · sessão 70min + materiais de apoio",
       templateKeyMatch: ["video_postwebinar_day1"],
       sendOffsetHours: null,
       sectionDivider: "SEQUÊNCIA DE CONVERSÃO",
