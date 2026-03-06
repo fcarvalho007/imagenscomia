@@ -35,6 +35,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   video_followup_prewebinar: "Follow-up pré-webinar — upgrade",
   // Fatura
   invoice_notification: "Email de notificação de fatura",
+  invoice_created: "Fatura/recibo criado (rascunho)",
+  invoice_finalized: "Fatura/recibo emitida e enviada",
   // E-goi sync
   egoi_sync: "Sincronizado com E-goi",
   egoi_tag: "Tag E-goi aplicada",
