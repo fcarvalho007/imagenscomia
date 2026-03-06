@@ -5,6 +5,7 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import FaturacaoKPIs from "@/components/crm/faturacao/FaturacaoKPIs";
+import FaturacaoCharts from "@/components/crm/faturacao/FaturacaoCharts";
 import PlanBreakdown from "@/components/crm/faturacao/PlanBreakdown";
 import CostsSection from "@/components/crm/faturacao/CostsSection";
 import InvoiceTable from "@/components/crm/faturacao/InvoiceTable";
@@ -43,7 +44,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
 
   useEffect(() => { fetchCosts(); }, [fetchCosts]);
 
-  // Financial calculations
   const paid = useMemo(() => inscritos.filter(i => i.payment_status === "paid"), [inscritos]);
   const pending = useMemo(() => inscritos.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected"), [inscritos]);
   const receitaConfirmada = useMemo(() => paid.reduce((s, i) => s + i.valor, 0), [paid]);
@@ -99,18 +99,28 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         </div>
       </div>
 
-      {/* Bloco 1 — KPIs */}
+      {/* 1 — Hero KPIs */}
       <FaturacaoKPIs
         receitaConfirmada={receitaConfirmada}
         pipelinePendente={pipelinePendente}
         numPagamentos={paid.length}
         totalCosts={totalCosts}
+        paidMediaCosts={paidMediaCosts}
       />
 
-      {/* Bloco 2 — Breakdown por plano */}
+      {/* 2 — Charts */}
+      <FaturacaoCharts
+        receitaConfirmada={receitaConfirmada}
+        pipelinePendente={pipelinePendente}
+        totalCosts={totalCosts}
+        inscritos={inscritos}
+        costs={costs}
+      />
+
+      {/* 3 — Plan Breakdown */}
       <PlanBreakdown inscritos={inscritos} receitaConfirmada={receitaConfirmada} />
 
-      {/* Bloco 3 — Custos */}
+      {/* 4 — Custos */}
       <CostsSection
         costs={costs}
         loading={loadingCosts}
@@ -120,10 +130,10 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         onRefresh={fetchCosts}
       />
 
-      {/* Bloco 4 — Faturação InvoiceExpress */}
+      {/* 5 — Faturação InvoiceExpress */}
       <InvoiceTable inscritos={paid} onRefresh={onRefresh} />
 
-      {/* P&L Summary */}
+      {/* 6 — P&L Mapa de Contas (texto) */}
       <PLSummary
         receitaConfirmada={receitaConfirmada}
         pipelinePendente={pipelinePendente}
