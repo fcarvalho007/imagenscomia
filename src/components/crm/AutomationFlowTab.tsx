@@ -740,7 +740,8 @@ function Timeline({
     setSendingSmsKey(templateKey);
     setEditingSmsKey(null);
     setSmsResult(null);
-    const adminEmail = sessionStorage.getItem("crm_admin_email") || "";
+    const { data: { session } } = await supabase.auth.getSession();
+    const adminEmail = session?.user?.email || "";
     let sent = 0, failed = 0;
 
     for (const person of eligible) {

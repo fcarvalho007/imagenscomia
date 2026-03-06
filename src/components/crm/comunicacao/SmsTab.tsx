@@ -66,7 +66,8 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
     let ok = 0, fail = 0;
     for (const r of recipients) {
       try {
-        const adminEmail = sessionStorage.getItem("crm_admin_email");
+        const { data: { session } } = await supabase.auth.getSession();
+        const adminEmail = session?.user?.email || "";
         const { data, error } = await supabase.functions.invoke("send-sms", {
           body: { to: r.whatsapp, text: text.trim(), provider },
           headers: { "x-crm-admin-email": adminEmail || "" },
