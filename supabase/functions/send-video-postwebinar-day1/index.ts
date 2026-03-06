@@ -18,41 +18,51 @@ function buildFallbackHtml(fname: string): string {
 
   <div style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:36px 28px 28px;text-align:center;">
     <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Sessão Prática · Vídeo Profissional com IA</p>
-    <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">70 minutos de vídeo com IA — ao teu ritmo</h1>
+    <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">Aqui está o teu resumo</h1>
   </div>
 
   <div style="padding:32px 28px;">
     <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Tens disponível uma sessão prática de 70 minutos com o processo completo — do briefing ao clip publicável — com ferramentas prontas a usar.</p>
-    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 28px;">Se quiseres aplicar os exercícios ao teu ritmo e usar as ferramentas que partilhei, o <strong>Premium Pass</strong> inclui tudo o que precisas.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">O resumo do webinar de ontem está pronto.<br>Mas antes de te partilhar o link, um exemplo rápido do mundo acelerado da Inteligência Artificial:</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Nos últimos 4 dias foram lançados o <strong>Gemini 3.1 Pro</strong>, o <strong>Gemini 3.1 Flash-Lite</strong>, e ontem o <strong>ChatGPT 5.3 Instant</strong> e o <strong>GPT 5.4 Thinking</strong>. Todos já disponíveis.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">É exactamente este o ritmo.<br>Por isso o webinar foi intenso — propositadamente. Não há tempo a perder.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 8px;">Conforme prometi, aqui está o resumo gratuito da sessão:</p>
+
+    <div style="text-align:center;margin:24px 0;">
+      <a href="https://podes.entrar.pt/workbookgratis" style="display:inline-block;background:#4338ca;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">→ Descarregar o Resumo da Sessão</a>
+    </div>
+
+    <p style="color:#555;font-size:15px;line-height:1.6;margin:0 0 16px;">Não é uma lista de slides.<br>É um guia prático, as variáveis-chave do prompt, a comparação entre ferramentas e os erros mais comuns — com as correcções.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 28px;">Lê com calma.</p>
+
+    <div style="border-top:1px solid #eee;padding-top:24px;margin-bottom:28px;">
+      <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Entretanto...<br>Se quiseres o contexto completo, recomendo:</p>
+    </div>
 
     <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;">
-      <p style="color:#4338ca;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
-        <tr><td style="padding:8px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">🎬</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Sessão prática completa em HD</p><p style="margin:2px 0 0;color:#666;font-size:13px;">70 minutos, sem cortes</p></td></tr>
-        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">📘</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Workbook Resumo da Sessão</p><p style="margin:2px 0 0;color:#666;font-size:13px;">PDF com estrutura, exercícios e checklist</p></td></tr>
-        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">💎</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Guia técnico de GEMs para vídeo</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Passo-a-passo para criar GEMs de vídeo</p></td></tr>
-        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">⚡</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Ficheiro GEM pronto a importar</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Importa directamente para o Gemini</p></td></tr>
-        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">🎧</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Áudio da sessão em MP3</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Ouve em qualquer lugar</p></td></tr>
-      </table>
+      <p style="color:#4338ca;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 12px;">🎬 Premium Pass — €27 + IVA</p>
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;"><tr><td style="padding:6px 0;color:#333;font-size:15px;">✓ Sessão HD completa (70 min, sem cortes)</td></tr><tr><td style="padding:6px 0;color:#333;font-size:15px;">✓ Workbook detalhado com prompts e os casos de estudo partilhados em aula</td></tr><tr><td style="padding:6px 0;color:#333;font-size:15px;">✓ Guia técnico dos 3 GEMs para vídeo com IA</td></tr><tr><td style="padding:6px 0;color:#333;font-size:15px;">✓ Versão áudio MP3</td></tr></table>
       <div style="text-align:center;margin-top:20px;">
-        <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#4338ca;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €27+IVA →</a>
+        <a href="https://imagenscomia.com/comprar" style="display:inline-block;background:#4338ca;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Quero acesso à sessão completa →</a>
+        <p style="color:#888;font-size:13px;margin:8px 0 0;">27€ + IVA</p>
       </div>
     </div>
 
     <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;">
-      <p style="color:#16a34a;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 8px;">Queres ir mais fundo?</p>
-      <p style="color:#333;font-size:17px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — €47+IVA</p>
-      <p style="color:#555;font-size:15px;line-height:1.5;margin:0 0 16px;">3 horas de sessão avançada com demonstrações, casos reais e acompanhamento personalizado.</p>
+      <p style="color:#333;font-size:15px;line-height:1.5;margin:0 0 8px;">E para quem quer ir mais fundo — agentes de IA, fluxos de montagem automáticos e edição com linguagem natural:</p>
+      <p style="color:#16a34a;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 8px;">📽 Masterclass · 12 de Março · 3h ao vivo</p>
+      <p style="color:#555;font-size:15px;line-height:1.5;margin:0 0 16px;">Inclui tudo do Premium Pass.</p>
       <div style="text-align:center;">
-        <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Saber mais sobre a Masterclass →</a>
+        <a href="https://imagenscomia.com/comprar" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Saber mais sobre a Masterclass →</a>
+        <p style="color:#888;font-size:13px;margin:8px 0 0;">67€ + IVA</p>
       </div>
     </div>
 
     <div style="border-top:1px solid #eee;padding-top:20px;margin-top:8px;">
-      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 4px;">Dúvidas? Responde a este email ou escreve-me no <a href="https://wa.me/351919127479" style="color:#4338ca;text-decoration:none;font-weight:600;">WhatsApp</a>.</p>
-      <p style="color:#333;font-size:15px;font-weight:700;margin:16px 0 0;">Frederico Carvalho</p>
-      <p style="color:#999;font-size:12px;margin:2px 0 0;">DIGITALFC</p>
+      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 4px;">Qualquer dúvida, responde directamente a este email.</p>
+      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 16px;">Bom fim de semana,</p>
+      <p style="color:#333;font-size:15px;font-weight:700;margin:0 0 2px;">Frederico Carvalho</p>
+      <p style="color:#999;font-size:12px;margin:0;">DIGITALFC · <a href="https://fredericocarvalho.pt" style="color:#4338ca;text-decoration:none;">fredericocarvalho.pt</a></p>
     </div>
   </div>
 
@@ -135,7 +145,7 @@ serve(async (req) => {
           const fname = reg.first_name || "";
           const rawHtml = tpl?.html_body ?? buildFallbackHtml(fname);
           const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
-          const subject = (tpl?.subject ?? "A sessão de ontem — e como rever tudo, {{fname}}").replace(/\{\{fname\}\}/g, fname);
+          const subject = (tpl?.subject ?? "Aqui está o teu resumo | Webinar Vídeo com IA").replace(/\{\{fname\}\}/g, fname);
 
           const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, subject, html);
           const ok = result.success === true;
