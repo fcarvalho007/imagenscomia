@@ -14,14 +14,50 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import type { LastEmailInfo } from "@/components/crm/templateLabels";
 import { WebinarProvider, useWebinarContext } from "@/contexts/WebinarContext";
 import { filterByWebinar } from "@/config/webinarConfig";
+import { supabase } from "@/integrations/supabase/client";
 
 function CRMInner() {
-  const [authenticated, setAuthenticated] = useState(() => {
-    return sessionStorage.getItem("crm_admin_email") === "fredericodigital@gmail.com";
-  });
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
   const [selectedInscrito, setSelectedInscrito] = useState<Inscrito | null>(null);
   const { webinarContext } = useWebinarContext();
+
+  // Check auth state on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setAuthenticated(false);
+        return;
+      }
+
+      // Check AAL level (MFA verified?)
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.currentLevel !== aal?.nextLevel) {
+        // MFA required but not verified
+        setAuthenticated(false);
+        return;
+      }
+
+      // Check admin role
+      const { data: hasRole } = await supabase.rpc("has_role", {
+        _user_id: session.user.id,
+        _role: "admin",
+      });
+
+      setAuthenticated(!!hasRole);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setAuthenticated(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const { inscritos, refresh, addNota, removeNota, updateStatus, toggleFollowUp, deleteInscrito, setGender, updateName, toggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, fetchFailedEmailIds, sendBacklogCheckin, fetchMessageLogsSummary, regenerateLink, resendPaymentEmail, updateStepReached, toggleInvoiceSent, grantPremium, updatePlan, markAsPaid, markAsLost } = useInscritos();
 
@@ -32,14 +68,23 @@ function CRMInner() {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
 
-  const handleLogout = useCallback(() => {
-    sessionStorage.removeItem("crm_admin_email");
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
     setAuthenticated(false);
   }, []);
 
   const currentInscrito = selectedInscrito
     ? inscritos.find((i) => i.id === selectedInscrito.id) || null
     : null;
+
+  // Loading state
+  if (authenticated === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0F172A" }}>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400" />
+      </div>
+    );
+  }
 
   if (!authenticated) {
     return <CRMLogin onLogin={() => setAuthenticated(true)} />;
