@@ -590,15 +590,15 @@ async function processPayment(data: PaymentData) {
             masterclass: "Masterclass IA",
             bundle: "Premium + Masterclass",
             gravacao: "Gravação HD",
-            "video-premium": "Gravação HD — Vídeo com IA",
+            "video-premium": "Sessão Prática — Vídeo com IA",
             "video-masterclass": "Masterclass — Vídeo com IA",
-            "video-bundle": "Masterclass + Gravação — Vídeo com IA",
+            "video-bundle": "Pack IA Completo",
           };
           const planLabel = planLabelMap[reg.plan_selected || ""] || reg.plan_selected || "—";
 
           const unitPriceMap: Record<string, string> = {
             premium: "18,45", masterclass: "57,81", bundle: "76,26", gravacao: "33,21",
-            "video-premium": "18,45", "video-masterclass": "57,81", "video-bundle": "70,11",
+            "video-premium": "33,21", "video-masterclass": "82,41", "video-bundle": "131,61",
           };
           const unitPrice = unitPriceMap[reg.plan_selected || ""] || "—";
           // Use real amount from EuPago webhook
@@ -620,53 +620,152 @@ async function processPayment(data: PaymentData) {
             if (groupMembers && groupMembers.length > 1) {
               const memberRows = groupMembers.map((m) => {
                 const mName = [m.first_name, m.last_name].filter(Boolean).join(" ") || m.name;
-                return `<li>${mName} — ${m.email}</li>`;
+                return `<tr><td style="padding:6px 12px;border-bottom:1px solid #eee;">${mName}</td><td style="padding:6px 12px;border-bottom:1px solid #eee;">${m.email}</td></tr>`;
               }).join("");
-              groupHtml = `<hr/><h3>👥 Compra de Grupo (${groupMembers.length} pessoas)</h3>
-                <p><strong>Desconto grupo:</strong> 10% aplicado</p>
-                <ul>${memberRows}</ul>`;
+              groupHtml = `
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                  <tr><td style="padding:16px 20px;background:#f0f4ff;border-radius:8px;">
+                    <p style="margin:0 0 12px;font-size:15px;font-weight:700;color:#1a1a2e;">👥 Compra de Grupo (${groupMembers.length} pessoas) · Desconto 10%</p>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#333;">
+                      ${memberRows}
+                    </table>
+                  </td></tr>
+                </table>`;
             }
           }
 
-          // Build extra client info
-          const extraRows: string[] = [];
-          if (reg.whatsapp) extraRows.push(`<p><strong>WhatsApp:</strong> ${reg.whatsapp}</p>`);
-          extraRows.push(`<p><strong>Webinar:</strong> ${webinarLabel}</p>`);
-          extraRows.push(`<p><strong>Inscrito em:</strong> ${createdAt}</p>`);
-          if (reg.registration_source) extraRows.push(`<p><strong>Fonte:</strong> ${reg.registration_source}</p>`);
-          if (reg.role) extraRows.push(`<p><strong>Função:</strong> ${reg.role}</p>`);
-          if (reg.team_size) extraRows.push(`<p><strong>Equipa:</strong> ${reg.team_size}</p>`);
+          // Build extra client rows for grid
+          const whatsappLink = reg.whatsapp ? `<a href="https://wa.me/351${reg.whatsapp.replace(/\D/g,'')}" style="color:#6d28d9;">${reg.whatsapp}</a>` : "—";
 
           let subject: string;
           let htmlBody: string;
           const templateKey = "invoice_notification";
 
-          const commonHeader = `<h2>💰 Novo pagamento confirmado</h2>
-            <p><strong>Cliente:</strong> ${fullName} (${reg.email})</p>
-            ${extraRows.join("\n")}
-            <hr/>
-            <p><strong>Produto:</strong> ${planLabel}</p>
-            <p><strong>Preço unitário:</strong> ${unitPrice} €</p>
-            <p><strong>Total cobrado:</strong> ${totalVal} €</p>
-            <p><strong>Método:</strong> EuPago — Ref: ${reference || "—"} — TX: ${transactionID || "—"}</p>
-            <p><strong>Data/hora:</strong> ${paidDate}</p>`;
+          const hasInvoice = !!invoice;
+          const headerBg = hasInvoice ? "#1a1a2e" : "#b91c1c";
+          const headerTitle = hasInvoice ? "VENDA CONFIRMADA" : "⚠️ VENDA — SEM FATURA";
 
-          if (invoice) {
-            subject = `💰 VENDA — ${planLabel} — ${fullName} — ${totalVal}€`;
-            htmlBody = `${commonHeader}
-              ${groupHtml}
-              <hr/><h3>🧾 Dados de faturação</h3>
-              <p><strong>Nome/Empresa:</strong> ${invoice.invoice_name}</p>
-              <p><strong>NIF:</strong> ${invoice.invoice_vat}</p>
-              <p><strong>Morada:</strong> ${invoice.invoice_address}</p>
-              <p><strong>CP:</strong> ${invoice.invoice_zip} ${invoice.invoice_city}</p>
-              <p><strong>Email fatura:</strong> ${invoice.invoice_email}</p>`;
-          } else {
-            subject = `💰 VENDA — ${planLabel} — ${fullName} — ${totalVal}€ — SEM FATURA`;
-            htmlBody = `${commonHeader}
-              ${groupHtml}
-              <hr/><p>⚠️ <strong>Dados de faturação não recolhidos.</strong> Solicitar ao cliente.</p>`;
-          }
+          const invoiceBlock = hasInvoice
+            ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                <tr><td style="padding:16px 20px;border:2px solid #16a34a;border-radius:8px;">
+                  <p style="margin:0 0 12px;font-size:15px;font-weight:700;color:#16a34a;">🧾 Dados de Faturação</p>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;">
+                    <tr><td style="padding:4px 0;width:120px;color:#666;">Nome/Empresa</td><td style="padding:4px 0;font-weight:600;">${invoice.invoice_name}</td></tr>
+                    <tr><td style="padding:4px 0;color:#666;">NIF</td><td style="padding:4px 0;font-weight:600;">${invoice.invoice_vat}</td></tr>
+                    <tr><td style="padding:4px 0;color:#666;">Morada</td><td style="padding:4px 0;">${invoice.invoice_address}</td></tr>
+                    <tr><td style="padding:4px 0;color:#666;">CP / Cidade</td><td style="padding:4px 0;">${invoice.invoice_zip} ${invoice.invoice_city}</td></tr>
+                    <tr><td style="padding:4px 0;color:#666;">Email fatura</td><td style="padding:4px 0;"><a href="mailto:${invoice.invoice_email}" style="color:#6d28d9;">${invoice.invoice_email}</a></td></tr>
+                  </table>
+                </td></tr>
+              </table>`
+            : `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                <tr><td style="padding:16px 20px;border:2px solid #dc2626;border-radius:8px;background:#fef2f2;">
+                  <p style="margin:0;font-size:15px;font-weight:700;color:#dc2626;">⚠️ Dados de faturação não recolhidos</p>
+                  <p style="margin:8px 0 0;font-size:13px;color:#666;">Solicitar ao cliente: NIF, morada e email para fatura.</p>
+                </td></tr>
+              </table>`;
+
+          subject = hasInvoice
+            ? `💰 ${planLabel} — ${fullName} — ${totalVal}€`
+            : `⚠️ ${planLabel} — ${fullName} — ${totalVal}€ — SEM FATURA`;
+
+          htmlBody = `
+          <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;">
+            <!-- Header -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="background:${headerBg};padding:28px 24px;border-radius:12px 12px 0 0;text-align:center;">
+                <p style="margin:0;font-size:12px;letter-spacing:2px;color:rgba(255,255,255,0.7);text-transform:uppercase;">${headerTitle}</p>
+                <p style="margin:8px 0 4px;font-size:20px;font-weight:700;color:#fff;">${planLabel}</p>
+                <p style="margin:0;font-size:32px;font-weight:800;color:#fff;">${totalVal} €</p>
+              </td></tr>
+            </table>
+
+            <!-- Cliente -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="background:#f8f9fa;padding:20px 24px;">
+                <p style="margin:0 0 12px;font-size:15px;font-weight:700;color:#1a1a2e;">👤 Cliente</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;">
+                  <tr>
+                    <td style="padding:4px 0;width:50%;">
+                      <span style="color:#666;">Nome:</span> <strong>${fullName}</strong>
+                    </td>
+                    <td style="padding:4px 0;width:50%;">
+                      <span style="color:#666;">WhatsApp:</span> ${whatsappLink}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="padding:4px 0;">
+                      <span style="color:#666;">Email:</span> <a href="mailto:${reg.email}" style="color:#6d28d9;">${reg.email}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;">
+                      <span style="color:#666;">Webinar:</span> ${webinarLabel}
+                    </td>
+                    <td style="padding:4px 0;">
+                      <span style="color:#666;">Fonte:</span> ${reg.registration_source || "—"}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 0;">
+                      <span style="color:#666;">Inscrito:</span> ${createdAt}
+                    </td>
+                    <td style="padding:4px 0;">
+                      <span style="color:#666;">Equipa:</span> ${reg.team_size || "—"}
+                    </td>
+                  </tr>
+                  ${reg.role ? `<tr><td colspan="2" style="padding:4px 0;"><span style="color:#666;">Função:</span> ${reg.role}</td></tr>` : ""}
+                </table>
+              </td></tr>
+            </table>
+
+            <!-- Pagamento -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:20px 24px;">
+                <p style="margin:0 0 12px;font-size:15px;font-weight:700;color:#1a1a2e;">💳 Pagamento</p>
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#333;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                  <tr style="background:#f8f9fa;">
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">Produto</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;font-weight:600;">${planLabel}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">Preço unitário</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">${unitPrice} €</td>
+                  </tr>
+                  <tr style="background:#f8f9fa;">
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">Total cobrado</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;font-weight:700;font-size:16px;">${totalVal} €</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">Método</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;">EuPago</td>
+                  </tr>
+                  <tr style="background:#f8f9fa;">
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">Referência</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;font-family:monospace;">${reference || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#666;">TX ID</td>
+                    <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;font-family:monospace;">${transactionID || "—"}</td>
+                  </tr>
+                  <tr style="background:#f8f9fa;">
+                    <td style="padding:10px 16px;color:#666;">Data/hora</td>
+                    <td style="padding:10px 16px;">${paidDate}</td>
+                  </tr>
+                </table>
+              </td></tr>
+            </table>
+
+            <!-- Faturação -->
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:0 24px 24px;">
+                ${invoiceBlock}
+              </td></tr>
+            </table>
+
+            <!-- Grupo -->
+            ${groupHtml ? `<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:0 24px 24px;">${groupHtml}</td></tr></table>` : ""}
+          </div>`;
 
           const invSupabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const invSrvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
