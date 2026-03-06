@@ -1,29 +1,42 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Faturação — Botões visíveis + tracking automático
 
-### Alteração
+## Problema actual
+- Os botões "Rascunho" e "Emitir e enviar" só aparecem quando existem `invoice_details` (dados de faturação preenchidos pelo cliente). Para clientes sem dados, só aparece "Sem dados de faturação" sem acção possível.
+- Após emitir, não fica registado visualmente na secção (nem no histórico/timeline) o que foi feito — o `invoice_document_id` é guardado na BD mas não é mostrado.
+- Risco de emissão duplicada porque não há feedback visual de que já foi emitida.
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Alterações
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### 1. `InvoiceSection.tsx` — Botões sempre visíveis + estado persistido
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+- **Mostrar botões mesmo sem dados de faturação** — nesse caso a fatura é emitida como "Consumidor Final" (NIF 999999990), que é o que a Edge Function já faz por defeito
+- **Passar `invoice_document_id` e `invoice_sent`** como props para mostrar estado actual:
+  - Se `invoice_document_id` existe e `invoice_sent = false` → mostrar "Rascunho #ID criado" com badge discreto
+  - Se `invoice_sent = true` → mostrar "Fatura #ID emitida e enviada ✓" a verde
+- **Após acção bem-sucedida**, actualizar estado local para reflectir imediatamente (sem precisar de refresh)
+- **Desabilitar botão "Emitir e enviar" se já foi enviada** — evitar duplicação
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### 2. `mockData.ts` — Adicionar `invoice_document_id` ao tipo `Inscrito`
+
+- Adicionar campo `invoice_document_id: string | null` (já existe na BD)
+
+### 3. `TabLinkPagamento.tsx` — Passar `invoice_document_id`
+
+- Passar `inscrito.invoice_document_id` ao `InvoiceSection`
+
+### 4. `ActivityTimeline.tsx` — Mostrar eventos de faturação no histórico
+
+- Adicionar suporte para renderizar eventos de faturação (rascunho criado / fatura emitida) como items na timeline, baseado nos campos `invoice_document_id` e `invoice_sent` do inscrito
+
+### 5. Onde é carregado o inscrito — garantir que `invoice_document_id` vem na query
+
+- Verificar que o `select()` que carrega registrations inclui `invoice_document_id`
+
+## Ficheiros a editar
+- `src/pages/crm/mockData.ts` — adicionar campo ao tipo
+- `src/components/crm/modal/InvoiceSection.tsx` — botões sempre visíveis + estado visual
+- `src/components/crm/modal/TabLinkPagamento.tsx` — passar nova prop
+- `src/components/crm/modal/ActivityTimeline.tsx` — evento de faturação na timeline
 
