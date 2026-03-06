@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, Fragment } from "react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -625,6 +626,8 @@ function Timeline({
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+  const [smsDetailedResults, setSmsDetailedResults] = useState<Array<{ name: string; phone: string; success: boolean; error?: string }>>([]);
+  const [showSmsReport, setShowSmsReport] = useState(false);
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
 
@@ -740,43 +743,43 @@ function Timeline({
     setSendingSmsKey(templateKey);
     setEditingSmsKey(null);
     setSmsResult(null);
+    setSmsDetailedResults([]);
     const { data: { session } } = await supabase.auth.getSession();
     const adminEmail = session?.user?.email || "";
     let sent = 0, failed = 0;
+    const details: Array<{ name: string; phone: string; success: boolean; error?: string }> = [];
 
     for (const person of eligible) {
       try {
-        const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-sms`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-crm-admin-email": adminEmail,
-            },
-            body: JSON.stringify({
-              to: person.whatsapp,
-              text: smsText,
-              provider: "egoi",
-              registrationId: person.id,
-            }),
-          }
-        );
-        const data = await res.json();
-        if (data.success) {
+        const { data, error } = await supabase.functions.invoke("send-sms", {
+          body: {
+            to: person.whatsapp,
+            text: smsText,
+            provider: "egoi",
+            registrationId: person.id,
+          },
+          headers: { "x-crm-admin-email": adminEmail },
+        });
+        if (error) {
+          failed++;
+          details.push({ name: person.nome || person.whatsapp!, phone: person.whatsapp!, success: false, error: error.message });
+        } else if (data?.success) {
           sent++;
+          details.push({ name: person.nome || person.whatsapp!, phone: person.whatsapp!, success: true });
         } else {
           failed++;
-          console.warn(`SMS failed for ${person.nome}:`, data.error);
+          details.push({ name: person.nome || person.whatsapp!, phone: person.whatsapp!, success: false, error: data?.error || "Erro desconhecido" });
         }
-      } catch (err) {
+      } catch (err: any) {
         failed++;
-        console.error(`SMS error for ${person.nome}:`, err);
+        details.push({ name: person.nome || person.whatsapp!, phone: person.whatsapp!, success: false, error: err.message });
       }
     }
 
     setSendingSmsKey(null);
     setSmsResult({ sent, failed, total: eligible.length });
+    setSmsDetailedResults(details);
+    setShowSmsReport(true);
     if (failed === 0) {
       toast.success(`✅ ${sent} SMS enviados com sucesso!`);
     } else {
@@ -1144,6 +1147,39 @@ function Timeline({
           </Fragment>
         );
       })}
+      <Sheet open={showSmsReport} onOpenChange={(v) => !v && setShowSmsReport(false)}>
+        <SheetContent side="right" className="w-[400px] sm:max-w-[400px] flex flex-col p-0">
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+            <SheetTitle className="text-[15px]">📱 Relatório SMS</SheetTitle>
+            <SheetDescription className="text-[12px]">Resultado do envio em lote</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            {smsDetailedResults.map((r, i) => (
+              <div key={i} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-b-0">
+                <div
+                  className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold"
+                  style={{ background: r.success ? "#f0f4ff" : "#fee2e2", color: r.success ? "#1e40af" : "#ef4444" }}
+                >
+                  {r.name[0]?.toUpperCase() || "?"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold truncate" style={{ color: "#0F172A" }}>{r.name}</p>
+                  <p className="text-[11px] truncate" style={{ color: "#94A3B8" }}>{r.phone}</p>
+                  {!r.success && r.error && (
+                    <p className="text-[10px] mt-0.5" style={{ color: "#ef4444" }}>{r.error}</p>
+                  )}
+                </div>
+                <span className="w-2 h-2 rounded-full inline-block flex-shrink-0" style={{ background: r.success ? "#16a34a" : "#ef4444" }} />
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-border px-5 py-3" style={{ fontSize: 12 }}>
+            <span className="text-muted-foreground">
+              {smsResult?.sent ?? 0} enviados · {smsResult?.failed ?? 0} falharam · {smsResult?.total ?? 0} total
+            </span>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
