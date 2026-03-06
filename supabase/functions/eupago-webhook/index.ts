@@ -414,13 +414,20 @@ async function processPayment(data: PaymentData) {
         .maybeSingle();
 
       if (legacyReg) {
+        const updatePayload: Record<string, any> = {
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || identifier,
+          eupago_transaction_id: transactionID || null,
+        };
+        const derivedPlan = derivePlanFromAmount(amount, legacyReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          console.log(`🔧 Strategy 3: plan derived as "${derivedPlan}" from amount=${amount}`);
+        }
+
         const { data: updatedRows, error } = await supabase
           .from("registrations")
-          .update({
-            paid_at: new Date().toISOString(),
-            eupago_ref: reference || identifier,
-            eupago_transaction_id: transactionID || null,
-          })
+          .update(updatePayload)
           .eq("id", legacyReg.id)
           .select("id, email");
 
