@@ -169,7 +169,8 @@ const faqs = [
 
 const packItems = [
   { Icon: Play, title: "Sessão completa em HD", desc: "~70 min de sessão prática, sem cortes." },
-  { Icon: FileText, title: "Guia de prompts para vídeo", desc: "Templates prontos a usar para os teus primeiros clips." },
+  { Icon: FileText, title: "Workbook Resumo da Sessão", desc: "Documento PDF com os pontos-chave e exercícios da sessão." },
+  { Icon: FileText, title: "Guia técnico de GEMs para vídeo", desc: "Apoio para criação de GEMs especializados em vídeo no Gemini." },
   { Icon: MessageCircle, title: "Sessão Q&A ao vivo", desc: "10 de Março, 14h30 — tira dúvidas em directo com o Frederico." },
 ];
 
@@ -813,7 +814,7 @@ const VideoPageInner = () => {
             Acede à sessão completa
           </h2>
           <p className="text-[17px] mb-2 max-w-[540px] mx-auto" style={{ color: "rgba(255,255,255,0.70)" }}>
-            Sessão HD + guia de prompts + sessão Q&A ao vivo.
+            Sessão HD + workbook + guia GEMs + sessão Q&A ao vivo.
           </p>
           <p className="text-[24px] font-heading font-bold text-white mb-1">
             {price} € <span className="text-white/50 text-[16px] font-normal">+ IVA</span>
