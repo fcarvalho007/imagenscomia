@@ -1,22 +1,17 @@
 
 
-# Actualizar índice da sessão em /recursos-video
+# Actualizar "O que recebes" em /video
 
-## Alterações em `src/components/recursos/RecursosVideoConteudo.tsx`
+## Alterações em `src/pages/Video.tsx`
 
-### 1. Substituir `chapters` no `VIDEO_RECURSOS_CONFIG` (linhas 15-20)
-Novos 5 capítulos com os títulos e descrições fornecidos. Cada item terá `time`, `label` (título curto) e `description` (texto explicativo).
+### 1. Array `packItems` (linha 172)
+Substituir o item "Guia de prompts para vídeo" por dois novos items:
 
-### 2. Redesenhar a lista do índice (linhas 111-143)
-Em vez de items clicáveis simples com timestamp, mostrar cards com:
-- Número do capítulo
-- Título em bold
-- Descrição em texto pequeno (cinza)
-- Sem timestamps (não foram fornecidos)
+```typescript
+{ Icon: FileText, title: "Workbook Resumo da Sessão", desc: "Documento PDF com os pontos-chave e exercícios da sessão." },
+{ Icon: FileText, title: "Guia técnico de GEMs para vídeo", desc: "Apoio para criação de GEMs especializados em vídeo no Gemini." },
+```
 
-### 3. Remover secção "Apoio ao conhecimento" (linhas 145-183)
-Apagar o divider e toda a secção com os 3 links (Workbook, Guia GEMs, Ficheiro GEM) — já estão na sidebar.
-
-### 4. Limpar imports não utilizados
-Remover `BookOpen` do import (já não é usado).
+### 2. Texto resumo (linha 816)
+Actualizar a frase de `"Sessão HD + guia de prompts + sessão Q&A ao vivo."` para `"Sessão HD + workbook + guia GEMs + sessão Q&A ao vivo."`.
 
