@@ -1,46 +1,40 @@
 
-# Investigação SMS Recursos — Resultados e Plano de Correcção
 
-## Factos apurados
+# Corrigir `computeEligible` para email nodes — incluir `premium_granted_at`
 
-### a) As SMS foram enviadas?
+## Problema
 
-**Sim, 23 SMS foram enviadas** (+ 3 testes para o 915015508). Estão confirmadas na E-goi com status "delivered". No entanto, **não existem registos na tabela `message_logs`** — zero entradas com `channel = 'sms'`. Isto significa que a edge function `send-sms` falhou silenciosamente no logging, ou o envio foi feito por outro canal (directamente via E-goi bulk, não via CRM).
+Na função `computeEligible()`, linha 117-118, os filtros de email nodes (`audienceFilter`) só verificam `paid_at`:
 
-### b) Foram enviadas só a pagos ou a todos?
+```typescript
+if (f.requirePaid && !i.paid_at) return false;          // linha 117
+if (f.excludePaid && i.paid_at) return false;            // linha 118
+```
 
-**Foram enviadas a TODOS que seleccionaram premium/masterclass/bundle, incluindo quem NÃO pagou.**
+Isto ignora `premium_granted_at`. Resultado:
+- **Nodes de clientes pagos** (`requirePaid: true`) — não contam quem teve acesso concedido manualmente (premium_granted_at)
+- **Nodes de gratuitos** (`excludePaid: true`) — contam pessoas que já têm premium concedido como se fossem gratuitas
 
-Cruzamento dos 23 números do CSV da E-goi com a base de dados:
+O fix de SMS (linha 102) já verifica ambos (`paid_at` e `premium_granted_at`), mas o fix para email nodes não foi aplicado.
 
-| Status | Qtd | Exemplos |
-|--------|-----|----------|
-| **PAID/GRANTED** | 14 | Ana Teresa, Marisa, Romeo, Pedro, Jessica, Soraia, etc. |
-| **FREE (não pagou)** | 9 | Mafalda, Elisa, Mário, Amanda, Catarina, Frederico (910679744), etc. |
+## Solução
 
-**Causa**: O `handleBulkSms()` (linha 963-968) filtra apenas por `planFilter` e `whatsapp`, mas **não verifica `paid_at`**. O `computeEligible()` para SMS nodes (linha 96-103) também ignora o estado de pagamento. Qualquer pessoa que tenha seleccionado "premium" ou "masterclass" no formulário (mesmo sem pagar) recebeu a SMS.
+Alterar as linhas 117-118 em `computeEligible()`:
 
-## Plano de correcção
+**De:**
+```typescript
+if (f.requirePaid && !i.paid_at) return false;
+if (f.excludePaid && i.paid_at) return false;
+```
 
-### 1. Corrigir filtro SMS — respeitar `requirePaid` (AutomationFlowTab.tsx)
+**Para:**
+```typescript
+if (f.requirePaid && !i.paid_at && !i.premium_granted_at) return false;
+if (f.excludePaid && (i.paid_at || i.premium_granted_at)) return false;
+```
 
-Adicionar verificação de `paid_at` e `premium_granted_at` em dois locais:
+Isto alinha o comportamento dos email nodes com o dos SMS nodes, garantindo que todos os contadores de elegíveis no fluxo pós-evento (e pré-evento) reflectem correctamente quem pagou ou teve acesso concedido.
 
-- **`computeEligible()`** (linha 96-103): adicionar check de `requirePaid` do `smsSendConfig`
-- **`handleBulkSms()`** (linha 963-968): adicionar o mesmo check
+### Ficheiro alterado
+- `src/components/crm/AutomationFlowTab.tsx` — linhas 117-118
 
-Isto garante que o node "SMS Recursos — Premium Pass" com `planFilter: ["premium", "masterclass", "bundle"]` só envia a quem efectivamente pagou.
-
-Adicionalmente, actualizar o `SmsSendConfig` interface para incluir `requirePaid?: boolean` e marcar os SMS nodes de recursos pagos com `requirePaid: true`.
-
-### 2. Backfill dos 23 SMS na `message_logs`
-
-Inserir os 23 registos de SMS na tabela `message_logs` via migration, cruzando os números de telefone da E-goi com os `registration_id` correspondentes. Template key: `sms_recursos_post`. Isto garante que as estatísticas do CRM reflectem a realidade.
-
-### 3. Actualizar SMS nodes pagos com `requirePaid: true`
-
-Nos nodes de SMS em `getPostEventNodes()` e `getNodes("video")` que são para clientes pagos, adicionar `requirePaid: true` ao `smsSendConfig`.
-
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx` — fix filtro + interface + nodes
-- Migration SQL — backfill message_logs com os 23 SMS enviados
