@@ -1,20 +1,19 @@
 
+## Actualizar email pós-webinar — video_postwebinar_day1
 
-# Actualizar benefícios do plano Sessão Prática no /comprar
+### O que vou fazer
 
-## Alteração
+Actualizar o template `video_postwebinar_day1` na tabela `email_templates` com:
 
-Actualizar a lista de `benefits` do plano `gravacao` em `src/pages/Comprar.tsx` para corresponder aos 4 entregáveis fornecidos:
+**Subject:** `Aqui está o teu resumo | Webinar Vídeo com IA`
 
-1. "Sessão completa em HD — ~70 min de sessão prática, sem cortes"
-2. "Workbook Resumo da Sessão — PDF com os pontos-chave e exercícios"
-3. "Guia técnico de GEMs para vídeo — apoio para criação de GEMs especializados"
-4. "Sessão Q&A ao vivo — 10 de Março, 14h30, tira dúvidas com o Frederico"
-
-Actualizar também o `getBenefitIcon` para reconhecer "workbook" e "q&a" e atribuir ícones adequados.
-
-Actualizar o `subPriceNote` para "Acesso imediato após a compra." (conforme fornecido).
+**HTML body:** Email reformatado com o conteúdo exacto fornecido:
+- Introdução sobre o ritmo de lançamentos de IA (Gemini 3.1, ChatGPT 5.3/5.4)
+- Link para download do Resumo Gratuito (https://podes.entrar.pt/workbookgratis)
+- Premium Pass €27+IVA com 4 benefícios (sessão HD, workbook, guia técnico GEMs, áudio MP3)
+- CTA: "Quero acesso à sessão completa" → imagenscomia.com/comprar
+- Masterclass 12 de Março 3h ao vivo €67+IVA com CTA → imagenscomia.com/comprar
+- Assinatura: Frederico Carvalho, DIGITALFC, fredericocarvalho.pt
 
 ### Ficheiro alterado
-- `src/pages/Comprar.tsx`
-
+- Base de dados: UPDATE template `video_postwebinar_day1` na tabela `email_templates`
