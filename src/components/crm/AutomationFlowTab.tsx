@@ -62,6 +62,13 @@ interface SmsSendConfig {
   requirePhone?: boolean;
 }
 
+interface AudienceFilter {
+  planFilter?: string[];
+  requirePaid?: boolean;
+  requirePhone?: boolean;
+  excludePaid?: boolean;
+}
+
 interface NodeDef {
   type: "trigger" | "email" | "end";
   title: string;
@@ -79,6 +86,37 @@ interface NodeDef {
   iconEmoji?: string;
   channel?: "email" | "sms";
   smsSendConfig?: SmsSendConfig;
+  audienceFilter?: AudienceFilter;
+}
+
+function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
+  if (node.type === "trigger" || node.type === "end") return -1;
+
+  // SMS nodes: use smsSendConfig
+  if (node.channel === "sms" && node.smsSendConfig) {
+    const cfg = node.smsSendConfig;
+    return inscritos.filter((i) => {
+      if (cfg.requirePhone && !i.whatsapp) return false;
+      if (i.do_not_contact) return false;
+      const plan = i.plan || "free";
+      return cfg.planFilter.includes(plan);
+    }).length;
+  }
+
+  const f = node.audienceFilter;
+  if (!f) return inscritos.length; // no filter = all
+
+  return inscritos.filter((i) => {
+    if (i.do_not_contact) return false;
+    if (f.planFilter && f.planFilter.length > 0) {
+      const plan = i.plan || "free";
+      if (!f.planFilter.includes(plan)) return false;
+    }
+    if (f.requirePaid && !i.paid_at) return false;
+    if (f.excludePaid && i.paid_at) return false;
+    if (f.requirePhone && !i.whatsapp) return false;
+    return true;
+  }).length;
 }
 
 function getNodes(webinar: WebinarKey): NodeDef[] {
@@ -96,6 +134,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         subtitle: "Enviado automaticamente · segundos após inscrição",
         templateKeyMatch: ["confirmation"],
         sendOffsetHours: null,
+        audienceFilter: {}, // todos
       },
       {
         type: "email",
@@ -104,6 +143,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-48h", "reminder_48h"],
         conditionLabel: "48H ANTES DO WEBINAR",
         sendOffsetHours: -48,
+        audienceFilter: {}, // todos
       },
       {
         type: "email",
@@ -112,6 +152,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-24h", "reminder_24h"],
         conditionLabel: "24H ANTES DO WEBINAR",
         sendOffsetHours: -24,
+        audienceFilter: {}, // todos
       },
       {
         type: "email",
@@ -120,6 +161,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-1h", "reminder_1h"],
         conditionLabel: "1H ANTES DO WEBINAR",
         sendOffsetHours: -1,
+        audienceFilter: {}, // todos
       },
       {
         type: "email",
@@ -129,6 +171,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         conditionLabel: "APÓS O WEBINAR",
         isPostWebinar: true,
         sendOffsetHours: null,
+        audienceFilter: { planFilter: ["free"] },
       },
       {
         type: "end",
@@ -164,6 +207,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#10b981",
       note: "Tem variantes A/B/C/D para participantes do webinar Imagens",
+      audienceFilter: {}, // todos
     },
     {
       type: "email",
@@ -176,6 +220,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: isFollowupActive
         ? { label: "CRON · ATÉ 3 MAR", bg: "#fef3c7", color: "#d97706" }
         : { label: "ENCERRADO", bg: "#f1f5f9", color: "#64748b" },
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
     },
     {
       type: "email",
@@ -186,6 +231,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -48,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
+      audienceFilter: {}, // todos
     },
     {
       type: "email",
@@ -196,6 +242,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -24,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
+      audienceFilter: {}, // todos
     },
     {
       type: "email",
@@ -206,6 +253,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -1,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
+      audienceFilter: {}, // todos
     },
     // ── SECTION 2: CONFIRMAÇÕES DE COMPRA ──
     {
@@ -219,6 +267,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
     },
     {
       type: "email",
@@ -230,6 +279,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "🎓",
       borderColorOverride: "#7c3aed",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
     },
     // ── SECTION 3: APÓS O WEBINAR ──
     {
@@ -243,6 +293,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#f59e0b",
       note: "Só para quem assistiu ao vivo (attended_live_at)",
+      audienceFilter: { planFilter: ["free"] },
     },
     {
       type: "email",
@@ -254,6 +305,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "6 MAR · 13H", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui quem não assistiu ao vivo",
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
     },
     {
       type: "email",
@@ -265,6 +317,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#16a34a",
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
       note: "Acesso à gravação + workbook + guia GEMs + áudio · upsell Masterclass 12 Mar",
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
     },
     {
       type: "email",
@@ -276,6 +329,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#7c3aed",
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
       note: "Confirmação Masterclass 12 Mar 10h00 · upsell Premium Pass (gravação + materiais)",
+      audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
     },
     {
       type: "email",
@@ -287,6 +341,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#0ea5e9",
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
       note: "Acesso completo: gravação + materiais + Masterclass 12 Mar · sem upsell",
+      audienceFilter: { planFilter: ["bundle"], requirePaid: true },
     },
     // ── SMS RECURSOS POR PLANO ──
     {
@@ -349,6 +404,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "📧",
       borderColorOverride: "#f59e0b",
       customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
     },
     // ── SMS NODES ──
     {
@@ -380,6 +436,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#ef4444",
       customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
     },
     // ── SMS REMINDERS ──
     {
@@ -447,6 +504,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#10b981",
       customTag: { label: "AUTOMÁTICO · IMEDIATO", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: {}, // todos
     },
     // ── PAYMENT BLOCK ──
     {
@@ -459,6 +517,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
     },
     {
       type: "email",
@@ -470,6 +529,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "🎓",
       borderColorOverride: "#7c3aed",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
     },
     // ── RECURSOS ──
     {
@@ -482,6 +542,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
     },
     {
       type: "email",
@@ -492,6 +553,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "🎓",
       borderColorOverride: "#7c3aed",
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
+      audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
     },
     {
       type: "email",
@@ -502,6 +564,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "⭐",
       borderColorOverride: "#0ea5e9",
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
+      audienceFilter: { planFilter: ["bundle"], requirePaid: true },
     },
     {
       type: "email",
@@ -913,6 +976,7 @@ function Timeline({
     const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
     const counts = nodeCounts[idx];
     const hasFailed = (counts?.failed ?? 0) > 0;
+    const eligible = computeEligible(node, filteredInscritos);
 
     const borderColor = node.borderColorOverride
       || (node.type === "trigger" ? "#7c3aed"
@@ -952,6 +1016,11 @@ function Timeline({
             <p style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>{node.subtitle}</p>
             {node.note && (
               <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, fontStyle: "italic" }}>{node.note}</p>
+            )}
+            {eligible >= 0 && (
+              <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+                👥 {eligible} elegíveis{counts && counts.sent > 0 ? ` · ${counts.sent} contactados` : ""}
+              </p>
             )}
             <div className="mt-2 flex flex-wrap gap-1.5">
               {node.customTag && <CustomTagBadge tag={node.customTag} />}
