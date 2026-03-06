@@ -45,24 +45,17 @@ serve(async (req) => {
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
     const { registrationId, plan, priceVariant } = await req.json();
-    if (!registrationId || !plan || !priceVariant) {
+    if (!registrationId || !plan) {
       return new Response(
-        JSON.stringify({ error: "registrationId, plan e priceVariant são obrigatórios" }),
+        JSON.stringify({ error: "registrationId e plan são obrigatórios" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const planPrices = PRICES[plan];
-    if (!planPrices) {
-      return new Response(
-        JSON.stringify({ error: `Plano inválido: ${plan}` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    const priceInfo = planPrices[priceVariant];
+    const priceInfo = PRICES[plan];
     if (!priceInfo) {
       return new Response(
-        JSON.stringify({ error: `Variante de preço inválida: ${priceVariant}` }),
+        JSON.stringify({ error: `Plano inválido: ${plan}` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -144,6 +137,7 @@ serve(async (req) => {
       .from("registrations")
       .update({
         eupago_ref: transactionID,
+        eupago_transaction_id: transactionID || null,
         last_payment_link: rawPaymentLink || null,
         payment_link_created_at: new Date().toISOString(),
         last_payment_link_sent_at: new Date().toISOString(),
