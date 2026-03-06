@@ -223,6 +223,11 @@ serve(async (req) => {
         .eq("id", registration_id);
     } else {
       console.log(`📝 Draft mode — skipping finalize, email, and invoice_sent update`);
+      // Save document_id on registration for tracking
+      await supabase
+        .from("registrations")
+        .update({ invoice_document_id: String(documentId) })
+        .eq("id", registration_id);
     }
 
     return new Response(

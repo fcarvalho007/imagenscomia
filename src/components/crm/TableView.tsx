@@ -10,6 +10,7 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
+import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface TableViewProps {
   inscritos: Inscrito[];
@@ -265,6 +266,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         </div>
         <WebinarSwitcherBar />
       </div>
+
+      <BulkInvoiceButton />
 
       {/* Quick Filter Chips */}
       <div className="flex flex-wrap gap-2 mb-3">

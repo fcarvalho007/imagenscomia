@@ -7,7 +7,7 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
-import BulkInvoiceButton from "./BulkInvoiceButton";
+
 
 type Period = "7d" | "14d" | "30d" | "all";
 
@@ -524,8 +524,6 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       </div>
 
-      {/* Faturação em lote */}
-      <BulkInvoiceButton />
 
       {/* Early Bird vs Regular */}
       <EarlyBirdWidget inscritos={filteredInscritos} webinarContext={webinarContext} />
