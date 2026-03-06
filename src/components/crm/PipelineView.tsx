@@ -311,7 +311,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                   onClick={() => toggleSection(col.title)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
                     <span className="font-heading font-semibold text-[13px] text-ink-700">{col.title}</span>
                     <span
@@ -320,9 +320,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                     >
                       {items.length}
                     </span>
-                    <span className="text-[11px] font-medium" style={{ color: col.color, opacity: 0.7 }}>
-                      €{colRevenue.toFixed(2)}
-                    </span>
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
                   </div>
                   <ChevronDown
                     size={16}
@@ -376,9 +374,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                         {items.filter(i => !i.webinar || i.webinar === "imagens").length} IMG + {items.filter(i => i.webinar === "video").length} VID
                       </p>
                     )}
-                    <p className="text-[12px] font-medium mt-0.5" style={{ color: col.color, opacity: 0.8 }}>
-                      €{colRevenue.toFixed(2)}
-                    </p>
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
                   </div>
                 </div>
                 <div className={`border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2 transition-colors ${dragOverCol === col.key ? "bg-blue-50/50" : "bg-surface/50"}`}>
