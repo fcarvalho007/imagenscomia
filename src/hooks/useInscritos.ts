@@ -71,6 +71,7 @@ function mapRegistration(r: any): Inscrito {
     lost_at: (r as any).lost_at || null,
     lost_reason: (r as any).lost_reason || null,
     group_payment_ref: (r as any).group_payment_ref || null,
+    invoice_document_id: (r as any).invoice_document_id || null,
   };
 }
 
