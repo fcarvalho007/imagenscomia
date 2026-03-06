@@ -48,6 +48,7 @@ export default function TabLinkPagamento({
       <InvoiceSection
         registrationId={inscrito.id}
         invoiceSent={inscrito.invoice_sent}
+        invoiceDocumentId={inscrito.invoice_document_id}
         onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)}
       />
 
