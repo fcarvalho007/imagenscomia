@@ -1,41 +1,49 @@
 
 
-# Auditoria Final: Valores no Dashboard vs EuPago
+# Fix Faturação Page — Responsive Redesign
 
-## Resultado da comparação linha-a-linha
+## Problems Identified (from screenshot)
 
-Cruzei todas as 39 transacções "paga" do CSV com os registos na BD. **Todos os pagamentos individuais estão correctos.** Há um único problema remanescente, mas com impacto significativo:
+1. **Tables overflow on mobile** — InvoiceTable (7 cols), PlanBreakdown (6 cols), CostsSection (6 cols) all render as full `<table>` with no horizontal scroll or mobile card layout
+2. **KPI hero cards** — `text-4xl`/`text-5xl` values overflow on narrow screens; ROAS uses `text-6xl`
+3. **Header buttons** stack poorly on mobile
+4. **Charts** — Pie chart labels overflow; donut labels clip on small viewports
+5. **PlanBreakdown** uses static price × count instead of actual `paid_amount`, causing mismatch with real revenue
 
-## PROBLEMA: Grupos com `paid_amount` = TOTAL em vez de per-person
+## Plan
 
-| Grupo | Membros | paid_amount actual | Deveria ser | Overcount |
-|-------|---------|-------------------|-------------|-----------|
-| Rita + Diana (698019e6) | 2 | €115,62 cada | €57,81 cada | +€115,62 |
-| Olga Cruz + 5 (efbe2724) | 6 | €312,17 cada | €52,03 cada | +€1.560,85 |
+### 1. FaturacaoKPIs.tsx — Responsive text sizing
+- Reduce hero card value font from `text-4xl md:text-5xl` to `text-2xl sm:text-4xl md:text-5xl`
+- ROAS from `text-5xl md:text-6xl` to `text-3xl sm:text-5xl md:text-6xl`
+- Secondary row: keep `grid-cols-2 md:grid-cols-4` (already works)
 
-**Impacto total: receita inflacionada em €1.676,47 no Dashboard, Pipeline e Faturação.**
+### 2. FaturacaoCharts.tsx — Mobile-friendly charts
+- Reduce chart heights from 280px to 200px on mobile via responsive check
+- Hide pie chart labels on mobile (they clip), rely on tooltip
+- Reduce outerRadius on small screens
 
-Isto também afecta a emissão de faturas: o `create-invoice` usa `paid_amount` directamente, e emitiria faturas de €253,80 (312.17/1.23) por pessoa em vez de €42,30 (52.03/1.23).
+### 3. PlanBreakdown.tsx — Fix revenue calculation + responsive table
+- **Data fix**: Use actual `paid_amount` sum instead of `count × static price` for the "Total" column — this is the source of the €3031.68 mismatch
+- Wrap tables in `overflow-x-auto` div
+- On mobile, hide the progress bar column and reduce padding
 
-O grupo do Júlio Silva (1 pessoa, €57,81) está correcto.
+### 4. CostsSection.tsx — Responsive table
+- Wrap table in `overflow-x-auto`
+- Hide "Descrição" column on mobile
+- Stack action buttons vertically on mobile
 
-## Todos os outros 31 pagamentos individuais: VERIFICADOS ✓
+### 5. InvoiceTable.tsx — Responsive table
+- Wrap table in `overflow-x-auto` with `-webkit-overflow-scrolling: touch`
+- Hide "Email" column on mobile (`hidden md:table-cell`)
+- Stack header buttons vertically on small screens
 
-Cada `paid_amount` na BD corresponde exactamente ao valor do CSV EuPago. Os planos estão todos correctos após as correcções anteriores.
+### 6. PLSummary.tsx — Remove max-width constraint
+- Change `max-w-lg` to `max-w-full md:max-w-lg` so it fills mobile width
 
-## Correcção
+### 7. FaturacaoView.tsx — Header responsive
+- Stack title and buttons vertically on mobile: `flex-col sm:flex-row`
 
-Uma única operação SQL para actualizar os 8 registos de grupo:
+## Key Data Fix (PlanBreakdown)
 
-```sql
--- Grupo Rita+Diana: 115.62 / 2 = 57.81
-UPDATE registrations SET paid_amount = 57.81
-WHERE group_payment_ref = '698019e6-868c-433a-a9c3-951451a32744';
-
--- Grupo de 6: 312.17 / 6 = 52.03 (arredondado)
-UPDATE registrations SET paid_amount = 52.03
-WHERE group_payment_ref = 'efbe2724-06c3-452b-935f-9c123d52bcde';
-```
-
-Nenhum ficheiro de código precisa de ser alterado. O `useInscritos` já usa `paid_amount` como fonte de verdade, e o `create-invoice` lê directamente da BD. A correcção propaga automaticamente para Dashboard, Pipeline, KPIs, PLSummary e emissão de faturas.
+The `total` field currently computes `paid * staticPrice` which doesn't match actual `paid_amount` values (old prices, group discounts). Will change to sum actual `valor` from paid inscritos per plan, which already reflects the correct `paid_amount`.
 
