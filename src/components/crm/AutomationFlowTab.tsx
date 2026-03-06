@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, Fragment } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2 } from "lucide-react";
+import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -56,8 +56,8 @@ const TAG_BORDER: Record<TagType, string> = {
 };
 
 interface SmsSendConfig {
-  planFilter: string[]; // e.g. ["free"] or ["premium"] or ["masterclass", "bundle"]
-  webinarFilter: "current" | "all"; // "current" = only this webinar, "all" = both webinars
+  planFilter: string[];
+  webinarFilter: "current" | "all";
   smsText: string;
   requirePhone?: boolean;
   requirePaid?: boolean;
@@ -88,12 +88,38 @@ interface NodeDef {
   channel?: "email" | "sms";
   smsSendConfig?: SmsSendConfig;
   audienceFilter?: AudienceFilter;
+  dayGroup?: string;
 }
+
+/* ─── Day Group Configuration ─── */
+interface DayGroupConfig {
+  label: string;
+  number: string;
+  borderColor: string;
+  bgColor: string;
+}
+
+const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
+  pre: { label: "PRÉ-WEBINAR", number: "0", borderColor: "#3b82f6", bgColor: "#f8fafc" },
+  compra: { label: "CONFIRMAÇÕES DE COMPRA", number: "✓", borderColor: "#16a34a", bgColor: "#f0fdf4" },
+  d0: { label: "DIA DO WEBINAR", number: "D", borderColor: "#8b5cf6", bgColor: "#faf5ff" },
+  d1: { label: "DIA 1 — 6 MARÇO", number: "1", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  d3: { label: "DIA 3 — 8 MARÇO", number: "3", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  d5: { label: "DIA 5 — FECHO", number: "5", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  end: { label: "", number: "", borderColor: "#94a3b8", bgColor: "transparent" },
+  // imagens webinar
+  img_pre: { label: "PRÉ-WEBINAR", number: "0", borderColor: "#3b82f6", bgColor: "#f8fafc" },
+  img_post: { label: "APÓS O WEBINAR", number: "D", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  // post-event
+  post_start: { label: "INSCRIÇÃO PÓS-EVENTO", number: "0", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  post_convert: { label: "SEQUÊNCIA DE CONVERSÃO", number: "→", borderColor: "#3b82f6", bgColor: "#f8fafc" },
+  post_close: { label: "FECHO", number: "✕", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  post_paid: { label: "CLIENTES PAGOS", number: "€", borderColor: "#16a34a", bgColor: "#f0fdf4" },
+};
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
   if (node.type === "trigger" || node.type === "end") return -1;
 
-  // SMS nodes: use smsSendConfig
   if (node.channel === "sms" && node.smsSendConfig) {
     const cfg = node.smsSendConfig;
     return inscritos.filter((i) => {
@@ -106,7 +132,7 @@ function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
   }
 
   const f = node.audienceFilter;
-  if (!f) return inscritos.length; // no filter = all
+  if (!f) return inscritos.length;
 
   return inscritos.filter((i) => {
     if (i.do_not_contact) return false;
@@ -129,6 +155,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         title: "Inscrição submetida",
         subtitle: "Webinar Imagens IA · imagenscomia.com",
         templateKeyMatch: [],
+        dayGroup: "img_pre",
       },
       {
         type: "email",
@@ -136,7 +163,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         subtitle: "Enviado automaticamente · segundos após inscrição",
         templateKeyMatch: ["confirmation"],
         sendOffsetHours: null,
-        audienceFilter: {}, // todos
+        audienceFilter: {},
+        dayGroup: "img_pre",
       },
       {
         type: "email",
@@ -145,7 +173,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-48h", "reminder_48h"],
         conditionLabel: "48H ANTES DO WEBINAR",
         sendOffsetHours: -48,
-        audienceFilter: {}, // todos
+        audienceFilter: {},
+        dayGroup: "img_pre",
       },
       {
         type: "email",
@@ -154,7 +183,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-24h", "reminder_24h"],
         conditionLabel: "24H ANTES DO WEBINAR",
         sendOffsetHours: -24,
-        audienceFilter: {}, // todos
+        audienceFilter: {},
+        dayGroup: "img_pre",
       },
       {
         type: "email",
@@ -163,7 +193,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         templateKeyMatch: ["reminder-1h", "reminder_1h"],
         conditionLabel: "1H ANTES DO WEBINAR",
         sendOffsetHours: -1,
-        audienceFilter: {}, // todos
+        audienceFilter: {},
+        dayGroup: "img_pre",
       },
       {
         type: "email",
@@ -174,31 +205,33 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         isPostWebinar: true,
         sendOffsetHours: null,
         audienceFilter: { planFilter: ["free"] },
+        dayGroup: "img_post",
       },
       {
         type: "end",
         title: "Fluxo concluído",
         subtitle: "Inscrito recebeu todos os emails do ciclo",
         templateKeyMatch: [],
+        dayGroup: "end",
       },
     ];
   }
 
-  // ── VIDEO: 12 nodes + end, 4 sections ──
+  // ── VIDEO ──
   const now = new Date();
   const followupCutoff = new Date("2026-03-03T23:59:59Z");
   const isFollowupActive = now <= followupCutoff;
 
   return [
-    // ── SECTION 1: PRÉ-WEBINAR ──
+    // ── PRÉ-WEBINAR ──
     {
       type: "trigger",
       title: "Inscrição submetida",
       subtitle: "Webinar Vídeo com IA · imagenscomia.com/video",
       templateKeyMatch: [],
-      sectionDivider: "PRÉ-WEBINAR",
       iconEmoji: "👤",
       borderColorOverride: "#8b5cf6",
+      dayGroup: "pre",
     },
     {
       type: "email",
@@ -209,7 +242,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#10b981",
       note: "Tem variantes A/B/C/D para participantes do webinar Imagens",
-      audienceFilter: {}, // todos
+      audienceFilter: {},
+      dayGroup: "pre",
     },
     {
       type: "email",
@@ -223,6 +257,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         ? { label: "CRON · ATÉ 3 MAR", bg: "#fef3c7", color: "#d97706" }
         : { label: "ENCERRADO", bg: "#f1f5f9", color: "#64748b" },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "pre",
     },
     {
       type: "email",
@@ -233,7 +268,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -48,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
-      audienceFilter: {}, // todos
+      audienceFilter: {},
+      dayGroup: "pre",
     },
     {
       type: "email",
@@ -244,7 +280,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -24,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
-      audienceFilter: {}, // todos
+      audienceFilter: {},
+      dayGroup: "pre",
     },
     {
       type: "email",
@@ -255,21 +292,22 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sendOffsetHours: -1,
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
-      audienceFilter: {}, // todos
+      audienceFilter: {},
+      dayGroup: "pre",
     },
-    // ── SECTION 2: CONFIRMAÇÕES DE COMPRA ──
+    // ── CONFIRMAÇÕES DE COMPRA ──
     {
       type: "email",
       title: "Confirmação de compra — Premium Pass",
       subtitle: "Sessão 70min · Workbook · GEMs · Áudio · link calendário",
       templateKeyMatch: ["video_payment_premium"],
       sendOffsetHours: null,
-      sectionDivider: "CONFIRMAÇÕES DE COMPRA",
       isPaymentBlock: true,
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "compra",
     },
     {
       type: "email",
@@ -282,8 +320,9 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#7c3aed",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "compra",
     },
-    // ── SECTION 3: APÓS O WEBINAR ──
+    // ── APÓS O WEBINAR — DIA 0 ──
     {
       type: "email",
       title: "Email pós-webinar",
@@ -291,12 +330,13 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       templateKeyMatch: ["postwebinar", "post-webinar", "post_webinar", "video_postwebinar"],
       isPostWebinar: true,
       sendOffsetHours: null,
-      sectionDivider: "APÓS O WEBINAR",
       iconEmoji: "✉️",
       borderColorOverride: "#f59e0b",
       note: "Enviado a todos os inscritos gratuitos",
       audienceFilter: { planFilter: ["free"] },
+      dayGroup: "d0",
     },
+    // ── DIA 1 ──
     {
       type: "email",
       title: "Email pós-webinar — Dia 1",
@@ -308,6 +348,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "6 MAR · 13H", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui quem não assistiu ao vivo",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -326,6 +367,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
       },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -338,6 +380,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
       note: "Acesso à gravação + workbook + guia GEMs + áudio · upsell Masterclass 12 Mar",
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -350,6 +393,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
       note: "Confirmação Masterclass 12 Mar 10h00 · upsell Premium Pass (gravação + materiais)",
       audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -362,8 +406,9 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
       note: "Acesso completo: gravação + materiais + Masterclass 12 Mar · sem upsell",
       audienceFilter: { planFilter: ["bundle"], requirePaid: true },
+      dayGroup: "d1",
     },
-    // ── SMS RECURSOS POR PLANO ──
+    // ── SMS RECURSOS POR PLANO (still day 1) ──
     {
       type: "email",
       title: "SMS Recursos — Premium Pass",
@@ -381,6 +426,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -399,6 +445,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "d1",
     },
     {
       type: "email",
@@ -417,7 +464,9 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "d1",
     },
+    // ── DIA 3 ──
     {
       type: "email",
       title: "Email pós-webinar — Dia 3",
@@ -428,8 +477,8 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "d3",
     },
-    // ── SMS NODES ──
     {
       type: "email",
       title: "SMS pós-webinar",
@@ -446,22 +495,22 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         smsText: "Ola! Ja viste a gravacao do webinar Video com IA? Tens 70min de conteudo pratico disponivel em imagenscomia.com/video — Frederico",
         requirePhone: true,
       },
+      dayGroup: "d3",
     },
-    // ── SECTION 4: FECHO DE LEADS ──
+    // ── DIA 5 — FECHO ──
     {
       type: "email",
       title: "Email de fecho",
       subtitle: "10 de Março · 10h00 · após sequência sem compra",
       templateKeyMatch: ["video_postwebinar_closing"],
       sendOffsetHours: null,
-      sectionDivider: "FECHO DE LEADS",
       iconEmoji: "🔴",
       borderColorOverride: "#ef4444",
       customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "d5",
     },
-    // ── SMS REMINDERS ──
     {
       type: "email",
       title: "SMS lembrete Q&A — 10 Mar",
@@ -479,6 +528,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "d5",
     },
     {
       type: "email",
@@ -497,6 +547,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "d5",
     },
     // ── END ──
     {
@@ -504,6 +555,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       title: "Fluxo concluído",
       subtitle: "Inscrito recebeu todos os emails do ciclo",
       templateKeyMatch: [],
+      dayGroup: "end",
     },
   ];
 }
@@ -518,7 +570,7 @@ function getPostEventNodes(): NodeDef[] {
       templateKeyMatch: [],
       iconEmoji: "👤",
       borderColorOverride: "#f59e0b",
-      sectionDivider: "PÓS-EVENTO",
+      dayGroup: "post_start",
     },
     {
       type: "email",
@@ -529,7 +581,8 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#10b981",
       customTag: { label: "AUTOMÁTICO · IMEDIATO", bg: "#dcfce7", color: "#16a34a" },
-      audienceFilter: {}, // todos
+      audienceFilter: {},
+      dayGroup: "post_start",
     },
     // ── SEQUÊNCIA DE CONVERSÃO ──
     {
@@ -538,12 +591,12 @@ function getPostEventNodes(): NodeDef[] {
       subtitle: "24h após inscrição · sessão 70min + materiais de apoio",
       templateKeyMatch: ["video_postwebinar_day1"],
       sendOffsetHours: null,
-      sectionDivider: "SEQUÊNCIA DE CONVERSÃO",
       iconEmoji: "📧",
       borderColorOverride: "#f59e0b",
       customTag: { label: "AUTOMÁTICO · 24H", bg: "#fef3c7", color: "#d97706" },
       note: "Enviado automaticamente 24h após inscrição para quem não comprou",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "post_convert",
     },
     {
       type: "email",
@@ -555,6 +608,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "AUTOMÁTICO · 72H", bg: "#fef3c7", color: "#d97706" },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "post_convert",
     },
     {
       type: "email",
@@ -572,6 +626,7 @@ function getPostEventNodes(): NodeDef[] {
         smsText: "Ola! Tens uma sessao pratica de 70min sobre video com IA a tua espera em imagenscomia.com/video — Frederico",
         requirePhone: true,
       },
+      dayGroup: "post_convert",
     },
     {
       type: "email",
@@ -584,6 +639,7 @@ function getPostEventNodes(): NodeDef[] {
       customTag: { label: "AUTOMÁTICO · 5 DIAS", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      dayGroup: "post_close",
     },
     // ── CLIENTES PAGOS ──
     {
@@ -593,11 +649,11 @@ function getPostEventNodes(): NodeDef[] {
       templateKeyMatch: ["video_payment_premium"],
       sendOffsetHours: null,
       isPaymentBlock: true,
-      sectionDivider: "CLIENTES PAGOS",
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "post_paid",
     },
     {
       type: "email",
@@ -610,6 +666,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#7c3aed",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "post_paid",
     },
     // ── ACESSO AOS RECURSOS ──
     {
@@ -618,11 +675,11 @@ function getPostEventNodes(): NodeDef[] {
       subtitle: "Sessão 70min · Workbook · GEMs · Áudio · upsell Masterclass",
       templateKeyMatch: ["video_recursos_premium"],
       sendOffsetHours: null,
-      sectionDivider: "ACESSO AOS RECURSOS",
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "post_paid",
     },
     {
       type: "email",
@@ -634,6 +691,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#7c3aed",
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
       audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
+      dayGroup: "post_paid",
     },
     {
       type: "email",
@@ -645,6 +703,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#0ea5e9",
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
       audienceFilter: { planFilter: ["bundle"], requirePaid: true },
+      dayGroup: "post_paid",
     },
     {
       type: "email",
@@ -663,12 +722,14 @@ function getPostEventNodes(): NodeDef[] {
         requirePhone: true,
         requirePaid: true,
       },
+      dayGroup: "post_paid",
     },
     {
       type: "end",
       title: "Conversão concluída",
       subtitle: "Inscrito pós-evento recebeu confirmação, pagou e tem acesso",
       templateKeyMatch: [],
+      dayGroup: "end",
     },
   ];
 }
@@ -680,7 +741,6 @@ function matchTemplate(templateKey: string, patterns: string[]): boolean {
 
 function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webinar: WebinarKey): TagType | null {
   if (node.type === "trigger" || node.type === "end") return null;
-  // Video nodes use customTag — skip generic tag logic
   if (webinar === "video" && node.customTag) return null;
   if (node.templateKeyMatch.some((p) => p.includes("confirmation"))) {
     return "IMEDIATO";
@@ -690,7 +750,6 @@ function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webin
     if (webinarPast) return "MANUAL";
     return "AGENDADO";
   }
-  // Reminder nodes for video: dynamic based on date
   if (webinar === "video" && node.sendOffsetHours != null) {
     const sendDate = new Date(WEBINAR_CONFIG.video.startDate.getTime() + node.sendOffsetHours * 60 * 60 * 1000);
     const now = new Date();
@@ -702,28 +761,6 @@ function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webin
   }
   if (webinarPast) return hasSentLogs ? "ENVIADO" : "ENVIADO";
   return "AGENDADO";
-}
-
-/* ─── Section Divider ─── */
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-3 my-5">
-      <div className="flex-1 h-px" style={{ background: "#d1d5db" }} />
-      <span
-        style={{
-          fontSize: 10,
-          color: "#9ca3af",
-          letterSpacing: 2,
-          textTransform: "uppercase",
-          fontWeight: 700,
-          whiteSpace: "nowrap",
-        }}
-      >
-        {label}
-      </span>
-      <div className="flex-1 h-px" style={{ background: "#d1d5db" }} />
-    </div>
-  );
 }
 
 /* ─── Tag Badge ─── */
@@ -765,6 +802,74 @@ function CustomTagBadge({ tag }: { tag: { label: string; bg: string; color: stri
     >
       {tag.label}
     </span>
+  );
+}
+
+/* ─── Day Group Container ─── */
+function DayGroupContainer({
+  groupKey,
+  children,
+}: {
+  groupKey: string;
+  children: React.ReactNode;
+}) {
+  const config = DAY_GROUP_CONFIG[groupKey];
+  if (!config || groupKey === "end") {
+    return <>{children}</>;
+  }
+
+  return (
+    <div
+      style={{
+        background: config.bgColor,
+        borderLeft: `4px solid ${config.borderColor}`,
+        borderRadius: 12,
+        padding: "20px 20px 16px",
+        position: "relative",
+      }}
+    >
+      {/* Header with cinematic number */}
+      <div className="flex items-center gap-4 mb-4">
+        <span
+          style={{
+            fontSize: 48,
+            fontWeight: 800,
+            lineHeight: 1,
+            color: `${config.borderColor}20`,
+            fontFamily: "'Montserrat', 'Inter', system-ui, sans-serif",
+            userSelect: "none",
+            minWidth: 40,
+            textAlign: "center",
+          }}
+        >
+          {config.number}
+        </span>
+        <span
+          style={{
+            fontSize: 11,
+            color: config.borderColor,
+            letterSpacing: 2,
+            textTransform: "uppercase",
+            fontWeight: 700,
+          }}
+        >
+          {config.label}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Arrow Connector between groups ─── */
+function ArrowConnector() {
+  return (
+    <div className="flex flex-col items-center py-1">
+      <div style={{ width: 2, height: 16, background: "#cbd5e1" }} />
+      <ChevronDown size={18} style={{ color: "#cbd5e1", marginTop: -4 }} />
+    </div>
   );
 }
 
@@ -880,13 +985,11 @@ function Timeline({
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
 
-  // Custom SMS texts persisted in localStorage — with version invalidation
-  const SMS_DRAFT_VERSION = 2; // bump this whenever default SMS texts change
+  const SMS_DRAFT_VERSION = 2;
   const [customSmsTexts, setCustomSmsTexts] = useState<Record<string, string>>(() => {
     try {
       const storedVersion = localStorage.getItem("crm_sms_drafts_version");
       if (storedVersion !== String(SMS_DRAFT_VERSION)) {
-        // Defaults changed — clear stale drafts
         localStorage.removeItem("crm_sms_drafts");
         localStorage.setItem("crm_sms_drafts_version", String(SMS_DRAFT_VERSION));
         return {};
@@ -914,7 +1017,6 @@ function Timeline({
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
 
-  // For post-event tab, filter inscritos to only those who registered after the webinar ended (11h00 UTC, 5 Mar)
   const POST_EVENT_CUTOFF = new Date("2026-03-05T11:00:00Z").getTime();
   const filteredInscritos = useMemo(() => {
     if (!isPostTab) return inscritos;
@@ -930,14 +1032,12 @@ function Timeline({
     return !i.webinar || i.webinar === "imagens";
   }).length;
 
-  // Count sent/failed per node — prefer emailStats from email_send_logs
   const nodeCounts = useMemo(() => {
     const result: Record<number, { sent: number; failed: number }> = {};
     for (let idx = 0; idx < nodes.length; idx++) {
       const n = nodes[idx];
       if (n.type !== "email") continue;
 
-      // For SMS nodes, count from message_logs with channel=sms
       if (n.channel === "sms") {
         let sent = 0, failed = 0;
         for (const l of logs) {
@@ -950,14 +1050,12 @@ function Timeline({
         continue;
       }
 
-      // Derive email_key from templateKeyMatch
       const rawKey = n.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
       const statsKey = `${webinar}_${rawKey}`;
 
       if (emailStats && emailStats[statsKey]) {
         result[idx] = emailStats[statsKey];
       } else {
-        // Fallback to message_logs
         let sent = 0, failed = 0;
         for (const l of logs) {
           if (matchTemplate(l.template_key, n.templateKeyMatch)) {
@@ -993,7 +1091,6 @@ function Timeline({
     const templateKey = node.templateKeyMatch[0] || "sms_manual";
     const smsText = customText || customSmsTexts[templateKey] || config.smsText;
 
-    // Get eligible recipients
     let eligible = filteredInscritos.filter((i) => {
       if (!i.whatsapp) return false;
       if (i.do_not_contact) return false;
@@ -1057,13 +1154,7 @@ function Timeline({
     }
   };
 
-  // Group payment block nodes
-  const paymentBlockIndices = nodes.reduce<number[]>((acc, n, i) => {
-    if (n.isPaymentBlock) acc.push(i);
-    return acc;
-  }, []);
-
-  const renderNodeCard = (node: NodeDef, idx: number) => {
+  const renderNodeCard = (node: NodeDef, idx: number, insideGroup: boolean) => {
     const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
     const counts = nodeCounts[idx];
     const hasFailed = (counts?.failed ?? 0) > 0;
@@ -1089,11 +1180,11 @@ function Timeline({
       <div
         style={{
           background: node.type === "end" ? "#F8FAFC" : "white",
-          border: "1px solid #e2e8f0",
-          borderLeft: `4px solid ${borderColor}`,
-          borderRadius: 10,
-          padding: "14px 16px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          border: `1px solid ${insideGroup ? "#f1f5f9" : "#e2e8f0"}`,
+          borderLeft: insideGroup ? `1px solid ${insideGroup ? "#f1f5f9" : "#e2e8f0"}` : `4px solid ${borderColor}`,
+          borderRadius: insideGroup ? 8 : 10,
+          padding: insideGroup ? "12px 14px" : "14px 16px",
+          boxShadow: insideGroup ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
         }}
         className="flex justify-between items-start gap-4"
       >
@@ -1149,7 +1240,6 @@ function Timeline({
                   </span>
                 )}
 
-                {/* Always-visible SMS text */}
                 {isEditing ? (
                   <div className="flex flex-col gap-1.5 w-full mt-1">
                     <textarea
@@ -1223,7 +1313,6 @@ function Timeline({
                   </div>
                 )}
 
-                {/* Send button */}
                 <button
                   onClick={() => handleBulkSms(node, currentText)}
                   disabled={isSending}
@@ -1276,7 +1365,6 @@ function Timeline({
                 {counts.failed > 0 && <AlertTriangle size={11} />}
                 {counts.failed} falhas
               </span>
-              {/* Pending indicator */}
               {node.sendOffsetHours != null && (() => {
                 const sendDate = new Date(WEBINAR_CONFIG[webinar].startDate.getTime() + node.sendOffsetHours! * 60 * 60 * 1000);
                 const sendPassed = Date.now() > sendDate.getTime();
@@ -1335,91 +1423,87 @@ function Timeline({
     );
   };
 
-  // Render connector line
-  const Connector = ({ height = 12 }: { height?: number }) => (
-    <div className="flex justify-center">
-      <div style={{ width: 2, height, borderLeft: "2px dashed #e5e7eb" }} />
-    </div>
-  );
+  // Group nodes by dayGroup
+  const groups = useMemo(() => {
+    const result: { groupKey: string; nodes: { node: NodeDef; idx: number }[] }[] = [];
+    let currentGroup: { groupKey: string; nodes: { node: NodeDef; idx: number }[] } | null = null;
+
+    for (let idx = 0; idx < nodes.length; idx++) {
+      const node = nodes[idx];
+      const gk = node.dayGroup || "ungrouped";
+
+      if (!currentGroup || currentGroup.groupKey !== gk) {
+        currentGroup = { groupKey: gk, nodes: [] };
+        result.push(currentGroup);
+      }
+      currentGroup.nodes.push({ node, idx });
+    }
+    return result;
+  }, [nodes]);
 
   return (
     <div className="relative max-w-[800px] mx-auto">
-      {nodes.map((node, idx) => {
-        const isLast = idx === nodes.length - 1;
-        const isFirstPayment = paymentBlockIndices[0] === idx;
-        const isInPaymentBlock = paymentBlockIndices.includes(idx);
-        const isLastPayment = paymentBlockIndices[paymentBlockIndices.length - 1] === idx;
-
-        // If this node is inside payment block but not the first, skip — rendered inside block
-        if (isInPaymentBlock && !isFirstPayment) return null;
+      {groups.map((group, gIdx) => {
+        const isLastGroup = gIdx === groups.length - 1;
+        const isEndGroup = group.groupKey === "end";
+        const hasGroupContainer = DAY_GROUP_CONFIG[group.groupKey] && !isEndGroup;
 
         return (
-          <Fragment key={idx}>
-            {/* Section divider */}
-            {node.sectionDivider && (
-              <>
-                {idx > 0 && <Connector height={8} />}
-                <SectionDivider label={node.sectionDivider} />
-              </>
-            )}
+          <Fragment key={gIdx}>
+            {/* Arrow connector between groups */}
+            {gIdx > 0 && <ArrowConnector />}
 
-            {/* Condition label */}
-            {node.conditionLabel && !node.sectionDivider && (
-              <div className="flex items-center justify-center py-2">
-                <span style={{ fontSize: 9, color: "#9ca3af", letterSpacing: 1, textTransform: "uppercase", fontWeight: 600 }}>
-                  {node.conditionLabel}
-                </span>
-              </div>
-            )}
-
-            {/* Connector before node */}
-            {idx > 0 && !node.sectionDivider && <Connector />}
-
-            {/* Payment block wrapper */}
-            {isFirstPayment ? (
-              <div
-                style={{
-                  background: "#eff6ff",
-                  border: "1px solid #bfdbfe",
-                  borderRadius: 12,
-                  padding: 16,
-                }}
-              >
-                <p style={{ fontSize: 9, color: "#3b82f6", letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 12 }}>
-                  ENVIADO APÓS PAGAMENTO CONFIRMADO
-                </p>
-                <div className="space-y-2">
-                  {paymentBlockIndices.map((pIdx) => (
-                    <Fragment key={pIdx}>
-                      {renderNodeCard(nodes[pIdx], pIdx)}
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
+            {hasGroupContainer ? (
+              <DayGroupContainer groupKey={group.groupKey}>
+                {group.nodes.map(({ node, idx }, nIdx) => (
+                  <Fragment key={idx}>
+                    {renderNodeCard(node, idx, true)}
+                    {/* Info box */}
+                    {node.infoBox && (
+                      <div
+                        style={{
+                          background: "#fef2f2",
+                          border: "1px solid #fecaca",
+                          borderRadius: 8,
+                          padding: "10px 12px",
+                          fontSize: 12,
+                          color: "#991b1b",
+                        }}
+                      >
+                        {node.infoBox}
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
+              </DayGroupContainer>
             ) : (
-              <>
-                {renderNodeCard(node, idx)}
-                {/* Info box */}
-                {node.infoBox && (
-                  <div
-                    style={{
-                      background: "#fef2f2",
-                      border: "1px solid #fecaca",
-                      borderRadius: 8,
-                      padding: "10px 12px",
-                      marginTop: 8,
-                      fontSize: 12,
-                      color: "#991b1b",
-                    }}
-                  >
-                    {node.infoBox}
-                  </div>
-                )}
-              </>
+              // Ungrouped or end nodes — render individually
+              group.nodes.map(({ node, idx }, nIdx) => (
+                <Fragment key={idx}>
+                  {nIdx > 0 && (
+                    <div className="flex justify-center">
+                      <div style={{ width: 2, height: 12, borderLeft: "2px dashed #e5e7eb" }} />
+                    </div>
+                  )}
+                  {renderNodeCard(node, idx, false)}
+                  {node.infoBox && (
+                    <div
+                      style={{
+                        background: "#fef2f2",
+                        border: "1px solid #fecaca",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                        marginTop: 8,
+                        fontSize: 12,
+                        color: "#991b1b",
+                      }}
+                    >
+                      {node.infoBox}
+                    </div>
+                  )}
+                </Fragment>
+              ))
             )}
-
-            {/* Connector after node */}
-            {!isLast && <Connector />}
           </Fragment>
         );
       })}
@@ -1494,7 +1578,6 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     />
   );
 
-  // Sub-tab pills for video context
   const SubTabPills = () => (
     <div className="flex items-center gap-1.5 mb-5">
       {(["pre", "post"] as const).map((tab) => {
