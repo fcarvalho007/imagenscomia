@@ -109,6 +109,7 @@ serve(async (req) => {
       .select("id, email, first_name")
       .eq("webinar", "video")
       .is("paid_at", null)
+      .is("premium_granted_at", null)
       .eq("do_not_contact", false);
 
     if (queryErr) throw queryErr;
