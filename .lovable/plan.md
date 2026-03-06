@@ -1,32 +1,28 @@
 
 
-# Adicionar SMS de Recursos por plano na timeline de Automações
+# Corrigir contagem de emails em Automações
 
-## O que muda
+## Problema
 
-Inserir **3 nodes SMS** na timeline de Automações (ficheiro `AutomationFlowTab.tsx`), logo após os respectivos nodes de email de Recursos. Cada um terá texto pré-preenchido e diferenciado por plano.
+A tabela `email_send_logs` tem 1813 registos, mas a query de estatísticas em `FollowUpView.tsx` (linha 108-123) não define um limite explícito, herdando o limite padrão de 1000 linhas. Resultado: os contadores nos cards mostram valores inferiores aos reais (ex: 4 em vez de 11 para Premium Pass).
 
-## Nodes a adicionar
+O drawer de destinatários não é afectado porque filtra por `email_key` específico, devolvendo todas as linhas relevantes.
 
-### 1. SMS Recursos — Premium Pass (após linha 288, node "Recursos — Premium Pass")
-- **Filtro**: `planFilter: ["premium"]`
-- **Texto SMS**: `Ola! Ja tens acesso a gravacao, workbook e guia GEMs em imagenscomia.com/recursos-video — usa o email de registo para entrar. Lembra-te: sessao Q&A amanha (terca, 10 Mar) as 14:30. Ate ja! — Frederico`
+## Solução
 
-### 2. SMS Recursos — Masterclass (após node "Recursos — Masterclass")
-- **Filtro**: `planFilter: ["masterclass"]`
-- **Texto SMS**: `Ola! A Masterclass e na quinta, 12 de Marco, as 10h. O link sera enviado na vespera por email. Confirma no teu calendario: calendar.app.google/qX6CxAwxafWHNEaYA — Frederico`
+Alterar a query de stats em `src/components/crm/FollowUpView.tsx` (linha ~108-123) para usar server-side aggregation via RPC ou, mais simples, adicionar `.limit(10000)` para cobrir o volume actual e futuro previsível.
 
-### 3. SMS Recursos — Bundle (após node "Recursos — Bundle")
-- **Filtro**: `planFilter: ["bundle"]`
-- **Texto SMS**: `Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo. A Masterclass e quinta 12 Mar as 10h (link na vespera). Sessao Q&A: terca 10 Mar as 14:30. Ate ja! — Frederico`
+### Ficheiro: `src/components/crm/FollowUpView.tsx`
 
-## Ficheiro alterado
+Linha 109: adicionar `.limit(10000)` à query:
 
-- `src/components/crm/AutomationFlowTab.tsx` — inserir 3 nodes SMS com `channel: "sms"` e `smsSendConfig` após cada node de Recursos correspondente
+```typescript
+supabase
+  .from("email_send_logs")
+  .select("email_key, status, webinar")
+  .limit(10000)
+  .then(...)
+```
 
-## Notas
-
-- Os SMS **não são enviados automaticamente** — mantêm o botão manual existente ("Enviar SMS agora")
-- O texto aparece visível no card da timeline e pode ser editado antes do envio (draft guardado em localStorage, como os outros SMS nodes)
-- Links do Q&A e Masterclass nunca vão para inscritos gratuitos (filtro por plano garante isso)
+Uma única linha resolve o problema. Os contadores passarão a reflectir os valores reais: 11 Premium, 9 Masterclass, 5 Bundle.
 
