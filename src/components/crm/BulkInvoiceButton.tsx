@@ -48,46 +48,28 @@ export default function BulkInvoiceButton() {
   };
 
   return (
-    <div className="bg-white border border-border rounded-xl p-5 mb-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <FileText size={20} className="text-amber-600" />
-          <div>
-            <h3 className="font-heading font-bold text-[14px] text-ink-900">Faturação em lote</h3>
-            <p className="text-[12px] text-ink-400">Criar rascunhos InvoiceExpress para pagantes sem fatura</p>
-          </div>
-        </div>
-        <Button
-          onClick={handleBulk}
-          disabled={running}
-          size="sm"
-          className="gap-1.5"
-        >
-          {running ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-          {running ? "A criar..." : "Emitir rascunhos"}
-        </Button>
-      </div>
+    <div className="inline-flex items-center gap-2">
+      <Button
+        onClick={handleBulk}
+        disabled={running}
+        size="sm"
+        variant="outline"
+        className="h-8 text-[12px] gap-1.5"
+      >
+        {running ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+        {running ? "A criar..." : "Faturas em lote"}
+      </Button>
 
       {result && (
-        <div className="mt-4 p-3 bg-muted rounded-lg text-[13px] space-y-1">
-          <p className="flex items-center gap-1.5">
-            <CheckCircle size={14} className="text-green-600" />
-            <span><strong>{result.created}</strong> rascunhos criados</span>
-          </p>
+        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <CheckCircle size={12} className="text-green-600" />
+          {result.created} criados
           {result.errors.length > 0 && (
-            <div>
-              <p className="flex items-center gap-1.5 text-red-600">
-                <AlertCircle size={14} />
-                <span><strong>{result.errors.length}</strong> erros</span>
-              </p>
-              <ul className="ml-5 mt-1 space-y-0.5 text-[12px] text-ink-500 max-h-32 overflow-y-auto">
-                {result.errors.map((e, i) => (
-                  <li key={i}>{e.email}: {e.error.slice(0, 80)}</li>
-                ))}
-              </ul>
-            </div>
+            <span className="text-destructive flex items-center gap-0.5 ml-1">
+              <AlertCircle size={12} /> {result.errors.length} erros
+            </span>
           )}
-        </div>
+        </span>
       )}
     </div>
   );
