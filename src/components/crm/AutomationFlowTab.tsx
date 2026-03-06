@@ -862,9 +862,17 @@ function Timeline({
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
 
-  // Custom SMS texts persisted in localStorage
+  // Custom SMS texts persisted in localStorage — with version invalidation
+  const SMS_DRAFT_VERSION = 2; // bump this whenever default SMS texts change
   const [customSmsTexts, setCustomSmsTexts] = useState<Record<string, string>>(() => {
     try {
+      const storedVersion = localStorage.getItem("crm_sms_drafts_version");
+      if (storedVersion !== String(SMS_DRAFT_VERSION)) {
+        // Defaults changed — clear stale drafts
+        localStorage.removeItem("crm_sms_drafts");
+        localStorage.setItem("crm_sms_drafts_version", String(SMS_DRAFT_VERSION));
+        return {};
+      }
       const stored = localStorage.getItem("crm_sms_drafts");
       return stored ? JSON.parse(stored) : {};
     } catch { return {}; }
