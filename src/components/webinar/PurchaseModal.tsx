@@ -146,7 +146,7 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
-      const prices: Record<string, number> = { premium: 33.21, masterclass: 82.41, bundle: 115.62, gravacao: 33.21, "video-premium": 33.21, "video-masterclass": 82.41, "video-bundle": 115.62 };
+      const prices: Record<string, number> = { premium: 33.21, masterclass: 82.41, bundle: 131.61, gravacao: 33.21, "video-premium": 33.21, "video-masterclass": 82.41, "video-bundle": 131.61 };
       const capturedPlan = paymentPlan;
       setTimeout(() => {
         try {
