@@ -303,7 +303,6 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         <div className="space-y-2">
           {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
-            const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             const isOpen = openSections.has(col.title);
             return (
               <div key={col.title} className="bg-white border border-border rounded-xl overflow-hidden">
@@ -348,7 +347,6 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         <div className="flex gap-3 overflow-x-auto pb-4">
           {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
-            const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             return (
               <div
                 key={col.title}
