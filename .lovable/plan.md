@@ -1,34 +1,29 @@
 
 
-# Corrigir filtro Pós-webinar no Pipeline e Tabela
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema
+### Alteração
 
-O filtro "Pós-webinar" no Pipeline usa `registration_source === "gravacao"`, mas **todas as 280 inscrições de vídeo** têm `registration_source: "webinar"` — incluindo as 5 criadas após o webinar (5 Março 11:00 UTC). O filtro devolve 0 resultados.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-## Solução
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-Mudar a lógica de "Pós-webinar" para ser **baseada na data de criação** em vez do campo `registration_source`:
-- **Pré-webinar**: `created_at < 2026-03-05T11:00:00Z`
-- **Pós-webinar**: `created_at >= 2026-03-05T11:00:00Z`
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-Usar a constante `VIDEO_WEBINAR_DATE` já existente em `webinarConfig.ts` (`2026-03-05T10:00:00Z` — ajustar para 11:00 se necessário) como cutoff.
-
-Para o webinar de imagens, manter a lógica actual baseada no `startDate` correspondente.
-
-## Ficheiros alterados
-
-### `src/components/crm/PipelineView.tsx`
-1. Importar `WEBINAR_CONFIG` e `useWebinarContext`
-2. Na lógica de `filtered`, substituir `registration_source === sourceFilter` por comparação de data:
-   - `sourceFilter === "webinar"` → `created_at < webinarStartDate`
-   - `sourceFilter === "gravacao"` → `created_at >= webinarStartDate`
-3. No badge "PÓS-WEBINAR" no card (linha 92), usar a mesma lógica de data em vez de `registration_source === "gravacao"`
-4. Ajustar `visibleColumns` — remover colunas "Inscrito"/"Flow Completo" para pós-webinar (manter)
-
-### `src/components/crm/TableView.tsx`
-1. Na coluna "Fonte" (linha 551), usar lógica de data para mostrar "Pós-webinar" vs "Pré-webinar"
-
-### `src/config/webinarConfig.ts`
-1. Adicionar `postEventCutoff` ao config de cada webinar para clareza (`2026-03-05T11:00:00Z` para vídeo, `2026-02-18T11:00:00Z` para imagens)
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 

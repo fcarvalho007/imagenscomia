@@ -7,6 +7,7 @@ import { genderEmoji } from "@/lib/genderDetection";
 import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabels";
 import SendPaymentModal from "./modal/SendPaymentModal";
 import { useWebinarContext } from "@/contexts/WebinarContext";
+import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
@@ -548,9 +549,16 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.team_size || "—"}>{i.team_size || "—"}</span>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
-                      <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${i.registration_source === "gravacao" ? "bg-ink-100 text-ink-700" : "bg-surface text-ink-400"}`}>
-                        {i.registration_source === "gravacao" ? "Gravação" : "Webinar"}
-                      </span>
+                      {(() => {
+                        const wKey: "video" | "imagens" = i.webinar === "video" ? "video" : "imagens";
+                        const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
+                        const isPost = new Date(i.timestamp).getTime() >= cutoff.getTime();
+                        return (
+                          <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full ${isPost ? "bg-ink-100 text-ink-700" : "bg-surface text-ink-400"}`}>
+                            {isPost ? "Pós-webinar" : "Pré-webinar"}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       {i.duvida ? (

@@ -4,6 +4,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { genderEmoji } from "@/lib/genderDetection";
 import { useWebinarContext } from "@/contexts/WebinarContext";
+import { WEBINAR_CONFIG } from "@/config/webinarConfig";
+import type { WebinarKey } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
@@ -89,11 +91,15 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
       )}
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        {inscrito.registration_source === "gravacao" && (
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-600">
-            PÓS-WEBINAR
-          </span>
-        )}
+        {(() => {
+          const wKey = (inscrito.webinar === "video" ? "video" : "imagens") as WebinarKey;
+          const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
+          return new Date(inscrito.timestamp) >= cutoff ? (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-600">
+              PÓS-WEBINAR
+            </span>
+          ) : null;
+        })()}
         <span
           className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full"
           style={{ background: badge.bg, color: badge.color }}
@@ -152,7 +158,14 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
 
   const filtered = useMemo(() => {
     let active = inscritos.filter((i) => i.status === "activo");
-    if (sourceFilter !== "all") active = active.filter((i) => i.registration_source === sourceFilter);
+    if (sourceFilter !== "all") {
+      active = active.filter((i) => {
+        const wKey = (i.webinar === "video" ? "video" : "imagens") as WebinarKey;
+        const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
+        const isPost = new Date(i.timestamp) >= cutoff;
+        return sourceFilter === "gravacao" ? isPost : !isPost;
+      });
+    }
     if (!search.trim()) return active;
     const q = search.toLowerCase();
     return active.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q));
