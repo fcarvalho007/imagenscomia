@@ -9,7 +9,8 @@ const corsHeaders = {
 
 const SITE = "https://imagenscomia.lovable.app";
 const WHATSAPP = "https://wa.me/351915015508";
-const CALENDAR_MASTERCLASS = "https://calendar.app.google/LWQVacdqqavvEqSG9";
+const CALENDAR_MASTERCLASS = "https://calendar.app.google/qX6CxAwxafWHNEaYA";
+const ZOOM_LINK = "https://us02web.zoom.us/j/83247090160?jst=3";
 
 /* ──────────────────────────── shared HTML helpers ──────────────────────────── */
 
@@ -89,9 +90,11 @@ function masterclassHtml(fname: string): string {
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
           <tr><td style="padding:4px 0">📅 <strong>Quarta-feira, 12 de Março de 2026</strong></td></tr>
           <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
-          <tr><td style="padding:4px 0">💻 Online, ao vivo — <em>link enviado na véspera</em></td></tr>
+          <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
           <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
         </table>
+        ${cta(ZOOM_LINK, "Entrar na Sessão (Zoom) →", "#7c3aed")}
+        <p style="font-size:13px;color:#64748b;text-align:center;margin:0">Para entrar, usa o email com que te registaste.</p>
       </div>
 
       <div style="background:#f8fafc;border-radius:12px;padding:20px 24px;margin:24px 0">
@@ -151,11 +154,13 @@ function bundleHtml(fname: string): string {
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
           <tr><td style="padding:4px 0">📅 <strong>Quarta-feira, 12 de Março de 2026</strong></td></tr>
           <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
-          <tr><td style="padding:4px 0">💻 Online, ao vivo — <em>link enviado na véspera</em></td></tr>
+          <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
           <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
         </table>
-        <p style="font-size:13px;color:#64748b;margin:12px 0 0">Workflow completo, ferramentas avançadas, casos práticos e Q&A ao vivo.</p>
-        ${cta(CALENDAR_MASTERCLASS, "Guardar no Calendário →", "#7c3aed")}
+        ${cta(ZOOM_LINK, "Entrar na Sessão (Zoom) →", "#7c3aed")}
+        <p style="font-size:13px;color:#64748b;text-align:center;margin:4px 0 12px">Para entrar, usa o email com que te registaste.</p>
+        <p style="font-size:13px;color:#64748b;margin:0">Workflow completo, ferramentas avançadas, casos práticos e Q&A ao vivo.</p>
+        ${cta(CALENDAR_MASTERCLASS, "Guardar no Calendário →", "#6b21a8")}
       </div>
     </div>
     ${footer}
