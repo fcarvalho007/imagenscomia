@@ -18,8 +18,8 @@ interface PaymentData {
 
 // Amount-to-plan safety net: derive correct plan from the paid amount
 const AMOUNT_TO_PLAN: Record<string, Record<number, string>> = {
-  imagens: { 18.45: "premium", 57.81: "masterclass", 70.11: "bundle", 33.21: "gravacao" },
-  video:   { 33.21: "video-premium", 82.41: "video-masterclass", 131.61: "video-bundle" },
+  imagens: { 18.45: "premium", 57.81: "masterclass", 70.11: "bundle", 76.26: "bundle", 33.21: "gravacao" },
+  video:   { 18.45: "video-premium", 33.21: "video-premium", 57.81: "video-masterclass", 82.41: "video-masterclass", 70.11: "video-bundle", 76.26: "video-bundle", 131.61: "video-bundle" },
 };
 
 function derivePlanFromAmount(amountStr: string, webinar: string): string | null {
@@ -116,6 +116,58 @@ async function processPayment(data: PaymentData) {
     }
   }
 
+  // ── Strategy 1b — match ORD-{name}-{planTag} by transactionID ──────────────
+  // The create-payment function stores transactionID as eupago_ref AND eupago_transaction_id
+  if (!matched && identifier && identifier.startsWith("ORD-") && !identifier.startsWith("ORDER-")) {
+    console.log(`🔎 Strategy 1b: ORD- identifier="${identifier}", looking up by transactionID=${transactionID}`);
+    
+    if (transactionID) {
+      // Lookup by eupago_ref or eupago_transaction_id (create-payment stores the UUID there)
+      const { data: ordReg } = await supabase
+        .from("registrations")
+        .select("id, email, webinar, plan_selected")
+        .or(`eupago_ref.eq.${transactionID},eupago_transaction_id.eq.${transactionID}`)
+        .is("paid_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (ordReg) {
+        const updatePayload: Record<string, any> = {
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || transactionID,
+          eupago_transaction_id: transactionID || null,
+          paid_amount: parseFloat(amount) || null,
+        };
+        const derivedPlan = derivePlanFromAmount(amount, ordReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          if (derivedPlan !== ordReg.plan_selected) {
+            console.log(`🔧 Strategy 1b: plan corrected from "${ordReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
+          }
+        }
+
+        const { data: updatedRows, error } = await supabase
+          .from("registrations")
+          .update(updatePayload)
+          .eq("id", ordReg.id)
+          .select("id, email");
+
+        if (!error && updatedRows && updatedRows.length > 0) {
+          console.log(`✅ Strategy 1b: matched ORD- by transactionID=${transactionID} — email=${updatedRows[0].email}`);
+          matched = true;
+          matchedRegId = updatedRows[0].id;
+        } else {
+          console.warn(`⚠️ Strategy 1b: update failed for transactionID=${transactionID}`, error?.message || "");
+        }
+      } else {
+        console.warn(`⚠️ Strategy 1b: no unpaid registration found for transactionID=${transactionID}`);
+      }
+    } else {
+      console.warn(`⚠️ Strategy 1b: no transactionID in webhook for ORD- identifier`);
+    }
+  }
+
   // ── Strategy GROUP — match by GROUP-{ref} in identifier ────────────────
   if (!matched && identifier && identifier.startsWith("GROUP-")) {
     const groupRef12 = identifier.replace("GROUP-", "");
@@ -142,10 +194,12 @@ async function processPayment(data: PaymentData) {
       console.log(`✅ Strategy GROUP: found ${matchingRows.length} attendees for group_payment_ref=${groupPaymentRefFull}`);
 
       // Update all group members
+      // Derive correct plan from amount for video webinar
+      const groupDerivedPlan = derivePlanFromAmount(amount, "video") || "video-masterclass";
       const { data: updatedGroupRows, error: updateErr } = await supabase
         .from("registrations")
         .update({
-          plan_selected: "masterclass",
+          plan_selected: groupDerivedPlan,
           paid_at: new Date().toISOString(),
           eupago_ref: reference || transactionID,
           eupago_transaction_id: transactionID || null,
@@ -396,7 +450,7 @@ async function processPayment(data: PaymentData) {
 
   // ── Strategy 3 (LEGACY FALLBACK) — extract email from identifier ──────────
   // Handles identifiers from before the ORDER-{order_id}-{name} format.
-  if (!matched && identifier && !identifier.startsWith("ORDER-")) {
+  if (!matched && identifier && !identifier.startsWith("ORDER-") && !identifier.startsWith("ORD-")) {
     const parts = identifier.split("-");
     let email = "";
     if (parts.length >= 4) {
