@@ -1,34 +1,73 @@
 
 
-# Diagnóstico: SMS "enviados" mas nada chegou + Relatório detalhado
+# Fluxo de Automação Pós-Evento para Novas Inscrições
 
-## Problema encontrado: fetch sem headers de autenticação
+## Contexto
 
-O `handleBulkSms` (linha 749) usa `fetch()` directo em vez de `supabase.functions.invoke()`. O `fetch` envia apenas o header `x-crm-admin-email`, mas **falta o header `apikey`** obrigatório pelo gateway do backend. Resultado: os pedidos são rejeitados **antes** de chegar à função — por isso não há logs da função nem registos em `message_logs`. O frontend recebe provavelmente um erro silencioso ou timeout, mas o `toast.success` corre na mesma se `sent > 0` (o que pode acontecer se o gateway devolver algo inesperado).
+O fluxo actual do webinar de vídeo tem 4 secções (Pré-webinar, Confirmações de Compra, Após o Webinar, Fecho de Leads), mas tudo está numa timeline contínua. Não existe distinção visual clara entre o fluxo para quem se inscreveu **antes** do evento e quem se inscreve **depois**. As 3 inscrições pós-evento (Lúcia, Jéssica, Susana) não têm um fluxo dedicado.
 
-**Zero SMS foram realmente entregues.** A interface mostrou "enviado" mas nenhum chegou à E-goi.
+## O que vou construir
 
-## Correcção 1: Usar `supabase.functions.invoke` no bulk SMS
+### 1. Sub-tabs dentro do tab "Fluxo": Pré-Webinar | Pós-Evento
 
-Substituir o `fetch()` na linha 749-764 por `supabase.functions.invoke("send-sms", ...)` que adiciona automaticamente os headers de autenticação. É exactamente o que o `SmsComposer.tsx` já faz (e funciona).
+Adicionar dois sub-tabs no topo do tab Fluxo (apenas no contexto `video`):
+- **Pré-Webinar** — mostra o fluxo actual (inscrições antes do evento)
+- **Pós-Evento** — mostra o novo fluxo para inscrições após o webinar
 
-## Correcção 2: Adicionar relatório detalhado clicável após envio
+### 2. Novo fluxo Pós-Evento com os seguintes nodes
 
-Após o envio em lote, mostrar um painel com:
-- Lista de cada destinatário: nome, número de telefone, estado (enviado/falhou), erro se houver
-- Clicável para expandir detalhes
-- Resumo: X enviados, Y falhados, Z total
+```text
+┌─ TRIGGER: Inscrição pós-evento ─────────────────┐
+│  Webinar já decorreu · inscrição via /video      │
+└──────────────────────────────────────────────────┘
+         │
+┌─ EMAIL: Confirmação imediata ────────────────────┐
+│  Template: video_confirmation                    │
+│  Automático · segundos após inscrição            │
+│  Inclui link directo para upgrade                │
+└──────────────────────────────────────────────────┘
+         │
+    ── AGUARDA PAGAMENTO ──
+         │
+┌─ EMAIL: Confirmação de compra (Premium) ─────────┐
+│  Template: video_payment_premium                 │
+│  Automático · pós-pagamento                      │
+└──────────────────────────────────────────────────┘
+         │
+┌─ EMAIL: Confirmação de compra (Masterclass) ─────┐
+│  Template: video_payment_masterclass             │
+│  Automático · pós-pagamento                      │
+└──────────────────────────────────────────────────┘
+         │
+    ── ACESSO AOS RECURSOS ──
+         │
+┌─ EMAIL: Recursos por plano ──────────────────────┐
+│  Templates: video_recursos_premium/master/bundle │
+│  Manual · após pagamento confirmado              │
+└──────────────────────────────────────────────────┘
+         │
+┌─ SMS: Acesso aos recursos ───────────────────────┐
+│  Manual · clientes pagos com telefone            │
+└──────────────────────────────────────────────────┘
+         │
+┌─ END: Conversão concluída ───────────────────────┘
+```
 
-Implementação: guardar os resultados por pessoa num array durante o loop de envio e mostrá-los num modal/drawer após conclusão.
+### 3. Contador de inscritos pós-evento no trigger
 
-## Ficheiros a alterar
+O trigger mostrará quantos inscritos existem com `created_at` posterior à data do webinar (`VIDEO_WEBINAR_DATE`), dando visibilidade imediata.
 
-- `src/components/crm/AutomationFlowTab.tsx`:
-  1. Substituir `fetch()` por `supabase.functions.invoke()` no `handleBulkSms`
-  2. Guardar resultados detalhados por pessoa (nome, telefone, sucesso/erro)
-  3. Adicionar estado e UI para mostrar o relatório detalhado após envio (drawer/modal com lista clicável)
+### 4. Estatísticas por node
 
-## Notas
-- O `SmsComposer.tsx` e `SmsTab.tsx` já usam `supabase.functions.invoke` — só o bulk send estava com `fetch` directo
-- Os SMS dos dois primeiros nodes que clicaste não chegaram a ninguém — vais precisar de reenviar após a correcção
+Cada node mostrará contadores de enviados/falhas, filtrando apenas para inscritos pós-evento (comparando `registration_id` com inscritos cuja `timestamp` > data do webinar).
+
+## Ficheiro a alterar
+
+- **`src/components/crm/AutomationFlowTab.tsx`**:
+  - Adicionar estado `flowSubTab` com valores `"pre"` | `"post"` (só visível quando `webinar === "video"`)
+  - Criar função `getPostEventNodes()` com os nodes do fluxo pós-evento
+  - Renderizar sub-tabs pill no topo do componente `Timeline`
+  - O sub-tab "Pré-Webinar" renderiza os nodes actuais (`getNodes("video")`)
+  - O sub-tab "Pós-Evento" renderiza `getPostEventNodes()` com a mesma UI de cards
+  - Filtrar `inscritos` no sub-tab pós-evento para mostrar apenas `created_at > VIDEO_WEBINAR_DATE`
 
