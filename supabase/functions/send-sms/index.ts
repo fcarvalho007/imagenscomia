@@ -53,11 +53,24 @@ async function sendViaEgoi(to: string, text: string): Promise<{ ok: boolean; mes
   const apiKey = Deno.env.get("EGOI_API_KEY");
   if (!apiKey) return { ok: false, messageId: null, error: "EGOI_API_KEY not configured" };
 
-  // Format phone as "351-XXXXXXXXX" for E-goi transactional API
-  const digits = to.replace(/\D/g, "");
-  const egoiPhone = digits.startsWith("351")
-    ? `${digits.slice(0, 3)}-${digits.slice(3)}`
-    : `351-${digits}`;
+  // Extract a valid 9-digit Portuguese mobile number
+  let digits = to.replace(/\D/g, "");
+  // Strip leading country codes (351, 00351, 0351)
+  if (digits.startsWith("00351")) digits = digits.slice(5);
+  else if (digits.startsWith("0351")) digits = digits.slice(4);
+  else if (digits.startsWith("351") && digits.length > 9) digits = digits.slice(3);
+  // Strip leading 0 (local format)
+  if (digits.startsWith("0") && digits.length === 10) digits = digits.slice(1);
+
+  // Validate: must be exactly 9 digits and start with 9 (mobile)
+  if (digits.length !== 9) {
+    return { ok: false, messageId: null, error: `Invalid phone: expected 9 digits, got ${digits.length} (${digits})` };
+  }
+  if (!digits.startsWith("9")) {
+    return { ok: false, messageId: null, error: `Not a mobile number: ${digits} (must start with 9)` };
+  }
+
+  const egoiPhone = `351-${digits}`;
 
   const res = await fetch("https://slingshot.egoiapp.com/api/v2/sms/messages/action/send/single", {
     method: "POST",
