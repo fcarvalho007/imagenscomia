@@ -269,6 +269,7 @@ export type Database = {
           gifted_at: string | null
           group_payment_ref: string | null
           id: string
+          invoice_document_id: string | null
           invoice_sent: boolean
           is_gift: boolean
           last_followup_at: string | null
@@ -314,6 +315,7 @@ export type Database = {
           gifted_at?: string | null
           group_payment_ref?: string | null
           id?: string
+          invoice_document_id?: string | null
           invoice_sent?: boolean
           is_gift?: boolean
           last_followup_at?: string | null
@@ -359,6 +361,7 @@ export type Database = {
           gifted_at?: string | null
           group_payment_ref?: string | null
           id?: string
+          invoice_document_id?: string | null
           invoice_sent?: boolean
           is_gift?: boolean
           last_followup_at?: string | null
