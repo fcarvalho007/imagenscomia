@@ -116,55 +116,84 @@ async function processPayment(data: PaymentData) {
     }
   }
 
-  // ── Strategy 1b — match ORD-{name}-{planTag} by transactionID ──────────────
-  // The create-payment function stores transactionID as eupago_ref AND eupago_transaction_id
+  // ── Strategy 1b — match ORD-{name}-{planTag} by eupago_transaction_id or email fallback ──
   if (!matched && identifier && identifier.startsWith("ORD-") && !identifier.startsWith("ORDER-")) {
-    console.log(`🔎 Strategy 1b: ORD- identifier="${identifier}", looking up by transactionID=${transactionID}`);
+    console.log(`🔎 Strategy 1b: ORD- identifier="${identifier}", txID=${transactionID}`);
     
+    // First try: lookup by eupago_transaction_id (stored as UUID by create-payment)
+    let ordReg: any = null;
     if (transactionID) {
-      // Lookup by eupago_ref or eupago_transaction_id (create-payment stores the UUID there)
-      const { data: ordReg } = await supabase
+      const { data } = await supabase
         .from("registrations")
         .select("id, email, webinar, plan_selected")
-        .or(`eupago_ref.eq.${transactionID},eupago_transaction_id.eq.${transactionID}`)
+        .eq("eupago_transaction_id", transactionID)
         .is("paid_at", null)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      ordReg = data;
+    }
 
-      if (ordReg) {
-        const updatePayload: Record<string, any> = {
-          paid_at: new Date().toISOString(),
-          eupago_ref: reference || transactionID,
-          eupago_transaction_id: transactionID || null,
-          paid_amount: parseFloat(amount) || null,
-        };
-        const derivedPlan = derivePlanFromAmount(amount, ordReg.webinar);
-        if (derivedPlan) {
-          updatePayload.plan_selected = derivedPlan;
-          if (derivedPlan !== ordReg.plan_selected) {
-            console.log(`🔧 Strategy 1b: plan corrected from "${ordReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
-          }
-        }
-
-        const { data: updatedRows, error } = await supabase
+    // Fallback: extract planTag from identifier and find most recent unpaid registration
+    if (!ordReg) {
+      const parts = identifier.split("-");
+      const planTag = parts[parts.length - 1]; // SP, MC, PK
+      const PLAN_TAG_TO_PLANS: Record<string, string[]> = {
+        SP: ["premium", "video-premium", "gravacao"],
+        MC: ["masterclass", "video-masterclass"],
+        PK: ["bundle", "video-bundle"],
+        GRMC: ["gravacao-masterclass"],
+      };
+      const possiblePlans = PLAN_TAG_TO_PLANS[planTag] || [];
+      
+      if (possiblePlans.length > 0) {
+        // Find unpaid registration with matching plan, ordered by most recent upgrade click
+        const { data } = await supabase
           .from("registrations")
-          .update(updatePayload)
-          .eq("id", ordReg.id)
-          .select("id, email");
-
-        if (!error && updatedRows && updatedRows.length > 0) {
-          console.log(`✅ Strategy 1b: matched ORD- by transactionID=${transactionID} — email=${updatedRows[0].email}`);
-          matched = true;
-          matchedRegId = updatedRows[0].id;
-        } else {
-          console.warn(`⚠️ Strategy 1b: update failed for transactionID=${transactionID}`, error?.message || "");
+          .select("id, email, webinar, plan_selected")
+          .in("plan_selected", possiblePlans)
+          .is("paid_at", null)
+          .not("upgrade_clicked_at", "is", null)
+          .order("upgrade_clicked_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        ordReg = data;
+        if (ordReg) {
+          console.log(`🔎 Strategy 1b fallback: matched by planTag="${planTag}" — email=${ordReg.email}`);
         }
+      }
+    }
+
+    if (ordReg) {
+      const updatePayload: Record<string, any> = {
+        paid_at: new Date().toISOString(),
+        eupago_ref: reference || transactionID,
+        eupago_transaction_id: transactionID || null,
+        paid_amount: parseFloat(amount) || null,
+      };
+      const derivedPlan = derivePlanFromAmount(amount, ordReg.webinar);
+      if (derivedPlan) {
+        updatePayload.plan_selected = derivedPlan;
+        if (derivedPlan !== ordReg.plan_selected) {
+          console.log(`🔧 Strategy 1b: plan corrected from "${ordReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
+        }
+      }
+
+      const { data: updatedRows, error } = await supabase
+        .from("registrations")
+        .update(updatePayload)
+        .eq("id", ordReg.id)
+        .select("id, email");
+
+      if (!error && updatedRows && updatedRows.length > 0) {
+        console.log(`✅ Strategy 1b: matched ORD- — email=${updatedRows[0].email}`);
+        matched = true;
+        matchedRegId = updatedRows[0].id;
       } else {
-        console.warn(`⚠️ Strategy 1b: no unpaid registration found for transactionID=${transactionID}`);
+        console.warn(`⚠️ Strategy 1b: update failed`, error?.message || "");
       }
     } else {
-      console.warn(`⚠️ Strategy 1b: no transactionID in webhook for ORD- identifier`);
+      console.warn(`⚠️ Strategy 1b: no unpaid registration found for ORD- identifier="${identifier}"`);
     }
   }
 
@@ -193,9 +222,12 @@ async function processPayment(data: PaymentData) {
       const groupPaymentRefFull = matchingRows[0].group_payment_ref;
       console.log(`✅ Strategy GROUP: found ${matchingRows.length} attendees for group_payment_ref=${groupPaymentRefFull}`);
 
-      // Update all group members
+      // Update all group members — divide total by number of members for individual paid_amount
       // Derive correct plan from amount for video webinar
       const groupDerivedPlan = derivePlanFromAmount(amount, "video") || "video-masterclass";
+      const perPersonAmount = matchingRows.length > 0
+        ? Math.round((parseFloat(amount) / matchingRows.length) * 100) / 100
+        : parseFloat(amount) || null;
       const { data: updatedGroupRows, error: updateErr } = await supabase
         .from("registrations")
         .update({
@@ -203,7 +235,7 @@ async function processPayment(data: PaymentData) {
           paid_at: new Date().toISOString(),
           eupago_ref: reference || transactionID,
           eupago_transaction_id: transactionID || null,
-          paid_amount: parseFloat(amount) || null,
+          paid_amount: perPersonAmount,
         })
         .eq("group_payment_ref", groupPaymentRefFull)
         .eq("webinar", "video")
