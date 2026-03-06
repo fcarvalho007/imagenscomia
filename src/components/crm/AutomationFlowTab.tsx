@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, Fragment } from "react";
+import { useMemo, useState, useEffect, Fragment, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2, ChevronDown } from "lucide-react";
+import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2, ChevronDown, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -982,6 +982,9 @@ function Timeline({
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [smsDetailedResults, setSmsDetailedResults] = useState<Array<{ name: string; phone: string; success: boolean; error?: string }>>([]);
   const [showSmsReport, setShowSmsReport] = useState(false);
+  const [importingSmsKey, setImportingSmsKey] = useState<string | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const pendingImportKey = useRef<string>("");
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
 
@@ -1164,6 +1167,49 @@ function Timeline({
       toast.success(`✅ ${sent} SMS enviados com sucesso!`);
     } else {
       toast.warning(`📱 ${sent} enviados, ${failed} falharam de ${eligible.length} total`);
+    }
+  };
+
+  const handleCsvImport = async (file: File, templateKey: string) => {
+    setImportingSmsKey(templateKey);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter((l) => l.trim().length > 0);
+      if (lines.length < 2) {
+        toast.error("CSV vazio ou sem dados");
+        setImportingSmsKey(null);
+        return;
+      }
+
+      // Parse semicolon-delimited CSV (skip header)
+      const rows = lines.slice(1).map((line) => {
+        const cols = line.split(";");
+        return {
+          phone: cols[0]?.replace(/"/g, "").trim() || "",
+          status: cols[4]?.replace(/"/g, "").trim() || "",
+          timestamp: cols[3]?.replace(/"/g, "").trim() || "",
+        };
+      }).filter((r) => r.phone.length > 0);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
+
+      const { data, error } = await supabase.functions.invoke("backfill-sms-logs", {
+        body: { rows, templateKey },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+
+      if (error) throw error;
+
+      const result = data as { matched: number; unmatched: number; skipped: number; inserted: number; errors: string[] };
+      toast.success(
+        `Importação concluída: ${result.inserted} inseridos, ${result.skipped} já existentes, ${result.unmatched} sem match`
+      );
+    } catch (err: any) {
+      toast.error("Erro na importação: " + (err.message || "erro desconhecido"));
+    } finally {
+      setImportingSmsKey(null);
+      if (csvInputRef.current) csvInputRef.current.value = "";
     }
   };
 
@@ -1352,6 +1398,33 @@ function Timeline({
                     </>
                   )}
                 </button>
+
+                {/* CSV Import button */}
+                <button
+                  onClick={() => {
+                    pendingImportKey.current = tplKey;
+                    csvInputRef.current?.click();
+                  }}
+                  disabled={importingSmsKey === tplKey}
+                  className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1 rounded-lg transition-colors border"
+                  style={{
+                    borderColor: importingSmsKey === tplKey ? "#94a3b8" : "#d1d5db",
+                    color: importingSmsKey === tplKey ? "#94a3b8" : "#6b7280",
+                    background: "white",
+                  }}
+                >
+                  {importingSmsKey === tplKey ? (
+                    <>
+                      <Loader2 size={11} className="animate-spin" />
+                      Importando…
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={11} />
+                      Importar relatório CSV
+                    </>
+                  )}
+                </button>
               </div>
             );
           })()}
@@ -1464,6 +1537,19 @@ function Timeline({
 
   return (
     <div className="relative max-w-[800px] mx-auto">
+      {/* Hidden CSV file input */}
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file && pendingImportKey.current) {
+            handleCsvImport(file, pendingImportKey.current);
+          }
+        }}
+      />
       {groups.map((group, gIdx) => {
         const isLastGroup = gIdx === groups.length - 1;
         const isEndGroup = group.groupKey === "end";
