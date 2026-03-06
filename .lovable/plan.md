@@ -1,46 +1,34 @@
 
 
-# Auditoria do fluxo "Enviar SMS agora"
+# Diagnóstico: SMS "enviados" mas nada chegou + Relatório detalhado
 
-## Problema encontrado: Header de autenticação vazio
+## Problema encontrado: fetch sem headers de autenticação
 
-Na linha 743 do `AutomationFlowTab.tsx`, o código de envio de SMS faz:
+O `handleBulkSms` (linha 749) usa `fetch()` directo em vez de `supabase.functions.invoke()`. O `fetch` envia apenas o header `x-crm-admin-email`, mas **falta o header `apikey`** obrigatório pelo gateway do backend. Resultado: os pedidos são rejeitados **antes** de chegar à função — por isso não há logs da função nem registos em `message_logs`. O frontend recebe provavelmente um erro silencioso ou timeout, mas o `toast.success` corre na mesma se `sent > 0` (o que pode acontecer se o gateway devolver algo inesperado).
 
-```typescript
-const adminEmail = sessionStorage.getItem("crm_admin_email") || "";
-```
+**Zero SMS foram realmente entregues.** A interface mostrou "enviado" mas nenhum chegou à E-goi.
 
-Mas o CRM foi migrado para Supabase Auth — já não guarda nada em `sessionStorage`. O header `x-crm-admin-email` vai vazio (`""`), e a Edge Function `send-sms` valida:
+## Correcção 1: Usar `supabase.functions.invoke` no bulk SMS
 
-```typescript
-const validAdmin = adminEmail?.toLowerCase() === ALLOWED_ADMIN;
-```
+Substituir o `fetch()` na linha 749-764 por `supabase.functions.invoke("send-sms", ...)` que adiciona automaticamente os headers de autenticação. É exactamente o que o `SmsComposer.tsx` já faz (e funciona).
 
-Resultado: **todos os SMS vão falhar com 401 Unauthorized**.
+## Correcção 2: Adicionar relatório detalhado clicável após envio
 
-## Restante fluxo (está correcto)
+Após o envio em lote, mostrar um painel com:
+- Lista de cada destinatário: nome, número de telefone, estado (enviado/falhou), erro se houver
+- Clicável para expandir detalhes
+- Resumo: X enviados, Y falhados, Z total
 
-| Passo | Estado |
-|-------|--------|
-| Filtragem por plano (`premium`, `masterclass`, `bundle`) | OK — usa `i.plan` e `config.planFilter` |
-| Filtragem por webinar (`i.webinar !== webinar`) | OK |
-| Filtragem por telefone (`i.whatsapp`) | OK |
-| Exclusão de `do_not_contact` | OK |
-| Texto da SMS (com drafts localStorage) | OK |
-| Provider (`egoi`) | OK — E-goi API configurada |
-| Logging em `message_logs` | OK |
-| Confirmação antes de enviar | OK |
+Implementação: guardar os resultados por pessoa num array durante o loop de envio e mostrá-los num modal/drawer após conclusão.
 
-## Correcção necessária
+## Ficheiros a alterar
 
-**Ficheiro**: `src/components/crm/AutomationFlowTab.tsx`, linha ~743
+- `src/components/crm/AutomationFlowTab.tsx`:
+  1. Substituir `fetch()` por `supabase.functions.invoke()` no `handleBulkSms`
+  2. Guardar resultados detalhados por pessoa (nome, telefone, sucesso/erro)
+  3. Adicionar estado e UI para mostrar o relatório detalhado após envio (drawer/modal com lista clicável)
 
-Substituir `sessionStorage.getItem("crm_admin_email")` pelo email da sessão Supabase Auth:
-
-```typescript
-const { data: { session } } = await supabase.auth.getSession();
-const adminEmail = session?.user?.email || "";
-```
-
-Uma única alteração. Sem isto, o botão "Enviar SMS agora" vai devolver 401 para cada destinatário.
+## Notas
+- O `SmsComposer.tsx` e `SmsTab.tsx` já usam `supabase.functions.invoke` — só o bulk send estava com `fetch` directo
+- Os SMS dos dois primeiros nodes que clicaste não chegaram a ninguém — vais precisar de reenviar após a correcção
 
