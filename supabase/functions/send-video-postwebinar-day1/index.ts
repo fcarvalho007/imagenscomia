@@ -14,36 +14,56 @@ function buildFallbackHtml(fname: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
-<div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Ontem fizemos uma sessão sobre vídeo com IA — desde briefing até clip publicável.</p>
+<div style="max-width:600px;margin:0 auto;background:#ffffff;">
 
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Se quiseres rever tudo com calma, a gravação completa está disponível no Premium Pass.</p>
+  <!-- Header Navy-Indigo -->
+  <div style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:36px 28px 28px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Webinar · Cria Vídeo Profissional com IA</p>
+    <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">Rever a sessão com calma?</h1>
+  </div>
 
-  <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa em HD (~70 min, sem cortes)</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Workbook Resumo da Sessão (PDF)</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Guia técnico de GEMs para vídeo</p>
-    <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Sessão Q&A ao vivo (10 Março, 14h30)</p>
-    <div style="text-align:center;">
-      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €27+IVA →</a>
+  <!-- Body -->
+  <div style="padding:32px 28px;">
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Ontem partilhei contigo o processo completo — do briefing ao clip publicável — com demonstrações ao vivo e ferramentas prontas a usar.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 28px;">Se quiseres rever tudo com calma, aplicar os exercícios ao teu ritmo e usar as ferramentas que mostrei, o <strong>Premium Pass</strong> inclui tudo o que precisas.</p>
+
+    <!-- Premium Pass Box -->
+    <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;">
+      <p style="color:#4338ca;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
+
+      <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+        <tr><td style="padding:8px 0;vertical-align:top;width:28px;"><span style="font-size:18px;">🎬</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Sessão prática completa</p><p style="margin:2px 0 0;color:#666;font-size:13px;">70 minutos, sem cortes</p></td></tr>
+        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">📘</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Workbook PDF</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Estrutura, exercícios e checklist</p></td></tr>
+        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">💎</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Guia de GEMs para vídeo</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Passo-a-passo para criar GEMs de vídeo</p></td></tr>
+        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">⚡</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Ficheiro GEM pronto a usar</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Importa directamente para o Gemini</p></td></tr>
+        <tr><td style="padding:8px 0;vertical-align:top;"><span style="font-size:18px;">🎧</span></td><td style="padding:8px 0;"><p style="margin:0;color:#333;font-size:15px;font-weight:600;">Áudio da sessão</p><p style="margin:2px 0 0;color:#666;font-size:13px;">Ouve em qualquer lugar</p></td></tr>
+      </table>
+
+      <div style="text-align:center;margin-top:20px;">
+        <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#4338ca;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €27+IVA →</a>
+      </div>
+    </div>
+
+    <!-- Masterclass Box -->
+    <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;">
+      <p style="color:#16a34a;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 8px;">Queres ir mais fundo?</p>
+      <p style="color:#333;font-size:17px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — €47+IVA</p>
+      <p style="color:#555;font-size:15px;line-height:1.5;margin:0 0 12px;">3 horas ao vivo com demonstrações avançadas, casos reais e acompanhamento personalizado. Gravação incluída.</p>
+      <p style="color:#333;font-size:15px;margin:0 0 16px;">📅 Quinta-feira, 12 de Março · 10h00–13h00</p>
+      <div style="text-align:center;">
+        <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Saber mais sobre a Masterclass →</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="border-top:1px solid #eee;padding-top:20px;margin-top:8px;">
+      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 4px;">Dúvidas? Responde a este email ou escreve-me no <a href="https://wa.me/351919127479" style="color:#4338ca;text-decoration:none;font-weight:600;">WhatsApp</a>.</p>
+      <p style="color:#333;font-size:15px;font-weight:700;margin:16px 0 0;">Frederico Carvalho</p>
+      <p style="color:#999;font-size:12px;margin:2px 0 0;">DIGITALFC</p>
     </div>
   </div>
 
-  <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
-    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Queres ir mais fundo?</p>
-    <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 8px;">Masterclass Vídeo com IA — €47+IVA</p>
-    <p style="color:#555;font-size:15px;margin:0 0 12px;">3 horas ao vivo com demonstrações avançadas, casos reais e acompanhamento personalizado.</p>
-    <p style="color:#333;font-size:15px;margin:0 0 16px;">📅 Quinta-feira, 12 de Março às 10h00</p>
-    <div style="text-align:center;">
-      <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Saber mais sobre a Masterclass →</a>
-    </div>
-  </div>
-
-  <p style="color:#999;font-size:13px;line-height:1.5;margin:16px 0 0;">Até breve,</p>
-  <p style="color:#333;font-size:16px;font-weight:700;margin:4px 0 0;">Frederico Carvalho</p>
-  <p style="color:#999;font-size:12px;margin:0;">DIGITALFC</p>
 </div>
 </body></html>`;
 }
@@ -123,7 +143,7 @@ serve(async (req) => {
           const fname = reg.first_name || "";
           const rawHtml = tpl?.html_body ?? buildFallbackHtml(fname);
           const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
-          const subject = (tpl?.subject ?? "A gravação do webinar, {{fname}}").replace(/\{\{fname\}\}/g, fname);
+          const subject = (tpl?.subject ?? "A sessão de ontem — e como rever tudo, {{fname}}").replace(/\{\{fname\}\}/g, fname);
 
           const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, subject, html);
           const ok = result.success === true;
