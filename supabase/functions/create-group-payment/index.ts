@@ -157,7 +157,8 @@ serve(async (req) => {
 
     // Create single EuPago payment
     const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
-    const identifierStr = `GROUP-${groupPaymentRef.replace(/-/g, "").slice(0, 12)}`;
+    const buyerEmailClean = buyer.email.toLowerCase().trim().replace(/[^a-zA-Z0-9@._-]/g, "").slice(0, 30);
+    const identifierStr = `GRP-${count}x-${buyerEmailClean}-MC`;
 
     const eupagoResponse = await fetch("https://clientes.eupago.pt/api/v1.02/paybylink/create", {
       method: "POST",

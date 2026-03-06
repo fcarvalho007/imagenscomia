@@ -116,7 +116,7 @@ serve(async (req) => {
         body: JSON.stringify({
           payment: {
             amount: { value: priceInfo.value, currency: "EUR" },
-            identifier: `ORDER-${orderId}`,
+            identifier: `ORD-${(reg.first_name || reg.name || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 25)}-${plan === "masterclass" ? "MC" : plan === "bundle" ? "PK" : "SP"}`,
             successUrl: `${origin}/confirmacao?plan=${plan}&email=${encodeURIComponent(reg.email)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,

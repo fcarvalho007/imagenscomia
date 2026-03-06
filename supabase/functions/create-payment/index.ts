@@ -152,6 +152,19 @@ serve(async (req) => {
       }
     }
 
+    const PLAN_ABBREV: Record<string, string> = {
+      premium: "SP", "video-premium": "SP", gravacao: "SP",
+      masterclass: "MC", "video-masterclass": "MC",
+      bundle: "PK", "video-bundle": "PK",
+      "gravacao-masterclass": "GRMC",
+    };
+    const planTag = PLAN_ABBREV[plan] || plan.slice(0, 4).toUpperCase();
+    const cleanName = (nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30);
+    const cleanEmail = (email || "no-email").replace(/[^a-zA-Z0-9@._-]/g, "").slice(0, 30);
+    const identifier = cleanName
+      ? `ORD-${cleanName}-${planTag}`
+      : `ORD-${cleanEmail}-${planTag}`;
+
     const eupagoResponse = await fetch(
       "https://clientes.eupago.pt/api/v1.02/paybylink/create",
       {
@@ -166,9 +179,7 @@ serve(async (req) => {
               value: product.value,
               currency: "EUR",
             },
-            identifier: orderId
-              ? `ORDER-${orderId}-${(nome || "").replace(/[^a-zA-Z0-9 ]/g, "").trim().slice(0, 30)}`
-              : `${product.identifier}-${(email || "no-email").replace(/[^a-zA-Z0-9@._-]/g, "").slice(0, 60)}-${Date.now()}`,
+            identifier,
             successUrl: `${origin}/upgrade/sucesso?rid=${regId}&t=${encodeURIComponent(editToken)}`,
             failUrl: `${origin}/?payment=failed`,
             backUrl: `${origin}/upgrade`,
