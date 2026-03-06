@@ -1,29 +1,26 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Refinar secção de Faturação na ficha de cliente
 
-### Alteração
+## Problema
+A secção de faturação no modal do inscrito está visualmente pesada e só tem um botão "Emitir fatura" (que cria + finaliza + envia). Falta a opção de criar apenas rascunho. Além disso, o banner de "Faturação em lote" no Pipeline é demasiado proeminente.
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Alterações
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### 1. InvoiceSection.tsx — Redesign mais leve + dois modos de emissão
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+- **Visual mais suave**: reduzir o separador `<hr>` para algo mais subtil, usar cores mais leves, remover o badge "Completo/Em falta" agressivo (verde/vermelho) e substituir por texto discreto
+- **Dois botões de ação** (quando há dados de faturação):
+  - **"Rascunho"** — chama `create-invoice` com `draft_only: true` (cria no InvoiceExpress sem finalizar nem enviar)
+  - **"Emitir e enviar"** — chama `create-invoice` com `send_email: true, draft_only: false` (cria, finaliza, e envia automaticamente por email ao cliente)
+- **Manter**: botão de copiar dados e toggle de "fatura enviada"
+- **Dados de faturação**: manter a grelha compacta mas com estilo mais leve
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### 2. PipelineView.tsx — Reduzir destaque do banner de faturação em lote
+
+- Tornar o `BulkInvoiceButton` mais discreto: remover o banner card grande, usar apenas um botão simples no header, ao lado do título ou da barra de filtros
+
+## Ficheiros alterados
+- `src/components/crm/modal/InvoiceSection.tsx` — redesign visual + split em 2 ações (rascunho vs emitir+enviar)
+- `src/components/crm/PipelineView.tsx` — reduzir proeminência do bulk invoice banner
 
