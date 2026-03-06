@@ -112,13 +112,12 @@ function buildPostEventHtml(fname: string, _price: string, _priceLabel: string):
 
   <div style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:36px 28px 28px;text-align:center;">
     <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Sessão Prática · Vídeo Profissional com IA</p>
-    <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">Tudo pronto para começares</h1>
+    <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">Acesso imediato aos teus conteúdos</h1>
   </div>
 
   <div style="padding:32px 28px;">
     <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 8px;">Obrigado pela inscrição. ✅</p>
-    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 28px;">Tens à tua disposição uma sessão prática de 70 minutos onde mostro o processo completo — do briefing ao clip publicável — com ferramentas prontas a usar.</p>
+    <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 28px;">Tudo pronto. Tens à tua disposição uma sessão prática de 70 minutos onde mostro o processo completo — do briefing ao clip publicável — com ferramentas prontas a usar.</p>
 
     <div style="border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:28px;">
       <p style="color:#4338ca;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
@@ -207,7 +206,7 @@ serve(async (req) => {
     const { price, priceLabel } = getPriceInfo();
 
     const emailSubject = (tpl?.subject ?? (postEvent
-      ? `A sessão prática de vídeo com IA — acesso imediato, ${fname || ""}`
+      ? `${fname || ""}, a tua sessão prática de vídeo com IA 🎬`
       : "Inscrição confirmada ✅ — Vídeo com IA para marketing"
     )).replace(/\{\{fname\}\}/g, fname || "").replace(/\{\{price\}\}/g, price);
 
