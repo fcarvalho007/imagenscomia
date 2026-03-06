@@ -88,6 +88,8 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       "crm_archived",
       "crm_premium_granted",
       "voucher_redeemed",
+      "invoice_created",
+      "invoice_finalized",
     ];
 
     const PAYMENT_KEYS = ["payment", "paid", "eupago", "resolve"];
@@ -119,9 +121,9 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
     }));
 
     // Inject synthetic "lost" event
-    const lostItems: TimelineItem[] = [];
+    const syntheticItems: TimelineItem[] = [];
     if (inscrito.lost_at) {
-      lostItems.push({
+      syntheticItems.push({
         id: "lost-event",
         type: "payment" as const,
         date: inscrito.lost_at,
@@ -132,7 +134,10 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       });
     }
 
-    let all = [...emailItems, ...paymentItems, ...lostItems].sort(
+    // Inject invoice event from message_logs with template_key "invoice_created" or "invoice_sent"
+    // These are logged by the create-invoice edge function
+
+    let all = [...emailItems, ...paymentItems, ...syntheticItems].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
