@@ -1398,6 +1398,37 @@ function Timeline({
                     </>
                   )}
                 </button>
+
+                {/* CSV Import button */}
+                <button
+                  onClick={() => {
+                    pendingImportKey.current = tplKey;
+                    csvInputRef.current?.click();
+                  }}
+                  disabled={importingSmsKey === tplKey}
+                  className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-1 rounded-lg transition-colors border"
+                  style={{
+                    borderColor: importingSmsKey === tplKey ? "#94a3b8" : "#d1d5db",
+                    color: importingSmsKey === tplKey ? "#94a3b8" : "#6b7280",
+                    background: "white",
+                  }}
+                >
+                  {importingSmsKey === tplKey ? (
+                    <>
+                      <Loader2 size={11} className="animate-spin" />
+                      Importando…
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={11} />
+                      Importar relatório CSV
+                    </>
+                  )}
+                </button>
+                      Enviar SMS agora →
+                    </>
+                  )}
+                </button>
               </div>
             );
           })()}
