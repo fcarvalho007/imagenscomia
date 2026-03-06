@@ -1,6 +1,6 @@
-import { useMemo, useState, useEffect, Fragment } from "react";
+import { useMemo, useState, useEffect, Fragment, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2, ChevronDown } from "lucide-react";
+import { Users, Mail, CheckCircle2, Send, AlertTriangle, Smartphone, Loader2, ChevronDown, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
