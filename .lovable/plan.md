@@ -1,39 +1,53 @@
 
 
-# Correcção do email pós-evento (video_confirmation_post_event)
+# Actualização da página /comprar — preços pós-evento
 
-## Problema
+## Problema actual
 
-O template `video_confirmation_post_event` na base de dados:
-- Diz "Obrigado pela inscrição" — linguagem de webinar, não de produto
-- Faltam os 5 entregáveis completos (falta o "Ficheiro GEM pronto a importar")
-- Tom ainda de "inscrição" em vez de acesso a um produto independente
+A página `/comprar` ainda mostra:
+- Preços early bird (€15, €47, €57)
+- Badge "Early bird — sobe a 5 de Março"
+- Header "Webinar Vídeo com IA · 5 de Março · 10h00"
+- Referências a datas (Q&A 10 de Março, Masterclass 12 de Março)
+- Linguagem de webinar em vez de produto
 
-Os templates `video_confirmation` e `video_confirmation_returning` também estão obsoletos (referenciam "5 de Março", calendário, link ao vivo), mas como o sistema já encaminha para `post_event`, são secundários.
+## Preços actuais (normal, pós-early-bird)
+
+Baseado na configuração do `send-payment-link`:
+
+| Plano | Early bird (antigo) | Normal (actual) | Com IVA 23% |
+|-------|-------|--------|-------------|
+| Sessão Prática (ex-Gravação) | €15 | **€27** | 33,21€ |
+| Masterclass | €47 | **€67** | 82,41€ |
+| Bundle | €57 | **€94** | 115,62€ |
+
+> Se os preços normais não forem estes, por favor corrige antes de aprovar.
 
 ## Alterações
 
-### 1. Actualizar template `video_confirmation_post_event` na base de dados
+### 1. `src/pages/Comprar.tsx`
+- Actualizar os 3 cards com os novos preços (€27, €67, €94)
+- Remover badges "early bird", "sobe após o webinar"
+- Remover datas do webinar (header e dateBox)
+- Header: reposicionar como produto ("Sessão Prática · Vídeo Profissional com IA")
+- Renomear "Gravação HD + Pack de Apoio" → "Sessão Prática + Materiais" (alinhado com o rebranding)
+- Actualizar benefícios com os 5 entregáveis correctos
+- Remover referências à Q&A de 10 de Março (já passou)
+- Bundle: recalcular savings badge ou remover se não há desconto (€27+€67 = €94, sem desconto)
 
-**Subject novo:** `{{fname}}, a tua sessão prática de vídeo com IA 🎬`
+### 2. `src/components/webinar/PurchaseModal.tsx`
+- Actualizar `PLAN_PRICES_DISPLAY`: gravacao → "€27 + IVA", masterclass → "€67 + IVA", bundle → "€94 + IVA"
+- Actualizar `PLAN_NAMES`: gravacao → "Sessão Prática + Materiais"
+- Actualizar preços do pixel fbq
 
-**HTML novo** — email limpo, posicionado como produto:
-- Header gradient com "Sessão Prática · Vídeo Profissional com IA" e "Acesso imediato aos teus conteúdos"
-- Corpo: "Olá {{fname}}, Tudo pronto." Sem referência a inscrição ou webinar passado
-- Bloco Premium Pass (€27+IVA) com os **5 entregáveis completos**
-- Bloco Masterclass (€47+IVA) com descrição concisa
-- CTA: "Obter o Premium Pass" → `/upgrade-video`
-- Footer com WhatsApp e assinatura
-
-### 2. Actualizar fallback `buildPostEventHtml` na edge function
-
-Alinhar com o mesmo conteúdo do template da base de dados para consistência, incluindo os 5 entregáveis e a mesma estrutura.
-
-### 3. Actualizar subject no edge function fallback
-
-De `"A sessão prática de vídeo com IA — acesso imediato"` para o mesmo subject do template.
+### 3. `supabase/functions/create-payment/index.ts`
+- Actualizar `video-premium` value: 18.45 → 33.21
+- Actualizar `video-masterclass` value: 57.81 → 82.41
+- Actualizar `video-bundle` value: 70.11 → 115.62
+- Actualizar descriptions para remover "Webinar"
 
 ### Ficheiros alterados
-- `supabase/functions/send-video-confirmation/index.ts` (fallback HTML e subject)
-- Base de dados: UPDATE do template `video_confirmation_post_event`
+- `src/pages/Comprar.tsx`
+- `src/components/webinar/PurchaseModal.tsx`
+- `supabase/functions/create-payment/index.ts`
 
