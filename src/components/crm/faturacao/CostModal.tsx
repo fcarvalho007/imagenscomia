@@ -37,6 +37,7 @@ export default function CostModal({ cost, onClose, onSaved }: Props) {
   const [amount, setAmount] = useState(cost ? String(cost.amount) : "");
   const [costDate, setCostDate] = useState(cost?.cost_date || new Date().toISOString().slice(0, 10));
   const [category, setCategory] = useState(cost?.category || "paid_media");
+  const [webinar, setWebinar] = useState(cost?.webinar || (webinarContext === "consolidado" ? "video" : webinarContext));
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -51,7 +52,7 @@ export default function CostModal({ cost, onClose, onSaved }: Props) {
       amount: Number(amount),
       cost_date: costDate,
       category,
-      webinar: webinarContext === "consolidado" ? "video" : webinarContext,
+      webinar,
       updated_at: new Date().toISOString(),
     };
 
@@ -105,16 +106,30 @@ export default function CostModal({ cost, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          <div>
-            <label className="text-[11px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.5)" }}>Categoria</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-[13px]"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }}
-            >
-              {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.5)" }}>Categoria</label>
+              <select
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-[13px]"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }}
+              >
+                {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.5)" }}>Webinar</label>
+              <select
+                value={webinar}
+                onChange={e => setWebinar(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-[13px]"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }}
+              >
+                <option value="imagens">📷 Imagens IA</option>
+                <option value="video">🎬 Vídeo IA</option>
+              </select>
+            </div>
           </div>
         </div>
 

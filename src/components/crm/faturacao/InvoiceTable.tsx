@@ -76,7 +76,13 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
         body: { registration_ids: ids },
       });
       if (error) throw error;
-      toast({ title: `${data.finalized} faturas emitidas e enviadas`, description: `${data.errors?.length || 0} erros` });
+      const errCount = data.errors?.length || 0;
+      const errEmails = (data.errors || []).map((e: any) => e.email).filter(Boolean).join(", ");
+      toast({
+        title: `${data.finalized} faturas emitidas e enviadas`,
+        description: errCount > 0 ? `${errCount} erro(s): ${errEmails || "ver detalhes"}. Podes tentar individualmente.` : "Sem erros",
+        variant: errCount > 0 ? "destructive" : "default",
+      });
       setSelected(new Set());
       onRefresh();
     } catch (err: any) {

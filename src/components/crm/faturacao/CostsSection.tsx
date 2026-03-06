@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AcquisitionCost } from "@/components/crm/FaturacaoView";
 import CostModal from "@/components/crm/faturacao/CostModal";
@@ -39,9 +39,21 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Custos de Aquisição</h2>
-        <Button size="sm" onClick={() => { setEditingCost(null); setModalOpen(true); }} className="h-8 text-[12px] gap-1.5">
-          <Plus size={13} /> Adicionar Custo
-        </Button>
+        <div className="flex items-center gap-2">
+          {costs.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const header = "Plataforma,Descrição,Valor,Data,Categoria,Webinar";
+              const rows = costs.map(c => `"${c.platform}","${c.description || ""}",${c.amount},"${c.cost_date}","${c.category}","${(c as any).webinar || ""}"`);
+              const blob = new Blob([header + "\n" + rows.join("\n")], { type: "text/csv" });
+              const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "custos.csv"; a.click();
+            }} className="h-8 text-[12px] gap-1.5">
+              <Download size={13} /> CSV
+            </Button>
+          )}
+          <Button size="sm" onClick={() => { setEditingCost(null); setModalOpen(true); }} className="h-8 text-[12px] gap-1.5">
+            <Plus size={13} /> Adicionar Custo
+          </Button>
+        </div>
       </div>
 
       {/* Cost metrics */}
