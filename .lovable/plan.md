@@ -1,29 +1,53 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Melhorar identificadores EuPago para clareza
 
-### Alteração
+## Situação actual
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+| Função | Formato actual | Exemplo |
+|---|---|---|
+| `create-payment` (individual) | `ORDER-{orderId}-{nome}` | `ORDER-d406908ce04d-Lcia Furtado` |
+| `create-group-payment` | `GROUP-{uuid12chars}` | `GROUP-698019e6868c` |
+| `send-payment-link` (reenvio CRM) | Precisa verificar | — |
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+O individual já tem o nome, mas o de grupo é ilegível.
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+## Alterações
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### `supabase/functions/create-group-payment/index.ts` (linha 160)
+
+Alterar o `identifierStr` de:
+```
+GROUP-698019e6868c
+```
+Para:
+```
+GRP-3x-joao.silva@email-MC
+```
+
+Formato: `GRP-{count}x-{buyerEmail_truncado}-{plan_abrev}`
+
+Isto permite ver imediatamente no EuPago: quantas pessoas, quem é o comprador, e que plano.
+
+### `supabase/functions/create-payment/index.ts` (linha 169-170)
+
+O formato individual já inclui o nome — pequeno refinamento para incluir também o plano abreviado:
+```
+ORDER-d406908ce04d-Lucia Furtado
+```
+Para:
+```
+ORD-Lucia Furtado-SP
+```
+
+Onde `SP` = Sessão Prática, `MC` = Masterclass, `PK` = Pack Completo. Remove o orderId (já é redundante com a referência EuPago) e adiciona clareza sobre o produto.
+
+### Mapa de abreviaturas
+- `premium` / `video-premium` / `gravacao` → `SP` (Sessão Prática)
+- `masterclass` / `video-masterclass` → `MC`
+- `bundle` / `video-bundle` → `PK` (Pack)
+- `gravacao-masterclass` → `GRMC`
+
+### Limite de caracteres
+O campo `identifier` do EuPago tem limite (~64 chars). O email será truncado a 30 chars e caracteres especiais sanitizados.
 
