@@ -39,19 +39,19 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     description: "Gravação + Pack + Masterclass — Webinar IA",
   },
   "video-premium": {
-    value: 18.45,
-    identifier: "WEBINAR-VIDPREM",
-    description: "Premium Pass — Vídeo com IA",
+    value: 33.21,
+    identifier: "VIDEO-SESSAO",
+    description: "Sessão Prática + Materiais — Vídeo com IA",
   },
   "video-masterclass": {
-    value: 57.81,
-    identifier: "WEBINAR-VIDMC",
+    value: 82.41,
+    identifier: "VIDEO-MASTERCLASS",
     description: "Masterclass — Vídeo com IA",
   },
   "video-bundle": {
-    value: 70.11,
-    identifier: "WEBINAR-VIDBUNDLE",
-    description: "Masterclass + Gravação — Vídeo com IA",
+    value: 115.62,
+    identifier: "VIDEO-BUNDLE",
+    description: "Masterclass + Sessão Prática — Vídeo com IA",
   },
 };
 
