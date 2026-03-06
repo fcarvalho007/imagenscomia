@@ -21,10 +21,10 @@ interface PipelineViewProps {
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
-  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium" },
-  masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC" },
-  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle" },
-  gravacao: { bg: "rgba(245,158,11,0.1)", color: "#D97706", label: "Gravação" },
+  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Sessão Prática" },
+  masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC Vídeo" },
+  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Pack Completo" },
+  gravacao: { bg: "rgba(245,158,11,0.1)", color: "#D97706", label: "Sessão Prática" },
   "gravacao-masterclass": { bg: "rgba(124,58,237,0.15)", color: "#7C3AED", label: "Grav+MC" },
 };
 const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "—" };
@@ -57,9 +57,9 @@ type Column = {
 const COLUMNS: Column[] = [
   { key: "inscrito", title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up && !i.lost_at },
   { key: "flow_completo", title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
-  { key: "premium", title: "Premium", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
-  { key: "masterclass", title: "Masterclass", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
-  { key: "bundle", title: "Bundle", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
+  { key: "premium", title: "Sessão Prática", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
+  { key: "masterclass", title: "Masterclass Vídeo", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
+  { key: "bundle", title: "Pack IA Completo", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
   { key: "followup", title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
   { key: "lost", title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
 ];
@@ -106,6 +106,11 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
         >
           {badge.label}
         </span>
+        {inscrito.plan === "bundle" && (
+          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-green-100 text-green-700 uppercase tracking-wider">
+            IMG+VID
+          </span>
+        )}
         {inscrito.payment_status === "selected" && (
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
             Seleccionou e saiu
@@ -148,10 +153,13 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
     let cols = COLUMNS;
     if (sourceFilter === "gravacao") {
       cols = cols
-        .filter((c) => c.title !== "Inscrito" && c.title !== "Flow Completo")
-        .map((c) =>
-          c.title === "Premium Pass — €15" ? { ...c, title: "Premium Pass — €27" } : c
-        );
+        .filter((c) => c.key !== "inscrito" && c.key !== "flow_completo")
+        .map((c) => {
+          if (c.key === "premium") return { ...c, title: "Sessão Prática · €33,21" };
+          if (c.key === "masterclass") return { ...c, title: "Masterclass Vídeo · €82,41" };
+          if (c.key === "bundle") return { ...c, title: "Pack IA Completo · €131,61" };
+          return c;
+        });
     }
     return cols;
   }, [sourceFilter]);
