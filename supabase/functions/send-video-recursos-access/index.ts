@@ -57,12 +57,13 @@ function premiumHtml(fname: string): string {
       </div>
 
       ${cta(`${SITE}/recursos-video`, "Aceder aos Recursos →")}
+      <p style="font-size:13px;color:#64748b;text-align:center;margin:-16px 0 24px">Para aceder, insere o email com que te registaste.</p>
 
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin:32px 0">
         <p style="margin:0 0 4px;font-weight:700;font-size:15px;color:#0369a1">💬 Sessão Q&A ao vivo</p>
         <p style="margin:0 0 12px;font-size:14px;color:#0284c7">Esclarece todas as tuas dúvidas em directo</p>
         <table style="width:100%;border-collapse:collapse;font-size:13px;color:#1e293b">
-          <tr><td style="padding:3px 0">📅 Segunda-feira, 10 de Março de 2026</td></tr>
+          <tr><td style="padding:3px 0">📅 Terça-feira, 10 de Março de 2026</td></tr>
           <tr><td style="padding:3px 0">🕝 14h30 — 15h30</td></tr>
           <tr><td style="padding:3px 0">💻 Online, ao vivo (Zoom)</td></tr>
         </table>
@@ -75,7 +76,7 @@ function premiumHtml(fname: string): string {
         <p style="margin:0 0 4px;font-weight:700;font-size:15px;color:#6b21a8">🎓 Queres ir mais longe?</p>
         <p style="margin:0 0 12px;font-size:14px;color:#7c3aed">Masterclass — Produção de Vídeo com IA</p>
         <table style="width:100%;border-collapse:collapse;font-size:13px;color:#1e293b">
-          <tr><td style="padding:3px 0">📅 Quarta-feira, 12 de Março de 2026</td></tr>
+          <tr><td style="padding:3px 0">📅 Quinta-feira, 12 de Março de 2026</td></tr>
           <tr><td style="padding:3px 0">🕙 10h00 — 13h00 (3 horas)</td></tr>
           <tr><td style="padding:3px 0">💻 Online, ao vivo (link na véspera)</td></tr>
           <tr><td style="padding:3px 0">🎥 Gravação incluída</td></tr>
@@ -101,7 +102,7 @@ function masterclassHtml(fname: string): string {
       <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:24px 0">
         <p style="margin:0 0 12px;font-weight:700;font-size:15px;color:#6b21a8">📋 Detalhes da sessão</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
-          <tr><td style="padding:4px 0">📅 <strong>Quarta-feira, 12 de Março de 2026</strong></td></tr>
+          <tr><td style="padding:4px 0">📅 <strong>Quinta-feira, 12 de Março de 2026</strong></td></tr>
           <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
           <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
           <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
@@ -161,11 +162,12 @@ function bundleHtml(fname: string): string {
       </div>
 
       ${cta(`${SITE}/recursos-video`, "Aceder aos Recursos →")}
+      <p style="font-size:13px;color:#64748b;text-align:center;margin:-16px 0 24px">Para aceder, insere o email com que te registaste.</p>
 
       <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:24px 0">
         <p style="margin:0 0 12px;font-weight:700;font-size:15px;color:#6b21a8">🎓 Masterclass — Produção de Vídeo com IA</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
-          <tr><td style="padding:4px 0">📅 <strong>Quarta-feira, 12 de Março de 2026</strong></td></tr>
+          <tr><td style="padding:4px 0">📅 <strong>Quinta-feira, 12 de Março de 2026</strong></td></tr>
           <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
           <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
           <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
