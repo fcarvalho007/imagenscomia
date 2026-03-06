@@ -58,6 +58,7 @@ const TEMPLATE_KEYS = [
   "video_confirmation", "video_followup_prewebinar", "video_reminder_48h", "video_reminder_24h", "video_reminder_1h", "video_postwebinar",
   "video_postwebinar_day1", "video_postwebinar_day3", "video_postwebinar_closing",
   "video_payment_premium", "video_payment_masterclass",
+  "video_recursos_premium", "video_recursos_masterclass", "video_recursos_bundle",
   "imagens_confirmation", "imagens_reminder_48h", "imagens_reminder_24h", "imagens_reminder_1h", "imagens_postwebinar",
 ];
 
