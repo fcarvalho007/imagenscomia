@@ -1,53 +1,83 @@
 
 
-# Adicionar 3 nodes de email diferenciado para clientes na secção "Após o Webinar"
+# Criar conteúdo dos 3 templates de email + edge function de envio
 
-## Objectivo
-Inserir 3 novos nodes no fluxo de automações do webinar Vídeo, na secção **APÓS O WEBINAR**, para os emails diferenciados por segmento de compra:
-- **Recursos — Premium Pass** (10 pessoas)
-- **Recursos — Masterclass** (2 pessoas)  
-- **Recursos — Bundle** (5 pessoas)
+## Templates a criar
 
-## Localização
-Na função `getNodes()` em `AutomationFlowTab.tsx`, após o node "Email pós-webinar — Dia 1" (linha ~256) e antes do "Email pós-webinar — Dia 3" (linha ~258). Isto coloca os emails de recursos para clientes pagantes no meio da sequência pós-evento.
+Vou seguir o design system **Navy-Indigo** (gradient `#1e1b4b → #312e81 → #4338ca`) idêntico ao `video_payment_premium` já existente na base de dados.
 
-## Nodes a adicionar
+### a) `video_recursos_premium` — 10 clientes Premium
 
-```text
-┌─────────────────────────────────────────────┐
-│  📧 Email pós-webinar — Dia 1              │  (existente)
-├─────────────────────────────────────────────┤
-│  🎬 Recursos — Premium Pass                │  NOVO
-│  "Acesso à gravação + materiais · upsell   │
-│   Masterclass"                              │
-│  Tag: MANUAL · CLIENTES PREMIUM            │
-│  Border: #16a34a (verde)                    │
-├─────────────────────────────────────────────┤
-│  🎓 Recursos — Masterclass                 │  NOVO
-│  "Confirmação Masterclass 12 Mar · upsell  │
-│   gravação"                                 │
-│  Tag: MANUAL · CLIENTES MASTERCLASS         │
-│  Border: #7c3aed (roxo)                     │
-├─────────────────────────────────────────────┤
-│  ⭐ Recursos — Bundle                      │  NOVO
-│  "Acesso completo · gravação +             │
-│   Masterclass 12 Mar"                       │
-│  Tag: MANUAL · CLIENTES BUNDLE              │
-│  Border: #0ea5e9 (azul claro)               │
-├─────────────────────────────────────────────┤
-│  📧 Email pós-webinar — Dia 3              │  (existente)
-└─────────────────────────────────────────────┘
-```
+**Assunto:** `{{fname}}, os teus recursos do webinar Vídeo com IA estão prontos 🎬`
 
-## Implementação
+**Estrutura:**
+- Header: "Os teus recursos estão prontos 🎬"
+- Saudação + agradecimento pelo Premium Pass
+- Caixa azul com lista dos 5 recursos incluídos:
+  - Sessão prática completa (70 min, sem cortes)
+  - Workbook PDF — estrutura e exercícios
+  - Guia de GEMs (Google Gemini)
+  - Ficheiro GEM pronto a usar
+  - Áudio da sessão
+- CTA principal: **Aceder aos Recursos →** (link para `/recursos-video`)
+- Upsell Masterclass: caixa roxa com detalhes (12 Março, 10h00, 3h, €47+IVA)
+- CTA verde: **Reservar lugar na Masterclass →** (link para `/upgrade-video`)
+- WhatsApp de suporte
 
-**Ficheiro:** `src/components/crm/AutomationFlowTab.tsx`
+### b) `video_recursos_masterclass` — 2 clientes Masterclass
 
-Adicionar 3 `NodeDef` entries após a linha 256, com:
-- `templateKeyMatch`: `["video_recursos_premium"]`, `["video_recursos_masterclass"]`, `["video_recursos_bundle"]`
-- `customTag` com label MANUAL e cores do segmento
-- `note` com a descrição do conteúdo (recursos incluídos, upsell)
-- Sem `smsSendConfig` nem `sendOffsetHours` (envio manual)
+**Assunto:** `{{fname}}, confirmação e próximos passos — Masterclass Vídeo com IA 🎓`
 
-Também adicionar os 3 novos template keys ao array `TEMPLATE_KEYS` em `FollowUpView.tsx` (linha ~72).
+**Estrutura:**
+- Header: "O teu lugar está confirmado 🎓"
+- Saudação + agradecimento pela reserva
+- Caixa roxa com detalhes logísticos:
+  - 📅 Quarta-feira, 12 de Março de 2026
+  - 🕙 10h00 — 13h00 (3 horas)
+  - 💻 Online, ao vivo (link na véspera)
+  - 🎥 Gravação incluída
+- Programa da sessão (workflow, ferramentas, casos práticos, Q&A)
+- CTA: **Guardar no Calendário →**
+- Upsell Premium Pass: caixa verde com lista dos recursos (gravação + workbook + guias, €27+IVA)
+- CTA verde: **Obter o Premium Pass →**
+- WhatsApp de suporte
+
+### c) `video_recursos_bundle` — 5 clientes Bundle
+
+**Assunto:** `{{fname}}, está tudo pronto — acesso completo Vídeo com IA ✅`
+
+**Estrutura:**
+- Header: "Está tudo pronto ✅"
+- Saudação + agradecimento pelo acesso completo
+- Caixa azul com lista completa (6 recursos + Masterclass)
+- CTA: **Aceder aos Recursos →** (link para `/recursos-video`)
+- Secção Masterclass com detalhes logísticos (12 Março, 10h00, 3h)
+- CTA: **Guardar no Calendário →**
+- **Sem upsell** — já tem tudo
+- WhatsApp de suporte
+
+## Edge function: `send-video-recursos-access`
+
+**Ficheiro:** `supabase/functions/send-video-recursos-access/index.ts`
+
+**Lógica:**
+1. **Upsert** dos 3 templates na tabela `email_templates` (para ficarem editáveis no CRM)
+2. **Modo dry_run** (por defeito) — upsert templates mas não envia emails
+3. Quando chamado com `dry_run: false`:
+   - Consulta `registrations` por segmento (`video-premium`, `video-masterclass`, `video-bundle`)
+   - Idempotência: verifica `email_send_logs` para não duplicar
+   - Envia via `send-email` centralizado (Brevo → Resend)
+   - Regista em `message_logs` + `email_send_logs`
+   - Throttling de 500ms entre envios
+
+**Config:** `verify_jwt = false` em `supabase/config.toml`
+
+## Ficheiros a criar/editar
+
+1. `supabase/functions/send-video-recursos-access/index.ts` — edge function completa
+2. `supabase/config.toml` — adicionar `[functions.send-video-recursos-access]` com `verify_jwt = false`
+
+## Fluxo de teste
+
+Após deploy, invocar com `dry_run: true` para inserir os templates na BD sem enviar nada — permite conferir o design no CRM (Automações → Histórico) e no Email Editor Panel.
 
