@@ -7,6 +7,7 @@ import { genderEmoji } from "@/lib/genderDetection";
 import { getTemplateLabel, fmtTimeAgo, type LastEmailInfo } from "./templateLabels";
 import SendPaymentModal from "./modal/SendPaymentModal";
 import { useWebinarContext } from "@/contexts/WebinarContext";
+import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
 
