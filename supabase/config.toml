@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.send-invoice-request]
 verify_jwt = false
+
+[functions.send-video-recursos-access]
+verify_jwt = false
