@@ -80,7 +80,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   return (
     <div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl md:text-2xl font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>
             Faturação
@@ -99,7 +99,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         </div>
       </div>
 
-      {/* 1 — Hero KPIs */}
       <FaturacaoKPIs
         receitaConfirmada={receitaConfirmada}
         pipelinePendente={pipelinePendente}
@@ -108,7 +107,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         paidMediaCosts={paidMediaCosts}
       />
 
-      {/* 2 — Charts */}
       <FaturacaoCharts
         receitaConfirmada={receitaConfirmada}
         pipelinePendente={pipelinePendente}
@@ -117,10 +115,8 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         costs={costs}
       />
 
-      {/* 3 — Plan Breakdown */}
       <PlanBreakdown inscritos={inscritos} receitaConfirmada={receitaConfirmada} />
 
-      {/* 4 — Custos */}
       <CostsSection
         costs={costs}
         loading={loadingCosts}
@@ -130,10 +126,8 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         onRefresh={fetchCosts}
       />
 
-      {/* 5 — Faturação InvoiceExpress */}
       <InvoiceTable inscritos={paid} onRefresh={onRefresh} />
 
-      {/* 6 — P&L Mapa de Contas (texto) */}
       <PLSummary
         receitaConfirmada={receitaConfirmada}
         pipelinePendente={pipelinePendente}

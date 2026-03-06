@@ -57,23 +57,23 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
         {/* Receita Confirmada */}
         <div
           ref={animReceita.ref}
-          className="rounded-2xl p-6 border relative overflow-hidden"
+          className="rounded-2xl p-4 sm:p-6 border relative overflow-hidden"
           style={{
             background: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02))",
             borderColor: "rgba(34,197,94,0.2)",
             boxShadow: "0 0 30px rgba(34,197,94,0.08)",
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <DollarSign size={16} style={{ color: "#22c55e" }} />
-            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
               Receita Confirmada
             </span>
           </div>
-          <p className="text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: "#22c55e" }}>
+          <p className="text-2xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: "#22c55e" }}>
             €{fmt(animReceita.value)}
           </p>
-          <p className="text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+          <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
             {numPagamentos} pagamento{numPagamentos !== 1 ? "s" : ""} confirmado{numPagamentos !== 1 ? "s" : ""}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
         {/* Margem Operacional */}
         <div
           ref={animMargem.ref}
-          className="rounded-2xl p-6 border relative overflow-hidden"
+          className="rounded-2xl p-4 sm:p-6 border relative overflow-hidden"
           style={{
             background: margemPositiva
               ? "linear-gradient(135deg, rgba(34,197,94,0.06), rgba(34,197,94,0.01))"
@@ -92,16 +92,16 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
               : "0 0 30px rgba(239,68,68,0.08)",
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             {margemPositiva ? <TrendingUp size={16} style={{ color: "#22c55e" }} /> : <TrendingDown size={16} style={{ color: "#ef4444" }} />}
-            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
               Margem Operacional
             </span>
           </div>
-          <p className="text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>
+          <p className="text-2xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>
             {margemPositiva ? "" : "-"}€{fmt(animMargem.value)}
           </p>
-          <p className="text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+          <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
             Receita − Custos totais
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
         {/* ROAS */}
         <div
           ref={animRoas.ref}
-          className="rounded-2xl p-6 border relative overflow-hidden"
+          className="rounded-2xl p-4 sm:p-6 border relative overflow-hidden"
           style={{
             background: roas >= 2
               ? "linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.04))"
@@ -120,16 +120,16 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
               : "0 0 30px rgba(245,158,11,0.06)",
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <Zap size={16} style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }} />
-            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.5)" }}>
               ROAS
             </span>
           </div>
-          <p className="text-5xl md:text-6xl font-black tabular-nums tracking-tight" style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }}>
-            {animRoas.value.toFixed(1)}<span className="text-3xl">×</span>
+          <p className="text-3xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight" style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }}>
+            {animRoas.value.toFixed(1)}<span className="text-xl sm:text-3xl">×</span>
           </p>
-          <p className="text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+          <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
             {paidMediaCosts > 0 ? `€${fmt(paidMediaCosts)} investidos em ads` : "Sem custos de ads registados"}
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
         ].map((c) => (
           <div
             key={c.label}
-            className="rounded-xl p-4 border"
+            className="rounded-xl p-3 sm:p-4 border"
             style={{
               background: "rgba(255,255,255,0.02)",
               borderColor: "rgba(255,255,255,0.06)",
@@ -153,11 +153,11 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
           >
             <div className="flex items-center gap-1.5 mb-1.5">
               <c.icon size={13} style={{ color: c.color }} />
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>
+              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>
                 {c.label}
               </span>
             </div>
-            <p className="text-xl font-bold tabular-nums" style={{ color: "rgba(255,255,255,0.9)" }}>
+            <p className="text-base sm:text-xl font-bold tabular-nums" style={{ color: "rgba(255,255,255,0.9)" }}>
               {c.value}
             </p>
           </div>

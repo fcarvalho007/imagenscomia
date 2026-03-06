@@ -110,32 +110,35 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
           Faturação · InvoiceExpress
         </h2>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={handleBulkDrafts} disabled={bulkRunning !== null} className="h-8 text-[12px] gap-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" onClick={handleBulkDrafts} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
             {bulkRunning === "drafts" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
-            Gerar Rascunhos em Lote
+            Gerar Rascunhos
           </Button>
-          <Button size="sm" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[12px] gap-1.5">
+          <Button size="sm" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
             {bulkRunning === "finalize" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-            Confirmar e Enviar ({selected.size})
+            Enviar ({selected.size})
           </Button>
         </div>
       </div>
 
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-        <table className="w-full text-[12px]">
+      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+        <table className="w-full text-[12px] min-w-[600px]">
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               <th className="px-3 py-2 w-8">
                 <Checkbox checked={selected.size === inscritos.length && inscritos.length > 0} onCheckedChange={toggleAll} />
               </th>
-              {["Nome", "Email", "Plano", "Valor", "Estado", "Ação"].map(h => (
-                <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>{h}</th>
-              ))}
+              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Nome</th>
+              <th className="px-3 py-2 text-left font-medium hidden md:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}>Email</th>
+              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Plano</th>
+              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Valor</th>
+              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Estado</th>
+              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -147,14 +150,14 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
                 <tr key={i.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <td className="px-3 py-2"><Checkbox checked={selected.has(i.id)} onCheckedChange={() => toggleSelect(i.id)} /></td>
                   <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{i.nome}</td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.5)" }}>{i.email}</td>
+                  <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.5)" }}>{i.email}</td>
                   <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{i.plan}</td>
                   <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>€{i.valor.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium">
                       <Icon size={12} style={{ color: cfg.color }} />
                       <span style={{ color: cfg.color }}>{cfg.label}</span>
-                      {i.invoice_document_id && <span style={{ color: "rgba(255,255,255,0.3)" }}>#{i.invoice_document_id}</span>}
+                      {i.invoice_document_id && <span className="hidden sm:inline" style={{ color: "rgba(255,255,255,0.3)" }}>#{i.invoice_document_id}</span>}
                     </span>
                   </td>
                   <td className="px-3 py-2">

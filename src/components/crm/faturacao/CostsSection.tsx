@@ -37,7 +37,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Custos de Aquisição</h2>
         <div className="flex items-center gap-2">
           {costs.length > 0 && (
@@ -67,9 +67,9 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
           <div key={c.label} className="rounded-lg p-3 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
             <div className="flex items-center gap-1 mb-1">
               <c.icon size={12} style={{ color: c.color }} />
-              <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>{c.label}</span>
+              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>{c.label}</span>
             </div>
-            <p className="text-base font-bold" style={{ color: c.color }}>{c.value}</p>
+            <p className="text-sm sm:text-base font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
         ))}
       </div>
@@ -80,20 +80,23 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
       ) : costs.length === 0 ? (
         <p className="text-[12px] py-4 text-center" style={{ color: "rgba(255,255,255,0.35)" }}>Nenhum custo registado.</p>
       ) : (
-        <div className="rounded-lg border overflow-hidden" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-          <table className="w-full text-[12px]">
+        <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+          <table className="w-full text-[12px] min-w-[500px]">
             <thead>
               <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                {["Plataforma", "Descrição", "Valor", "Data", "Categoria", ""].map(h => (
-                  <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>{h}</th>
-                ))}
+                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Plataforma</th>
+                <th className="px-3 py-2 text-left font-medium hidden md:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}>Descrição</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Valor</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Data</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Categoria</th>
+                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}></th>
               </tr>
             </thead>
             <tbody>
               {costs.map(c => (
                 <tr key={c.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{c.platform}</td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{c.description || "—"}</td>
+                  <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.6)" }}>{c.description || "—"}</td>
                   <td className="px-3 py-2 font-semibold" style={{ color: "#ef4444" }}>€{Number(c.amount).toFixed(2)}</td>
                   <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.5)" }}>{c.cost_date}</td>
                   <td className="px-3 py-2">
@@ -116,7 +119,8 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
             </tbody>
             <tfoot>
               <tr style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                <td colSpan={2} className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Total</td>
+                <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Total</td>
+                <td className="hidden md:table-cell" />
                 <td className="px-3 py-2 font-bold" style={{ color: "#ef4444" }}>€{totalCosts.toFixed(2)}</td>
                 <td colSpan={3} />
               </tr>
