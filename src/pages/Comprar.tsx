@@ -9,11 +9,13 @@ type Plan = "masterclass" | "bundle" | "gravacao";
 
 function getBenefitIcon(text: string, color: string) {
   const lower = text.toLowerCase();
-  if (lower.includes("sessão prática") || lower.includes("70 min")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("sessão completa") || lower.includes("70 min")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   if (lower.includes("masterclass") || lower.includes("3 horas")) return <Video className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   if (lower.includes("prompts") || lower.includes("sistema")) return <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
-  if (lower.includes("ficheiro gem")) return <FileText className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
-  if (lower.includes("materiais") || lower.includes("checklists") || lower.includes("pack")) return <BookOpen className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("workbook")) return <FileText className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("guia técnico") || lower.includes("gems")) return <BookOpen className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("q&a")) return <Video className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("gravação")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   return <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
 }
 
@@ -37,13 +39,12 @@ const PLANS: Record<Plan, {
     title: "Sessão Prática + Materiais",
     price: "€27",
     ivaNote: "+ IVA",
-    subPriceNote: "Acesso imediato e permanente.",
+    subPriceNote: "Acesso imediato após a compra.",
     benefits: [
-      "Sessão prática de 70 min sem cortes",
-      "Ficheiro GEM pronto a importar",
-      "Pack de materiais de apoio (checklists + templates)",
-      "Prompts reutilizáveis para a tua empresa",
-      "Acesso permanente a todos os conteúdos",
+      "Sessão completa em HD — ~70 min de sessão prática, sem cortes",
+      "Workbook Resumo da Sessão — PDF com os pontos-chave e exercícios",
+      "Guia técnico de GEMs para vídeo — apoio para criação de GEMs especializados",
+      "Sessão Q&A ao vivo — 10 de Março, 14h30, tira dúvidas com o Frederico",
     ],
     ctaLabel: "Quero a Sessão Prática →",
     planLabel: "Sessão Prática + Materiais · €27 + IVA",
