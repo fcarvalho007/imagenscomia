@@ -825,13 +825,14 @@ function Timeline({
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
 
-  // For post-event tab, filter inscritos to only those who registered after the webinar
+  // For post-event tab, filter inscritos to only those who registered after the webinar ended (11h00 UTC, 5 Mar)
+  const POST_EVENT_CUTOFF = new Date("2026-03-05T11:00:00Z").getTime();
   const filteredInscritos = useMemo(() => {
     if (!isPostTab) return inscritos;
     return inscritos.filter((i) => {
       if (i.webinar !== "video") return false;
       const created = new Date(i.timestamp).getTime();
-      return created > VIDEO_WEBINAR_DATE.getTime();
+      return created >= POST_EVENT_CUTOFF;
     });
   }, [inscritos, isPostTab]);
 
