@@ -467,10 +467,14 @@ async function processPayment(data: PaymentData) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ registration_id: matchedRegId, send_email: true }),
+        body: JSON.stringify({ registration_id: matchedRegId, draft_only: true }),
       });
       const invoiceData = await invoiceRes.json();
-      console.log(`📄 Auto-invoice: ${invoiceRes.ok ? "✅" : "❌"} doc=${invoiceData.document_id || "—"} email=${invoiceData.email_sent || false}`);
+      console.log(`📄 Auto-invoice draft: ${invoiceRes.ok ? "✅" : "❌"} doc=${invoiceData.document_id || "—"}`);
+      // Save invoice_document_id on registration for dedup
+      if (invoiceRes.ok && invoiceData.document_id) {
+        await supabase.from("registrations").update({ invoice_document_id: String(invoiceData.document_id) }).eq("id", matchedRegId);
+      }
     } catch (invErr) {
       console.error("Auto-invoice error (non-blocking):", invErr);
     }

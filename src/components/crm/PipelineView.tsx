@@ -8,6 +8,7 @@ import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import type { WebinarKey } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
 import WebinarSwitcherBar from "./WebinarSwitcherBar";
+import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface PipelineViewProps {
   inscritos: Inscrito[];
@@ -265,6 +266,8 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         </div>
         <WebinarSwitcherBar />
       </div>
+
+      <BulkInvoiceButton />
 
       {/* Row 2: Phase filter + Search */}
       <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
