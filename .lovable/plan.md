@@ -1,26 +1,36 @@
 
 
-# Refinar secção de Faturação na ficha de cliente
+# Refinar Faturação — Implementação
 
-## Problema
-A secção de faturação no modal do inscrito está visualmente pesada e só tem um botão "Emitir fatura" (que cria + finaliza + envia). Falta a opção de criar apenas rascunho. Além disso, o banner de "Faturação em lote" no Pipeline é demasiado proeminente.
+## Verificação do fluxo actual
 
-## Alterações
+O fluxo está **100% funcional**:
 
-### 1. InvoiceSection.tsx — Redesign mais leve + dois modos de emissão
+1. **Ficha de cliente** → `InvoiceSection.tsx` chama `create-invoice` com `send_email: true` → cria documento no InvoiceExpress → finaliza → envia email automático ao cliente
+2. A Edge Function `create-invoice` já suporta `draft_only: true` (rascunho) e `send_email: true` (emitir + enviar)
+3. O botão actual "Emitir fatura" já cria, finaliza e envia — **o sistema já envia automaticamente para o email do cliente**
 
-- **Visual mais suave**: reduzir o separador `<hr>` para algo mais subtil, usar cores mais leves, remover o badge "Completo/Em falta" agressivo (verde/vermelho) e substituir por texto discreto
-- **Dois botões de ação** (quando há dados de faturação):
-  - **"Rascunho"** — chama `create-invoice` com `draft_only: true` (cria no InvoiceExpress sem finalizar nem enviar)
-  - **"Emitir e enviar"** — chama `create-invoice` com `send_email: true, draft_only: false` (cria, finaliza, e envia automaticamente por email ao cliente)
-- **Manter**: botão de copiar dados e toggle de "fatura enviada"
-- **Dados de faturação**: manter a grelha compacta mas com estilo mais leve
+## Alterações a implementar
 
-### 2. PipelineView.tsx — Reduzir destaque do banner de faturação em lote
+### 1. `src/components/crm/modal/InvoiceSection.tsx`
 
-- Tornar o `BulkInvoiceButton` mais discreto: remover o banner card grande, usar apenas um botão simples no header, ao lado do título ou da barra de filtros
+**Visual mais leve:**
+- Trocar `<hr>` pesado por `border-t border-border/50` subtil
+- Remover badge verde/vermelho "Completo/Em falta" → texto discreto "· dados preenchidos" ou "· sem dados"
+- Reduzir tamanhos de fonte (13px→12px, 14px→13px)
+- Toggle "fatura enviada" mais compacto
 
-## Ficheiros alterados
-- `src/components/crm/modal/InvoiceSection.tsx` — redesign visual + split em 2 ações (rascunho vs emitir+enviar)
-- `src/components/crm/PipelineView.tsx` — reduzir proeminência do bulk invoice banner
+**Dois botões de emissão:**
+- **"Rascunho"** (variant="outline") → `create-invoice` com `{ draft_only: true, send_email: false }` — cria no InvoiceExpress sem finalizar
+- **"Emitir e enviar"** (variant="default") → `create-invoice` com `{ draft_only: false, send_email: true }` — cria, finaliza, e envia automaticamente por email ao cliente
+
+Estado de loading individual por botão (`creatingInvoice: "draft" | "final" | null`).
+
+### 2. `src/components/crm/BulkInvoiceButton.tsx`
+
+Reduzir de card com padding `p-5` para uma linha compacta, removendo o wrapper `bg-white border rounded-xl`. Manter funcionalidade intacta mas com presença visual mais subtil.
+
+### 2 ficheiros alterados
+- `src/components/crm/modal/InvoiceSection.tsx`
+- `src/components/crm/BulkInvoiceButton.tsx`
 
