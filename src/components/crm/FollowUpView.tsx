@@ -108,6 +108,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
     supabase
       .from("email_send_logs")
       .select("email_key, status, webinar")
+      .limit(10000)
       .then(({ data }) => {
         if (data) {
           const stats: EmailStats = {};
