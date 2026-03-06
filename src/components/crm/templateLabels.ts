@@ -44,7 +44,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   // Pós-webinar sequência
   video_postwebinar_day1: "Email pós-webinar — Dia 1",
   video_postwebinar_day3: "Email pós-webinar — Dia 3",
-  video_postwebinar_closing: "Email de fecho — sem compra",
+  video_postwebinar_closing: "Email de fecho — última oportunidade",
+  sms_recursos_post: "SMS Recursos — Clientes pagos",
   video_recursos_premium: "Recursos — Premium Pass",
   video_recursos_masterclass: "Recursos — Masterclass",
   video_recursos_bundle: "Recursos — Bundle",
