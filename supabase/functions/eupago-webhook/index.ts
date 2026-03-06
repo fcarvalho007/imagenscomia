@@ -743,12 +743,12 @@ async function processPayment(data: PaymentData) {
           const planLabel = planLabelMap[reg.plan_selected || ""] || reg.plan_selected || "—";
 
           const unitPriceMap: Record<string, string> = {
-            premium: "18,45", masterclass: "57,81", bundle: "76,26", gravacao: "33,21",
+            premium: "33,21", masterclass: "82,41", bundle: "131,61", gravacao: "33,21",
             "video-premium": "33,21", "video-masterclass": "82,41", "video-bundle": "131,61",
           };
-          const unitPrice = unitPriceMap[reg.plan_selected || ""] || "—";
-          // Use real amount from EuPago webhook
-          const totalVal = amount || unitPrice;
+          // Use real amount from EuPago webhook as the display value
+          const unitPrice = amount ? parseFloat(amount).toFixed(2).replace(".", ",") : (unitPriceMap[reg.plan_selected || ""] || "—");
+          const totalVal = amount ? parseFloat(amount).toFixed(2).replace(".", ",") : unitPrice;
 
           const fullName = [reg.first_name, reg.last_name].filter(Boolean).join(" ") || reg.name || "—";
           const createdAt = reg.created_at ? new Date(reg.created_at).toLocaleString("pt-PT", { timeZone: "Europe/Lisbon" }) : "—";
