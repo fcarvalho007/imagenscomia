@@ -1,29 +1,25 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Melhorar clareza visual nos cards de /comprar
 
-### Alteração
+## Alteracoes — `src/pages/Comprar.tsx`
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+### 1. Card Sessao Pratica (€27) — reforcar "Acesso imediato"
+Substituir o pequeno `topTag` pill por um bloco visual mais proeminente: um banner verde com icone de play dentro do card, abaixo do preco. Algo como uma caixa `bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5` com texto "Acesso imediato apos a compra" em bold verde.
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### 2. Card Masterclass (€67) — data condicional
+Adicionar logica temporal:
+- **Antes de 12 Mar 13:30**: mostrar um `DateBox` destacado (fundo violeta claro, border) com:
+  - "Quinta-feira, 12 de Março"
+  - "10h00 — 13h00 (Portugal)"
+  - Icone CalendarDays
+- **Apos 12 Mar 13:30**: substituir por badge "Acesso imediato" (igual ao da Sessao Pratica)
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+Usar `new Date("2026-03-12T13:30:00Z")` como cutoff. Calcular `isMasterclassLive = new Date() >= cutoff`.
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### 3. Card Bundle (€107) — destacar Masterclass
+Na lista de benefits, a linha "3 horas ao vivo — Masterclass completa" fica com um mini-highlight: fundo `bg-violet-50 border border-violet-100 rounded-lg px-3 py-1.5 -mx-1` para se distinguir dos outros itens. Adicionar tambem a data da masterclass (condicional, mesma logica do ponto 2).
+
+### Ficheiro unico
+`src/pages/Comprar.tsx` — adicionar import de `CalendarDays`, logica de data, e ajustar o render do `PlanCard` para suportar um slot de "date box" opcional por plano.
 
