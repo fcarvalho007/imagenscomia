@@ -1,29 +1,23 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Fix: SMS counters showing 0 despite 206 logs in database
 
-### Alteração
+## Root Cause
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+The backfill worked — there are **200 sent + 6 failed** entries for `sms_followup_day1` in the database. The problem is that `FollowUpView.tsx` loads message_logs with `.limit(500)`, but there are **3,010 total logs**. The SMS entries (created today) are mixed in with 3,000+ other logs, and many get cut off by the 500 limit.
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+## Fix
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+**File: `src/components/crm/FollowUpView.tsx`** (line 87)
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+Increase the limit from 500 to 5000 (or remove it) so all logs are loaded, including the SMS backfill entries:
+
+```typescript
+.limit(5000);
+```
+
+This single change will make the SMS node counters show the correct "200 enviados / 6 falhas" and also populate the client activity timelines for SMS.
+
+## Files Changed
+- **Edit**: `src/components/crm/FollowUpView.tsx` — increase `.limit(500)` to `.limit(5000)`
 
