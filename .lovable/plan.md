@@ -1,49 +1,43 @@
 
 
-# Diagnóstico: Discrepância entre SMS enviado e texto visível no CRM
+# Envio de 15 SMS correctivos via edge function send-sms
 
-## O que aconteceu
+## Textos
 
-O SMS foi enviado às **08:44 UTC** (antes da minha última actualização do código). Confirmei 20 envios com `template_key: sms_recursos_post` nesse timestamp.
+**Correcção (10 premium que receberam SMS errado):**
+> Ola! Correcao: o link correto para os teus recursos e imagenscomia.com/recursos-video — entra com o email de registo. Desculpa o engano! — Frederico
 
-A causa raiz é o sistema de **drafts em localStorage**:
+**Recursos (4 bundle + 1 premium que não receberam nada):**
+> Ola! Ja tens acesso a sessao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico
 
-```text
-Fluxo de decisão do texto SMS (linha 968):
-  1. customText (passado directamente)  ← prioridade máxima
-  2. customSmsTexts[tplKey]            ← draft guardado em localStorage
-  3. config.smsText                    ← texto default no código
-```
+## Execução
 
-Quando gravaste um draft personalizado **antes** da minha actualização, esse texto antigo ficou guardado no `localStorage` do browser (chave `crm_sms_drafts`). O código actualizado mudou o **default** (ponto 3), mas o localStorage (ponto 2) tem prioridade — logo, o SMS enviado usou o texto antigo com "gravação" e "imagenscomia.com/recurso" (URL truncada/errada).
+Invocar `curl_edge_functions` 15 vezes no endpoint `send-sms` com:
+- `provider: "egoi"`
+- `registrationId` de cada contacto (para log em `message_logs`)
+- `template_key` será `sms_manual` (default do edge function)
+- Header `x-cron-secret` para autenticação
 
-No CRM, o texto visível mostra o default actualizado **apenas se não houver draft guardado**. Se houver, mostra o draft (com badge "✎ Texto personalizado").
+### Lista completa de envios
 
-## Problemas identificados
+**Correcção (10):**
+1. Ana — 938096825 — id: b54eee29
+2. Andreia — 969379507 — id: ddb185f3
+3. Diogo — 919181702 — id: d31b8f97
+4. Inês — 919128025 — id: 43c00f22
+5. Jessica — 911187000 — id: d0abffd1
+6. José — 968336088 — id: c5e7a022
+7. Né — 914766482 — id: 6b2f13fd
+8. Pedro — 917193648 — id: f3c8453b
+9. Soraia — 926420327 — id: 2f481bfc
+10. Vanessa — 914000502 — id: 4afaebe2
 
-1. **Texto antigo no localStorage** — draft com "gravação e materiais" sobrepõe-se ao default actualizado
-2. **URL errada no SMS enviado** — "imagenscomia.com/recurso" em vez de "imagenscomia.com/recursos-video"
-3. **Sem mecanismo de invalidação** — quando o default muda no código, drafts antigos no localStorage nunca são limpos
+**Recursos (5):**
+11. Carla — 910874845 — id: ac11f833
+12. Daniela — 927418365 — id: ff4abaa0
+13. Hermana — 933416383 — id: 88f8f55b
+14. Nuno — 917250772 — id: f4668662
+15. ANDRE — 963486616 — id: 139b7ee7
 
-## Plano de correção
-
-### A. Invalidar drafts obsoletos automaticamente
-Adicionar lógica no `AutomationFlowTab.tsx` que compara o draft guardado com o default anterior. Se o default mudou (via hash ou versão), limpar o draft automaticamente para que o novo default seja usado.
-
-Implementação simples: guardar no localStorage não só o texto mas também o default de referência. Se o default actual não coincidir com o de referência, descartar o draft.
-
-### B. Alternativa mais simples (recomendada)
-Limpar todos os drafts SMS existentes ao carregar o componente, dado que os defaults foram todos reescritos. Adicionar um `SMS_DRAFT_VERSION` constante — quando mudar, limpa o localStorage.
-
-```typescript
-const SMS_DRAFT_VERSION = 2; // bump when defaults change
-// On mount: if stored version !== current, clear drafts
-```
-
-### C. Nenhuma alteração nos SMS já enviados
-Os 20 SMS já foram entregues com o texto antigo — isto não pode ser revertido. A correção garante que envios futuros usem sempre o texto correcto.
-
-## Ficheiros a alterar
-
-1. **`src/components/crm/AutomationFlowTab.tsx`** — adicionar versionamento de drafts SMS com limpeza automática quando a versão muda
+Nenhum código será alterado. Apenas invocações directas da edge function existente.
 
