@@ -7,20 +7,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Prices include 23% VAT
-const PRICES: Record<string, Record<string, { value: number; baseLabel: string }>> = {
-  premium: {
-    earlybird: { value: 18.45, baseLabel: "€15 + IVA (Early Bird)" },
-    normal:    { value: 33.21, baseLabel: "€27 + IVA (Preço Normal)" },
-  },
-  masterclass: {
-    earlybird: { value: 57.81, baseLabel: "€47 + IVA (Early Bird)" },
-    normal:    { value: 82.41, baseLabel: "€67 + IVA (Preço Normal)" },
-  },
-  bundle: {
-    earlybird: { value: 76.26,  baseLabel: "€15+€47 + IVA (Early Bird)" },
-    normal:    { value: 115.62, baseLabel: "€27+€67 + IVA (Preço Normal)" },
-  },
+// Prices include 23% VAT — single price tier (post-5 March 2026)
+const PRICES: Record<string, { value: number; baseLabel: string }> = {
+  premium:     { value: 33.21,  baseLabel: "€27 + IVA" },
+  masterclass: { value: 82.41,  baseLabel: "€67 + IVA" },
+  bundle:      { value: 131.61, baseLabel: "€107 + IVA" },
+  "video-premium":     { value: 33.21,  baseLabel: "€27 + IVA" },
+  "video-masterclass": { value: 82.41,  baseLabel: "€67 + IVA" },
+  "video-bundle":      { value: 131.61, baseLabel: "€107 + IVA" },
 };
 
 const PLAN_LABELS: Record<string, string> = {

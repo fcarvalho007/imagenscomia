@@ -9,12 +9,12 @@ const corsHeaders = {
 
 const PRODUCTS: Record<string, { value: number; identifier: string; description: string }> = {
   premium: {
-    value: 18.45,
+    value: 33.21,
     identifier: "WEBINAR-PREMIUM",
-    description: "Premium Pass — Webinar IA 18 Fev",
+    description: "Premium Pass — Webinar IA",
   },
   masterclass: {
-    value: 57.81,
+    value: 82.41,
     identifier: "WEBINAR-MASTERCLASS",
     description: "Premium Pass + Masterclass IA",
   },
@@ -24,7 +24,7 @@ const PRODUCTS: Record<string, { value: number; identifier: string; description:
     description: "Premium Pass + Workshop Presencial",
   },
   bundle: {
-    value: 76.26,
+    value: 131.61,
     identifier: "WEBINAR-BUNDLE",
     description: "Premium Pass + Masterclass + Workshop",
   },

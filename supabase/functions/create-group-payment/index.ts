@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRICE_PER_PERSON = 57.81;
+const PRICE_PER_PERSON = 82.41;
 const DISCOUNT_THRESHOLD = 3;
 const DISCOUNT_RATE = 0.10;
 
