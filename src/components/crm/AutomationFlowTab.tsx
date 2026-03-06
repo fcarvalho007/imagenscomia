@@ -1425,10 +1425,6 @@ function Timeline({
                     </>
                   )}
                 </button>
-                      Enviar SMS agora →
-                    </>
-                  )}
-                </button>
               </div>
             );
           })()}
