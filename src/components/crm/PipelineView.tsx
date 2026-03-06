@@ -57,9 +57,9 @@ type Column = {
 const COLUMNS: Column[] = [
   { key: "inscrito", title: "Inscrito", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached < 5 && !i.follow_up && !i.lost_at },
   { key: "flow_completo", title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
-  { key: "premium", title: "Premium Pass — €15", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
-  { key: "masterclass", title: "Masterclass — €57,81", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
-  { key: "bundle", title: "Bundle — €76,26", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
+  { key: "premium", title: "Premium", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
+  { key: "masterclass", title: "Masterclass", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
+  { key: "bundle", title: "Bundle", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
   { key: "followup", title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
   { key: "lost", title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
 ];
