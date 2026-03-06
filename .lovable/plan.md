@@ -1,47 +1,59 @@
 
 
-# Actualizar fluxo Pós-Evento: títulos, templates e conteúdos
+# Actualizar fluxo Pós-Evento: sequência de follow-up para inscritos que não pagam
 
-## Problemas detectados
+## Problema actual
 
-### No `AutomationFlowTab.tsx` (post-event nodes):
-1. **Subtítulos genéricos** — "Gravação HD · Pack · Q&A 10 Mar" está desactualizado (Q&A já passou)
-2. **SMS text** refere "acesso a gravacao e materiais" de forma genérica, sem mencionar os 5 itens do Premium Pass
-3. **Títulos** corretos mas subtítulos não reflectem o conteúdo actualizado dos emails
+O fluxo pós-evento (`getPostEventNodes()`) na linha 487-593 assume que toda a gente que se inscreve pós-evento vai pagar. Não existe nenhuma sequência de follow-up para quem se inscreve e **não compra**. O fluxo vai directamente de "Confirmação imediata" para "Confirmação de compra" e "Recursos", ignorando completamente os inscritos gratuitos.
 
-### No `send-video-postwebinar-closing/index.ts`:
-1. **Design básico** — sem header Navy-Indigo (inconsistente com Day 1 e Day 3 já redesenhados)
-2. **Copy genérica** — "workbook, guia GEMs e Q&A" desactualizado (Q&A já decorreu; falta Ficheiro GEM e Áudio)
-3. **Sem secção Masterclass** — os Day 1 e Day 3 incluem upsell para Masterclass, mas o closing não
+Em contraste, o fluxo pré-evento (linhas 284-440) tem uma sequência completa: Email pós-webinar → Day 1 → Day 3 → Email de fecho (marca como perdido).
 
-## Alterações
+## Solução
 
-### 1. `src/components/crm/AutomationFlowTab.tsx` — post-event nodes
+Adicionar ao `getPostEventNodes()` a sequência de nurturing/follow-up para inscritos gratuitos pós-evento, espelhando a lógica do pré-evento mas adaptada ao contexto (a pessoa inscreveu-se depois do webinar, portanto recebe a gravação como incentivo).
 
-Actualizar subtítulos e SMS text em `getPostEventNodes()`:
+### Novos nodes a adicionar (entre "Confirmação imediata" e "Confirmação de compra"):
 
-| Node | Subtítulo actual | Novo subtítulo |
-|------|-----------------|----------------|
-| Confirmação Premium | "Gravação HD · Pack · Q&A 10 Mar · link calendário" | "Sessão 70min · Workbook · GEMs · Áudio · link calendário" |
-| Confirmação Masterclass | "Masterclass 12 Mar · 10h00 · link calendário" | "Masterclass 12 Mar · 10h–13h · gravação incluída" |
-| Recursos Premium | "Acesso gravação + materiais · upsell Masterclass" | "Gravação + Workbook + GEMs + Áudio · upsell Masterclass" |
-| Recursos Masterclass | "Confirmação Masterclass 12 Mar · upsell gravação" | "Masterclass 12 Mar · 10h–13h · upsell Premium Pass" |
-| Recursos Bundle | "Acesso completo · gravação + Masterclass 12 Mar" | "Acesso completo · 5 recursos + Masterclass 12 Mar" |
-| SMS Recursos | smsText genérico | "Ola! Ja tens acesso a gravacao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico" |
+| # | Node | Template Key | Timing | Público | Cor |
+|---|------|-------------|--------|---------|-----|
+| 1 | **Email Day 1 — Gravação + Premium** | `video_postwebinar_day1` | 24h após inscrição | Gratuitos sem pagamento | 🟠 Amber |
+| 2 | **Email Day 3 — Última oportunidade** | `video_postwebinar_day3` | 72h após inscrição | Gratuitos sem pagamento | 🟠 Amber |
+| 3 | **Email de fecho — Marca como perdido** | `video_postwebinar_closing` | 5 dias após inscrição | Gratuitos sem pagamento | 🔴 Vermelho |
 
-### 2. `supabase/functions/send-video-postwebinar-closing/index.ts` — redesign
+### Também adicionar um SMS de follow-up:
 
-Redesenhar `buildFallbackHtml()` com:
-- Header Navy-Indigo gradient (igual ao Day 1 e Day 3)
-- Copy de fecho respeitosa ("Este é o último email")
-- Box Premium Pass com os 5 itens (Sessão, Workbook, GEMs, Ficheiro GEM, Áudio) — €27+IVA
-- Box Masterclass (12 Mar, 10h–13h, €47+IVA)
-- Footer com WhatsApp + assinatura
-- Subject: `"Último email, {{fname}} — Premium Pass e Masterclass"`
+| # | Node | Timing | Público |
+|---|------|--------|---------|
+| 4 | **SMS follow-up pós-inscrição** | Manual · gratuitos com telefone | Gratuitos que não compraram |
 
-### 3. `src/components/crm/templateLabels.ts`
+### Alterações no ficheiro `src/components/crm/AutomationFlowTab.tsx`
 
-Actualizar labels:
-- `video_postwebinar_closing`: "Email de fecho — última oportunidade"
-- `sms_recursos_post`: "SMS Recursos — Clientes pagos"
+**`getPostEventNodes()`** — reestruturar para incluir:
+
+1. **Trigger** — Inscrição pós-evento (mantém)
+2. **Confirmação imediata** (mantém)
+3. **Section: SEQUÊNCIA DE CONVERSÃO** (novo divider)
+4. **Email Day 1** — `video_postwebinar_day1` — "24h após inscrição · gravação + Premium Pass" — `audienceFilter: { planFilter: ["free"], excludePaid: true }`
+5. **Email Day 3** — `video_postwebinar_day3` — "72h após inscrição · última oportunidade" — `audienceFilter: { planFilter: ["free"], excludePaid: true }`
+6. **SMS follow-up** — manual, gratuitos com telefone — "Ola! Ja viste a gravacao do webinar? Tens acesso a 70min de conteudo pratico em imagenscomia.com/video — Frederico"
+7. **Email de fecho** — `video_postwebinar_closing` — "5 dias após inscrição · marca como perdido" — com `infoBox` a explicar que o lead é marcado como perdido — `audienceFilter: { planFilter: ["free"], excludePaid: true }`
+8. **Section: CLIENTES PAGOS** (novo divider, substitui o actual bloco de pagamento)
+9. **Confirmação Premium** (mantém)
+10. **Confirmação Masterclass** (mantém)
+11. **Section: ACESSO AOS RECURSOS** (mantém)
+12. **Recursos Premium/Masterclass/Bundle + SMS** (mantém)
+13. **End** (mantém)
+
+### Actualizar também subtítulos desactualizados no pré-evento (linhas 258-397):
+
+- Linha 262: `"Gravação HD · Pack · Q&A 10 Mar"` → `"Sessão 70min · Workbook · GEMs · Áudio"`
+- Linha 275: `"Masterclass 12 Mar · 10h00"` → `"Masterclass 12 Mar · 10h–13h · gravação incluída"`
+- Linha 295: remover nota `"Só para quem assistiu ao vivo"` (já não é verdade)
+- Linha 360: SMS Premium — actualizar smsText para remover referência a "Q&A amanha terca 10 Mar" (já passou)
+- Linha 394: SMS Bundle — actualizar smsText para remover referência a "Q&A terca 10 Mar" (já passou)
+- Linha 423: SMS pós-webinar — actualizar smsText para ser mais relevante
+
+### Ficheiro único alterado
+
+`src/components/crm/AutomationFlowTab.tsx` — função `getPostEventNodes()` + subtítulos no `getNodes("video")`.
 
