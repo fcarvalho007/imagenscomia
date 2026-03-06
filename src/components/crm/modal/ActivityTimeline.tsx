@@ -88,6 +88,8 @@ export default function ActivityTimeline({ messageLogs, paymentEvents, loading, 
       "crm_archived",
       "crm_premium_granted",
       "voucher_redeemed",
+      "invoice_created",
+      "invoice_finalized",
     ];
 
     const PAYMENT_KEYS = ["payment", "paid", "eupago", "resolve"];
