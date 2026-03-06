@@ -1,43 +1,53 @@
 
 
-# Reenviar confirmação ao Júlio (único caso pendente)
+# Adicionar 3 nodes de email diferenciado para clientes na secção "Após o Webinar"
 
-## Diagnóstico
+## Objectivo
+Inserir 3 novos nodes no fluxo de automações do webinar Vídeo, na secção **APÓS O WEBINAR**, para os emails diferenciados por segmento de compra:
+- **Recursos — Premium Pass** (10 pessoas)
+- **Recursos — Masterclass** (2 pessoas)  
+- **Recursos — Bundle** (5 pessoas)
 
-Após auditoria completa, **apenas 1 cliente pagante** tem um email de confirmação falhado sem reenvio:
+## Localização
+Na função `getNodes()` em `AutomationFlowTab.tsx`, após o node "Email pós-webinar — Dia 1" (linha ~256) e antes do "Email pós-webinar — Dia 3" (linha ~258). Isto coloca os emails de recursos para clientes pagantes no meio da sequência pós-evento.
 
-| Cliente | Email | Template | Plano | Pagou em |
-|---------|-------|----------|-------|----------|
-| Júlio | julsilva@protonmail.com | video_group_confirmation_payer | masterclass | 5 Mar, 10:50 |
+## Nodes a adicionar
 
-**Jorge** (jorge.isabelinho@brandenergy.pt) já recebeu `video_payment_premium` e `video_payment_masterclass` com sucesso — está resolvido.
+```text
+┌─────────────────────────────────────────────┐
+│  📧 Email pós-webinar — Dia 1              │  (existente)
+├─────────────────────────────────────────────┤
+│  🎬 Recursos — Premium Pass                │  NOVO
+│  "Acesso à gravação + materiais · upsell   │
+│   Masterclass"                              │
+│  Tag: MANUAL · CLIENTES PREMIUM            │
+│  Border: #16a34a (verde)                    │
+├─────────────────────────────────────────────┤
+│  🎓 Recursos — Masterclass                 │  NOVO
+│  "Confirmação Masterclass 12 Mar · upsell  │
+│   gravação"                                 │
+│  Tag: MANUAL · CLIENTES MASTERCLASS         │
+│  Border: #7c3aed (roxo)                     │
+├─────────────────────────────────────────────┤
+│  ⭐ Recursos — Bundle                      │  NOVO
+│  "Acesso completo · gravação +             │
+│   Masterclass 12 Mar"                       │
+│  Tag: MANUAL · CLIENTES BUNDLE              │
+│  Border: #0ea5e9 (azul claro)               │
+├─────────────────────────────────────────────┤
+│  📧 Email pós-webinar — Dia 3              │  (existente)
+└─────────────────────────────────────────────┘
+```
 
-Os restantes 12 falhas são `invoice_notification` (notificações internas para ti, fredericodigital@gmail.com) — não afectam clientes.
+## Implementação
 
-## Problema com o template actual
+**Ficheiro:** `src/components/crm/AutomationFlowTab.tsx`
 
-O template `video_group_confirmation_payer` usa placeholders `{{plan_label}}`, `{{total}}` e `{{attendee_list}}` que a função `resend-failed-emails` genérica **não preenche** (só substitui `{{fname}}`). 
+Adicionar 3 `NodeDef` entries após a linha 256, com:
+- `templateKeyMatch`: `["video_recursos_premium"]`, `["video_recursos_masterclass"]`, `["video_recursos_bundle"]`
+- `customTag` com label MANUAL e cores do segmento
+- `note` com a descrição do conteúdo (recursos incluídos, upsell)
+- Sem `smsSendConfig` nem `sendOffsetHours` (envio manual)
 
-Por isso, a melhor abordagem é criar uma edge function temporária `one-time-resend-julio` que:
-1. Constrói o HTML com os dados reais do Júlio (Masterclass, grupo de 1 pessoa)
-2. Envia via `send-email` centralizado (Brevo → Resend → E-goi)
-3. Adapta o assunto para reconhecer o atraso: algo como **"Confirmação de pagamento — Masterclass ✅"** com uma nota no corpo a pedir desculpa pelo atraso no envio
-
-## Conteúdo adaptado (23:52h)
-
-Dado o horário tardio, o email será directo e profissional:
-- Assunto: `Confirmação de pagamento — Masterclass ✅`
-- Corpo: Reconhece o atraso ("Peço desculpa pelo atraso no envio desta confirmação"), confirma o pagamento, inclui detalhes do plano e link de suporte WhatsApp
-
-## Plano de acção
-
-1. **Criar** `supabase/functions/one-time-resend-julio/index.ts` — envia email personalizado ao Júlio com o HTML do template preenchido e nota de atraso
-2. **Configurar** `supabase/config.toml` com `verify_jwt = false`
-3. **Invocar** a função para enviar
-4. **Limpar** — apagar a função temporária após confirmação de envio
-5. **Opcionalmente** reenviar as 12 `invoice_notification` internas
-
-### Ficheiros
-- `supabase/functions/one-time-resend-julio/index.ts` (criar → apagar)
-- `supabase/config.toml` (adicionar temporariamente → remover)
+Também adicionar os 3 novos template keys ao array `TEMPLATE_KEYS` em `FollowUpView.tsx` (linha ~72).
 
