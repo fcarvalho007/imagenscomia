@@ -982,6 +982,9 @@ function Timeline({
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [smsDetailedResults, setSmsDetailedResults] = useState<Array<{ name: string; phone: string; success: boolean; error?: string }>>([]);
   const [showSmsReport, setShowSmsReport] = useState(false);
+  const [importingSmsKey, setImportingSmsKey] = useState<string | null>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const pendingImportKey = useRef<string>("");
   const [editingSmsKey, setEditingSmsKey] = useState<string | null>(null);
   const [editedSmsText, setEditedSmsText] = useState("");
 
