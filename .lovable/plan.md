@@ -1,28 +1,29 @@
 
 
-# Pipeline: Uniformizar headers e corrigir naming
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problemas identificados
+### Alteração
 
-1. **Formatação inconsistente**: No filtro "Pós-webinar", os títulos das colunas incluem preços c/IVA no título (ex: "Sessão Prática · €33,21") E o `ColumnFinancials` mostra novamente o preço +IVA — duplicação. No "Pré-webinar" só aparece o `ColumnFinancials`, que é o formato correcto.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-2. **Bundle naming**: "Pack IA Completo" no pré-webinar deveria indicar que é "Sessão Prática + Masterclass".
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-3. **Preço errado no título pós-webinar do bundle**: Mostra €131,61 mas o preço correcto c/IVA é €115,62.
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-## Alterações — `src/components/crm/PipelineView.tsx`
-
-### 1. Remover preços dos títulos no `visibleColumns` (linhas 192-201)
-Eliminar o `.map()` que adiciona preços ao título no filtro `gravacao`. Os títulos ficam sempre iguais ("Sessão Prática", "Masterclass Vídeo", "Pack IA Completo") e os preços são mostrados apenas pelo `ColumnFinancials`.
-
-### 2. Corrigir UNIT_PRICES do bundle pós-webinar (linha 34)
-De `"€107+IVA"` → `"€94+IVA"` (ou manter o c/IVA: `"€115,62 c/IVA"`). Confirmar qual o utilizador quer.
-
-### 3. Actualizar título do bundle pré-webinar
-No `COLUMNS` (linha 100), manter "Pack IA Completo" mas adicionar subtítulo no `ColumnFinancials` para pré-webinar: "(SP + MC)".
-
-### 4. Uniformizar `ColumnFinancials` 
-Mostrar sempre: preço unitário (quando filtro não é "all"), faturado e pendente — em ambos os filtros, sem diferenças de layout.
-
-Resultado: ambos os filtros terão exactamente o mesmo layout visual nos headers.
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
