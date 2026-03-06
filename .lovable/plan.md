@@ -1,55 +1,47 @@
 
 
-# Redesign dos emails pós-webinar Day 1 e Day 3
+# Actualizar fluxo Pós-Evento: títulos, templates e conteúdos
 
-## Problemas actuais
+## Problemas detectados
 
-1. **Design básico** — fundo branco simples, sem header Navy-Indigo usado nos emails de recursos
-2. **Preço Early Bird €15 referenciado** no `send-video-postwebinar` (já enviado) — os Day 1 e Day 3 já têm €27, mas mantêm estilo diferente
-3. **Conteúdo "o que levas contigo"** desactualizado — falta o ficheiro GEM pronto a usar, o áudio da sessão, e a descrição correta dos itens conforme os emails de recursos
-4. **Copy genérica** — pouco persuasiva comparada com o nível dos emails de recursos
+### No `AutomationFlowTab.tsx` (post-event nodes):
+1. **Subtítulos genéricos** — "Gravação HD · Pack · Q&A 10 Mar" está desactualizado (Q&A já passou)
+2. **SMS text** refere "acesso a gravacao e materiais" de forma genérica, sem mencionar os 5 itens do Premium Pass
+3. **Títulos** corretos mas subtítulos não reflectem o conteúdo actualizado dos emails
 
-## O que vou alterar
+### No `send-video-postwebinar-closing/index.ts`:
+1. **Design básico** — sem header Navy-Indigo (inconsistente com Day 1 e Day 3 já redesenhados)
+2. **Copy genérica** — "workbook, guia GEMs e Q&A" desactualizado (Q&A já decorreu; falta Ficheiro GEM e Áudio)
+3. **Sem secção Masterclass** — os Day 1 e Day 3 incluem upsell para Masterclass, mas o closing não
 
-### Ficheiro 1: `supabase/functions/send-video-postwebinar-day1/index.ts`
+## Alterações
 
-**Novo design do fallback HTML:**
-- Header Navy-Indigo gradient (`#1e1b4b → #312e81 → #4338ca`) com título
-- Corpo com a mesma estrutura `wrapper()` / `resourceItem()` dos emails de recursos
-- Copy reescrita: tom pessoal, referência à sessão que decorreu, valor concreto do que inclui
-- Box Premium Pass com os 5 itens correctos (Sessão prática 70min, Workbook PDF, Guia GEMs, Ficheiro GEM, Áudio)
-- Box Masterclass com detalhes (12 Mar, 10h-13h, 3 horas, gravação incluída)
-- Footer com WhatsApp + assinatura Frederico
-- Botões em `#4338ca` (indigo) para Premium, `#16a34a` (verde) para Masterclass
-- Sem referência a early bird ou €15
+### 1. `src/components/crm/AutomationFlowTab.tsx` — post-event nodes
 
-**Subject actualizado:** `"A sessão de ontem — e como rever tudo, {{fname}}"`
+Actualizar subtítulos e SMS text em `getPostEventNodes()`:
 
-### Ficheiro 2: `supabase/functions/send-video-postwebinar-day3/index.ts`
+| Node | Subtítulo actual | Novo subtítulo |
+|------|-----------------|----------------|
+| Confirmação Premium | "Gravação HD · Pack · Q&A 10 Mar · link calendário" | "Sessão 70min · Workbook · GEMs · Áudio · link calendário" |
+| Confirmação Masterclass | "Masterclass 12 Mar · 10h00 · link calendário" | "Masterclass 12 Mar · 10h–13h · gravação incluída" |
+| Recursos Premium | "Acesso gravação + materiais · upsell Masterclass" | "Gravação + Workbook + GEMs + Áudio · upsell Masterclass" |
+| Recursos Masterclass | "Confirmação Masterclass 12 Mar · upsell gravação" | "Masterclass 12 Mar · 10h–13h · upsell Premium Pass" |
+| Recursos Bundle | "Acesso completo · gravação + Masterclass 12 Mar" | "Acesso completo · 5 recursos + Masterclass 12 Mar" |
+| SMS Recursos | smsText genérico | "Ola! Ja tens acesso a gravacao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico" |
 
-**Mesmo redesign visual** mas com copy de fecho:
-- Tom de "última oportunidade" mas sem pressão excessiva
-- Resumo compacto do Premium Pass (mesmos 5 itens)
-- Secção Masterclass mantida
-- Subject: `"Último email sobre o Premium Pass, {{fname}}"`
+### 2. `supabase/functions/send-video-postwebinar-closing/index.ts` — redesign
 
-### Conteúdo actualizado do Premium Pass (ambos emails)
+Redesenhar `buildFallbackHtml()` com:
+- Header Navy-Indigo gradient (igual ao Day 1 e Day 3)
+- Copy de fecho respeitosa ("Este é o último email")
+- Box Premium Pass com os 5 itens (Sessão, Workbook, GEMs, Ficheiro GEM, Áudio) — €27+IVA
+- Box Masterclass (12 Mar, 10h–13h, €47+IVA)
+- Footer com WhatsApp + assinatura
+- Subject: `"Último email, {{fname}} — Premium Pass e Masterclass"`
 
-| Item | Descrição |
-|------|-----------|
-| 🎬 Sessão prática completa | 70 minutos, sem cortes |
-| 📘 Workbook PDF | Estrutura, exercícios e checklist |
-| 💎 Guia de GEMs | Passo-a-passo para criar GEMs de vídeo |
-| ⚡ Ficheiro GEM pronto a usar | Importa directamente para o Gemini |
-| 🎧 Áudio da sessão | Ouve em qualquer lugar |
+### 3. `src/components/crm/templateLabels.ts`
 
-### Masterclass (ambos emails)
-
-- 📅 Quinta-feira, 12 de Março · 10h00–13h00
-- 3 horas ao vivo · gravação incluída
-- €47+IVA
-
-## Sem alterações na lógica de envio
-
-A lógica de filtragem, deduplicação e logging mantém-se intacta em ambos os ficheiros. Apenas o `buildFallbackHtml()` e o subject default são alterados.
+Actualizar labels:
+- `video_postwebinar_closing`: "Email de fecho — última oportunidade"
+- `sms_recursos_post`: "SMS Recursos — Clientes pagos"
 
