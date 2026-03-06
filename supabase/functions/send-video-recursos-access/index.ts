@@ -58,6 +58,19 @@ function premiumHtml(fname: string): string {
 
       ${cta(`${SITE}/recursos-video`, "Aceder aos Recursos →")}
 
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin:32px 0">
+        <p style="margin:0 0 4px;font-weight:700;font-size:15px;color:#0369a1">💬 Sessão Q&A ao vivo</p>
+        <p style="margin:0 0 12px;font-size:14px;color:#0284c7">Esclarece todas as tuas dúvidas em directo</p>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;color:#1e293b">
+          <tr><td style="padding:3px 0">📅 Segunda-feira, 10 de Março de 2026</td></tr>
+          <tr><td style="padding:3px 0">🕝 14h30 — 15h30</td></tr>
+          <tr><td style="padding:3px 0">💻 Online, ao vivo (Zoom)</td></tr>
+        </table>
+        ${cta("https://us02web.zoom.us/j/88370994509?jst=3", "Entrar na Sessão Q&A (Zoom) →", "#0284c7")}
+        <p style="font-size:13px;color:#64748b;text-align:center;margin:4px 0 12px">Para entrar, usa o email com que te registaste.</p>
+        ${cta("https://calendar.app.google/mmuW5XuzRzRLm2qVA", "Guardar Q&A no Calendário →", "#0369a1")}
+      </div>
+
       <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:32px 0">
         <p style="margin:0 0 4px;font-weight:700;font-size:15px;color:#6b21a8">🎓 Queres ir mais longe?</p>
         <p style="margin:0 0 12px;font-size:14px;color:#7c3aed">Masterclass — Produção de Vídeo com IA</p>

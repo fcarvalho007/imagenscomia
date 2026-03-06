@@ -43,10 +43,11 @@ function buildHtml(fname: string): string {
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 8px;">Premium Pass</p>
     <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">€15+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa (70 min, sem cortes)</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A em grupo</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">&nbsp;&nbsp;&nbsp;📅 Terça-feira, 10 de Março às 14h30</p>
-    <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Guia de prompts para vídeo (PDF)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa em HD (~70 min, sem cortes)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Workbook Resumo da Sessão (PDF)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Guia técnico de GEMs para vídeo</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A ao vivo — <a href="https://us02web.zoom.us/j/88370994509?jst=3" style="color:#2563eb;">10 Março, 14h30</a></p>
+    <p style="color:#333;font-size:15px;margin:0 0 16px;">&nbsp;&nbsp;&nbsp;<a href="https://calendar.app.google/mmuW5XuzRzRLm2qVA" style="color:#2563eb;font-size:13px;">Guardar no Calendário →</a></p>
     <div style="text-align:center;">
       <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €15+IVA →</a>
     </div>
