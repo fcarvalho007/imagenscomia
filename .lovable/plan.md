@@ -1,58 +1,47 @@
 
 
-# Auditoria de emails + actualização de templates
+# Actualizar emails postwebinar com conteúdos correctos
 
-## 1. Diagnóstico: 12 pessoas sem confirmação
+## Problema
 
-Todas as falhas foram causadas por **quota diária do Resend esgotada** (erro 429). Estes 12 pagantes nunca receberam qualquer email de confirmação:
+Os emails `video_postwebinar_day1` e `video_postwebinar_closing` ainda referem "Guia de prompts para vídeo" no Premium Pass. Os conteúdos actuais são:
 
-| Email | Plano | Template a enviar |
-|---|---|---|
-| anateresa.bras@hotmail.com | video-premium | video_recursos_premium |
-| andrecunha@acbc.pt | video-premium | video_recursos_premium |
-| business.diogo.nunes@gmail.com | video-premium | video_recursos_premium |
-| designer.andreiaamaral@gmail.com | video-premium | video_recursos_premium |
-| geral@bellagoma.pt | video-premium | video_recursos_premium |
-| jessica@xistoazul.pt | video-premium | video_recursos_premium |
-| soraiamarina@gmail.com | video-premium | video_recursos_premium |
-| julsilva@protonmail.com | masterclass | video_recursos_masterclass |
-| marisajordao.digital@gmail.com | video-masterclass | video_recursos_masterclass |
-| teresajuncalpires@essenciacompleta.pt | masterclass | video_recursos_masterclass |
-| costta@sapo.pt | video-bundle | video_recursos_bundle |
-| hermana.noronha@gmail.com | video-bundle | video_recursos_bundle |
+- ✓ Sessão completa em HD (~70 min)
+- ✓ Workbook Resumo da Sessão (PDF)
+- ✓ Guia técnico de GEMs para vídeo
+- ✓ Sessão Q&A ao vivo (10 Março, 14h30)
 
-Os 13 restantes já receberam `video_payment_premium`, `video_payment_masterclass` ou `mc_confirm_sent` com sucesso.
+## Alterações
 
-## 2. Actualizar templates antes de enviar
+### 1. `supabase/functions/send-video-postwebinar-day1/index.ts`
 
-Antes de disparar os emails, preciso actualizar os templates **masterclass** e **bundle** na edge function `send-video-recursos-access`:
+No `buildFallbackHtml`, substituir a lista do Premium Pass (linhas 25-27):
 
-### a) URL do calendário
-Substituir `https://calendar.app.google/LWQVacdqqavvEqSG9` por `https://calendar.app.google/qX6CxAwxafWHNEaYA`
+```
+✓ Sessão completa (70 min, sem cortes)
+✓ Sessão Q&A ao vivo (10 Março, 14h30)
+✓ Guia de prompts para vídeo (PDF)
+```
 
-### b) Adicionar link Zoom + nota de login
-Nos templates masterclass e bundle, adicionar:
-- Link da sessão: `https://us02web.zoom.us/j/83247090160?jst=3`
-- Nota: "Para entrar, usa o email com que te registaste."
+Por:
 
-### c) Estas alterações aplicam-se a `masterclassHtml()` e `bundleHtml()` na edge function.
+```
+✓ Sessão completa em HD (~70 min, sem cortes)
+✓ Workbook Resumo da Sessão (PDF)
+✓ Guia técnico de GEMs para vídeo
+✓ Sessão Q&A ao vivo (10 Março, 14h30)
+```
 
-## 3. Plano de execução
+### 2. `supabase/functions/send-video-postwebinar-closing/index.ts`
 
-### Passo 1 — Editar `supabase/functions/send-video-recursos-access/index.ts`
-- Actualizar `CALENDAR_MASTERCLASS` para o novo URL
-- Nos detalhes da sessão (masterclass e bundle), substituir "link enviado na véspera" pelo link Zoom real + botão CTA
-- Adicionar nota: "Usa o email de registo para entrar na plataforma"
+Na linha 24, substituir "gravação, Q&A e guia de prompts" por "gravação, workbook, guia GEMs e Q&A".
 
-### Passo 2 — Deploy da edge function (automático)
+### 3. Upsert dos templates na BD
 
-### Passo 3 — Invocar com `dry_run: true` para fazer upsert dos templates actualizados na BD
-
-### Passo 4 — Invocar com `dry_run: false` para enviar os emails de recursos aos 12 que nunca receberam confirmação
-
-A idempotência já está implementada — só envia a quem não tem registo `sent` na `email_send_logs`.
+Após deploy, invocar ambas as edge functions (ou a `send-video-recursos-access` se centralizada) — mas como estes templates têm upsert independente, basta que o fallback HTML esteja correcto. Se já existem na tabela `email_templates`, actualizar directamente via query.
 
 ## Ficheiros alterados
 
-- `supabase/functions/send-video-recursos-access/index.ts` — actualizar URL do calendário, adicionar Zoom link e nota de login nos templates masterclass e bundle
+- `supabase/functions/send-video-postwebinar-day1/index.ts` — actualizar lista de conteúdos do Premium Pass
+- `supabase/functions/send-video-postwebinar-closing/index.ts` — actualizar menção aos conteúdos
 
