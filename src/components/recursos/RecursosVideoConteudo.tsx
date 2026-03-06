@@ -1,7 +1,6 @@
-import { useState } from "react";
 import {
   Clock, LogOut,
-  Mail, MessageCircle, Play, Headphones, FileText, Layers, BookOpen,
+  Mail, MessageCircle, Play, Headphones, FileText, Layers,
 } from "lucide-react";
 import RecursosVideoUpsell from "./RecursosVideoUpsell";
 
@@ -13,10 +12,11 @@ const VIDEO_RECURSOS_CONFIG = {
   guiaGemsUrl: "https://drive.google.com/file/d/18o9LPR9st0I1lZaQUBqgi-9-Wp2W0Y2x/view?usp=sharing",
   ficheiroGemUrl: "https://drive.google.com/file/d/13UsoucnxmGSYY1UhDLo7SjqFIjkQ4Xyk/view?usp=sharing",
   chapters: [
-    { time: "00:00", label: "Introdução e panorama do vídeo com IA" },
-    { time: "10:00", label: "Método: do briefing ao clip" },
-    { time: "25:00", label: "Demos ao vivo com ferramentas" },
-    { time: "45:00", label: "Q&A e casos práticos" },
+    { label: "Contexto e Enquadramento Estratégico", description: "Posicionamento do vídeo como ferramenta de visibilidade de marca nos motores de pesquisa e nas plataformas de IA generativa (ChatGPT, Gemini, etc.), com destaque para o peso das plataformas visuais (Instagram, YouTube, LinkedIn) nas citações dos LLMs." },
+    { label: "Ferramentas e Ecossistema Atual", description: "Panorama das plataformas de referência para criação de vídeo com IA (Kling AI, Google Flow / VEO, Higgsfield, Filmora), com nota sobre disponibilidade em Portugal e as novidades mais recentes (NanoBanana 2.0, ChatGPT 5.3, Google Flow)." },
+    { label: "Método e Pipeline de Produção", description: "Apresentação do sistema de trabalho em três fases: briefing (diretor criativo no Gemini), geração de frames e storyboard (Kling Canvas), e criação/controlo do vídeo com first frame / last frame (Google VEO via Flow)." },
+    { label: "Caso de Estudo Prático", description: "Demonstração real de um vídeo criado de raiz com IA, no estilo Arcane (2D+3D), com consistência visual de personagem, prompt estruturado em inglês, e edição final no Filmora — mostrando o método aplicado do briefing ao resultado final." },
+    { label: "Anatomia do Vídeo para Redes Sociais", description: "Estrutura essencial de um vídeo eficaz para web: gancho nos primeiros 3 segundos, valor ao longo do conteúdo, uso de B-roll automático e call to action — com foco em repetibilidade e não apenas num vídeo isolado." },
   ],
 };
 
@@ -33,7 +33,6 @@ interface Props {
 }
 
 export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
-  const [activeChapter, setActiveChapter] = useState<number>(0);
 
   const firstName = userData.name?.split(" ")[0] || "amigo";
   const hasMasterclass = ["masterclass", "bundle"].includes(userData.plan ?? "");
@@ -112,75 +111,22 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
                   <Clock size={11} /> Índice da sessão
                 </p>
-                <ul className="space-y-1 mb-6">
+                <ul className="space-y-3">
                   {VIDEO_RECURSOS_CONFIG.chapters.map((ch, i) => (
                     <li
                       key={i}
-                      onClick={() => setActiveChapter(i)}
-                      className={`group flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
-                        activeChapter === i
-                          ? "bg-green-50 border border-green-100"
-                          : "hover:bg-gray-50 border border-transparent"
-                      }`}
+                      className="flex gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
                     >
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                        activeChapter === i ? "bg-green-600" : "bg-gray-100 group-hover:bg-gray-200"
-                      }`}>
-                        {activeChapter === i ? (
-                          <Play size={9} fill="white" className="text-white ml-0.5" />
-                        ) : (
-                          <span className="text-[10px] font-bold text-gray-400">{i + 1}</span>
-                        )}
+                      <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <span className="text-[11px] font-bold text-white">{i + 1}</span>
                       </div>
-                      <span className={`font-mono text-xs shrink-0 w-10 ${activeChapter === i ? "text-green-500" : "text-gray-300"}`}>
-                        {ch.time}
-                      </span>
-                      <span className={`text-sm flex-1 ${activeChapter === i ? "font-medium text-green-900" : "text-gray-700"}`}>
-                        {ch.label}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 mb-1">{ch.label}</p>
+                        <p className="text-[13px] leading-relaxed text-gray-500">{ch.description}</p>
+                      </div>
                     </li>
                   ))}
                 </ul>
-
-                {/* Divider */}
-                <div className="border-t border-gray-100 mb-5" />
-
-                {/* Apoio ao conhecimento */}
-                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
-                  <BookOpen size={11} /> Apoio ao conhecimento
-                </p>
-
-                <div className="space-y-2.5">
-                  <a href={VIDEO_RECURSOS_CONFIG.workbookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-green-50 hover:bg-green-100 border border-green-100 transition-colors">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={14} className="text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-900 block">Workbook Vídeo com IA</span>
-                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
-                    </div>
-                  </a>
-
-                  <a href={VIDEO_RECURSOS_CONFIG.guiaGemsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors">
-                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
-                      <FileText size={14} className="text-violet-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-900 block">Guia de Apoio GEMs — Google Gemini</span>
-                      <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
-                    </div>
-                  </a>
-
-                  <a href={VIDEO_RECURSOS_CONFIG.ficheiroGemUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-100 transition-colors">
-                    <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
-                      <Layers size={14} className="text-amber-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm font-medium text-gray-900 block">Ficheiro para anexar ao GEM</span>
-                      <span className="text-[11px] text-gray-500">Google Drive</span>
-                    </div>
-                  </a>
-                </div>
 
               </div>
             </div>
