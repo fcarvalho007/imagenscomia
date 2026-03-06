@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen, Image } from "lucide-react";
+import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen, Image, CalendarDays } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
+
+const MASTERCLASS_CUTOFF = new Date("2026-03-12T13:30:00Z");
 
 function getBenefitIcon(text: string, color: string) {
   const lower = text.toLowerCase();
@@ -41,13 +43,16 @@ const PLANS: Record<Plan, {
   ctaClassName: string;
   shadow: string;
   topTag?: string;
+  immediateAccess?: boolean;
+  showMasterclassDate?: boolean;
+  highlightBenefitIndex?: number;
 }> = {
   gravacao: {
     title: "Sessão Prática",
     price: "€27",
     ivaNote: "+ IVA",
     subPriceNote: "Acesso imediato após a compra.",
-    topTag: "Acesso imediato",
+    immediateAccess: true,
     benefits: [
       { text: "Sessão Vídeo com IA HD ~70 min, sem cortes" },
       { text: "Workbook PDF resumo da sessão" },
@@ -66,6 +71,7 @@ const PLANS: Record<Plan, {
     price: "€67",
     ivaNote: "+ IVA",
     subPriceNote: "3 horas intensivas com o Frederico.",
+    showMasterclassDate: true,
     benefits: [
       { text: "3 horas ao vivo com o Frederico" },
       { text: "Sistema completo de criação de vídeo com IA" },
@@ -86,6 +92,8 @@ const PLANS: Record<Plan, {
     savingsBadge: "Poupas €14",
     ivaNote: "+ IVA",
     subPriceNote: "Tudo incluído num só pacote.",
+    showMasterclassDate: true,
+    highlightBenefitIndex: 3,
     benefits: [
       { text: "📹 Vídeo com IA", isSectionHeader: true },
       { text: "Sessão completa HD ~70 min, sem cortes" },
