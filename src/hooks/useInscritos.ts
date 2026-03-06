@@ -386,7 +386,8 @@ export function useInscritos() {
     if (markAsPaid) updateData.paid_at = new Date().toISOString();
     const { error } = await supabase.from("registrations").update(updateData).eq("id", inscritoId);
     if (error) { console.error("Error updating plan:", error); return; }
-    const valor = PLAN_VALUES[newPlan] || 0;
+    const webinarType = reg?.webinar === "video" ? "video" : "imagens";
+    const valor = (PLAN_VALUES_BY_WEBINAR[webinarType] || PLAN_VALUES_BY_WEBINAR.imagens)[newPlan] || 0;
     setInscritos((prev) =>
       prev.map((i) => i.id === inscritoId ? {
         ...i,

@@ -656,7 +656,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </div>
               <div className="space-y-1.5">
                 {stats.pendingOver6h.slice(0, 5).map((i) => {
-                  const badge = PLAN_BADGE(i.plan);
+                  const badge = getPlanBadge(i.plan, i.webinar);
                   const ref = i.upgrade_clicked_at || i.timestamp;
                   const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
                   const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
@@ -720,7 +720,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             const paid = stats.paidCounts[plan] || 0;
             const pending = stats.pendingCounts[plan] || 0;
             const free = total - paid - pending;
-            const badge = PLAN_BADGE(plan);
+            const badge = getPlanBadge(plan, "video");
             const pct = stats.total ? ((total / stats.total) * 100).toFixed(0) : "0";
             return (
               <div key={plan} className="mb-3.5">
@@ -917,7 +917,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               return 0;
             })
             .map((i) => {
-              const badge = PLAN_BADGE(i.plan);
+              const badge = getPlanBadge(i.plan, i.webinar);
               const isCustom = i.duvida.includes("Outro:");
               return (
                 <div
