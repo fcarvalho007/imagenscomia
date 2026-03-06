@@ -1228,16 +1228,24 @@ function Timeline({
 
             return (
               <div className="flex flex-col items-end gap-1.5" style={{ maxWidth: 300 }}>
-                {counts && counts.sent > 0 && (
-                  <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
-                    {counts.sent} enviados
-                  </span>
+                {counts && (
+                  counts.sent > 0 ? (
+                    <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
+                      {counts.sent} enviados
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "#9ca3af" }}>0 enviados</span>
+                  )
                 )}
-                {counts && counts.failed > 0 && (
-                  <span className="flex items-center gap-1" style={{ fontSize: 12, color: "#ef4444" }}>
-                    <AlertTriangle size={11} />
-                    {counts.failed} falhas
-                  </span>
+                {counts && (
+                  counts.failed > 0 ? (
+                    <span className="flex items-center gap-1" style={{ fontSize: 12, color: "#ef4444" }}>
+                      <AlertTriangle size={11} />
+                      {counts.failed} falhas
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 12, color: "#9ca3af" }}>0 falhas</span>
+                  )
                 )}
 
                 {isEditing ? (
