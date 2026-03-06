@@ -29,6 +29,44 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
 };
 const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "—" };
 
+const UNIT_PRICES: Record<string, Record<string, string>> = {
+  webinar: { premium: "€15+IVA", masterclass: "€47+IVA", bundle: "€76,26 c/IVA" },
+  gravacao: { premium: "€27+IVA", masterclass: "€67+IVA", bundle: "€107+IVA" },
+};
+
+function ColumnFinancials({ items, sourceFilter, colKey }: { items: Inscrito[]; sourceFilter: string; colKey: ColumnKey }) {
+  const hasPaidPlans = ["premium", "masterclass", "bundle"].includes(colKey);
+  if (!hasPaidPlans) return null;
+
+  const paidItems = items.filter(i => i.payment_status === "paid");
+  const pendingItems = items.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
+  const paidTotal = paidItems.reduce((s, i) => s + i.valor, 0);
+  const pendingTotal = pendingItems.reduce((s, i) => s + i.valor, 0);
+
+  const unitPrice = sourceFilter !== "all" ? UNIT_PRICES[sourceFilter]?.[colKey] : null;
+
+  return (
+    <div className="mt-1 space-y-0.5">
+      {unitPrice && (
+        <p className="text-[10px] font-medium text-ink-500">{unitPrice}/pessoa</p>
+      )}
+      {paidItems.length > 0 && (
+        <p className="text-[10px] font-semibold" style={{ color: "#16A34A" }}>
+          Faturado: €{paidTotal.toFixed(2)} ({paidItems.length})
+        </p>
+      )}
+      {pendingItems.length > 0 && (
+        <p className="text-[10px] font-semibold" style={{ color: "#D97706" }}>
+          Pendente: €{pendingTotal.toFixed(2)} ({pendingItems.length})
+        </p>
+      )}
+      {paidItems.length === 0 && pendingItems.length === 0 && (
+        <p className="text-[10px] text-ink-400">—</p>
+      )}
+    </div>
+  );
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -265,7 +303,6 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         <div className="space-y-2">
           {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
-            const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             const isOpen = openSections.has(col.title);
             return (
               <div key={col.title} className="bg-white border border-border rounded-xl overflow-hidden">
@@ -273,7 +310,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                   onClick={() => toggleSection(col.title)}
                   className="w-full flex items-center justify-between px-4 py-3 text-left"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ background: col.color }} />
                     <span className="font-heading font-semibold text-[13px] text-ink-700">{col.title}</span>
                     <span
@@ -282,9 +319,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                     >
                       {items.length}
                     </span>
-                    <span className="text-[11px] font-medium" style={{ color: col.color, opacity: 0.7 }}>
-                      €{colRevenue.toFixed(2)}
-                    </span>
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
                   </div>
                   <ChevronDown
                     size={16}
@@ -312,7 +347,6 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         <div className="flex gap-3 overflow-x-auto pb-4">
           {visibleColumns.map((col) => {
             const items = filtered.filter(col.filter);
-            const colRevenue = items.reduce((s, i) => s + i.valor, 0);
             return (
               <div
                 key={col.title}
@@ -338,9 +372,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                         {items.filter(i => !i.webinar || i.webinar === "imagens").length} IMG + {items.filter(i => i.webinar === "video").length} VID
                       </p>
                     )}
-                    <p className="text-[12px] font-medium mt-0.5" style={{ color: col.color, opacity: 0.8 }}>
-                      €{colRevenue.toFixed(2)}
-                    </p>
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
                   </div>
                 </div>
                 <div className={`border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2 transition-colors ${dragOverCol === col.key ? "bg-blue-50/50" : "bg-surface/50"}`}>
