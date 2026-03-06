@@ -1,29 +1,44 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Pipeline: Adicionar resumo financeiro nos cabeçalhos das colunas
 
-### Alteração
+## Contexto
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+Actualmente o cabeçalho de cada coluna mostra apenas o total de receita (`€colRevenue`), sem distinguir entre pago e pendente. O utilizador quer ver claramente:
+- O preço unitário do plano (diferente pré vs pós-webinar)
+- Total faturado (pagos) com contagem
+- Total pendente com contagem
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+## Alterações
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+### `src/components/crm/PipelineView.tsx`
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+**1. Calcular métricas por coluna** — para cada coluna paga (premium, masterclass, bundle), computar a partir dos `items`:
+- `paidItems` = items com `payment_status === "paid"` → somar `valor`, contar
+- `pendingItems` = items com `payment_status === "awaiting_payment"` ou `"selected"` → somar `valor`, contar
+
+**2. Adicionar preço unitário ao cabeçalho** — mostrar o preço base+IVA relevante por contexto:
+
+| Filtro | Premium | Masterclass | Bundle |
+|---|---|---|---|
+| Pré-webinar | €15+IVA | €47+IVA | €76,26 c/IVA |
+| Pós-webinar | €27+IVA | €67+IVA | €107+IVA |
+| Todos | (sem preço — misto) | — | — |
+
+**3. Substituir o `€colRevenue` simples** por um bloco compacto no header da coluna:
+
+```text
+Sessão Prática · €27+IVA
+────────────────────────
+Faturado: €33,21 (1)
+Pendente: €131,61 (1)
+```
+
+Formato visual: texto `10px`, verde para faturado, laranja/vermelho para pendente. Aplicar tanto no desktop (kanban header) como no mobile (accordion header).
+
+**4. Colunas sem receita** (Inscrito, Flow Completo, Follow-up, Lost) — manter apenas o contador, sem bloco financeiro.
+
+### Ficheiro único: `src/components/crm/PipelineView.tsx`
+
+Extrair uma pequena função `ColumnFinancials` que recebe os items da coluna e o `sourceFilter`, e renderiza as 2-3 linhas de resumo financeiro. Aplicá-la no header do desktop (linhas 326-344) e no accordion do mobile (linhas 276-287).
 
