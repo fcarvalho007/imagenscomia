@@ -40,7 +40,7 @@ function mapRegistration(r: any): Inscrito {
     source_outro: "",
     duvida: r.duvida || "",
     plan: plan as Inscrito["plan"],
-    valor: planValues[plan] || 0,
+    valor: r.paid_at && r.paid_amount != null ? Number(r.paid_amount) : (planValues[plan] || 0),
     paid_at: r.paid_at || null,
     eupago_ref: r.eupago_ref || null,
     notas: [],
@@ -72,6 +72,7 @@ function mapRegistration(r: any): Inscrito {
     lost_reason: (r as any).lost_reason || null,
     group_payment_ref: (r as any).group_payment_ref || null,
     invoice_document_id: (r as any).invoice_document_id || null,
+    paid_amount: r.paid_amount != null ? Number(r.paid_amount) : null,
   };
 }
 

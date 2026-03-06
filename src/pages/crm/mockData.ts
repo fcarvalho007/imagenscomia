@@ -47,6 +47,7 @@ export type Inscrito = {
   lost_reason: string | null;
   group_payment_ref: string | null;
   invoice_document_id: string | null;
+  paid_amount: number | null;
 };
 
 export const MOCK_DATA: Inscrito[] = [];
