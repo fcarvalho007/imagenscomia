@@ -259,7 +259,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     {
       type: "email",
       title: "Confirmação de compra — Premium Pass",
-      subtitle: "Gravação HD · Pack · Q&A 10 Mar · link calendário",
+      subtitle: "Sessão 70min · Workbook · GEMs · Áudio · link calendário",
       templateKeyMatch: ["video_payment_premium"],
       sendOffsetHours: null,
       sectionDivider: "CONFIRMAÇÕES DE COMPRA",
@@ -272,7 +272,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
     {
       type: "email",
       title: "Confirmação de compra — Masterclass",
-      subtitle: "Masterclass 12 Mar · 10h00 · link calendário",
+      subtitle: "Masterclass 12 Mar · 10h–13h · gravação incluída",
       templateKeyMatch: ["video_payment_masterclass"],
       sendOffsetHours: null,
       isPaymentBlock: true,
@@ -292,7 +292,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       sectionDivider: "APÓS O WEBINAR",
       iconEmoji: "✉️",
       borderColorOverride: "#f59e0b",
-      note: "Só para quem assistiu ao vivo (attended_live_at)",
+      note: "Enviado a todos os inscritos gratuitos",
       audienceFilter: { planFilter: ["free"] },
     },
     {
@@ -357,7 +357,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       smsSendConfig: {
         planFilter: ["premium"],
         webinarFilter: "current",
-        smsText: "Ola! Ja tens acesso a gravacao, workbook e guia GEMs em imagenscomia.com/recursos-video — usa o email de registo para entrar. Lembra-te: sessao Q&A amanha (terca, 10 Mar) as 14:30. Ate ja! — Frederico",
+        smsText: "Ola! Ja tens acesso a gravacao (70min), workbook e guia GEMs em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
         requirePhone: true,
       },
     },
@@ -391,7 +391,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       smsSendConfig: {
         planFilter: ["bundle"],
         webinarFilter: "current",
-        smsText: "Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo. A Masterclass e quinta 12 Mar as 10h (link na vespera). Sessao Q&A: terca 10 Mar as 14:30. Ate ja! — Frederico",
+        smsText: "Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo. A Masterclass e quinta 12 Mar as 10h (link na vespera). Ate ja! — Frederico",
         requirePhone: true,
       },
     },
@@ -420,7 +420,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       smsSendConfig: {
         planFilter: ["free"],
         webinarFilter: "current",
-        smsText: "O webinar Video com IA ja decorreu! Acede ao workbook e materiais em imagenscomia.com/recursos — Frederico Carvalho",
+        smsText: "Ola! Ja viste a gravacao do webinar Video com IA? Tens 70min de conteudo pratico disponivel em imagenscomia.com/video — Frederico",
         requirePhone: true,
       },
     },
@@ -506,14 +506,69 @@ function getPostEventNodes(): NodeDef[] {
       customTag: { label: "AUTOMÁTICO · IMEDIATO", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: {}, // todos
     },
-    // ── PAYMENT BLOCK ──
+    // ── SEQUÊNCIA DE CONVERSÃO ──
+    {
+      type: "email",
+      title: "Email Day 1 — Gravação + Premium Pass",
+      subtitle: "24h após inscrição · sessão 70min + oferta Premium",
+      templateKeyMatch: ["video_postwebinar_day1"],
+      sendOffsetHours: null,
+      sectionDivider: "SEQUÊNCIA DE CONVERSÃO",
+      iconEmoji: "📧",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "AUTOMÁTICO · 24H", bg: "#fef3c7", color: "#d97706" },
+      note: "Enviado automaticamente 24h após inscrição para quem não comprou",
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
+    },
+    {
+      type: "email",
+      title: "Email Day 3 — Última oportunidade",
+      subtitle: "72h após inscrição · reforço de urgência",
+      templateKeyMatch: ["video_postwebinar_day3"],
+      sendOffsetHours: null,
+      iconEmoji: "📧",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "AUTOMÁTICO · 72H", bg: "#fef3c7", color: "#d97706" },
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
+    },
+    {
+      type: "email",
+      title: "SMS follow-up pós-inscrição",
+      subtitle: "Envio manual · gratuitos com telefone",
+      templateKeyMatch: ["sms_postwebinar_post"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#8b5cf6",
+      customTag: { label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["free"],
+        webinarFilter: "current",
+        smsText: "Ola! Ja viste a gravacao do webinar? Tens acesso a 70min de conteudo pratico em imagenscomia.com/video — Frederico",
+        requirePhone: true,
+      },
+    },
+    {
+      type: "email",
+      title: "Email de fecho — Marca como perdido",
+      subtitle: "5 dias após inscrição · lead marcado como perdido",
+      templateKeyMatch: ["video_postwebinar_closing"],
+      sendOffsetHours: null,
+      iconEmoji: "🔴",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "AUTOMÁTICO · 5 DIAS", bg: "#fee2e2", color: "#dc2626" },
+      infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
+    },
+    // ── CLIENTES PAGOS ──
     {
       type: "email",
       title: "Confirmação de compra — Premium Pass",
-      subtitle: "Sessão 70min · Workbook · GEMs · Áudio · link calendário",
+      subtitle: "Sessão 70min · Workbook · GEMs · Áudio",
       templateKeyMatch: ["video_payment_premium"],
       sendOffsetHours: null,
       isPaymentBlock: true,
+      sectionDivider: "CLIENTES PAGOS",
       iconEmoji: "🎬",
       borderColorOverride: "#16a34a",
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
@@ -531,7 +586,7 @@ function getPostEventNodes(): NodeDef[] {
       customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
     },
-    // ── RECURSOS ──
+    // ── ACESSO AOS RECURSOS ──
     {
       type: "email",
       title: "Recursos — Premium Pass",
