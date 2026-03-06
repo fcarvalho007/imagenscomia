@@ -1170,6 +1170,49 @@ function Timeline({
     }
   };
 
+  const handleCsvImport = async (file: File, templateKey: string) => {
+    setImportingSmsKey(templateKey);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").filter((l) => l.trim().length > 0);
+      if (lines.length < 2) {
+        toast.error("CSV vazio ou sem dados");
+        setImportingSmsKey(null);
+        return;
+      }
+
+      // Parse semicolon-delimited CSV (skip header)
+      const rows = lines.slice(1).map((line) => {
+        const cols = line.split(";");
+        return {
+          phone: cols[0]?.replace(/"/g, "").trim() || "",
+          status: cols[4]?.replace(/"/g, "").trim() || "",
+          timestamp: cols[3]?.replace(/"/g, "").trim() || "",
+        };
+      }).filter((r) => r.phone.length > 0);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
+
+      const { data, error } = await supabase.functions.invoke("backfill-sms-logs", {
+        body: { rows, templateKey },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+
+      if (error) throw error;
+
+      const result = data as { matched: number; unmatched: number; skipped: number; inserted: number; errors: string[] };
+      toast.success(
+        `Importação concluída: ${result.inserted} inseridos, ${result.skipped} já existentes, ${result.unmatched} sem match`
+      );
+    } catch (err: any) {
+      toast.error("Erro na importação: " + (err.message || "erro desconhecido"));
+    } finally {
+      setImportingSmsKey(null);
+      if (csvInputRef.current) csvInputRef.current.value = "";
+    }
+  };
+
   const renderNodeCard = (node: NodeDef, idx: number, insideGroup: boolean) => {
     const tag = getTag(node, webinarPast, (nodeCounts[idx]?.sent ?? 0) > 0, webinar);
     const counts = nodeCounts[idx];
