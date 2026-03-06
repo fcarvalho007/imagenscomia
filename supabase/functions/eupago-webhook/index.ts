@@ -16,6 +16,23 @@ interface PaymentData {
   transactionID: string;
 }
 
+// Amount-to-plan safety net: derive correct plan from the paid amount
+const AMOUNT_TO_PLAN: Record<string, Record<number, string>> = {
+  imagens: { 18.45: "premium", 57.81: "masterclass", 76.26: "bundle" },
+  video:   { 33.21: "video-premium", 82.41: "video-masterclass", 115.62: "video-bundle" },
+};
+
+function derivePlanFromAmount(amountStr: string, webinar: string): string | null {
+  const amt = parseFloat(amountStr);
+  if (isNaN(amt)) return null;
+  const map = AMOUNT_TO_PLAN[webinar] || AMOUNT_TO_PLAN["imagens"];
+  // Match with small tolerance for floating point
+  for (const [key, plan] of Object.entries(map)) {
+    if (Math.abs(amt - parseFloat(key)) < 0.02) return plan;
+  }
+  return null;
+}
+
 function extractFromGET(req: Request): PaymentData {
   const url = new URL(req.url);
   const p = url.searchParams;
