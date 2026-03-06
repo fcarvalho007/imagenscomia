@@ -114,8 +114,8 @@ function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
       const plan = i.plan || "free";
       if (!f.planFilter.includes(plan)) return false;
     }
-    if (f.requirePaid && !i.paid_at) return false;
-    if (f.excludePaid && i.paid_at) return false;
+    if (f.requirePaid && !i.paid_at && !i.premium_granted_at) return false;
+    if (f.excludePaid && (i.paid_at || i.premium_granted_at)) return false;
     if (f.requirePhone && !i.whatsapp) return false;
     return true;
   }).length;
