@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen, Image } from "lucide-react";
+import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen, Image, CalendarDays } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Separator } from "@/components/ui/separator";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
+
+const MASTERCLASS_CUTOFF = new Date("2026-03-12T13:30:00Z");
 
 function getBenefitIcon(text: string, color: string) {
   const lower = text.toLowerCase();
@@ -41,13 +43,16 @@ const PLANS: Record<Plan, {
   ctaClassName: string;
   shadow: string;
   topTag?: string;
+  immediateAccess?: boolean;
+  showMasterclassDate?: boolean;
+  highlightBenefitIndex?: number;
 }> = {
   gravacao: {
     title: "Sessão Prática",
     price: "€27",
     ivaNote: "+ IVA",
     subPriceNote: "Acesso imediato após a compra.",
-    topTag: "Acesso imediato",
+    immediateAccess: true,
     benefits: [
       { text: "Sessão Vídeo com IA HD ~70 min, sem cortes" },
       { text: "Workbook PDF resumo da sessão" },
@@ -66,6 +71,7 @@ const PLANS: Record<Plan, {
     price: "€67",
     ivaNote: "+ IVA",
     subPriceNote: "3 horas intensivas com o Frederico.",
+    showMasterclassDate: true,
     benefits: [
       { text: "3 horas ao vivo com o Frederico" },
       { text: "Sistema completo de criação de vídeo com IA" },
@@ -86,6 +92,8 @@ const PLANS: Record<Plan, {
     savingsBadge: "Poupas €14",
     ivaNote: "+ IVA",
     subPriceNote: "Tudo incluído num só pacote.",
+    showMasterclassDate: true,
+    highlightBenefitIndex: 3,
     benefits: [
       { text: "📹 Vídeo com IA", isSectionHeader: true },
       { text: "Sessão completa HD ~70 min, sem cortes" },
@@ -112,6 +120,31 @@ const PLANS: Record<Plan, {
 const DESKTOP_ORDER: Plan[] = ["gravacao", "bundle", "masterclass"];
 const MOBILE_ORDER: Plan[] = ["bundle", "gravacao", "masterclass"];
 
+function ImmediateAccessBanner() {
+  return (
+    <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5">
+      <Play className="w-4 h-4 text-emerald-600 shrink-0" />
+      <span className="text-sm font-semibold text-emerald-700">Acesso imediato após a compra</span>
+    </div>
+  );
+}
+
+function MasterclassDateBox() {
+  const isLive = new Date() >= MASTERCLASS_CUTOFF;
+
+  if (isLive) return <ImmediateAccessBanner />;
+
+  return (
+    <div className="rounded-lg bg-violet-50 border border-violet-200 px-4 py-3">
+      <p className="text-[14px] font-semibold text-gray-900 flex items-center gap-2">
+        <CalendarDays className="w-4 h-4 text-violet-600" />
+        Quinta-feira, 12 de Março
+      </p>
+      <p className="text-[13px] text-gray-500 ml-6">10h00 — 13h00 (Portugal)</p>
+    </div>
+  );
+}
+
 function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => void; isMobile: boolean }) {
   const cfg = PLANS[plan];
   const isFeatured = cfg.featured;
@@ -135,14 +168,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
 
       <div className="flex flex-col flex-1 justify-between p-6 md:p-5 lg:p-8 gap-5">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
-            {cfg.topTag && (
-              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
-                {cfg.topTag}
-              </span>
-            )}
-          </div>
+          <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
 
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-4xl md:text-5xl font-black text-gray-900">{cfg.price}</span>
@@ -161,12 +187,20 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
             <p className="text-xs text-gray-400 italic">{cfg.subPriceNote}</p>
           )}
 
+          {cfg.immediateAccess && <ImmediateAccessBanner />}
+          {cfg.showMasterclassDate && <MasterclassDateBox />}
+
           <ul className="space-y-2.5">
             {cfg.benefits.map((b, i) =>
               b.isSectionHeader ? (
                 <li key={i} className="flex flex-col gap-1.5 pt-2">
                   {i > 0 && <Separator className="bg-gray-200 mb-1" />}
                   <span className="text-sm font-bold text-gray-800">{b.text}</span>
+                </li>
+              ) : cfg.highlightBenefitIndex === i ? (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-1.5 -mx-1">
+                  {getBenefitIcon(b.text, cfg.iconColor)}
+                  <span className="font-semibold">{b.text}</span>
                 </li>
               ) : (
                 <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
