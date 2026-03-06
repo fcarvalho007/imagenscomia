@@ -60,6 +60,7 @@ interface SmsSendConfig {
   webinarFilter: "current" | "all"; // "current" = only this webinar, "all" = both webinars
   smsText: string;
   requirePhone?: boolean;
+  requirePaid?: boolean;
 }
 
 interface AudienceFilter {
@@ -98,6 +99,7 @@ function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
     return inscritos.filter((i) => {
       if (cfg.requirePhone && !i.whatsapp) return false;
       if (i.do_not_contact) return false;
+      if (cfg.requirePaid && !i.paid_at && !i.premium_granted_at) return false;
       const plan = i.plan || "free";
       return cfg.planFilter.includes(plan);
     }).length;
@@ -359,6 +361,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         webinarFilter: "current",
         smsText: "Ola! Ja tens acesso a gravacao (70min), workbook e guia GEMs em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     {
@@ -376,6 +379,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         webinarFilter: "current",
         smsText: "Ola! A Masterclass e na quinta, 12 de Marco, as 10h. O link sera enviado na vespera por email. Confirma no teu calendario: calendar.app.google/qX6CxAwxafWHNEaYA — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     {
@@ -393,6 +397,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         webinarFilter: "current",
         smsText: "Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo. A Masterclass e quinta 12 Mar as 10h (link na vespera). Ate ja! — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     {
@@ -454,6 +459,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         webinarFilter: "all",
         smsText: "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     {
@@ -471,6 +477,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
         webinarFilter: "all",
         smsText: "Lembrete: a Masterclass comeca as 10:00. O link de acesso foi enviado por email. Ate ja! — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     // ── END ──
@@ -636,6 +643,7 @@ function getPostEventNodes(): NodeDef[] {
         webinarFilter: "current",
         smsText: "Ola! Ja tens acesso a gravacao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
         requirePhone: true,
+        requirePaid: true,
       },
     },
     {
@@ -964,6 +972,7 @@ function Timeline({
       if (!i.whatsapp) return false;
       if (i.do_not_contact) return false;
       if (config.webinarFilter === "current" && i.webinar !== webinar) return false;
+      if (config.requirePaid && !i.paid_at && !i.premium_granted_at) return false;
       const plan = i.plan || "free";
       return config.planFilter.includes(plan);
     });
