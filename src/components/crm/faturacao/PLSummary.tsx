@@ -43,14 +43,14 @@ export default function PLSummary({ receitaConfirmada, pipelinePendente, costs, 
   return (
     <div className="space-y-4">
       <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Mapa de Contas</h2>
-      <div className="rounded-2xl p-5 border max-w-lg" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+      <div className="rounded-2xl p-4 sm:p-5 border w-full md:max-w-lg" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
         {plLines.map(section => (
           <div key={section.section}>
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>{section.section}</p>
             {section.items.map((item: any) => (
               <div key={item.label} className="flex justify-between py-0.5">
-                <span className="text-[12px]" style={{ color: item.muted ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.6)" }}>{item.label}</span>
-                <span className={`text-[12px] ${item.bold ? "font-bold" : "font-medium"}`} style={{
+                <span className="text-[11px] sm:text-[12px]" style={{ color: item.muted ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.6)" }}>{item.label}</span>
+                <span className={`text-[11px] sm:text-[12px] ${item.bold ? "font-bold" : "font-medium"}`} style={{
                   color: item.highlight !== undefined
                     ? (item.highlight ? "#22c55e" : "#ef4444")
                     : item.bold ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.7)",

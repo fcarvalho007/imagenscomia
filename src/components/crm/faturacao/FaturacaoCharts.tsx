@@ -1,6 +1,7 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import type { Inscrito } from "@/pages/crm/mockData";
 import type { AcquisitionCost } from "@/components/crm/FaturacaoView";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
   receitaConfirmada: number;
@@ -28,6 +29,10 @@ const TOOLTIP_STYLE = {
 };
 
 export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs }: Props) {
+  const isMobile = useIsMobile();
+  const chartHeight = isMobile ? 200 : 280;
+  const smallChartHeight = isMobile ? 180 : 230;
+
   // Bar chart data
   const barData = [
     { name: "Receita", value: receitaConfirmada, fill: "#22c55e" },
@@ -62,18 +67,23 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
   }));
   const COST_COLORS = ["#ef4444", "#f97316", "#eab308", "#64748b"];
 
+  const outerRadius = isMobile ? 70 : 100;
+  const innerRadius = isMobile ? 38 : 55;
+  const smallOuterRadius = isMobile ? 60 : 80;
+  const smallInnerRadius = isMobile ? 32 : 45;
+
   return (
     <div className="space-y-4">
       <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Visão Geral</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Bar chart — Receita vs Pipeline vs Custos */}
-        <div className="rounded-2xl p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+        {/* Bar chart */}
+        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Receita vs Pipeline vs Custos</p>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={barData} barSize={52}>
-              <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} />
+          <ResponsiveContainer width="100%" height={chartHeight}>
+            <BarChart data={barData} barSize={isMobile ? 36 : 52}>
+              <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: isMobile ? 10 : 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} width={isMobile ? 45 : 60} />
               <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmt(v)} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {barData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -82,22 +92,22 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
           </ResponsiveContainer>
         </div>
 
-        {/* Donut chart — Distribuição por Plano */}
-        <div className="rounded-2xl p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+        {/* Donut chart */}
+        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Receita por Plano</p>
           {pieData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
                 <Pie
                   data={pieData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
-                  innerRadius={55}
+                  outerRadius={outerRadius}
+                  innerRadius={innerRadius}
                   dataKey="value"
                   strokeWidth={0}
-                  label={({ name, value }) => `${name} — ${fmt(value)}`}
-                  labelLine={{ stroke: "rgba(255,255,255,0.2)" }}
+                  label={isMobile ? false : ({ name, value }: any) => `${name} — ${fmt(value)}`}
+                  labelLine={isMobile ? false : { stroke: "rgba(255,255,255,0.2)" }}
                 >
                   {pieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                 </Pie>
@@ -111,17 +121,16 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[280px]">
+            <div className="flex items-center justify-center" style={{ height: chartHeight }}>
               <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>Sem vendas registadas</p>
             </div>
           )}
         </div>
 
         {/* Margin gauge */}
-        <div className="rounded-2xl p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Estrutura de Custos</p>
           <div className="space-y-6 py-4">
-            {/* Main gauge */}
             <div>
               <div className="flex justify-between text-[11px] mb-2">
                 <span style={{ color: "rgba(255,255,255,0.5)" }}>Custos / Receita</span>
@@ -147,8 +156,6 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
                 <span style={{ color: "rgba(255,255,255,0.3)" }}>{fmt(receitaConfirmada)}</span>
               </div>
             </div>
-
-            {/* Margin bar */}
             <div>
               <div className="flex justify-between text-[11px] mb-2">
                 <span style={{ color: "rgba(255,255,255,0.5)" }}>Margem</span>
@@ -170,21 +177,21 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
         </div>
 
         {/* Cost breakdown mini donut */}
-        <div className="rounded-2xl p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
           <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Custos por Categoria</p>
           {costCatData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={230}>
+            <ResponsiveContainer width="100%" height={smallChartHeight}>
               <PieChart>
                 <Pie
                   data={costCatData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  innerRadius={45}
+                  outerRadius={smallOuterRadius}
+                  innerRadius={smallInnerRadius}
                   dataKey="value"
                   strokeWidth={0}
-                  label={({ name, value }) => `${name} ${fmt(value)}`}
-                  labelLine={{ stroke: "rgba(255,255,255,0.15)" }}
+                  label={isMobile ? false : ({ name, value }: any) => `${name} ${fmt(value)}`}
+                  labelLine={isMobile ? false : { stroke: "rgba(255,255,255,0.15)" }}
                 >
                   {costCatData.map((_, idx) => <Cell key={idx} fill={COST_COLORS[idx % COST_COLORS.length]} />)}
                 </Pie>
@@ -192,7 +199,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-[230px]">
+            <div className="flex items-center justify-center" style={{ height: smallChartHeight }}>
               <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>Sem custos registados</p>
             </div>
           )}

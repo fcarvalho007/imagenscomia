@@ -9,7 +9,7 @@ interface Props {
 interface PlanRow {
   plan: string;
   label: string;
-  price: number;
+  price: string;
   paid: number;
   pending: number;
   total: number;
@@ -17,16 +17,16 @@ interface PlanRow {
   groupCount: number;
 }
 
-const PLAN_CONFIG: Record<string, Record<string, { label: string; price: number }>> = {
+const PLAN_CONFIG: Record<string, Record<string, { label: string }>> = {
   webinar: {
-    premium: { label: "Premium Pass", price: 15 },
-    masterclass: { label: "Masterclass", price: 47 },
-    bundle: { label: "Pack Completo", price: 62 },
+    premium: { label: "Premium Pass" },
+    masterclass: { label: "Masterclass" },
+    bundle: { label: "Pack Completo" },
   },
   gravacao: {
-    premium: { label: "Sessão Prática", price: 27 },
-    masterclass: { label: "Masterclass Vídeo", price: 67 },
-    bundle: { label: "Pack IA Completo", price: 107 },
+    premium: { label: "Sessão Prática" },
+    masterclass: { label: "Masterclass Vídeo" },
+    bundle: { label: "Pack IA Completo" },
   },
 };
 
@@ -34,18 +34,22 @@ function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao"): PlanR
   const config = PLAN_CONFIG[source];
   const filtered = inscritos.filter(i => i.registration_source === source && i.plan !== "free");
 
-  return Object.entries(config).map(([plan, { label, price }]) => {
+  return Object.entries(config).map(([plan, { label }]) => {
     const matching = filtered.filter(i => i.plan === plan);
-    const paid = matching.filter(i => i.payment_status === "paid").length;
-    const pending = matching.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected").length;
+    const paidItems = matching.filter(i => i.payment_status === "paid");
+    const pendingItems = matching.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
     const groupItems = matching.filter(i => !!i.group_payment_ref);
+    // Use actual paid amounts instead of static price × count
+    const total = paidItems.reduce((s, i) => s + (Number(i.valor) || 0), 0);
+    // Show average price per unit if there are paid items
+    const avgPrice = paidItems.length > 0 ? (total / paidItems.length) : 0;
     return {
       plan,
       label,
-      price,
-      paid,
-      pending,
-      total: paid * price,
+      price: avgPrice > 0 ? `€${avgPrice.toFixed(2)}` : "—",
+      paid: paidItems.length,
+      pending: pendingItems.length,
+      total,
       hasGroup: groupItems.length > 0,
       groupCount: groupItems.length,
     };
@@ -58,13 +62,14 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
   return (
     <div>
       <h3 className="text-[13px] font-semibold mb-2" style={{ color: "rgba(255,255,255,0.7)" }}>{title}</h3>
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-        <table className="w-full text-[12px]">
+      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+        <table className="w-full text-[12px] min-w-[500px]">
           <thead>
             <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              {["Plano", "Preço", "Pagos", "Pendentes", "Total (€)", ""].map(h => (
+              {["Plano", "Preço médio", "Pagos", "Pendentes", "Total (€)"].map(h => (
                 <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>{h}</th>
               ))}
+              <th className="px-3 py-2 text-left font-medium hidden sm:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -81,7 +86,7 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>€{r.price}</td>
+                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{r.price}</td>
                   <td className="px-3 py-2" style={{ color: "#22c55e" }}>{r.paid}</td>
                   <td className="px-3 py-2">
                     {r.pending > 0 ? (
@@ -93,7 +98,7 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
                     )}
                   </td>
                   <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>€{r.total.toFixed(2)}</td>
-                  <td className="px-3 py-2 w-24">
+                  <td className="px-3 py-2 w-24 hidden sm:table-cell">
                     <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
                       <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: "#3b82f6" }} />
                     </div>
@@ -106,7 +111,7 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
             <tr style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               <td colSpan={4} className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Subtotal</td>
               <td className="px-3 py-2 font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>€{subtotal.toFixed(2)}</td>
-              <td />
+              <td className="hidden sm:table-cell" />
             </tr>
           </tfoot>
         </table>
