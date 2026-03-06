@@ -22,9 +22,10 @@ function buildFallbackHtml(fname: string): string {
 
   <div style="border-top:1px solid #eee;padding-top:20px;margin-bottom:24px;">
     <p style="color:#555;font-size:15px;font-weight:700;margin:0 0 12px;">Premium Pass — €27+IVA</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa (70 min, sem cortes)</p>
-    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão Q&A ao vivo (10 Março, 14h30)</p>
-    <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Guia de prompts para vídeo (PDF)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Sessão completa em HD (~70 min, sem cortes)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Workbook Resumo da Sessão (PDF)</p>
+    <p style="color:#333;font-size:15px;margin:0 0 4px;">✓ Guia técnico de GEMs para vídeo</p>
+    <p style="color:#333;font-size:15px;margin:0 0 16px;">✓ Sessão Q&A ao vivo (10 Março, 14h30)</p>
     <div style="text-align:center;">
       <a href="https://imagenscomia.com/upgrade-video" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Obter o Premium Pass — €27+IVA →</a>
     </div>
