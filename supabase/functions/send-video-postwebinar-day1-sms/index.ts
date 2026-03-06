@@ -22,7 +22,7 @@ serve(async (req) => {
     const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "__none__");
     const isAnonCron = authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "__none__");
 
-    if (!isCron && !isServiceRole) {
+    if (!isCron && !isServiceRole && !isAnonCron) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
