@@ -1,56 +1,29 @@
 
 
-# Redesign do email de notificação de venda (invoice_notification)
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema actual
+### Alteração
 
-O email é texto plano HTML sem estrutura visual — difícil de ler rapidamente. O título não identifica o produto de imediato, e os dados de faturação não se distinguem do resto.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-## Solução
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-Redesenhar o HTML do email no `eupago-webhook/index.ts` com:
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 1. Subject line mais claro
-```
-COM FATURA:  💰 Masterclass Vídeo com IA — Susana Vieira — 82,41€
-SEM FATURA:  ⚠️ Masterclass Vídeo com IA — Susana Vieira — 82,41€ — SEM FATURA
-```
-Padrão: `{emoji} {Produto} — {Nome} — {Valor}€`
-
-### 2. Actualizar `planLabelMap` com novos nomes
-- `video-premium` → "Sessão Prática — Vídeo com IA"
-- `video-masterclass` → "Masterclass — Vídeo com IA"  
-- `video-bundle` → "Pack IA Completo"
-- Actualizar `unitPriceMap` para reflectir preços actuais (bundle = 131,61)
-
-### 3. Novo layout HTML do email
-
-Template com fundo branco, max-width 600px, estrutura em blocos visuais:
-
-**Bloco 1 — Header colorido** (fundo roxo escuro)
-- Título grande: "VENDA CONFIRMADA" ou "⚠️ VENDA — SEM FATURA"
-- Produto em destaque (branco, bold, 20px)
-- Valor total em destaque (branco, 28px bold)
-
-**Bloco 2 — Dados do cliente** (fundo cinza claro)
-- Nome + email (link mailto)
-- WhatsApp (link wa.me)
-- Webinar, data de inscrição, fonte, função, equipa
-- Disposição em grid 2 colunas para compactar
-
-**Bloco 3 — Detalhes do pagamento** (fundo branco, borda)
-- Produto, preço unitário, total cobrado
-- Método, referência, TX ID
-- Data/hora do pagamento
-
-**Bloco 4 — Faturação** (fundo branco, borda verde se presente / borda vermelha se ausente)
-- Se existe: Nome/Empresa, NIF, Morada, CP, Cidade, Email
-- Se não existe: warning box vermelho "Dados de faturação não recolhidos"
-
-**Bloco 5 — Grupo** (se aplicável)
-- Lista de participantes
-
-### 4. Ficheiro alterado
-
-- `supabase/functions/eupago-webhook/index.ts` — linhas ~588-669: actualizar planLabelMap, unitPriceMap, subject e htmlBody
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
