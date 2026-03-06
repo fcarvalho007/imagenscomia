@@ -349,22 +349,43 @@ async function processPayment(data: PaymentData) {
     console.log(`🔎 Strategy 2: extracted order_id="${oid}" from identifier="${identifier}"`);
 
     if (oid && oid.length === 12) {
-      const { data: updatedRows, error } = await supabase
+      // First fetch the registration to know the webinar for plan derivation
+      const { data: orderReg } = await supabase
         .from("registrations")
-        .update({
+        .select("id, email, webinar, plan_selected")
+        .eq("order_id", oid)
+        .maybeSingle();
+
+      if (orderReg) {
+        const updatePayload: Record<string, any> = {
           paid_at: new Date().toISOString(),
           eupago_ref: reference || transactionID,
           eupago_transaction_id: transactionID || null,
-        })
-        .eq("order_id", oid)
-        .select("id, email");
+        };
+        // Safety net: derive plan from amount paid
+        const derivedPlan = derivePlanFromAmount(amount, orderReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          if (derivedPlan !== orderReg.plan_selected) {
+            console.log(`🔧 Strategy 2: plan corrected from "${orderReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
+          }
+        }
 
-      if (!error && updatedRows && updatedRows.length > 0) {
-        console.log(`✅ Strategy 2: matched by order_id="${oid}" — email=${updatedRows[0].email}`);
-        matched = true;
-        matchedRegId = updatedRows[0].id;
+        const { data: updatedRows, error } = await supabase
+          .from("registrations")
+          .update(updatePayload)
+          .eq("id", orderReg.id)
+          .select("id, email");
+
+        if (!error && updatedRows && updatedRows.length > 0) {
+          console.log(`✅ Strategy 2: matched by order_id="${oid}" — email=${updatedRows[0].email}`);
+          matched = true;
+          matchedRegId = updatedRows[0].id;
+        } else {
+          console.warn(`⚠️ Strategy 2: update failed for order_id="${oid}"`, error?.message || "");
+        }
       } else {
-        console.warn(`⚠️ Strategy 2: no match for order_id="${oid}"`, error?.message || "");
+        console.warn(`⚠️ Strategy 2: no match for order_id="${oid}"`);
       }
     } else {
       console.warn(`⚠️ Strategy 2: extracted order_id="${oid}" has unexpected length — skipping`);
