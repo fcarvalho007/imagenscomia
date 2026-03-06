@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      acquisition_costs: {
+        Row: {
+          amount: number
+          category: string
+          cost_date: string
+          created_at: string
+          description: string
+          id: string
+          platform: string
+          updated_at: string
+          webinar: string
+        }
+        Insert: {
+          amount: number
+          category?: string
+          cost_date?: string
+          created_at?: string
+          description?: string
+          id?: string
+          platform: string
+          updated_at?: string
+          webinar?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          cost_date?: string
+          created_at?: string
+          description?: string
+          id?: string
+          platform?: string
+          updated_at?: string
+          webinar?: string
+        }
+        Relationships: []
+      }
       analytics_cache: {
         Row: {
           key: string

@@ -8,6 +8,7 @@ import TableView from "@/components/crm/TableView";
 import TrashView from "@/components/crm/TrashView";
 import FollowUpView from "@/components/crm/FollowUpView";
 import ComunicacaoView from "@/components/crm/ComunicacaoView";
+import FaturacaoView from "@/components/crm/FaturacaoView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -116,6 +117,9 @@ function CRMInner() {
             lastEmailMap={lastEmailMap}
             onUpdateStepReached={updateStepReached}
           />
+        )}
+        {activeView === "faturacao" && (
+          <FaturacaoView inscritos={filteredInscritos} onRefresh={refresh} />
         )}
         {activeView === "templates" && (
           <FollowUpView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} />
