@@ -84,7 +84,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
       .from("message_logs")
       .select("id, registration_id, template_key, provider, status, provider_message_id, error, created_at")
       .order("created_at", { ascending: false })
-      .limit(500);
+      .limit(5000);
     if (data) setLogs(data as MessageLog[]);
     setLogsLoading(false);
   }, []);
