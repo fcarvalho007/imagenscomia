@@ -24,7 +24,8 @@ export default function SmsComposer({ phone, registrationId, nome, onClose }: Sm
     if (!text.trim() || sending) return;
     setSending(true);
     try {
-      const adminEmail = sessionStorage.getItem("crm_admin_email");
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
       const { data, error } = await supabase.functions.invoke("send-sms", {
         body: { to: phone, text: text.trim(), provider, registrationId },
         headers: { "x-crm-admin-email": adminEmail || "" },
