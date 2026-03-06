@@ -550,7 +550,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       {(() => {
-                        const wKey = (i.webinar === "video" ? "video" : "imagens") as const;
+                        const wKey: "video" | "imagens" = i.webinar === "video" ? "video" : "imagens";
                         const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
                         const isPost = new Date(i.timestamp).getTime() >= cutoff.getTime();
                         return (
