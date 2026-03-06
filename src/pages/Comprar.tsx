@@ -1,22 +1,28 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen } from "lucide-react";
+import { Check, Lock, Video, Sparkles, Play, FileText, BookOpen, Image } from "lucide-react";
 import { PurchaseModal } from "@/components/webinar/PurchaseModal";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Separator } from "@/components/ui/separator";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
 
 function getBenefitIcon(text: string, color: string) {
   const lower = text.toLowerCase();
-  if (lower.includes("sessão completa") || lower.includes("70 min")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("sessão completa") || lower.includes("70 min") || lower.includes("60 min")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   if (lower.includes("masterclass") || lower.includes("3 horas")) return <Video className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
-  if (lower.includes("prompts") || lower.includes("sistema")) return <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
-  if (lower.includes("workbook")) return <FileText className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
-  if (lower.includes("guia técnico") || lower.includes("gems")) return <BookOpen className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("prompts") || lower.includes("sistema") || lower.includes("biblioteca")) return <Sparkles className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("workbook") || lower.includes("pdf")) return <FileText className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+  if (lower.includes("guia") || lower.includes("gems") || lower.includes("sop") || lower.includes("passo-a-passo")) return <BookOpen className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   if (lower.includes("q&a")) return <Video className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   if (lower.includes("gravação")) return <Play className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
   return <Check className="w-4 h-4 shrink-0 mt-0.5" style={{ color }} />;
+}
+
+interface BenefitItem {
+  text: string;
+  isSectionHeader?: boolean;
 }
 
 const PLANS: Record<Plan, {
@@ -26,7 +32,7 @@ const PLANS: Record<Plan, {
   savingsBadge?: string;
   ivaNote?: string;
   subPriceNote?: string;
-  benefits: string[];
+  benefits: BenefitItem[];
   ctaLabel: string;
   planLabel: string;
   featured?: boolean;
@@ -34,58 +40,67 @@ const PLANS: Record<Plan, {
   iconColor: string;
   ctaClassName: string;
   shadow: string;
+  topTag?: string;
 }> = {
   gravacao: {
-    title: "Sessão Prática + Materiais",
+    title: "Sessão Prática",
     price: "€27",
     ivaNote: "+ IVA",
     subPriceNote: "Acesso imediato após a compra.",
+    topTag: "Acesso imediato",
     benefits: [
-      "Sessão completa em HD — ~70 min de sessão prática, sem cortes",
-      "Workbook Resumo da Sessão — PDF com os pontos-chave e exercícios",
-      "Guia técnico de GEMs para vídeo — apoio para criação de GEMs especializados",
-      "Sessão Q&A ao vivo — 10 de Março, 14h30, tira dúvidas com o Frederico",
+      { text: "Sessão Vídeo com IA HD ~70 min, sem cortes" },
+      { text: "Workbook PDF resumo da sessão" },
+      { text: "Guia técnico dos 3 GEMs para vídeo" },
+      { text: "Sessão Q&A ao vivo — 10 de Março, 14h30" },
     ],
     ctaLabel: "Quero a Sessão Prática →",
-    planLabel: "Sessão Prática + Materiais · €27 + IVA",
+    planLabel: "Sessão Prática · €27 + IVA",
     stripeClass: "bg-slate-700",
     iconColor: "#475569",
     ctaClassName: "bg-slate-800 hover:bg-slate-900 rounded-xl py-4 font-semibold",
     shadow: "0 8px 40px rgba(0,0,0,0.25)",
   },
   masterclass: {
-    title: "Masterclass Vídeo com IA",
+    title: "Masterclass Vídeo",
     price: "€67",
     ivaNote: "+ IVA",
     subPriceNote: "3 horas intensivas com o Frederico.",
     benefits: [
-      "3 horas ao vivo com o Frederico",
-      "Sistema completo de criação de vídeo com IA",
-      "Prompts reutilizáveis para a tua empresa",
-      "Gravação da Masterclass incluída",
+      { text: "3 horas ao vivo com o Frederico" },
+      { text: "Sistema completo de criação de vídeo com IA" },
+      { text: "Prompts reutilizáveis para a tua empresa" },
+      { text: "Gravação da Masterclass incluída" },
     ],
     ctaLabel: "Quero a Masterclass →",
-    planLabel: "Masterclass Vídeo com IA · €67 + IVA",
+    planLabel: "Masterclass Vídeo · €67 + IVA",
     stripeClass: "bg-violet-400",
     iconColor: "#8b5cf6",
     ctaClassName: "bg-violet-600 hover:bg-violet-700 rounded-xl py-4 font-semibold",
     shadow: "0 8px 40px rgba(0,0,0,0.25)",
   },
   bundle: {
-    title: "Masterclass + Sessão Prática",
-    price: "€94",
+    title: "Pack IA Completo",
+    price: "€107",
+    priceStrike: "€121",
+    savingsBadge: "Poupas €14",
     ivaNote: "+ IVA",
     subPriceNote: "Tudo incluído num só pacote.",
     benefits: [
-      "3 horas ao vivo — Masterclass completa",
-      "Sistema completo + prompts reutilizáveis",
-      "Gravação da Masterclass incluída",
-      "Sessão prática de 70 min sem cortes",
-      "Ficheiro GEM pronto a importar",
-      "Pack de materiais de apoio (checklists + templates)",
+      { text: "📹 Vídeo com IA", isSectionHeader: true },
+      { text: "Sessão completa HD ~70 min, sem cortes" },
+      { text: "Workbook + Guia GEMs para vídeo" },
+      { text: "3 horas ao vivo — Masterclass completa" },
+      { text: "Gravação da Masterclass incluída" },
+      { text: "🖼️ Imagens com IA (incluído)", isSectionHeader: true },
+      { text: "Sessão HD 60 min — Imagens com IA" },
+      { text: "PDF resumo Imagens com IA" },
+      { text: "SOP Nano Banana Pro" },
+      { text: "Biblioteca de prompts de imagem editáveis" },
+      { text: "Guia passo-a-passo Nano Banana Pro" },
     ],
-    ctaLabel: "Quero o pacote completo →",
-    planLabel: "Masterclass + Sessão Prática · €94 + IVA",
+    ctaLabel: "Quero o Pack Completo →",
+    planLabel: "Pack IA Completo · €107 + IVA",
     featured: true,
     stripeClass: "bg-gradient-to-r from-violet-600 to-purple-500",
     iconColor: "#8b5cf6",
@@ -120,7 +135,14 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
 
       <div className="flex flex-col flex-1 justify-between p-6 md:p-5 lg:p-8 gap-5">
         <div className="flex flex-col gap-4">
-          <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
+            {cfg.topTag && (
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                {cfg.topTag}
+              </span>
+            )}
+          </div>
 
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-5xl font-black text-gray-900">{cfg.price}</span>
@@ -140,12 +162,19 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
           )}
 
           <ul className="space-y-2.5">
-            {cfg.benefits.map((b) => (
-              <li key={b} className="flex items-start gap-2 text-sm text-gray-700">
-                {getBenefitIcon(b, cfg.iconColor)}
-                <span>{b}</span>
-              </li>
-            ))}
+            {cfg.benefits.map((b, i) =>
+              b.isSectionHeader ? (
+                <li key={i} className="flex flex-col gap-1.5 pt-2">
+                  {i > 0 && <Separator className="bg-gray-200 mb-1" />}
+                  <span className="text-sm font-bold text-gray-800">{b.text}</span>
+                </li>
+              ) : (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                  {getBenefitIcon(b.text, cfg.iconColor)}
+                  <span>{b.text}</span>
+                </li>
+              )
+            )}
           </ul>
         </div>
 
@@ -246,6 +275,17 @@ export default function Comprar() {
           </p>
           <p className="text-xs text-white/50">
             Cartão de crédito · MB WAY · Multibanco
+          </p>
+          <p className="text-[11px] text-white/30 mt-2 text-center">
+            Já tens o pack de Imagens com IA?{" "}
+            <a
+              href="https://wa.me/351912345678?text=Ol%C3%A1%2C%20j%C3%A1%20tenho%20o%20pack%20de%20Imagens%20e%20gostaria%20de%20fazer%20upgrade%20com%20desconto."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-white/50 hover:text-white/70 transition-colors"
+            >
+              Contacta-nos para upgrade com desconto
+            </a>
           </p>
         </div>
       </div>

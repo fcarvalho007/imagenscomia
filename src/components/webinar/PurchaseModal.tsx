@@ -22,14 +22,14 @@ const PLAN_PRICES_DISPLAY: Record<string, string> = {
   premium: "€27 + IVA",
   masterclass: "€67 + IVA",
   gravacao: "€27 + IVA",
-  bundle: "€94 + IVA",
+  bundle: "€107 + IVA",
 };
 
 const PLAN_NAMES: Record<string, string> = {
   premium: "Sessão Prática + Materiais",
   masterclass: "Masterclass Vídeo com IA",
   gravacao: "Sessão Prática + Materiais",
-  bundle: "Masterclass + Sessão Prática",
+  bundle: "Pack IA Completo",
 };
 
 function ctaBg(plan: string) {
