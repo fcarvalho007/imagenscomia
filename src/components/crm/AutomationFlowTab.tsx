@@ -426,6 +426,109 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
   ];
 }
 
+/* ─── POST-EVENT NODES (video only) ─── */
+function getPostEventNodes(): NodeDef[] {
+  return [
+    {
+      type: "trigger",
+      title: "Inscrição pós-evento",
+      subtitle: "Webinar já decorreu · inscrição via /video",
+      templateKeyMatch: [],
+      iconEmoji: "👤",
+      borderColorOverride: "#f59e0b",
+      sectionDivider: "PÓS-EVENTO",
+    },
+    {
+      type: "email",
+      title: "Confirmação imediata",
+      subtitle: "Enviado automaticamente · segundos após inscrição · inclui link de upgrade",
+      templateKeyMatch: ["video_confirmation"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#10b981",
+      customTag: { label: "AUTOMÁTICO · IMEDIATO", bg: "#dcfce7", color: "#16a34a" },
+    },
+    // ── PAYMENT BLOCK ──
+    {
+      type: "email",
+      title: "Confirmação de compra — Premium Pass",
+      subtitle: "Gravação HD · Pack · Q&A 10 Mar · link calendário",
+      templateKeyMatch: ["video_payment_premium"],
+      sendOffsetHours: null,
+      isPaymentBlock: true,
+      iconEmoji: "🎬",
+      borderColorOverride: "#16a34a",
+      customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#dcfce7", color: "#16a34a" },
+    },
+    {
+      type: "email",
+      title: "Confirmação de compra — Masterclass",
+      subtitle: "Masterclass 12 Mar · 10h00 · link calendário",
+      templateKeyMatch: ["video_payment_masterclass"],
+      sendOffsetHours: null,
+      isPaymentBlock: true,
+      iconEmoji: "🎓",
+      borderColorOverride: "#7c3aed",
+      customTag: { label: "AUTOMÁTICO · PÓS-PAGAMENTO", bg: "#f3e8ff", color: "#7c3aed" },
+    },
+    // ── RECURSOS ──
+    {
+      type: "email",
+      title: "Recursos — Premium Pass",
+      subtitle: "Acesso gravação + materiais · upsell Masterclass",
+      templateKeyMatch: ["video_recursos_premium"],
+      sendOffsetHours: null,
+      sectionDivider: "ACESSO AOS RECURSOS",
+      iconEmoji: "🎬",
+      borderColorOverride: "#16a34a",
+      customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
+    },
+    {
+      type: "email",
+      title: "Recursos — Masterclass",
+      subtitle: "Confirmação Masterclass 12 Mar · upsell gravação",
+      templateKeyMatch: ["video_recursos_masterclass"],
+      sendOffsetHours: null,
+      iconEmoji: "🎓",
+      borderColorOverride: "#7c3aed",
+      customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
+    },
+    {
+      type: "email",
+      title: "Recursos — Bundle",
+      subtitle: "Acesso completo · gravação + Masterclass 12 Mar",
+      templateKeyMatch: ["video_recursos_bundle"],
+      sendOffsetHours: null,
+      iconEmoji: "⭐",
+      borderColorOverride: "#0ea5e9",
+      customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
+    },
+    {
+      type: "email",
+      title: "SMS Acesso aos recursos",
+      subtitle: "Envio manual · clientes pagos com telefone",
+      templateKeyMatch: ["sms_recursos_post"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#8b5cf6",
+      customTag: { label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["premium", "masterclass", "bundle"],
+        webinarFilter: "current",
+        smsText: "Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo para entrar. Ate ja! — Frederico",
+        requirePhone: true,
+      },
+    },
+    {
+      type: "end",
+      title: "Conversão concluída",
+      subtitle: "Inscrito pós-evento recebeu confirmação, pagou e tem acesso",
+      templateKeyMatch: [],
+    },
+  ];
+}
+
 function matchTemplate(templateKey: string, patterns: string[]): boolean {
   const k = templateKey.toLowerCase();
   return patterns.some((p) => k.includes(p));
@@ -614,6 +717,7 @@ function Timeline({
   emailStats,
   emailStatsLoading,
   onClickSentCount,
+  flowSubTab,
 }: {
   webinar: WebinarKey;
   inscritos: Inscrito[];
@@ -622,6 +726,7 @@ function Timeline({
   emailStats?: EmailStats;
   emailStatsLoading?: boolean;
   onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
+  flowSubTab?: "pre" | "post";
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
@@ -651,12 +756,23 @@ function Timeline({
     setCustomSmsTexts(updated);
     localStorage.setItem("crm_sms_drafts", JSON.stringify(updated));
   };
-  const nodes = useMemo(() => getNodes(webinar), [webinar]);
+  const isPostTab = flowSubTab === "post";
+  const nodes = useMemo(() => isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
-  const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime();
+  const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
 
-  const inscritosCount = inscritos.filter((i) => {
+  // For post-event tab, filter inscritos to only those who registered after the webinar
+  const filteredInscritos = useMemo(() => {
+    if (!isPostTab) return inscritos;
+    return inscritos.filter((i) => {
+      if (i.webinar !== "video") return false;
+      const created = new Date(i.timestamp).getTime();
+      return created > VIDEO_WEBINAR_DATE.getTime();
+    });
+  }, [inscritos, isPostTab]);
+
+  const inscritosCount = filteredInscritos.filter((i) => {
     if (webinar === "video") return i.webinar === "video";
     return !i.webinar || i.webinar === "imagens";
   }).length;
@@ -725,7 +841,7 @@ function Timeline({
     const smsText = customText || customSmsTexts[templateKey] || config.smsText;
 
     // Get eligible recipients
-    let eligible = inscritos.filter((i) => {
+    let eligible = filteredInscritos.filter((i) => {
       if (!i.whatsapp) return false;
       if (i.do_not_contact) return false;
       if (config.webinarFilter === "current" && i.webinar !== webinar) return false;
@@ -1191,6 +1307,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   const [drawerEmailKey, setDrawerEmailKey] = useState("");
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
+  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post">("pre");
 
   const handleClickSentCount = (emailKey: string, title: string, webinar: WebinarKey) => {
     setDrawerEmailKey(emailKey);
@@ -1217,6 +1334,31 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     />
   );
 
+  // Sub-tab pills for video context
+  const SubTabPills = () => (
+    <div className="flex items-center gap-1.5 mb-5">
+      {(["pre", "post"] as const).map((tab) => {
+        const isActive = flowSubTab === tab;
+        const label = tab === "pre" ? "Pré-Webinar" : "Pós-Evento";
+        const emoji = tab === "pre" ? "📡" : "🕐";
+        return (
+          <button
+            key={tab}
+            onClick={() => setFlowSubTab(tab)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all"
+            style={{
+              background: isActive ? (tab === "pre" ? "#1e40af" : "#f59e0b") : "#f1f5f9",
+              color: isActive ? "#fff" : "#64748b",
+              border: `1px solid ${isActive ? "transparent" : "#e2e8f0"}`,
+            }}
+          >
+            {emoji} {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   if (webinarContext === "consolidado") {
     return (
       <div>
@@ -1232,7 +1374,8 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
             <h3 className="font-heading font-bold text-[15px] mb-4" style={{ color: "#0F172A" }}>
               🎬 Vídeo IA · 2 Mar 2026
             </h3>
-            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
+            <SubTabPills />
+            <Timeline webinar="video" inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} flowSubTab={flowSubTab} />
           </div>
         </div>
         {drawer}
@@ -1245,7 +1388,8 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   return (
     <div>
       <StatusBar logs={logs} webinar={webinar} emailStats={emailStats} />
-      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} />
+      {webinar === "video" && <SubTabPills />}
+      <Timeline webinar={webinar} inscritos={inscritos} logs={logs} onOpenEditor={onOpenEditor} emailStats={emailStats} emailStatsLoading={emailStatsLoading} onClickSentCount={handleClickSentCount} flowSubTab={webinar === "video" ? flowSubTab : undefined} />
       {drawer}
     </div>
   );
