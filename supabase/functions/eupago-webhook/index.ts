@@ -116,6 +116,58 @@ async function processPayment(data: PaymentData) {
     }
   }
 
+  // ── Strategy 1b — match ORD-{name}-{planTag} by transactionID ──────────────
+  // The create-payment function stores transactionID as eupago_ref AND eupago_transaction_id
+  if (!matched && identifier && identifier.startsWith("ORD-") && !identifier.startsWith("ORDER-")) {
+    console.log(`🔎 Strategy 1b: ORD- identifier="${identifier}", looking up by transactionID=${transactionID}`);
+    
+    if (transactionID) {
+      // Lookup by eupago_ref or eupago_transaction_id (create-payment stores the UUID there)
+      const { data: ordReg } = await supabase
+        .from("registrations")
+        .select("id, email, webinar, plan_selected")
+        .or(`eupago_ref.eq.${transactionID},eupago_transaction_id.eq.${transactionID}`)
+        .is("paid_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (ordReg) {
+        const updatePayload: Record<string, any> = {
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || transactionID,
+          eupago_transaction_id: transactionID || null,
+          paid_amount: parseFloat(amount) || null,
+        };
+        const derivedPlan = derivePlanFromAmount(amount, ordReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          if (derivedPlan !== ordReg.plan_selected) {
+            console.log(`🔧 Strategy 1b: plan corrected from "${ordReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
+          }
+        }
+
+        const { data: updatedRows, error } = await supabase
+          .from("registrations")
+          .update(updatePayload)
+          .eq("id", ordReg.id)
+          .select("id, email");
+
+        if (!error && updatedRows && updatedRows.length > 0) {
+          console.log(`✅ Strategy 1b: matched ORD- by transactionID=${transactionID} — email=${updatedRows[0].email}`);
+          matched = true;
+          matchedRegId = updatedRows[0].id;
+        } else {
+          console.warn(`⚠️ Strategy 1b: update failed for transactionID=${transactionID}`, error?.message || "");
+        }
+      } else {
+        console.warn(`⚠️ Strategy 1b: no unpaid registration found for transactionID=${transactionID}`);
+      }
+    } else {
+      console.warn(`⚠️ Strategy 1b: no transactionID in webhook for ORD- identifier`);
+    }
+  }
+
   // ── Strategy GROUP — match by GROUP-{ref} in identifier ────────────────
   if (!matched && identifier && identifier.startsWith("GROUP-")) {
     const groupRef12 = identifier.replace("GROUP-", "");
