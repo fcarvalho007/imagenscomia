@@ -101,23 +101,6 @@ serve(async (req) => {
     };
 
     const planKey = reg.plan_selected || "premium";
-    
-    // Source of truth: paid_amount from EuPago webhook (includes IVA)
-    // For Portuguese NIF → divide by 1.23 to get base price
-    // For foreign (tax exempt) → paid_amount IS the base price
-    let unitPrice: number;
-    if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
-      const paidAmount = parseFloat(reg.paid_amount);
-      // Portuguese NIF pays IVA 23%, foreign pays 0%
-      unitPrice = isPortuguese 
-        ? Math.round((paidAmount / 1.23) * 100) / 100
-        : paidAmount;
-      console.log(`💰 Using paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€ (isPortuguese=${isPortuguese})`);
-    } else {
-      unitPrice = PRICES[planKey] || 15.00;
-      console.warn(`⚠️ No paid_amount for ${reg.email} — using PRICES fallback: ${unitPrice}€ for plan "${planKey}"`);
-    }
-    
     const itemDescription = PLAN_LABELS[planKey] || planKey;
     const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
 
@@ -126,6 +109,21 @@ serve(async (req) => {
     const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
     const taxName = isPortuguese ? "IVA23" : "IVA0";
     const taxExemption = isPortuguese ? undefined : "M01";
+
+    // Source of truth: paid_amount from EuPago webhook (includes IVA)
+    // For Portuguese NIF → divide by 1.23 to get base price
+    // For foreign (tax exempt) → paid_amount IS the base price
+    let unitPrice: number;
+    if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
+      const paidAmount = parseFloat(reg.paid_amount);
+      unitPrice = isPortuguese 
+        ? Math.round((paidAmount / 1.23) * 100) / 100
+        : paidAmount;
+      console.log(`💰 Using paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€ (isPortuguese=${isPortuguese})`);
+    } else {
+      unitPrice = PRICES[planKey] || 15.00;
+      console.warn(`⚠️ No paid_amount for ${reg.email} — using PRICES fallback: ${unitPrice}€ for plan "${planKey}"`);
+    }
 
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
