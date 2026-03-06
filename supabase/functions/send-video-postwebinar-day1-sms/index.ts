@@ -20,6 +20,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization") || "";
     const isCron = cronSecret === Deno.env.get("CRON_SECRET");
     const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "__none__");
+    const isAnonCron = authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "__none__");
 
     if (!isCron && !isServiceRole) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
