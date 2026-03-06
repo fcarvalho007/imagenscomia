@@ -18,8 +18,8 @@ interface PaymentData {
 
 // Amount-to-plan safety net: derive correct plan from the paid amount
 const AMOUNT_TO_PLAN: Record<string, Record<number, string>> = {
-  imagens: { 18.45: "premium", 57.81: "masterclass", 70.11: "bundle", 33.21: "gravacao" },
-  video:   { 33.21: "video-premium", 82.41: "video-masterclass", 131.61: "video-bundle" },
+  imagens: { 18.45: "premium", 57.81: "masterclass", 70.11: "bundle", 76.26: "bundle", 33.21: "gravacao" },
+  video:   { 18.45: "video-premium", 33.21: "video-premium", 57.81: "video-masterclass", 82.41: "video-masterclass", 70.11: "video-bundle", 76.26: "video-bundle", 131.61: "video-bundle" },
 };
 
 function derivePlanFromAmount(amountStr: string, webinar: string): string | null {
@@ -142,10 +142,12 @@ async function processPayment(data: PaymentData) {
       console.log(`✅ Strategy GROUP: found ${matchingRows.length} attendees for group_payment_ref=${groupPaymentRefFull}`);
 
       // Update all group members
+      // Derive correct plan from amount for video webinar
+      const groupDerivedPlan = derivePlanFromAmount(amount, "video") || "video-masterclass";
       const { data: updatedGroupRows, error: updateErr } = await supabase
         .from("registrations")
         .update({
-          plan_selected: "masterclass",
+          plan_selected: groupDerivedPlan,
           paid_at: new Date().toISOString(),
           eupago_ref: reference || transactionID,
           eupago_transaction_id: transactionID || null,
