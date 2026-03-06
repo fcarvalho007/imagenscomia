@@ -44,7 +44,7 @@ serve(async (req) => {
     // ── Fetch registration + invoice_details ──
     const { data: reg } = await supabase
       .from("registrations")
-      .select("email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref")
+      .select("email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, paid_amount")
       .eq("id", registration_id)
       .maybeSingle();
 
@@ -73,11 +73,11 @@ serve(async (req) => {
     const PRICES: Record<string, number> = {
       premium: 15.00,
       masterclass: 47.00,
-      bundle: 62.00,
+      bundle: 57.00,
       gravacao: 27.00,
-      "video-premium": 15.00,
-      "video-masterclass": 47.00,
-      "video-bundle": 57.00,
+      "video-premium": 27.00,
+      "video-masterclass": 67.00,
+      "video-bundle": 107.00,
     };
 
     const PLAN_LABELS: Record<string, string> = {
@@ -101,7 +101,6 @@ serve(async (req) => {
     };
 
     const planKey = reg.plan_selected || "premium";
-    const unitPrice = PRICES[planKey] || 15.00;
     const itemDescription = PLAN_LABELS[planKey] || planKey;
     const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
 
@@ -110,6 +109,21 @@ serve(async (req) => {
     const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
     const taxName = isPortuguese ? "IVA23" : "IVA0";
     const taxExemption = isPortuguese ? undefined : "M01";
+
+    // Source of truth: paid_amount from EuPago webhook (includes IVA)
+    // For Portuguese NIF → divide by 1.23 to get base price
+    // For foreign (tax exempt) → paid_amount IS the base price
+    let unitPrice: number;
+    if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
+      const paidAmount = parseFloat(reg.paid_amount);
+      unitPrice = isPortuguese 
+        ? Math.round((paidAmount / 1.23) * 100) / 100
+        : paidAmount;
+      console.log(`💰 Using paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€ (isPortuguese=${isPortuguese})`);
+    } else {
+      unitPrice = PRICES[planKey] || 15.00;
+      console.warn(`⚠️ No paid_amount for ${reg.email} — using PRICES fallback: ${unitPrice}€ for plan "${planKey}"`);
+    }
 
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
