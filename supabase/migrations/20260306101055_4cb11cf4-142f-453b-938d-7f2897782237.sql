@@ -1,0 +1,2 @@
+ALTER TABLE public.message_logs DROP CONSTRAINT message_logs_channel_check;
+ALTER TABLE public.message_logs ADD CONSTRAINT message_logs_channel_check CHECK (channel = ANY (ARRAY['email'::text, 'whatsapp'::text, 'sms'::text]));
