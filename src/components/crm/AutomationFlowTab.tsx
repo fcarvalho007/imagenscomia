@@ -551,7 +551,7 @@ function getPostEventNodes(): NodeDef[] {
       smsSendConfig: {
         planFilter: ["free"],
         webinarFilter: "current",
-        smsText: "Ola! Ja viste a gravacao do webinar? Tens acesso a 70min de conteudo pratico em imagenscomia.com/video — Frederico",
+        smsText: "Ola! Tens uma sessao pratica de 70min sobre video com IA a tua espera em imagenscomia.com/video — Frederico",
         requirePhone: true,
       },
     },
@@ -597,7 +597,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Recursos — Premium Pass",
-      subtitle: "Gravação + Workbook + GEMs + Áudio · upsell Masterclass",
+      subtitle: "Sessão 70min · Workbook · GEMs · Áudio · upsell Masterclass",
       templateKeyMatch: ["video_recursos_premium"],
       sendOffsetHours: null,
       sectionDivider: "ACESSO AOS RECURSOS",
@@ -641,7 +641,7 @@ function getPostEventNodes(): NodeDef[] {
       smsSendConfig: {
         planFilter: ["premium", "masterclass", "bundle"],
         webinarFilter: "current",
-        smsText: "Ola! Ja tens acesso a gravacao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
+        smsText: "Ola! Ja tens acesso a sessao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
         requirePhone: true,
         requirePaid: true,
       },

@@ -19,7 +19,7 @@ function buildFallbackHtml(fname: string): string {
 
   <!-- Header Navy-Indigo -->
   <div style="background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4338ca 100%);padding:36px 28px 28px;text-align:center;">
-    <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Webinar · Cria Vídeo Profissional com IA</p>
+    <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Sessão Prática · Vídeo Profissional com IA</p>
     <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;line-height:1.3;">Último email, ${fname}</h1>
   </div>
 
