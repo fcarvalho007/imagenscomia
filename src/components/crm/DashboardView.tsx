@@ -70,16 +70,25 @@ interface DashboardViewProps {
   onRefresh?: () => Promise<void>;
 }
 
-const PLAN_BADGE_MAP: Record<string, { bg: string; color: string; label: string }> = {
+const PLAN_BADGE_MAP_IMAGENS: Record<string, { bg: string; color: string; label: string }> = {
   free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
-  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium €15" },
+  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Premium €18,45" },
   masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC €57,81" },
   bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle €76,26" },
+};
+const PLAN_BADGE_MAP_VIDEO: Record<string, { bg: string; color: string; label: string }> = {
+  free: { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Gratuito" },
+  premium: { bg: "hsl(var(--blue-50))", color: "hsl(var(--blue-600))", label: "Sessão Prática €33,21" },
+  masterclass: { bg: "rgba(124,58,237,0.1)", color: "#7C3AED", label: "MC €82,41" },
+  bundle: { bg: "hsl(var(--green-50))", color: "hsl(var(--green-600))", label: "Bundle €131,61" },
   gravacao: { bg: "rgba(245,158,11,0.1)", color: "#D97706", label: "Gravação €33,21" },
-  "gravacao-masterclass": { bg: "rgba(124,58,237,0.15)", color: "#7C3AED", label: "Grav+MC €91,02" },
+  "gravacao-masterclass": { bg: "rgba(124,58,237,0.15)", color: "#7C3AED", label: "Grav+MC €115,62" },
 };
 const DEFAULT_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "Desconhecido" };
-const PLAN_BADGE = (plan: string) => PLAN_BADGE_MAP[plan] || DEFAULT_BADGE;
+const getPlanBadge = (plan: string, webinar: string) => {
+  const map = webinar === "video" ? PLAN_BADGE_MAP_VIDEO : PLAN_BADGE_MAP_IMAGENS;
+  return map[plan] || DEFAULT_BADGE;
+};
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -647,7 +656,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               </div>
               <div className="space-y-1.5">
                 {stats.pendingOver6h.slice(0, 5).map((i) => {
-                  const badge = PLAN_BADGE(i.plan);
+                  const badge = getPlanBadge(i.plan, i.webinar);
                   const ref = i.upgrade_clicked_at || i.timestamp;
                   const hours = Math.round((Date.now() - new Date(ref).getTime()) / 3600000);
                   const timeText = hours >= 24 ? `${Math.floor(hours / 24)}d+` : `${hours}h`;
@@ -711,7 +720,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             const paid = stats.paidCounts[plan] || 0;
             const pending = stats.pendingCounts[plan] || 0;
             const free = total - paid - pending;
-            const badge = PLAN_BADGE(plan);
+            const badge = getPlanBadge(plan, "video");
             const pct = stats.total ? ((total / stats.total) * 100).toFixed(0) : "0";
             return (
               <div key={plan} className="mb-3.5">
@@ -908,7 +917,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
               return 0;
             })
             .map((i) => {
-              const badge = PLAN_BADGE(i.plan);
+              const badge = getPlanBadge(i.plan, i.webinar);
               const isCustom = i.duvida.includes("Outro:");
               return (
                 <div

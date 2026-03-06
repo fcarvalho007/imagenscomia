@@ -4,10 +4,9 @@ import type { Inscrito, Nota } from "@/pages/crm/mockData";
 import { detectGender } from "@/lib/genderDetection";
 
 
-const PLAN_VALUES: Record<string, number> = {
-  premium: 15,
-  masterclass: 57.81,
-  bundle: 76.26,
+const PLAN_VALUES_BY_WEBINAR: Record<string, Record<string, number>> = {
+  imagens: { premium: 18.45, masterclass: 57.81, bundle: 76.26 },
+  video: { premium: 33.21, masterclass: 82.41, bundle: 131.61 },
 };
 
 function mapRegistration(r: any): Inscrito {
@@ -25,6 +24,8 @@ function mapRegistration(r: any): Inscrito {
         : "free";
 
 
+  const webinarType = r.webinar === "video" ? "video" : "imagens";
+  const planValues = PLAN_VALUES_BY_WEBINAR[webinarType] || PLAN_VALUES_BY_WEBINAR.imagens;
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
     id: r.id,
@@ -37,7 +38,7 @@ function mapRegistration(r: any): Inscrito {
     source_outro: "",
     duvida: r.duvida || "",
     plan: plan as Inscrito["plan"],
-    valor: PLAN_VALUES[plan] || 0,
+    valor: planValues[plan] || 0,
     paid_at: r.paid_at || null,
     eupago_ref: r.eupago_ref || null,
     notas: [],
@@ -385,7 +386,8 @@ export function useInscritos() {
     if (markAsPaid) updateData.paid_at = new Date().toISOString();
     const { error } = await supabase.from("registrations").update(updateData).eq("id", inscritoId);
     if (error) { console.error("Error updating plan:", error); return; }
-    const valor = PLAN_VALUES[newPlan] || 0;
+    const webinarType = reg?.webinar === "video" ? "video" : "imagens";
+    const valor = (PLAN_VALUES_BY_WEBINAR[webinarType] || PLAN_VALUES_BY_WEBINAR.imagens)[newPlan] || 0;
     setInscritos((prev) =>
       prev.map((i) => i.id === inscritoId ? {
         ...i,
