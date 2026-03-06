@@ -510,7 +510,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Confirmação de compra — Premium Pass",
-      subtitle: "Gravação HD · Pack · Q&A 10 Mar · link calendário",
+      subtitle: "Sessão 70min · Workbook · GEMs · Áudio · link calendário",
       templateKeyMatch: ["video_payment_premium"],
       sendOffsetHours: null,
       isPaymentBlock: true,
@@ -522,7 +522,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Confirmação de compra — Masterclass",
-      subtitle: "Masterclass 12 Mar · 10h00 · link calendário",
+      subtitle: "Masterclass 12 Mar · 10h–13h · gravação incluída",
       templateKeyMatch: ["video_payment_masterclass"],
       sendOffsetHours: null,
       isPaymentBlock: true,
@@ -535,7 +535,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Recursos — Premium Pass",
-      subtitle: "Acesso gravação + materiais · upsell Masterclass",
+      subtitle: "Gravação + Workbook + GEMs + Áudio · upsell Masterclass",
       templateKeyMatch: ["video_recursos_premium"],
       sendOffsetHours: null,
       sectionDivider: "ACESSO AOS RECURSOS",
@@ -547,7 +547,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Recursos — Masterclass",
-      subtitle: "Confirmação Masterclass 12 Mar · upsell gravação",
+      subtitle: "Masterclass 12 Mar · 10h–13h · upsell Premium Pass",
       templateKeyMatch: ["video_recursos_masterclass"],
       sendOffsetHours: null,
       iconEmoji: "🎓",
@@ -558,7 +558,7 @@ function getPostEventNodes(): NodeDef[] {
     {
       type: "email",
       title: "Recursos — Bundle",
-      subtitle: "Acesso completo · gravação + Masterclass 12 Mar",
+      subtitle: "Acesso completo · 5 recursos + Masterclass 12 Mar",
       templateKeyMatch: ["video_recursos_bundle"],
       sendOffsetHours: null,
       iconEmoji: "⭐",
@@ -579,7 +579,7 @@ function getPostEventNodes(): NodeDef[] {
       smsSendConfig: {
         planFilter: ["premium", "masterclass", "bundle"],
         webinarFilter: "current",
-        smsText: "Ola! Ja tens acesso a gravacao e materiais em imagenscomia.com/recursos-video — usa o email de registo para entrar. Ate ja! — Frederico",
+        smsText: "Ola! Ja tens acesso a gravacao completa (70min), workbook, guia GEMs e audio em imagenscomia.com/recursos-video — usa o email de registo. Ate ja! — Frederico",
         requirePhone: true,
       },
     },
