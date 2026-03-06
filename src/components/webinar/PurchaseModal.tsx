@@ -19,17 +19,17 @@ interface PurchaseModalProps {
 }
 
 const PLAN_PRICES_DISPLAY: Record<string, string> = {
-  premium: "€15 + IVA",
-  masterclass: "€47 + IVA",
-  gravacao: "€15 + IVA",
-  bundle: "€57 + IVA",
+  premium: "€27 + IVA",
+  masterclass: "€67 + IVA",
+  gravacao: "€27 + IVA",
+  bundle: "€94 + IVA",
 };
 
 const PLAN_NAMES: Record<string, string> = {
-  premium: "Acesso Premium",
+  premium: "Sessão Prática + Materiais",
   masterclass: "Masterclass Vídeo com IA",
-  gravacao: "Gravação + Pack de Apoio",
-  bundle: "Masterclass + Gravação",
+  gravacao: "Sessão Prática + Materiais",
+  bundle: "Masterclass + Sessão Prática",
 };
 
 function ctaBg(plan: string) {
@@ -146,7 +146,7 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
-      const prices: Record<string, number> = { premium: 18.45, masterclass: 57.81, bundle: 76.26, gravacao: 33.21, "video-premium": 18.45, "video-masterclass": 57.81, "video-bundle": 70.11 };
+      const prices: Record<string, number> = { premium: 33.21, masterclass: 82.41, bundle: 115.62, gravacao: 33.21, "video-premium": 33.21, "video-masterclass": 82.41, "video-bundle": 115.62 };
       const capturedPlan = paymentPlan;
       setTimeout(() => {
         try {
