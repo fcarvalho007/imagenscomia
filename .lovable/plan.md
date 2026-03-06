@@ -1,28 +1,43 @@
 
 
-# Corrigir contagem de emails em Automações
+# Implementar Login com Email + Password e 2FA TOTP no CRM
 
-## Problema
+## Situação actual
+O CRM usa apenas verificação de email hardcoded (sem password, sem auth real). `sessionStorage` guarda o email — facilmente manipulável.
 
-A tabela `email_send_logs` tem 1813 registos, mas a query de estatísticas em `FollowUpView.tsx` (linha 108-123) não define um limite explícito, herdando o limite padrão de 1000 linhas. Resultado: os contadores nos cards mostram valores inferiores aos reais (ex: 4 em vez de 11 para Premium Pass).
+## Plano
 
-O drawer de destinatários não é afectado porque filtra por `email_key` específico, devolvendo todas as linhas relevantes.
+### 1. Criar conta Supabase Auth para o admin
+- Usar `supabase.auth.signUp()` com email `fredericodigital@gmail.com` e uma password definida pelo utilizador
+- Activar auto-confirm para este signup (ou confirmar manualmente)
+- A trigger `auto_assign_admin` já existe e atribui role `admin` automaticamente
 
-## Solução
+### 2. Activar MFA TOTP no Supabase Auth
+O Supabase Auth tem suporte nativo a TOTP (RFC 6238). O fluxo:
+- Após login com email+pass, chamar `supabase.auth.mfa.enroll({ factorType: 'totp' })` para obter o QR code
+- O utilizador digitaliza com Google Authenticator / Authy
+- Verificar com `supabase.auth.mfa.challengeAndVerify()`
+- Nas sessões seguintes, após login com pass, pedir o código TOTP de 6 dígitos
 
-Alterar a query de stats em `src/components/crm/FollowUpView.tsx` (linha ~108-123) para usar server-side aggregation via RPC ou, mais simples, adicionar `.limit(10000)` para cobrir o volume actual e futuro previsível.
+### 3. Refazer `CRMLogin.tsx` — 3 ecrãs
+1. **Ecrã 1 — Email + Password**: campos de email e password, botão "Entrar"
+2. **Ecrã 2 — Setup TOTP** (apenas na 1ª vez): mostra QR code + campo para confirmar código
+3. **Ecrã 3 — Verificar TOTP** (sessões seguintes): campo de 6 dígitos com o componente InputOTP já existente
 
-### Ficheiro: `src/components/crm/FollowUpView.tsx`
+### 4. Actualizar `CRM.tsx`
+- Substituir a verificação `sessionStorage` por `supabase.auth.getSession()` + `onAuthStateChange`
+- Após login, verificar role `admin` via `has_role()` ou query a `user_roles`
+- Logout passa a chamar `supabase.auth.signOut()`
 
-Linha 109: adicionar `.limit(10000)` à query:
+### 5. Actualizar Edge Functions
+- As Edge Functions que usam `x-crm-admin-email` continuam a funcionar — o header é enviado pelo frontend após autenticação real
 
-```typescript
-supabase
-  .from("email_send_logs")
-  .select("email_key, status, webinar")
-  .limit(10000)
-  .then(...)
-```
+### Ficheiros alterados
+- `src/components/crm/CRMLogin.tsx` — reescrita completa (3 ecrãs)
+- `src/pages/CRM.tsx` — auth state via Supabase Auth em vez de sessionStorage
 
-Uma única linha resolve o problema. Os contadores passarão a reflectir os valores reais: 11 Premium, 9 Masterclass, 5 Bundle.
+### Notas
+- Não é necessária migração de BD — `user_roles` e `has_role()` já existem
+- O componente `InputOTP` já está instalado e disponível para o ecrã TOTP
+- Auto-confirm será activado temporariamente para criar a conta, depois desactivado
 
