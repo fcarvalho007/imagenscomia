@@ -16,6 +16,23 @@ interface PaymentData {
   transactionID: string;
 }
 
+// Amount-to-plan safety net: derive correct plan from the paid amount
+const AMOUNT_TO_PLAN: Record<string, Record<number, string>> = {
+  imagens: { 18.45: "premium", 57.81: "masterclass", 76.26: "bundle" },
+  video:   { 33.21: "video-premium", 82.41: "video-masterclass", 115.62: "video-bundle" },
+};
+
+function derivePlanFromAmount(amountStr: string, webinar: string): string | null {
+  const amt = parseFloat(amountStr);
+  if (isNaN(amt)) return null;
+  const map = AMOUNT_TO_PLAN[webinar] || AMOUNT_TO_PLAN["imagens"];
+  // Match with small tolerance for floating point
+  for (const [key, plan] of Object.entries(map)) {
+    if (Math.abs(amt - parseFloat(key)) < 0.02) return plan;
+  }
+  return null;
+}
+
 function extractFromGET(req: Request): PaymentData {
   const url = new URL(req.url);
   const p = url.searchParams;
@@ -332,22 +349,43 @@ async function processPayment(data: PaymentData) {
     console.log(`🔎 Strategy 2: extracted order_id="${oid}" from identifier="${identifier}"`);
 
     if (oid && oid.length === 12) {
-      const { data: updatedRows, error } = await supabase
+      // First fetch the registration to know the webinar for plan derivation
+      const { data: orderReg } = await supabase
         .from("registrations")
-        .update({
+        .select("id, email, webinar, plan_selected")
+        .eq("order_id", oid)
+        .maybeSingle();
+
+      if (orderReg) {
+        const updatePayload: Record<string, any> = {
           paid_at: new Date().toISOString(),
           eupago_ref: reference || transactionID,
           eupago_transaction_id: transactionID || null,
-        })
-        .eq("order_id", oid)
-        .select("id, email");
+        };
+        // Safety net: derive plan from amount paid
+        const derivedPlan = derivePlanFromAmount(amount, orderReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          if (derivedPlan !== orderReg.plan_selected) {
+            console.log(`🔧 Strategy 2: plan corrected from "${orderReg.plan_selected}" to "${derivedPlan}" based on amount=${amount}`);
+          }
+        }
 
-      if (!error && updatedRows && updatedRows.length > 0) {
-        console.log(`✅ Strategy 2: matched by order_id="${oid}" — email=${updatedRows[0].email}`);
-        matched = true;
-        matchedRegId = updatedRows[0].id;
+        const { data: updatedRows, error } = await supabase
+          .from("registrations")
+          .update(updatePayload)
+          .eq("id", orderReg.id)
+          .select("id, email");
+
+        if (!error && updatedRows && updatedRows.length > 0) {
+          console.log(`✅ Strategy 2: matched by order_id="${oid}" — email=${updatedRows[0].email}`);
+          matched = true;
+          matchedRegId = updatedRows[0].id;
+        } else {
+          console.warn(`⚠️ Strategy 2: update failed for order_id="${oid}"`, error?.message || "");
+        }
       } else {
-        console.warn(`⚠️ Strategy 2: no match for order_id="${oid}"`, error?.message || "");
+        console.warn(`⚠️ Strategy 2: no match for order_id="${oid}"`);
       }
     } else {
       console.warn(`⚠️ Strategy 2: extracted order_id="${oid}" has unexpected length — skipping`);
@@ -376,13 +414,20 @@ async function processPayment(data: PaymentData) {
         .maybeSingle();
 
       if (legacyReg) {
+        const updatePayload: Record<string, any> = {
+          paid_at: new Date().toISOString(),
+          eupago_ref: reference || identifier,
+          eupago_transaction_id: transactionID || null,
+        };
+        const derivedPlan = derivePlanFromAmount(amount, legacyReg.webinar);
+        if (derivedPlan) {
+          updatePayload.plan_selected = derivedPlan;
+          console.log(`🔧 Strategy 3: plan derived as "${derivedPlan}" from amount=${amount}`);
+        }
+
         const { data: updatedRows, error } = await supabase
           .from("registrations")
-          .update({
-            paid_at: new Date().toISOString(),
-            eupago_ref: reference || identifier,
-            eupago_transaction_id: transactionID || null,
-          })
+          .update(updatePayload)
           .eq("id", legacyReg.id)
           .select("id, email");
 
@@ -416,13 +461,20 @@ async function processPayment(data: PaymentData) {
           .maybeSingle();
 
         if (fallbackReg) {
+          const updatePayload: Record<string, any> = {
+            paid_at: new Date().toISOString(),
+            eupago_ref: reference || transactionID,
+            eupago_transaction_id: transactionID || null,
+          };
+          const derivedPlan = derivePlanFromAmount(amount, fallbackReg.webinar);
+          if (derivedPlan) {
+            updatePayload.plan_selected = derivedPlan;
+            console.log(`🔧 Strategy 3b: plan derived as "${derivedPlan}" from amount=${amount}`);
+          }
+
           const { data: updatedRows, error } = await supabase
             .from("registrations")
-            .update({
-              paid_at: new Date().toISOString(),
-              eupago_ref: reference || transactionID,
-              eupago_transaction_id: transactionID || null,
-            })
+            .update(updatePayload)
             .eq("id", fallbackReg.id)
             .select("id, email");
 
