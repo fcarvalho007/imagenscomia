@@ -1,29 +1,29 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Limpar emojis dos nodes de Automações
 
-### Alteração
+## Problema
+Os nodes de email têm emojis decorativos (🎬, 🎓, ⭐, ⏳, 🔴) que atrapalham a leitura. A regra é simples:
+- **SMS** → `📱` (manter)
+- **Email** → `✉️` (padronizar)
+- **Trigger** → `👤` (manter)
+- **Elegíveis** → manter como está
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Alterações
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+**Ficheiro: `src/components/crm/AutomationFlowTab.tsx`**
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+Substituir `iconEmoji` nos seguintes nodes (tanto no fluxo principal como no post-event):
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+| Node | Emoji atual | Novo |
+|------|------------|------|
+| Follow-up upgrade (l.254) | ⏳ | ✉️ |
+| Confirmação Premium (l.307, l.652) | 🎬 | ✉️ |
+| Confirmação Masterclass (l.319, l.665) | 🎓 | ✉️ |
+| Recursos Premium (l.379, l.678) | 🎬 | ✉️ |
+| Recursos Masterclass (l.390, l.690) | 🎓 | ✉️ |
+| Recursos Bundle (l.404, l.700+) | ⭐ | ✉️ |
+| Email de fecho (l.507, l.637) | 🔴 | ✉️ |
+
+Total: ~13 linhas alteradas, todas no mesmo ficheiro.
 
