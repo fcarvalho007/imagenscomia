@@ -1,19 +1,29 @@
 
-## Actualizar email pós-webinar — video_postwebinar_day1
 
-### O que vou fazer
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-Actualizar o template `video_postwebinar_day1` na tabela `email_templates` com:
+### Alteração
 
-**Subject:** `Aqui está o teu resumo | Webinar Vídeo com IA`
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-**HTML body:** Email reformatado com o conteúdo exacto fornecido:
-- Introdução sobre o ritmo de lançamentos de IA (Gemini 3.1, ChatGPT 5.3/5.4)
-- Link para download do Resumo Gratuito (https://podes.entrar.pt/workbookgratis)
-- Premium Pass €27+IVA com 4 benefícios (sessão HD, workbook, guia técnico GEMs, áudio MP3)
-- CTA: "Quero acesso à sessão completa" → imagenscomia.com/comprar
-- Masterclass 12 de Março 3h ao vivo €67+IVA com CTA → imagenscomia.com/comprar
-- Assinatura: Frederico Carvalho, DIGITALFC, fredericocarvalho.pt
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-### Ficheiro alterado
-- Base de dados: UPDATE template `video_postwebinar_day1` na tabela `email_templates`
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
+
