@@ -29,6 +29,44 @@ const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> =
 };
 const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-400))", label: "—" };
 
+const UNIT_PRICES: Record<string, Record<string, string>> = {
+  webinar: { premium: "€15+IVA", masterclass: "€47+IVA", bundle: "€76,26 c/IVA" },
+  gravacao: { premium: "€27+IVA", masterclass: "€67+IVA", bundle: "€107+IVA" },
+};
+
+function ColumnFinancials({ items, sourceFilter, colKey }: { items: Inscrito[]; sourceFilter: string; colKey: ColumnKey }) {
+  const hasPaidPlans = ["premium", "masterclass", "bundle"].includes(colKey);
+  if (!hasPaidPlans) return null;
+
+  const paidItems = items.filter(i => i.payment_status === "paid");
+  const pendingItems = items.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
+  const paidTotal = paidItems.reduce((s, i) => s + i.valor, 0);
+  const pendingTotal = pendingItems.reduce((s, i) => s + i.valor, 0);
+
+  const unitPrice = sourceFilter !== "all" ? UNIT_PRICES[sourceFilter]?.[colKey] : null;
+
+  return (
+    <div className="mt-1 space-y-0.5">
+      {unitPrice && (
+        <p className="text-[10px] font-medium text-ink-500">{unitPrice}/pessoa</p>
+      )}
+      {paidItems.length > 0 && (
+        <p className="text-[10px] font-semibold" style={{ color: "#16A34A" }}>
+          Faturado: €{paidTotal.toFixed(2)} ({paidItems.length})
+        </p>
+      )}
+      {pendingItems.length > 0 && (
+        <p className="text-[10px] font-semibold" style={{ color: "#D97706" }}>
+          Pendente: €{pendingTotal.toFixed(2)} ({pendingItems.length})
+        </p>
+      )}
+      {paidItems.length === 0 && pendingItems.length === 0 && (
+        <p className="text-[10px] text-ink-400">—</p>
+      )}
+    </div>
+  );
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
