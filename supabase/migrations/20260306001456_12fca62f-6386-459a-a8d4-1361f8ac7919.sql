@@ -1,0 +1,1 @@
+ALTER TABLE public.email_templates ADD CONSTRAINT email_templates_template_key_key UNIQUE (template_key);
