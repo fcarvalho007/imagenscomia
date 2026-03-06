@@ -461,13 +461,20 @@ async function processPayment(data: PaymentData) {
           .maybeSingle();
 
         if (fallbackReg) {
+          const updatePayload: Record<string, any> = {
+            paid_at: new Date().toISOString(),
+            eupago_ref: reference || transactionID,
+            eupago_transaction_id: transactionID || null,
+          };
+          const derivedPlan = derivePlanFromAmount(amount, fallbackReg.webinar);
+          if (derivedPlan) {
+            updatePayload.plan_selected = derivedPlan;
+            console.log(`🔧 Strategy 3b: plan derived as "${derivedPlan}" from amount=${amount}`);
+          }
+
           const { data: updatedRows, error } = await supabase
             .from("registrations")
-            .update({
-              paid_at: new Date().toISOString(),
-              eupago_ref: reference || transactionID,
-              eupago_transaction_id: transactionID || null,
-            })
+            .update(updatePayload)
             .eq("id", fallbackReg.id)
             .select("id, email");
 
