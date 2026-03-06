@@ -1,35 +1,29 @@
 
 
-# Correcções à Faturação — 5 pontos
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Análise do estado actual
+### Alteração
 
-Após revisão do código, eis o que já está implementado e o que falta:
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-| Ponto | Estado | Acção |
-|-------|--------|-------|
-| 2. Webinar hardcoded nos custos | CostModal faz fallback para `"video"` quando o contexto é "consolidado" (linha 54). Não há selector de webinar no modal. | **Corrigir** — adicionar dropdown de webinar no modal |
-| 3. API Key InvoiceExpress | Já está nos secrets do backend (`INVOICEEXPRESS_API_KEY`), lida via `Deno.env.get()`. Nunca fica em localStorage ou no frontend. | **Nada a fazer** — já está seguro |
-| 4. Bulk finalize sem rollback | A edge function já processa cada fatura individualmente com try/catch, continua no erro, e devolve array de `errors` com id+email+mensagem. Já é atómica por linha. | **Nada a fazer no backend** — melhorar feedback no frontend |
-| 5. Exportar custos CSV | Não existe botão de export CSV isolado na secção de custos | **Adicionar** |
-| 6. Filtro por webinar | `FaturacaoView.fetchCosts` já filtra por `webinarContext`. Os inscritos vêm pré-filtrados do `CRM.tsx` via `filterByWebinar`. Os KPIs reagem ao contexto. | **Já funciona** |
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-## Alterações a implementar
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 1. `CostModal.tsx` — Dropdown de webinar configurável
-
-Adicionar campo "Webinar" (dropdown: Imagens / Vídeo) ao formulário. Pré-selecciona com base no `webinarContext` activo mas permite alterar. Quando `consolidado`, default para "video" mas o utilizador pode escolher.
-
-### 2. `CostsSection.tsx` — Botão "Exportar Custos CSV"
-
-Adicionar pequeno botão de download ao lado do "Adicionar Custo" que exporta apenas os custos filtrados em CSV (Plataforma, Descrição, Valor, Data, Categoria, Webinar).
-
-### 3. `InvoiceTable.tsx` — Mostrar erros parciais do bulk finalize
-
-Após a chamada a `bulk-finalize-invoices`, se o resultado contiver `errors`, mostrar toast com contagem de erros e listar os emails que falharam para permitir retry individual.
-
-## Ficheiros a editar
-- `src/components/crm/faturacao/CostModal.tsx`
-- `src/components/crm/faturacao/CostsSection.tsx`
-- `src/components/crm/faturacao/InvoiceTable.tsx`
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
