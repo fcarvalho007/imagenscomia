@@ -450,7 +450,7 @@ async function processPayment(data: PaymentData) {
 
   // ── Strategy 3 (LEGACY FALLBACK) — extract email from identifier ──────────
   // Handles identifiers from before the ORDER-{order_id}-{name} format.
-  if (!matched && identifier && !identifier.startsWith("ORDER-")) {
+  if (!matched && identifier && !identifier.startsWith("ORDER-") && !identifier.startsWith("ORD-")) {
     const parts = identifier.split("-");
     let email = "";
     if (parts.length >= 4) {
