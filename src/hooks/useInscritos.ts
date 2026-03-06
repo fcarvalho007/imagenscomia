@@ -6,13 +6,15 @@ import { detectGender } from "@/lib/genderDetection";
 
 const PLAN_VALUES_BY_WEBINAR: Record<string, Record<string, number>> = {
   imagens: { premium: 18.45, masterclass: 57.81, bundle: 76.26 },
-  video: { premium: 33.21, masterclass: 82.41, bundle: 131.61 },
+  video: { premium: 33.21, masterclass: 82.41, bundle: 115.62 },
 };
 
 function mapRegistration(r: any): Inscrito {
   // Show plan_selected even without payment confirmation
   const rawPlan = r.plan_selected || "free";
-  const plan = rawPlan.replace(/^video-/, ""); // normalize "video-free" -> "free"
+  let plan = rawPlan.replace(/^video-/, ""); // normalize "video-free" -> "free"
+  if (plan === "masterclass-group-pending") plan = "masterclass";
+  if (plan === "gravacao") plan = "premium";
   
   // Determine payment status (3 states)
   const payment_status: Inscrito["payment_status"] = r.paid_at
