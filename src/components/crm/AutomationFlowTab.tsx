@@ -1100,8 +1100,21 @@ function Timeline({
       return config.planFilter.includes(plan);
     });
 
+    // Dedup: skip recipients who already received this SMS successfully
+    const { data: alreadySent } = await supabase
+      .from("message_logs")
+      .select("registration_id")
+      .eq("template_key", templateKey)
+      .eq("channel", "sms")
+      .eq("status", "sent");
+
+    if (alreadySent && alreadySent.length > 0) {
+      const sentIds = new Set(alreadySent.map((m) => m.registration_id));
+      eligible = eligible.filter((p) => !sentIds.has(p.id));
+    }
+
     if (eligible.length === 0) {
-      toast.error("Nenhum destinatário elegível com telefone encontrado.");
+      toast.error("Todos os destinatários elegíveis já receberam este SMS.");
       return;
     }
 
