@@ -89,3 +89,9 @@ verify_jwt = false
 
 [functions.send-video-recursos-access]
 verify_jwt = false
+
+[functions.create-invoice]
+verify_jwt = false
+
+[functions.bulk-create-invoices]
+verify_jwt = false

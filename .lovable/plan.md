@@ -1,45 +1,29 @@
 
 
-# Emissão em lote de rascunhos InvoiceExpress
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Situação actual
-- A Edge Function `create-invoice` já existe e suporta `draft_only: true`
-- O secret `INVOICEEXPRESS_API_KEY` já está configurado
-- A função já não está no `config.toml` (precisa de `verify_jwt = false`)
-- Cada rascunho é criado individualmente — não existe funcionalidade de lote
+### Alteração
 
-## Plano
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-### 1. Criar Edge Function `bulk-create-invoices`
-Nova função que:
-- Busca todas as registrations com `paid_at IS NOT NULL`
-- Filtra por webinar (parâmetro opcional, default "video")
-- Para cada uma, chama internamente a lógica de criação de rascunho no InvoiceExpress
-- Inclui dedup: salta registos que já têm `invoice_document_id` preenchido (novo campo) para evitar duplicados
-- Rate limiting: delay de 1s entre chamadas para não exceder limites da API InvoiceExpress
-- Retorna resumo: `{ created: N, skipped: N, errors: [...] }`
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-### 2. Adicionar coluna `invoice_document_id` à tabela `registrations`
-- Campo `text`, nullable, para guardar o ID do documento InvoiceExpress criado
-- Serve como flag de dedup e referência para futuras operações (finalizar, enviar)
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 3. Adicionar `config.toml` entry
-- `[functions.bulk-create-invoices]` com `verify_jwt = false`
-
-### 4. Botão no CRM (AutomationFlowTab ou InvoiceSection)
-- Adicionar um botão "Emitir rascunhos em lote" na área de Faturação do CRM
-- Mostra progresso e resultado final
-
-## Preços (já definidos na função existente)
-| Plano | Preço s/IVA |
-|-------|-------------|
-| premium | 15€ |
-| masterclass | 47€ |
-| bundle | 62€ |
-| gravacao | 27€ |
-| video-premium | 15€ |
-| video-masterclass | 47€ |
-| video-bundle | 57€ |
-
-Os rascunhos ficam no InvoiceExpress para revisão antes de finalizar/enviar.
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
