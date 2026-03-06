@@ -118,7 +118,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
 
   return (
     <div
-      className="relative flex flex-col flex-1 min-w-[220px] bg-white overflow-hidden"
+      className="relative flex flex-col flex-1 min-w-0 bg-white overflow-hidden"
       style={{
         borderRadius: 20,
         boxShadow: cfg.shadow,
@@ -135,7 +135,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
 
       <div className="flex flex-col flex-1 justify-between p-6 md:p-5 lg:p-8 gap-5">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-gray-900">{cfg.title}</h2>
             {cfg.topTag && (
               <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
@@ -145,7 +145,7 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
           </div>
 
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-5xl font-black text-gray-900">{cfg.price}</span>
+            <span className="text-4xl md:text-5xl font-black text-gray-900">{cfg.price}</span>
             {cfg.ivaNote && <span className="text-sm text-gray-400">{cfg.ivaNote}</span>}
             {cfg.priceStrike && (
               <span className="text-sm text-gray-400 line-through">{cfg.priceStrike}</span>
@@ -210,7 +210,7 @@ export default function Comprar() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 lg:px-16 py-12"
+      className="min-h-screen flex flex-col items-center justify-center px-4 md:px-8 lg:px-16 py-12 pb-24"
       style={{ background: "linear-gradient(160deg, #0f0c29 0%, #1a1040 40%, #24243e 100%)" }}
     >
       <div className="w-full max-w-6xl flex flex-col items-center gap-6 relative">
@@ -227,8 +227,9 @@ export default function Comprar() {
         />
 
         <div className="relative z-10 flex flex-col items-center gap-3">
-          <div className="bg-white/10 backdrop-blur text-white border border-white/20 rounded-full px-4 py-1.5 text-xs">
-            🎬 Sessão Prática · Vídeo Profissional com IA
+          <div className="bg-white/10 backdrop-blur text-white border border-white/20 rounded-full px-3 md:px-4 py-1.5 text-[10px] md:text-xs text-center">
+            <span className="hidden sm:inline">🎬 Sessão Prática · </span>
+            <span className="sm:hidden">🎬 </span>Vídeo Profissional com IA
           </div>
           <h1 className="text-white text-2xl md:text-3xl font-bold text-center mt-2">
             Escolhe o teu plano
