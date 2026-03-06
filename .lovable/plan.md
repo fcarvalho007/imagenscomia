@@ -1,70 +1,55 @@
 
 
-# Adicionar contagem de contactos elegíveis por node de automação
+# Redesign dos emails pós-webinar Day 1 e Day 3
 
-## Objectivo
-Em cada node de email ou SMS no fluxo pré-webinar, mostrar uma linha com "X contactos elegíveis" — o número de inscritos que se qualificam para receber essa comunicação. Após envio, compara-se com os enviados efectivos.
+## Problemas actuais
 
-## Abordagem
+1. **Design básico** — fundo branco simples, sem header Navy-Indigo usado nos emails de recursos
+2. **Preço Early Bird €15 referenciado** no `send-video-postwebinar` (já enviado) — os Day 1 e Day 3 já têm €27, mas mantêm estilo diferente
+3. **Conteúdo "o que levas contigo"** desactualizado — falta o ficheiro GEM pronto a usar, o áudio da sessão, e a descrição correta dos itens conforme os emails de recursos
+4. **Copy genérica** — pouco persuasiva comparada com o nível dos emails de recursos
 
-### 1. Adicionar `audienceFilter` ao `NodeDef`
+## O que vou alterar
 
-Cada node passa a ter uma propriedade opcional que descreve o público-alvo:
+### Ficheiro 1: `supabase/functions/send-video-postwebinar-day1/index.ts`
 
-```typescript
-audienceFilter?: {
-  planFilter?: string[];       // ["free"], ["premium"], etc.
-  requirePaid?: boolean;       // true = só paid_at != null
-  requirePhone?: boolean;      // true = só com whatsapp
-  excludePaid?: boolean;       // true = exclui quem já pagou
-};
-```
+**Novo design do fallback HTML:**
+- Header Navy-Indigo gradient (`#1e1b4b → #312e81 → #4338ca`) com título
+- Corpo com a mesma estrutura `wrapper()` / `resourceItem()` dos emails de recursos
+- Copy reescrita: tom pessoal, referência à sessão que decorreu, valor concreto do que inclui
+- Box Premium Pass com os 5 itens correctos (Sessão prática 70min, Workbook PDF, Guia GEMs, Ficheiro GEM, Áudio)
+- Box Masterclass com detalhes (12 Mar, 10h-13h, 3 horas, gravação incluída)
+- Footer com WhatsApp + assinatura Frederico
+- Botões em `#4338ca` (indigo) para Premium, `#16a34a` (verde) para Masterclass
+- Sem referência a early bird ou €15
 
-Os SMS nodes já têm `smsSendConfig` com filtros semelhantes — reutiliza-se.
+**Subject actualizado:** `"A sessão de ontem — e como rever tudo, {{fname}}"`
 
-### 2. Regras de elegibilidade por node (webinar vídeo pré-webinar)
+### Ficheiro 2: `supabase/functions/send-video-postwebinar-day3/index.ts`
 
-| Node | Filtro |
-|------|--------|
-| Confirmação | todos |
-| Follow-up upgrade | plan=free, excluir pagos |
-| Lembrete 48h/24h/1h | todos |
-| Confirmação compra Premium | plan=premium, requirePaid |
-| Confirmação compra Masterclass | plan=masterclass, requirePaid |
-| Pós-webinar | plan=free |
-| Pós-webinar dia 1 | plan=free, excluir pagos |
-| Recursos Premium/Master/Bundle | plan respectivo, requirePaid |
-| SMS nodes | usa smsSendConfig existente |
-| Pós-webinar dia 3 | plan=free, excluir pagos |
-| Email fecho | plan=free, excluir pagos |
+**Mesmo redesign visual** mas com copy de fecho:
+- Tom de "última oportunidade" mas sem pressão excessiva
+- Resumo compacto do Premium Pass (mesmos 5 itens)
+- Secção Masterclass mantida
+- Subject: `"Último email sobre o Premium Pass, {{fname}}"`
 
-Aplica-se lógica equivalente aos nodes de imagens.
+### Conteúdo actualizado do Premium Pass (ambos emails)
 
-### 3. Função `computeEligible`
+| Item | Descrição |
+|------|-----------|
+| 🎬 Sessão prática completa | 70 minutos, sem cortes |
+| 📘 Workbook PDF | Estrutura, exercícios e checklist |
+| 💎 Guia de GEMs | Passo-a-passo para criar GEMs de vídeo |
+| ⚡ Ficheiro GEM pronto a usar | Importa directamente para o Gemini |
+| 🎧 Áudio da sessão | Ouve em qualquer lugar |
 
-Função que recebe o node e a lista `filteredInscritos` e devolve o count:
+### Masterclass (ambos emails)
 
-```typescript
-function computeEligible(node: NodeDef, inscritos: Inscrito[], webinar: WebinarKey): number
-```
+- 📅 Quinta-feira, 12 de Março · 10h00–13h00
+- 3 horas ao vivo · gravação incluída
+- €47+IVA
 
-### 4. UI — linha no card
+## Sem alterações na lógica de envio
 
-No `renderNodeCard`, abaixo do subtítulo e acima dos tags, adicionar:
-
-```
-👥 42 contactos elegíveis
-```
-
-Em cinza discreto (11px). Se houver `counts.sent > 0`, mostrar também a comparação:
-```
-👥 42 elegíveis · 38 contactados
-```
-
-### Ficheiro a alterar
-
-- **`src/components/crm/AutomationFlowTab.tsx`**:
-  - Adicionar `audienceFilter` a cada node em `getNodes()` e `getPostEventNodes()`
-  - Criar função `computeEligible()`
-  - Renderizar a linha de contagem no `renderNodeCard`
+A lógica de filtragem, deduplicação e logging mantém-se intacta em ambos os ficheiros. Apenas o `buildFallbackHtml()` e o subject default são alterados.
 
