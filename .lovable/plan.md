@@ -1,29 +1,37 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Verificação de preços /comprar ↔ EuPago
 
-### Alteração
+## Resultado da auditoria
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+Os preços estão **correctos e alinhados** entre o frontend e o backend (EuPago):
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+| Plano | Frontend | Backend (`create-payment`) | Plan ID enviado | Valor c/ IVA |
+|---|---|---|---|---|
+| Sessão Prática | €27 + IVA | `video-premium` → 33,21€ | ✅ | ✅ |
+| Masterclass | €67 + IVA | `video-masterclass` → 82,41€ | ✅ | ✅ |
+| Pack IA Completo | €107 + IVA | `video-bundle` → 131,61€ | ✅ | ✅ |
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+O mapeamento no `PurchaseModal` (linha 130-131) converte correctamente:
+- `gravacao` → `video-premium`
+- `masterclass` → `video-masterclass`
+- `bundle` → `video-bundle`
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+## Problema encontrado (menor)
+
+Na linha 149 do `PurchaseModal.tsx`, o valor do Facebook Pixel para `video-bundle` está desactualizado:
+
+```
+"video-bundle": 115.62  ← antigo (€94 + IVA)
+```
+
+Deveria ser **131.61** (€107 + IVA). Isto não afecta o pagamento real — apenas o tracking de conversões do Facebook.
+
+## Correção
+
+### `src/components/webinar/PurchaseModal.tsx` (linha 149)
+- Actualizar `"video-bundle": 115.62` → `"video-bundle": 131.61`
+- Actualizar `bundle: 115.62` → `bundle: 131.61` (consistência)
+
+Uma linha, uma correcção.
 
