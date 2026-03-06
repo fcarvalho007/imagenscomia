@@ -31,7 +31,7 @@ const DEFAULT_PLAN_BADGE = { bg: "hsl(var(--surface))", color: "hsl(var(--ink-40
 
 const UNIT_PRICES: Record<string, Record<string, string>> = {
   webinar: { premium: "€15+IVA", masterclass: "€47+IVA", bundle: "€76,26 c/IVA" },
-  gravacao: { premium: "€27+IVA", masterclass: "€67+IVA", bundle: "€107+IVA" },
+  gravacao: { premium: "€27+IVA", masterclass: "€67+IVA", bundle: "€115,62 c/IVA" },
 };
 
 function ColumnFinancials({ items, sourceFilter, colKey }: { items: Inscrito[]; sourceFilter: string; colKey: ColumnKey }) {
@@ -97,7 +97,7 @@ const COLUMNS: Column[] = [
   { key: "flow_completo", title: "Flow Completo", color: "#64748B", filter: (i) => i.plan === "free" && i.step_reached === 5 && !i.follow_up && !i.lost_at },
   { key: "premium", title: "Sessão Prática", color: "#2563EB", filter: (i) => i.plan === "premium" && !i.follow_up && !i.lost_at },
   { key: "masterclass", title: "Masterclass Vídeo", color: "#7C3AED", filter: (i) => i.plan === "masterclass" && !i.follow_up && !i.lost_at },
-  { key: "bundle", title: "Pack IA Completo", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
+  { key: "bundle", title: "Pack IA Completo (SP + MC)", color: "#16A34A", filter: (i) => i.plan === "bundle" && !i.follow_up && !i.lost_at },
   { key: "followup", title: "Follow-up Necessário", color: "#D97706", filter: (i) => i.follow_up && !i.lost_at },
   { key: "lost", title: "Sem interesse", color: "#ef4444", filter: (i) => !!i.lost_at },
 ];
@@ -188,18 +188,10 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
   const isConsolidado = webinarContext === "consolidado";
 
   const visibleColumns = useMemo(() => {
-    let cols = COLUMNS;
     if (sourceFilter === "gravacao") {
-      cols = cols
-        .filter((c) => c.key !== "inscrito" && c.key !== "flow_completo")
-        .map((c) => {
-          if (c.key === "premium") return { ...c, title: "Sessão Prática · €33,21" };
-          if (c.key === "masterclass") return { ...c, title: "Masterclass Vídeo · €82,41" };
-          if (c.key === "bundle") return { ...c, title: "Pack IA Completo · €131,61" };
-          return c;
-        });
+      return COLUMNS.filter((c) => c.key !== "inscrito" && c.key !== "flow_completo");
     }
-    return cols;
+    return COLUMNS;
   }, [sourceFilter]);
 
   const filtered = useMemo(() => {
