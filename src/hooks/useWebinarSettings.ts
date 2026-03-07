@@ -32,10 +32,9 @@ let _fetchPromise: Promise<Map<string, WebinarSettings>> | null = null;
 async function fetchSettings(): Promise<Map<string, WebinarSettings>> {
   if (_cache) return _cache;
   if (_fetchPromise) return _fetchPromise;
-  _fetchPromise = supabase
-    .from("webinar_settings")
-    .select("*")
-    .then(({ data, error }) => {
+  _fetchPromise = (async () => {
+    const { data, error } = await supabase.from("webinar_settings").select("*");
+    {
       if (error || !data) {
         console.error("Error fetching webinar_settings:", error);
         return new Map();
