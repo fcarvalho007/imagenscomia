@@ -119,7 +119,7 @@ function CRMInner() {
           />
         )}
         {activeView === "faturacao" && (
-          <FaturacaoView inscritos={filteredInscritos} onRefresh={refresh} />
+          <FaturacaoView inscritos={inscritos} onRefresh={refresh} />
         )}
         {activeView === "templates" && (
           <FollowUpView inscritos={filteredInscritos} onSelectInscrito={setSelectedInscrito} />
