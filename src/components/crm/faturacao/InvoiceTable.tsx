@@ -34,7 +34,7 @@ function getInvoiceState(i: Inscrito): InvoiceState {
 }
 
 const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; label: string }> = {
-  none: { icon: Circle, color: "rgba(255,255,255,0.3)", label: "Sem fatura" },
+  none: { icon: Circle, color: "#94A3B8", label: "Sem fatura" },
   draft: { icon: FilePlus, color: "#f59e0b", label: "Rascunho" },
   sent: { icon: CheckCircle, color: "#22c55e", label: "Emitida" },
   error: { icon: AlertCircle, color: "#ef4444", label: "Erro" },
@@ -178,49 +178,49 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
-        <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
+        <h2 className="text-[15px] font-bold text-slate-900">
           Faturação · InvoiceExpress
         </h2>
-        <span className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
-          {sentCount > 0 && <span className="text-emerald-400">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
+        <span className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
+          {sentCount > 0 && <span className="text-emerald-600">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
           {sentCount > 0 && pendingCount > 0 && <span>·</span>}
-          {pendingCount > 0 && <span className="text-amber-300">{pendingCount} por emitir</span>}
-          {missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-400"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
+          {pendingCount > 0 && <span className="text-amber-600">{pendingCount} por emitir</span>}
+          {missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-600"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
         </span>
 
         {/* Email customization */}
         <Collapsible open={emailOpen} onOpenChange={setEmailOpen}>
           <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded hover:bg-white/5 transition-colors" style={{ color: "rgba(255,255,255,0.5)" }}>
+            <button className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded hover:bg-slate-100 transition-colors text-slate-500">
               <Mail size={12} />
               Personalizar email da fatura
               <ChevronDown size={11} className={`transition-transform ${emailOpen ? "rotate-180" : ""}`} />
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="mt-2 p-3 rounded-lg space-y-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="mt-2 p-3 rounded-lg space-y-2 bg-slate-50 border border-slate-200">
               <div>
-                <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Assunto <span style={{ color: "rgba(255,255,255,0.25)" }}>({"{{plano}}"} = nome do plano)</span>
+                <label className="text-[10px] font-medium mb-1 block text-slate-500">
+                  Assunto <span className="text-slate-400">({"{{plano}}"} = nome do plano)</span>
                 </label>
                 <Input
                   value={emailSubject}
                   onChange={e => setEmailSubject(e.target.value)}
-                  className="h-7 text-[11px] bg-white/5 border-white/10"
+                  className="h-7 text-[11px] bg-white border-slate-200 text-slate-900"
                 />
               </div>
               <div>
-                 <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
-                   Corpo do email <span style={{ color: "rgba(255,255,255,0.25)" }}>({"{{nome}}"} = nome do cliente)</span>
+                 <label className="text-[10px] font-medium mb-1 block text-slate-500">
+                   Corpo do email <span className="text-slate-400">({"{{nome}}"} = nome do cliente)</span>
                  </label>
                 <Textarea
                   value={emailBody}
                   onChange={e => setEmailBody(e.target.value)}
                   rows={3}
-                  className="text-[11px] bg-white/5 border-white/10 min-h-[60px]"
+                  className="text-[11px] bg-white border-slate-200 text-slate-900 min-h-[60px]"
                 />
               </div>
-              <p className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+              <p className="text-[9px] text-slate-400">
                 O PDF da fatura-recibo é sempre enviado em anexo pelo InvoiceExpress.
               </p>
             </div>
@@ -268,19 +268,19 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
         </TooltipProvider>
       </div>
 
-      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+      <div className="rounded-lg border border-slate-200 bg-white overflow-x-auto shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
         <table className="w-full text-[12px] min-w-[600px]">
           <thead>
-            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <tr className="border-b border-slate-100">
               <th className="px-3 py-2 w-8">
                 <Checkbox checked={selected.size === inscritos.length && inscritos.length > 0} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Nome</th>
-              <th className="px-3 py-2 text-left font-medium hidden md:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}>Email</th>
-              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Plano</th>
-              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Valor</th>
-              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Estado</th>
-              <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Ação</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Nome</th>
+              <th className="px-3 py-2 text-left font-medium hidden md:table-cell text-slate-500">Email</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Plano</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Valor</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Estado</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -289,53 +289,53 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
               const cfg = STATE_CONFIG[state];
               const Icon = cfg.icon;
               return (
-                <tr key={i.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <tr key={i.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(i.id)} onCheckedChange={() => toggleSelect(i.id)} /></td>
-                  <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
+                  <td className="px-3 py-2 font-medium text-slate-900">
                     <span className="flex items-center gap-1.5 flex-wrap">
                       {i.nome}
                       {webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
                       {i.group_payment_ref && (() => {
                         const groupCount = inscritos.filter(g => g.group_payment_ref === i.group_payment_ref).length;
                         return groupCount > 1 ? (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full border" style={{ background: "rgba(139,92,246,0.12)", color: "#a78bfa", borderColor: "rgba(139,92,246,0.2)" }}>
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200">
                             <Users size={9} /> ×{groupCount}
                           </span>
                         ) : null;
                       })()}
                       {!idsWithNif.has(i.id) && (
-                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                           <AlertTriangle size={9} />
                           Sem NIF
                         </span>
                       )}
                     </span>
                   </td>
-                  <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.5)" }}>{i.email}</td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{PLAN_LABELS[i.plan] || i.plan}</td>
-                  <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>€{i.valor.toFixed(2)}</td>
+                  <td className="px-3 py-2 hidden md:table-cell text-slate-500">{i.email}</td>
+                  <td className="px-3 py-2 text-slate-600">{PLAN_LABELS[i.plan] || i.plan}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">€{i.valor.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium">
                       <Icon size={12} style={{ color: cfg.color }} />
                       <span style={{ color: cfg.color }}>{cfg.label}</span>
-                      {i.invoice_document_id && <span className="hidden sm:inline" style={{ color: "rgba(255,255,255,0.3)" }}>#{i.invoice_document_id}</span>}
+                      {i.invoice_document_id && <span className="hidden sm:inline text-slate-400">#{i.invoice_document_id}</span>}
                     </span>
                   </td>
                   <td className="px-3 py-2">
                     {individualLoading === i.id ? (
-                      <Loader2 size={13} className="animate-spin" style={{ color: "rgba(255,255,255,0.4)" }} />
+                      <Loader2 size={13} className="animate-spin text-slate-400" />
                     ) : state === "sent" ? (
-                      <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>—</span>
+                      <span className="text-[10px] text-slate-300">—</span>
                     ) : state === "draft" ? (
-                      <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e" }}>
+                      <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
                         Emitir e Enviar
                       </button>
                     ) : (
                       <div className="flex gap-1">
-                        <button onClick={() => handleIndividual(i.id, true)} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.6)" }}>
+                        <button onClick={() => handleIndividual(i.id, true)} className="text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors">
                           Rascunho
                         </button>
-                        <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e" }}>
+                        <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors">
                           Emitir e Enviar
                         </button>
                       </div>
@@ -345,7 +345,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
               );
             })}
             {inscritos.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-6 text-center text-[12px]" style={{ color: "rgba(255,255,255,0.35)" }}>Nenhum pagamento confirmado.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-6 text-center text-[12px] text-slate-400">Nenhum pagamento confirmado.</td></tr>
             )}
           </tbody>
         </table>

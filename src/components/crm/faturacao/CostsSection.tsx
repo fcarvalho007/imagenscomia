@@ -40,7 +40,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Custos de Aquisição</h2>
+        <h2 className="text-[15px] font-bold text-slate-900">Custos de Aquisição</h2>
         <div className="flex items-center gap-2">
           {costs.length > 0 && (
             <Button size="sm" variant="outline" onClick={() => {
@@ -66,10 +66,10 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
           { label: "CAC", value: `€${fmt(cac)}`, icon: TrendingUp, color: "#8b5cf6" },
           { label: "ROAS", value: roas > 0 ? `${roas.toFixed(2)}×` : "—", icon: TrendingUp, color: "#22c55e" },
         ].map(c => (
-          <div key={c.label} className="rounded-lg p-3 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
+          <div key={c.label} className="rounded-lg p-3 bg-white border border-slate-200 shadow-sm">
             <div className="flex items-center gap-1 mb-1">
               <c.icon size={12} style={{ color: c.color }} />
-              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.4)" }}>{c.label}</span>
+              <span className="text-[9px] sm:text-[10px] font-medium uppercase tracking-wider text-slate-500">{c.label}</span>
             </div>
             <p className="text-sm sm:text-base font-bold" style={{ color: c.color }}>{c.value}</p>
           </div>
@@ -78,43 +78,43 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
 
       {/* Costs table */}
       {loading ? (
-        <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin" style={{ color: "rgba(255,255,255,0.3)" }} /></div>
+        <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-slate-300" /></div>
       ) : costs.length === 0 ? (
-        <p className="text-[12px] py-4 text-center" style={{ color: "rgba(255,255,255,0.35)" }}>Nenhum custo registado.</p>
+        <p className="text-[12px] py-4 text-center text-slate-400">Nenhum custo registado.</p>
       ) : (
-        <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+        <div className="rounded-lg border border-slate-200 bg-white overflow-x-auto shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
           <table className="w-full text-[12px] min-w-[500px]">
             <thead>
-              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Plataforma</th>
-                <th className="px-3 py-2 text-left font-medium hidden md:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}>Descrição</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Valor</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Data</th>
-                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Categoria</th>
-                {showWebinarColumn && <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Webinar</th>}
-                <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}></th>
+              <tr className="border-b border-slate-100">
+                <th className="px-3 py-2 text-left font-medium text-slate-500">Plataforma</th>
+                <th className="px-3 py-2 text-left font-medium hidden md:table-cell text-slate-500">Descrição</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-500">Valor</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-500">Data</th>
+                <th className="px-3 py-2 text-left font-medium text-slate-500">Categoria</th>
+                {showWebinarColumn && <th className="px-3 py-2 text-left font-medium text-slate-500">Webinar</th>}
+                <th className="px-3 py-2 text-left font-medium text-slate-500"></th>
               </tr>
             </thead>
             <tbody>
               {costs.map(c => (
-                <tr key={c.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{c.platform}</td>
-                  <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.6)" }}>{c.description || "—"}</td>
+                <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                  <td className="px-3 py-2 font-medium text-slate-900">{c.platform}</td>
+                  <td className="px-3 py-2 hidden md:table-cell text-slate-600">{c.description || "—"}</td>
                   <td className="px-3 py-2 font-semibold" style={{ color: "#ef4444" }}>€{Number(c.amount).toFixed(2)}</td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.5)" }}>{c.cost_date}</td>
+                  <td className="px-3 py-2 text-slate-500">{c.cost_date}</td>
                   <td className="px-3 py-2">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
                       {c.category}
                     </span>
                   </td>
                   {showWebinarColumn && <td className="px-3 py-2"><WebinarBadge webinar={c.webinar} /></td>}
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => { setEditingCost(c); setModalOpen(true); }} className="p-1 rounded hover:bg-white/10 transition-colors">
-                        <Pencil size={12} style={{ color: "rgba(255,255,255,0.4)" }} />
+                      <button onClick={() => { setEditingCost(c); setModalOpen(true); }} className="p-1 rounded hover:bg-slate-100 transition-colors">
+                        <Pencil size={12} className="text-slate-400" />
                       </button>
-                      <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id} className="p-1 rounded hover:bg-red-500/10 transition-colors">
-                        {deleting === c.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} style={{ color: "rgba(239,68,68,0.6)" }} />}
+                      <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id} className="p-1 rounded hover:bg-red-50 transition-colors">
+                        {deleting === c.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} className="text-red-400" />}
                       </button>
                     </div>
                   </td>
@@ -122,8 +122,8 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Total</td>
+              <tr className="border-t border-slate-200">
+                <td className="px-3 py-2 font-semibold text-slate-600">Total</td>
                 <td className="hidden md:table-cell" />
                 <td className="px-3 py-2 font-bold" style={{ color: "#ef4444" }}>€{totalCosts.toFixed(2)}</td>
                 <td colSpan={showWebinarColumn ? 4 : 3} />
