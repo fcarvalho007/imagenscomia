@@ -35,8 +35,20 @@ const TAB_BASE: { value: FaturacaoTab; label: string }[] = [
 ];
 
 export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewProps) {
-  const [activeTab, setActiveTab] = useState<FaturacaoTab>("todos");
+  const { webinarContext } = useWebinarContext();
+  const [activeTab, setActiveTab] = useState<FaturacaoTab>(() => {
+    if (webinarContext === "consolidado") return "todos";
+    return webinarContext as FaturacaoTab;
+  });
   const [costs, setCosts] = useState<AcquisitionCost[]>([]);
+  const [loadingCosts, setLoadingCosts] = useState(true);
+
+  // Sync activeTab with sidebar webinar context
+  useEffect(() => {
+    if (webinarContext === "imagens") setActiveTab("imagens");
+    else if (webinarContext === "video") setActiveTab("video");
+    else if (webinarContext === "consolidado") setActiveTab("todos");
+  }, [webinarContext]);
   const [loadingCosts, setLoadingCosts] = useState(true);
 
   // Filter inscritos by active tab
