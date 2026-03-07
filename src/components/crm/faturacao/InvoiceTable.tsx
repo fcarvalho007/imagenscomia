@@ -93,7 +93,7 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
   };
 
   const handleBulkEmit = async () => {
-    if (!confirm(`Emitir e enviar faturas para TODOS os pagantes sem fatura do webinar "${webinarContext}"?\n\nIsto cria, finaliza e envia o email automaticamente.`)) return;
+    if (!confirm(`Emitir faturas para TODOS os pagantes sem fatura do webinar "${webinarContext}"?\n\nRegistos COM NIF: emissão completa + envio email.\nRegistos SEM NIF: apenas rascunho (para completar depois).`)) return;
     setBulkRunning("emit");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-emit-invoices", {
@@ -101,9 +101,13 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
       });
       if (error) throw error;
       const errCount = data.errors?.length || 0;
+      const drafts = data.draftsOnly || 0;
+      const parts = [`${data.emitted} emitidas e enviadas`];
+      if (drafts > 0) parts.push(`${drafts} rascunhos (sem NIF)`);
+      if (errCount > 0) parts.push(`${errCount} erro(s)`);
       toast({
-        title: `${data.emitted} faturas emitidas e enviadas`,
-        description: errCount > 0 ? `${errCount} erro(s)` : `${data.total} total elegíveis`,
+        title: parts[0],
+        description: parts.slice(1).join(" · ") || `${data.total} total`,
         variant: errCount > 0 ? "destructive" : "default",
       });
       onRefresh();
