@@ -70,7 +70,7 @@ function fmtRelativeShort(iso: string): string | null {
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend" | "em_atraso";
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached, missingNifIds }: TableViewProps) {
   const { webinarContext } = useWebinarContext();
   const isConsolidado = webinarContext === "consolidado";
   const [search, setSearch] = useState("");
@@ -588,6 +588,17 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         <span title="Fatura enviada" className="inline-flex">
                           <FileCheck size={16} className="text-green-600" />
                         </span>
+                      ) : i.payment_status === "paid" && missingNifIds?.has(i.id) ? (
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex items-center gap-1 text-amber-500">
+                                <AlertTriangle size={14} />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">Sem NIF — contactar</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       ) : (
                         <span className="text-ink-300 text-sm">—</span>
                       )}
