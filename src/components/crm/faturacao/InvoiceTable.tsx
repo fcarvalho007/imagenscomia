@@ -41,7 +41,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
 };
 
 const DEFAULT_EMAIL_SUBJECT = "Fatura-Recibo — {{plano}}";
-const DEFAULT_EMAIL_BODY = "Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho";
+const DEFAULT_EMAIL_BODY = "Olá,\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos";
 
 export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
