@@ -95,6 +95,7 @@ serve(async (req) => {
     for (const reg of registrations) {
       try {
         const invoice = invoiceMap.get(reg.id);
+        const hasInvoiceDetails = !!invoice;
         const clientName = invoice?.invoice_name || reg.name || "Consumidor Final";
         const clientEmail = invoice?.invoice_email || reg.email;
         const clientVat = invoice?.invoice_vat || "999999990";
