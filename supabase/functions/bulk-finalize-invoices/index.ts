@@ -25,6 +25,8 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const registrationIds: string[] = body.registration_ids || [];
+    const customEmailSubject: string | undefined = body.email_subject;
+    const customEmailBody: string | undefined = body.email_body;
 
     if (registrationIds.length === 0) {
       return new Response(
@@ -105,8 +107,8 @@ serve(async (req) => {
             body: JSON.stringify({
               message: {
                 client: { email: reg.email, save: "0" },
-                subject: `Fatura-Recibo — ${itemDescription}`,
-                body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+                subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`).replace("{{plano}}", itemDescription),
+                body: customEmailBody || `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
                 logo: "0",
               },
             }),

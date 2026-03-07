@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
-import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle } from "lucide-react";
+import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle, ChevronDown, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import WebinarBadge from "@/components/crm/WebinarBadge";
+import { toast } from "@/hooks/use-toast";
 
 const PLAN_LABELS: Record<string, string> = {
   premium: "Premium Pass",
@@ -13,12 +18,11 @@ const PLAN_LABELS: Record<string, string> = {
   gravacao: "Gravação",
   video_premium: "Vídeo Premium",
 };
-import { toast } from "@/hooks/use-toast";
 
 interface Props {
   inscritos: Inscrito[];
   onRefresh: () => void;
-  webinarFilter: string; // "all" | "imagens" | "video"
+  webinarFilter: string;
 }
 
 type InvoiceState = "none" | "draft" | "sent" | "error";
@@ -36,13 +40,18 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
   error: { icon: AlertCircle, color: "#ef4444", label: "Erro" },
 };
 
+const DEFAULT_EMAIL_SUBJECT = "Fatura-Recibo — {{plano}}";
+const DEFAULT_EMAIL_BODY = "Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho";
+
 export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
   const [idsWithNif, setIdsWithNif] = useState<Set<string>>(new Set());
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailSubject, setEmailSubject] = useState(DEFAULT_EMAIL_SUBJECT);
+  const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY);
 
-  // Fetch invoice_details to know which registrations have NIF
   useEffect(() => {
     if (inscritos.length === 0) return;
     const ids = inscritos.map(i => i.id);
@@ -73,8 +82,13 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
     }
   };
 
+  const emailParams = () => ({
+    ...(emailSubject !== DEFAULT_EMAIL_SUBJECT ? { email_subject: emailSubject } : {}),
+    ...(emailBody !== DEFAULT_EMAIL_BODY ? { email_body: emailBody } : {}),
+  });
+
   const handleBulkDrafts = async () => {
-    if (!confirm("Criar rascunhos para todos os pagantes sem fatura?")) return;
+    if (!confirm("Criar rascunhos de fatura-recibo para todos os pagantes sem fatura?")) return;
     setBulkRunning("drafts");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-create-invoices", {
@@ -93,17 +107,17 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
   const handleBulkFinalize = async () => {
     const ids = Array.from(selected);
     if (ids.length === 0) { toast({ title: "Seleciona pelo menos um inscrito" }); return; }
-    if (!confirm(`Confirmar e enviar ${ids.length} faturas?`)) return;
+    if (!confirm(`Finalizar e enviar fatura-recibo a ${ids.length} cliente(s)?`)) return;
     setBulkRunning("finalize");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-finalize-invoices", {
-        body: { registration_ids: ids },
+        body: { registration_ids: ids, ...emailParams() },
       });
       if (error) throw error;
       const errCount = data.errors?.length || 0;
       const errEmails = (data.errors || []).map((e: any) => e.email).filter(Boolean).join(", ");
       toast({
-        title: `${data.finalized} faturas emitidas e enviadas`,
+        title: `${data.finalized} faturas-recibo emitidas e enviadas`,
         description: errCount > 0 ? `${errCount} erro(s): ${errEmails || "ver detalhes"}` : "Sem erros",
         variant: errCount > 0 ? "destructive" : "default",
       });
@@ -118,16 +132,16 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
 
   const handleBulkEmit = async () => {
     const label = webinarFilter === "all" ? "TODOS os webinars" : `webinar "${webinarFilter}"`;
-    if (!confirm(`Emitir faturas para TODOS os pagantes sem fatura de ${label}?\n\nRegistos COM NIF: emissão completa + envio email.\nRegistos SEM NIF: apenas rascunho (para completar depois).`)) return;
+    if (!confirm(`Emitir fatura-recibo e enviar por email a TODOS os pagantes sem fatura de ${label}?\n\nRegistos COM NIF: emissão completa + envio email.\nRegistos SEM NIF: apenas rascunho (para completar depois).`)) return;
     setBulkRunning("emit");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-emit-invoices", {
-        body: { webinar: webinarFilter },
+        body: { webinar: webinarFilter, ...emailParams() },
       });
       if (error) throw error;
       const errCount = data.errors?.length || 0;
       const drafts = data.draftsOnly || 0;
-      const parts = [`${data.emitted} emitidas e enviadas`];
+      const parts = [`${data.emitted} faturas-recibo emitidas e enviadas`];
       if (drafts > 0) parts.push(`${drafts} rascunhos (sem NIF)`);
       if (errCount > 0) parts.push(`${errCount} erro(s)`);
       toast({
@@ -147,10 +161,10 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
     setIndividualLoading(id);
     try {
       const { data, error } = await supabase.functions.invoke("create-invoice", {
-        body: { registration_id: id, send_email: !draftOnly, draft_only: draftOnly },
+        body: { registration_id: id, send_email: !draftOnly, draft_only: draftOnly, ...emailParams() },
       });
       if (error) throw error;
-      toast({ title: draftOnly ? "Rascunho criado" : "Fatura emitida e enviada", description: `#${data.document_id}` });
+      toast({ title: draftOnly ? "Rascunho criado" : "Fatura-recibo emitida e enviada", description: `#${data.document_id}` });
       onRefresh();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -171,20 +185,85 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
             {missingNifCount} sem dados fiscais
           </span>
         )}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={handleBulkDrafts} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
-            {bulkRunning === "drafts" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
-            Gerar Rascunhos
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
-            {bulkRunning === "finalize" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
-            Enviar ({selected.size})
-          </Button>
-          <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-            {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-            Emitir<span className="hidden sm:inline">&nbsp;e Enviar</span> Todas
-          </Button>
-        </div>
+
+        {/* Email customization */}
+        <Collapsible open={emailOpen} onOpenChange={setEmailOpen}>
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded hover:bg-white/5 transition-colors" style={{ color: "rgba(255,255,255,0.5)" }}>
+              <Mail size={12} />
+              Personalizar email da fatura
+              <ChevronDown size={11} className={`transition-transform ${emailOpen ? "rotate-180" : ""}`} />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="mt-2 p-3 rounded-lg space-y-2" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div>
+                <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Assunto <span style={{ color: "rgba(255,255,255,0.25)" }}>({"{{plano}}"} = nome do plano)</span>
+                </label>
+                <Input
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  className="h-7 text-[11px] bg-white/5 border-white/10"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Corpo do email
+                </label>
+                <Textarea
+                  value={emailBody}
+                  onChange={e => setEmailBody(e.target.value)}
+                  rows={3}
+                  className="text-[11px] bg-white/5 border-white/10 min-h-[60px]"
+                />
+              </div>
+              <p className="text-[9px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                O PDF da fatura-recibo é sempre enviado em anexo pelo InvoiceExpress.
+              </p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        <TooltipProvider delayDuration={200}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleBulkDrafts} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
+                  {bulkRunning === "drafts" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                  Criar Rascunhos
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[11px] max-w-[220px]">
+                Cria rascunhos de fatura-recibo no InvoiceExpress sem finalizar nem enviar
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
+                  {bulkRunning === "finalize" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                  Finalizar e Enviar ({selected.size})
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[11px] max-w-[240px]">
+                Finaliza as faturas-recibo seleccionadas e envia o PDF por email ao cliente
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                  {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                  Emitir Fatura-Recibo<span className="hidden sm:inline">&nbsp;e Enviar a Todos</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
+                Cria, finaliza e envia a fatura-recibo por email a todos os pagantes sem fatura
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
       </div>
 
       <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
@@ -239,7 +318,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                       <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>—</span>
                     ) : state === "draft" ? (
                       <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e" }}>
-                        Emitir
+                        Emitir e Enviar
                       </button>
                     ) : (
                       <div className="flex gap-1">
@@ -247,7 +326,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                           Rascunho
                         </button>
                         <button onClick={() => handleIndividual(i.id, false)} className="text-[10px] font-medium px-2 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.1)", color: "#22c55e" }}>
-                          Emitir
+                          Emitir e Enviar
                         </button>
                       </div>
                     )}

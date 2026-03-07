@@ -31,8 +31,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const body: InvoiceRequest = await req.json();
-    const { registration_id, send_email = true, draft_only = false } = body;
+    const body: InvoiceRequest & { email_subject?: string; email_body?: string } = await req.json();
+    const { registration_id, send_email = true, draft_only = false, email_subject, email_body } = body;
 
     if (!registration_id) {
       return new Response(JSON.stringify({ error: "registration_id required" }), {
@@ -218,8 +218,8 @@ serve(async (req) => {
             body: JSON.stringify({
               message: {
                 client: { email: clientEmail, save: "0" },
-                subject: `Fatura-Recibo — ${itemDescription}`,
-                body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+                subject: (email_subject || `Fatura-Recibo — {{plano}}`).replace("{{plano}}", itemDescription),
+                body: email_body || `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
                 logo: "0",
               },
             }),
