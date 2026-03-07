@@ -1,4 +1,4 @@
-import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -26,8 +26,20 @@ function getSidebarSubtitle(ctx: WebinarCtxType): string {
   return WEBINAR_CONFIG[ctx].sidebarSubtitle;
 }
 
+const WEBINAR_OPTIONS: { key: WebinarCtxType; emoji: string; label: string; color: string }[] = [
+  { key: "consolidado", emoji: "⊕", label: "Todos", color: CONSOLIDADO_COLOR },
+  ...Object.entries(WEBINAR_CONFIG).map(([key, cfg]) => ({
+    key: key as WebinarCtxType,
+    emoji: cfg.emoji,
+    label: cfg.label,
+    color: cfg.color,
+  })),
+];
+
 function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps) {
-  const { webinarContext } = useWebinarContext();
+  const { webinarContext, setWebinarContext } = useWebinarContext();
+  const activeOption = WEBINAR_OPTIONS.find((o) => o.key === webinarContext) || WEBINAR_OPTIONS[0];
+
   return (
     <div className="flex flex-col h-full py-5 px-3">
       {/* Logo */}
@@ -36,9 +48,39 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
           <BarChart2 size={22} className="text-blue-300" />
           <span className="font-heading font-extrabold text-base text-white">WebinarCRM</span>
         </div>
-        <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
-          {getSidebarSubtitle(webinarContext)}
+      </div>
+
+      {/* Webinar selector */}
+      <div className="px-1 py-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-2" style={{ color: "rgba(255,255,255,0.30)" }}>
+          Webinar
         </p>
+        <div className="relative">
+          <select
+            value={webinarContext}
+            onChange={(e) => setWebinarContext(e.target.value as WebinarCtxType)}
+            className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400"
+            style={{
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.10)",
+            }}
+          >
+            {WEBINAR_OPTIONS.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.emoji} {opt.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: "rgba(255,255,255,0.40)" }}
+          />
+          <div
+            className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-md"
+            style={{ background: activeOption.color }}
+          />
+        </div>
       </div>
 
       {/* Nav */}

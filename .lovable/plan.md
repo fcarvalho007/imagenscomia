@@ -1,48 +1,29 @@
 
 
-# Plano: Webinar Switcher — Dropdown compacto na Sidebar
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema
-O switcher de webinar está duplicado em 5 headers de vistas. Movê-lo para a sidebar como botões verticais não escala (2 webinars hoje, 5 amanhã). Além disso, mudar de webinar **já mantém** a aba activa (o estado `activeView` é independente do `webinarContext`), por isso não há bug a corrigir aí.
+### Alteração
 
-## Solução
-Substituir os 5 `WebinarSwitcherBar` por um **dropdown compacto** na sidebar, logo abaixo do logo, que ocupa sempre o mesmo espaço independentemente do número de webinars.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-```text
-┌─────────────────────┐
-│ ⚡ WebinarCRM        │
-│ ┌─────────────────┐ │
-│ │ 🎬 Vídeo IA   ▾ │ │  ← dropdown (select)
-│ └─────────────────┘ │
-├─────────────────────┤
-│ Dashboard           │
-│ Pipeline            │
-│ Tabela              │
-│ Faturação           │
-│ ...                 │
-└─────────────────────┘
-```
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-O dropdown lista todas as opções: `⊕ Todos` / `📷 Imagens` / `🎬 Vídeo` — gerado dinamicamente a partir de `WEBINAR_CONFIG`. Escala para N webinars sem afectar a sidebar.
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-## Alterações (6 ficheiros)
-
-### `src/components/crm/CRMSidebar.tsx`
-- Importar `useWebinarContext` e `WEBINAR_CONFIG`
-- Adicionar um `<select>` estilizado (fundo escuro, texto branco, border subtle) entre o logo e a nav
-- O select muda `setWebinarContext` — o `activeView` permanece inalterado
-- Opções: "⊕ Todos", e uma entrada por cada key em `WEBINAR_CONFIG` com emoji + label
-
-### Remover `WebinarSwitcherBar` de 5 vistas:
-- `src/components/crm/DashboardView.tsx` — remover import e `<WebinarSwitcherBar />`
-- `src/components/crm/PipelineView.tsx` — idem
-- `src/components/crm/TableView.tsx` — idem
-- `src/components/crm/FollowUpView.tsx` — idem
-- `src/components/crm/TrashView.tsx` — idem
-
-### Ficheiro `WebinarSwitcherBar.tsx`
-Manter — pode ser útil noutros contextos, mas deixa de ser usado nas vistas principais.
-
-## Comportamento confirmado
-Mudar de webinar **não reinicia** a vista activa. Se estás em Faturação e mudas para Imagens, continuas em Faturação. Isto já funciona porque `activeView` e `webinarContext` são estados independentes.
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 

@@ -11,7 +11,7 @@ import EmailEditorPanel, { type EmailTemplate } from "./EmailEditorPanel";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { CalendarDays, AlertTriangle } from "lucide-react";
-import WebinarSwitcherBar from "./WebinarSwitcherBar";
+
 import { Button } from "@/components/ui/button";
 
 export type EmailStats = Record<string, { sent: number; failed: number }>;
@@ -210,7 +210,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
               {backfillDone ? "Backfill concluído" : backfillLoading ? "A enviar…" : "Reenviar confirmações em falta"}
             </Button>
           )}
-          <WebinarSwitcherBar />
+          
         </div>
       </div>
 
