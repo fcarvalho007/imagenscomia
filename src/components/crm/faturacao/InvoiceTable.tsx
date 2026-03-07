@@ -5,11 +5,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { useWebinarContext } from "@/contexts/WebinarContext";
 
 interface Props {
   inscritos: Inscrito[];
   onRefresh: () => void;
+  webinarFilter: string; // "all" | "imagens" | "video"
 }
 
 type InvoiceState = "none" | "draft" | "sent" | "error";
@@ -27,8 +27,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
   error: { icon: AlertCircle, color: "#ef4444", label: "Erro" },
 };
 
-export default function InvoiceTable({ inscritos, onRefresh }: Props) {
-  const { webinarContext } = useWebinarContext();
+export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
@@ -54,7 +53,7 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
     setBulkRunning("drafts");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-create-invoices", {
-        body: { webinar: webinarContext === "consolidado" ? "all" : webinarContext },
+        body: { webinar: webinarFilter },
       });
       if (error) throw error;
       toast({ title: `${data.created} rascunhos criados`, description: `${data.errors?.length || 0} erros` });
@@ -93,11 +92,12 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
   };
 
   const handleBulkEmit = async () => {
-    if (!confirm(`Emitir faturas para TODOS os pagantes sem fatura do webinar "${webinarContext}"?\n\nRegistos COM NIF: emissão completa + envio email.\nRegistos SEM NIF: apenas rascunho (para completar depois).`)) return;
+    const label = webinarFilter === "all" ? "TODOS os webinars" : `webinar "${webinarFilter}"`;
+    if (!confirm(`Emitir faturas para TODOS os pagantes sem fatura de ${label}?\n\nRegistos COM NIF: emissão completa + envio email.\nRegistos SEM NIF: apenas rascunho (para completar depois).`)) return;
     setBulkRunning("emit");
     try {
       const { data, error } = await supabase.functions.invoke("bulk-emit-invoices", {
-        body: { webinar: webinarContext === "consolidado" ? "all" : webinarContext },
+        body: { webinar: webinarFilter },
       });
       if (error) throw error;
       const errCount = data.errors?.length || 0;
