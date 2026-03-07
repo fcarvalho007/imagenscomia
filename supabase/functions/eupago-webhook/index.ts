@@ -601,19 +601,31 @@ async function processPayment(data: PaymentData) {
   // ── Post-match processing ─────────────────────────────────────────────────
 
   // ── Auto-create InvoiceExpress invoice-receipt (non-blocking) ──
+  // If the registrant has invoice_details (NIF), emit+send automatically.
+  // Otherwise, create only a draft for manual handling.
   if (matchedRegId) {
     try {
+      const { data: invoiceDetails } = await supabase
+        .from("invoice_details")
+        .select("registration_id")
+        .eq("registration_id", matchedRegId)
+        .maybeSingle();
+
+      const hasNIF = !!invoiceDetails;
+      const draftOnly = !hasNIF;
+
+      console.log(`📄 Auto-invoice: hasNIF=${hasNIF}, draft_only=${draftOnly} for ${matchedRegId}`);
+
       const invoiceRes = await fetch(`${supabaseUrl}/functions/v1/create-invoice`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${supabaseKey}`,
         },
-        body: JSON.stringify({ registration_id: matchedRegId, draft_only: true }),
+        body: JSON.stringify({ registration_id: matchedRegId, draft_only: draftOnly }),
       });
       const invoiceData = await invoiceRes.json();
-      console.log(`📄 Auto-invoice draft: ${invoiceRes.ok ? "✅" : "❌"} doc=${invoiceData.document_id || "—"}`);
-      // Save invoice_document_id on registration for dedup
+      console.log(`📄 Auto-invoice ${draftOnly ? "draft" : "emit"}: ${invoiceRes.ok ? "✅" : "❌"} doc=${invoiceData.document_id || "—"}`);
       if (invoiceRes.ok && invoiceData.document_id) {
         await supabase.from("registrations").update({ invoice_document_id: String(invoiceData.document_id) }).eq("id", matchedRegId);
       }
