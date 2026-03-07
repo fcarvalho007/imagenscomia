@@ -1,16 +1,25 @@
 import { useState, useMemo } from "react";
-import { Send, Loader2, Phone, X, Signal, Radio, MessageSquare, Smartphone, Users } from "lucide-react";
+import { Send, Loader2, Phone, X, Signal, Radio, MessageSquare, Smartphone, Users, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Inscrito } from "@/pages/crm/mockData";
 import PhonePreview from "./PhonePreview";
 import { FilterBar, filterInscritos, type WebinarFilter, type PlanoFilter } from "./EmailTab";
+import SendConfirmDialog from "./SendConfirmDialog";
+import SchedulePicker from "./SchedulePicker";
 
 type Provider = "smseasy" | "egoi";
 
 interface SmsTabProps {
   inscritos: Inscrito[];
+}
+
+/* GSM 7-bit basic character set (plus extension) */
+const GSM_REGEX = /[^\x20-\x7E\n\r@£$¥èéùìòÇØøÅåΔΦΓΛΩΠΨΣΘΞÆæßÉ ÄÖÑÜäöñüà§¿¡\u000C\u000E\u001B\u005B\u005C\u005D\u005E\u007B\u007C\u007D\u007E€]/;
+
+function detectUnicode(text: string): boolean {
+  return GSM_REGEX.test(text);
 }
 
 export default function SmsTab({ inscritos }: SmsTabProps) {
@@ -22,12 +31,15 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [webinar, setWebinar] = useState<WebinarFilter | null>("todos");
   const [plano, setPlano] = useState<PlanoFilter | null>("todos");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
 
   const filteredPool = useMemo(() => filterInscritos(inscritos, webinar, plano).filter(i => !!i.whatsapp), [inscritos, webinar, plano]);
 
-  const maxChars = 160;
+  const isUnicode = useMemo(() => detectUnicode(text), [text]);
+  const maxChars = isUnicode ? 70 : 160;
   const charCount = text.length;
-  const smsCount = Math.ceil(charCount / 160) || 1;
+  const smsCount = charCount === 0 ? 1 : Math.ceil(charCount / maxChars);
   const charPct = Math.min((charCount / maxChars) * 100, 100);
 
   const progressColor =
@@ -62,6 +74,30 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
 
   const handleSend = async () => {
     if (recipients.length === 0 || !text.trim() || sending) return;
+
+    // If scheduled, save to DB and return
+    if (scheduledAt) {
+      try {
+        const { error } = await supabase.from("scheduled_sends" as any).insert({
+          channel: "sms",
+          text_body: text.trim(),
+          recipients: recipients.map(r => ({ id: r.id, whatsapp: r.whatsapp, nome: r.nome })),
+          scheduled_at: scheduledAt.toISOString(),
+          status: "pending",
+          metadata: { provider },
+        } as any);
+        if (error) throw error;
+        toast.success(`SMS agendado para ${scheduledAt.toLocaleDateString("pt-PT")} às ${scheduledAt.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}`);
+        setText("");
+        setRecipients([]);
+        setScheduledAt(null);
+        return;
+      } catch (err: any) {
+        toast.error(err.message || "Erro ao agendar");
+        return;
+      }
+    }
+
     setSending(true);
     let ok = 0, fail = 0;
     for (const r of recipients) {
@@ -214,7 +250,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-slate-400">Mensagem</label>
             <div className="rounded-xl overflow-hidden bg-white" style={{ border: "1.5px solid #E2E8F0" }}>
-              <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, maxChars * 3))} placeholder="Escreva a mensagem SMS…" rows={5} className="w-full bg-transparent px-4 py-3 text-sm text-slate-900 outline-none resize-none placeholder:text-slate-400" />
+              <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Escreva a mensagem SMS…" rows={5} className="w-full bg-transparent px-4 py-3 text-sm text-slate-900 outline-none resize-none placeholder:text-slate-400" />
               <div className="px-4 pb-3 space-y-2">
                 <div className="h-1.5 rounded-full overflow-hidden bg-slate-200">
                   <motion.div className="h-full rounded-full" style={{ background: progressColor }} animate={{ width: `${Math.min(charPct, 100)}%` }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
@@ -225,19 +261,31 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
                     <span className="text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: smsCount > 1 ? "rgba(245,158,11,0.1)" : "#F1F5F9", color: smsCount > 1 ? "#d97706" : "#94A3B8", border: `1px solid ${smsCount > 1 ? "rgba(245,158,11,0.2)" : "#E2E8F0"}` }}>
                       <MessageSquare size={8} />{smsCount} SMS
                     </span>
+                    {/* Unicode warning */}
+                    {isUnicode && (
+                      <span className="text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold" style={{ background: "rgba(239,68,68,0.08)", color: "#dc2626", border: "1px solid rgba(239,68,68,0.2)" }}>
+                        <AlertTriangle size={8} /> Unicode — limite 70 chars/SMS
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Schedule picker */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-slate-400">Quando enviar</label>
+            <SchedulePicker scheduledAt={scheduledAt} onChange={setScheduledAt} />
+          </div>
+
           {/* Send button */}
           <div className="flex justify-end">
-            <motion.button onClick={handleSend} disabled={recipients.length === 0 || !text.trim() || sending} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="relative flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-bold text-white transition-all disabled:opacity-30 disabled:pointer-events-none overflow-hidden" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", boxShadow: recipients.length === 0 || !text.trim() ? "none" : "0 8px 25px -5px rgba(37,99,235,0.4)" }}>
+            <motion.button onClick={() => setShowConfirm(true)} disabled={recipients.length === 0 || !text.trim() || sending} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="relative flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-bold text-white transition-all disabled:opacity-30 disabled:pointer-events-none overflow-hidden" style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", boxShadow: recipients.length === 0 || !text.trim() ? "none" : "0 8px 25px -5px rgba(37,99,235,0.4)" }}>
               {sending && <div className="absolute inset-0 animate-pulse" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
               <span className="relative flex items-center gap-2">
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                Enviar SMS {recipients.length > 1 ? `(${recipients.length})` : ""}
+                {scheduledAt ? "Agendar" : "Enviar"} SMS {recipients.length > 1 ? `(${recipients.length})` : ""}
               </span>
             </motion.button>
           </div>
@@ -249,6 +297,17 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
           <p className="text-[10px] text-slate-400 mt-4 text-center">Pré-visualização em tempo real</p>
         </div>
       </div>
+
+      {/* Confirm dialog */}
+      <SendConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        onConfirm={handleSend}
+        channel="sms"
+        recipientCount={recipients.length}
+        messagePreview={text.slice(0, 100)}
+        scheduledAt={scheduledAt}
+      />
     </div>
   );
 }
