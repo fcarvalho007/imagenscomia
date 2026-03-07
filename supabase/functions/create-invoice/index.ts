@@ -12,10 +12,53 @@ const BASE_URL = `https://${ACCOUNT}.app.invoicexpress.com`;
 
 interface InvoiceRequest {
   registration_id: string;
-  /** If true, also send the invoice by email via InvoiceExpress */
   send_email?: boolean;
-  /** If true, create as draft only — do not finalize or send email */
   draft_only?: boolean;
+  email_subject?: string;
+  email_body?: string;
+}
+
+const PLAN_LABELS: Record<string, string> = {
+  premium: "Formação — Premium Pass · Imagens com IA",
+  masterclass: "Formação — Masterclass · Imagens com IA",
+  bundle: "Formação — Premium + Masterclass · Imagens com IA",
+  gravacao: "Formação — Sessão HD + Pack Apoio · Imagens com IA",
+  "video-premium": "Formação — Sessão HD + Pack Apoio · Vídeo com IA",
+  "video-masterclass": "Formação — Masterclass · Vídeo com IA",
+  "video-bundle": "Formação — Masterclass + Sessão · Vídeo com IA",
+};
+
+const PLAN_DESCRIPTIONS: Record<string, string> = {
+  premium: "Acesso premium ao webinar Imagens com IA",
+  masterclass: "Masterclass online de 3h · Imagens com IA",
+  bundle: "Acesso premium + Masterclass · Imagens com IA",
+  gravacao: "Sessão completa em HD + pack de apoio · Imagens com IA",
+  "video-premium": "Sessão completa em HD + pack de apoio · Vídeo com IA",
+  "video-masterclass": "Masterclass online de 3h · Vídeo com IA",
+  "video-bundle": "Masterclass + sessão completa · Vídeo com IA",
+};
+
+/** Fetch per-plan prices (with IVA) from webinar_settings */
+async function fetchDBPrices(supabase: any): Promise<Record<string, number>> {
+  const { data } = await supabase
+    .from("webinar_settings")
+    .select("webinar, price_premium, price_masterclass, price_bundle");
+  const prices: Record<string, number> = {};
+  if (data) {
+    for (const row of data) {
+      if (row.webinar === "imagens") {
+        prices["premium"] = Number(row.price_premium) || 0;
+        prices["masterclass"] = Number(row.price_masterclass) || 0;
+        prices["bundle"] = Number(row.price_bundle) || 0;
+        prices["gravacao"] = Number(row.price_premium) || 0;
+      } else if (row.webinar === "video") {
+        prices["video-premium"] = Number(row.price_premium) || 0;
+        prices["video-masterclass"] = Number(row.price_masterclass) || 0;
+        prices["video-bundle"] = Number(row.price_bundle) || 0;
+      }
+    }
+  }
+  return prices;
 }
 
 serve(async (req) => {
@@ -31,7 +74,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const body: InvoiceRequest & { email_subject?: string; email_body?: string } = await req.json();
+    const body: InvoiceRequest = await req.json();
     const { registration_id, send_email = true, draft_only = false, email_subject, email_body } = body;
 
     if (!registration_id) {
@@ -41,10 +84,13 @@ serve(async (req) => {
       });
     }
 
-    // ── Fetch registration + invoice_details ──
+    // Fetch DB prices
+    const DB_PRICES = await fetchDBPrices(supabase);
+
+    // ── Fetch registration ──
     const { data: reg } = await supabase
       .from("registrations")
-      .select("email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, paid_amount")
+      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, paid_amount, group_payment_ref, invoice_document_id")
       .eq("id", registration_id)
       .maybeSingle();
 
@@ -55,90 +101,97 @@ serve(async (req) => {
       });
     }
 
+    // ── Detect group ──
+    let allMembers = [reg];
+    let allMemberIds = [reg.id];
+    let buyerReg = reg;
+    let quantity = 1;
+    let totalPaid = reg.paid_amount ? Number(reg.paid_amount) : 0;
+
+    if (reg.group_payment_ref) {
+      const { data: groupMembers } = await supabase
+        .from("registrations")
+        .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, paid_amount, group_payment_ref, invoice_document_id")
+        .eq("group_payment_ref", reg.group_payment_ref);
+
+      if (groupMembers && groupMembers.length > 1) {
+        allMembers = groupMembers;
+        allMemberIds = groupMembers.map((m: any) => m.id);
+        quantity = groupMembers.length;
+        totalPaid = groupMembers.reduce((sum: number, m: any) => sum + (m.paid_amount ? Number(m.paid_amount) : 0), 0);
+
+        // Find buyer = member with invoice_details, or original reg
+        const { data: allInvoiceDetails } = await supabase
+          .from("invoice_details")
+          .select("*")
+          .in("registration_id", allMemberIds);
+
+        if (allInvoiceDetails && allInvoiceDetails.length > 0) {
+          const buyerDetail = allInvoiceDetails[0];
+          const foundBuyer = groupMembers.find((m: any) => m.id === buyerDetail.registration_id);
+          if (foundBuyer) buyerReg = foundBuyer;
+        }
+
+        console.log(`👥 Group detected: ${quantity} members, buyer=${buyerReg.email}, total=${totalPaid}€`);
+      }
+    }
+
+    // ── Fetch invoice_details for buyer ──
     const { data: invoice } = await supabase
       .from("invoice_details")
       .select("*")
-      .eq("registration_id", registration_id)
+      .eq("registration_id", buyerReg.id)
       .maybeSingle();
 
     // ── Build client data ──
-    const clientName = invoice?.invoice_name || reg.name || "Consumidor Final";
-    const clientEmail = invoice?.invoice_email || reg.email;
-    const clientVat = invoice?.invoice_vat || "999999990"; // consumidor final
+    const clientName = invoice?.invoice_name || buyerReg.name || "Consumidor Final";
+    const clientEmail = invoice?.invoice_email || buyerReg.email;
+    const clientVat = invoice?.invoice_vat || "999999990";
     const clientAddress = invoice?.invoice_address || "";
     const clientZip = invoice?.invoice_zip || "";
     const clientCity = invoice?.invoice_city || "";
 
-    // ── Price map ──
-    const PRICES: Record<string, number> = {
-      premium: 15.00,
-      masterclass: 47.00,
-      bundle: 57.00,
-      gravacao: 27.00,
-      "video-premium": 27.00,
-      "video-masterclass": 67.00,
-      "video-bundle": 107.00,
-    };
-
-    const PLAN_LABELS: Record<string, string> = {
-      premium: "Formação — Premium Pass · Imagens com IA",
-      masterclass: "Formação — Masterclass · Imagens com IA",
-      bundle: "Formação — Premium + Masterclass · Imagens com IA",
-      gravacao: "Formação — Sessão HD + Pack Apoio · Imagens com IA",
-      "video-premium": "Formação — Sessão HD + Pack Apoio · Vídeo com IA",
-      "video-masterclass": "Formação — Masterclass · Vídeo com IA",
-      "video-bundle": "Formação — Masterclass + Sessão · Vídeo com IA",
-    };
-
-    const PLAN_DESCRIPTIONS: Record<string, string> = {
-      premium: "Acesso premium ao webinar Imagens com IA",
-      masterclass: "Masterclass online de 3h · Imagens com IA",
-      bundle: "Acesso premium + Masterclass · Imagens com IA",
-      gravacao: "Sessão completa em HD + pack de apoio · Imagens com IA",
-      "video-premium": "Sessão completa em HD + pack de apoio · Vídeo com IA",
-      "video-masterclass": "Masterclass online de 3h · Vídeo com IA",
-      "video-bundle": "Masterclass + sessão completa · Vídeo com IA",
-    };
-
-    const planKey = reg.plan_selected || "premium";
+    const planKey = buyerReg.plan_selected || "premium";
     const itemDescription = PLAN_LABELS[planKey] || planKey;
     const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
 
-    // ── Determine tax ──
-    // Portuguese NIF → 23% IVA, foreign → tax exempt
     const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
     const taxName = isPortuguese ? "IVA23" : "IVA0";
     const taxExemption = isPortuguese ? undefined : "M01";
 
-    // Source of truth: paid_amount from EuPago webhook (includes IVA)
-    // For Portuguese NIF → divide by 1.23 to get base price
-    // For foreign (tax exempt) → paid_amount IS the base price
     let unitPrice: number;
-    if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
-      const paidAmount = parseFloat(reg.paid_amount);
-      unitPrice = isPortuguese 
-        ? Math.round((paidAmount / 1.23) * 100) / 100
-        : paidAmount;
-      console.log(`💰 Using paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€ (isPortuguese=${isPortuguese})`);
+    if (totalPaid > 0) {
+      const perPerson = totalPaid / quantity;
+      unitPrice = isPortuguese
+        ? Math.round((perPerson / 1.23) * 100) / 100
+        : perPerson;
+      console.log(`💰 totalPaid=${totalPaid}€, qty=${quantity} → unitPrice=${unitPrice}€ (isPortuguese=${isPortuguese})`);
     } else {
-      unitPrice = PRICES[planKey] || 15.00;
-      console.warn(`⚠️ No paid_amount for ${reg.email} — using PRICES fallback: ${unitPrice}€ for plan "${planKey}"`);
+      const dbPrice = DB_PRICES[planKey] || 0;
+      if (dbPrice > 0) {
+        unitPrice = isPortuguese
+          ? Math.round((dbPrice / 1.23) * 100) / 100
+          : dbPrice;
+      } else {
+        unitPrice = 15.0;
+      }
+      console.warn(`⚠️ No paid_amount — DB fallback: ${unitPrice}€ for plan "${planKey}"`);
     }
 
     const today = new Date();
     const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
 
-    // ── Step 1: Create invoice-receipt (simplified invoice) ──
+    // ── Step 1: Create invoice-receipt ──
     const invoicePayload = {
       invoice: {
         date: dateStr,
         due_date: dateStr,
-        reference: reg.eupago_ref || registration_id.slice(0, 12),
-        observations: `Webinar: ${reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}`,
+        reference: buyerReg.eupago_ref || buyerReg.id.slice(0, 12),
+        observations: `Webinar: ${buyerReg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}${quantity > 1 ? ` · Grupo de ${quantity} pessoas` : ""}`,
         ...(taxExemption ? { tax_exemption: taxExemption } : {}),
         client: {
           name: clientName,
-          code: reg.email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
+          code: clientEmail.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
           email: clientEmail,
           fiscal_id: clientVat,
           address: clientAddress,
@@ -151,17 +204,15 @@ serve(async (req) => {
             name: itemDescription,
             description: itemDetail,
             unit_price: unitPrice.toFixed(2),
-            quantity: "1",
+            quantity: String(quantity),
             unit: "service",
-            tax: {
-              name: taxName,
-            },
+            tax: { name: taxName },
           },
         ],
       },
     };
 
-    console.log(`📄 Creating invoice-receipt for ${reg.email} — plan: ${planKey}, price: ${unitPrice}€`);
+    console.log(`📄 Creating invoice-receipt for ${buyerReg.email} — plan: ${planKey}, price: ${unitPrice}€, qty: ${quantity}`);
 
     const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
       method: "POST",
@@ -185,7 +236,7 @@ serve(async (req) => {
     let emailSent = false;
 
     if (!draft_only) {
-      // ── Step 2: Finalize the invoice-receipt ──
+      // ── Step 2: Finalize ──
       const stateRes = await fetch(
         `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
         {
@@ -206,7 +257,7 @@ serve(async (req) => {
 
       console.log(`✅ Invoice-receipt ${documentId} finalized`);
 
-      // ── Step 3: Send by email (optional) ──
+      // ── Step 3: Send by email ──
       if (send_email && clientEmail) {
         await new Promise((r) => setTimeout(r, 2000));
 
@@ -218,8 +269,8 @@ serve(async (req) => {
             body: JSON.stringify({
               message: {
                 client: { email: clientEmail, save: "0" },
-                subject: (email_subject || `Fatura-Recibo — {{plano}}`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
-                body: (email_body || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
+                subject: (email_subject || `Fatura-Recibo — {{plano}}`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, buyerReg.name || ""),
+                body: (email_body || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, buyerReg.name || ""),
                 logo: "0",
               },
             }),
@@ -230,18 +281,22 @@ serve(async (req) => {
         console.log(`📧 Invoice email ${emailSent ? "sent" : "FAILED"} to ${clientEmail}`);
       }
 
-      // ── Step 4: Mark invoice_sent in registrations ──
-      await supabase
-        .from("registrations")
-        .update({ invoice_sent: true })
-        .eq("id", registration_id);
+      // ── Step 4: Mark ALL members as invoice_sent ──
+      for (const memberId of allMemberIds) {
+        await supabase
+          .from("registrations")
+          .update({ invoice_sent: true, invoice_document_id: String(documentId) } as any)
+          .eq("id", memberId);
+      }
     } else {
       console.log(`📝 Draft mode — skipping finalize, email, and invoice_sent update`);
-      // Save document_id on registration for tracking
-      await supabase
-        .from("registrations")
-        .update({ invoice_document_id: String(documentId) })
-        .eq("id", registration_id);
+      // Save document_id on ALL members
+      for (const memberId of allMemberIds) {
+        await supabase
+          .from("registrations")
+          .update({ invoice_document_id: String(documentId) } as any)
+          .eq("id", memberId);
+      }
     }
 
     return new Response(
@@ -251,6 +306,7 @@ serve(async (req) => {
         draft_only,
         email_sent: emailSent,
         client_email: clientEmail,
+        group_size: quantity,
       }),
       {
         status: 200,

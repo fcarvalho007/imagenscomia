@@ -10,6 +10,36 @@ const corsHeaders = {
 const ACCOUNT = "fomentarsonhos";
 const BASE_URL = `https://${ACCOUNT}.app.invoicexpress.com`;
 
+const PLAN_LABELS: Record<string, string> = {
+  premium: "Formação — Premium Pass · Imagens com IA",
+  masterclass: "Formação — Masterclass · Imagens com IA",
+  bundle: "Formação — Premium + Masterclass · Imagens com IA",
+  gravacao: "Formação — Sessão HD + Pack Apoio · Imagens com IA",
+  "video-premium": "Formação — Sessão HD + Pack Apoio · Vídeo com IA",
+  "video-masterclass": "Formação — Masterclass · Vídeo com IA",
+  "video-bundle": "Formação — Masterclass + Sessão · Vídeo com IA",
+};
+
+// ─── Helper: check InvoiceExpress document state ───
+async function getIEDocumentState(API_KEY: string, documentId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/invoice_receipts/${documentId}.json?api_key=${API_KEY}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`⚠️ GET doc #${documentId} failed: ${res.status} ${text}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.invoice_receipt?.status || data.status || null;
+  } catch (e: any) {
+    console.warn(`⚠️ GET doc #${documentId} error: ${e.message}`);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -38,28 +68,58 @@ serve(async (req) => {
     // Fetch registrations with draft invoices
     const { data: registrations, error: fetchErr } = await supabase
       .from("registrations")
-      .select("id, email, name, plan_selected, invoice_document_id, invoice_sent, webinar")
+      .select("id, email, name, plan_selected, invoice_document_id, invoice_sent, webinar, group_payment_ref")
       .in("id", registrationIds);
 
     if (fetchErr) throw new Error(`Fetch error: ${fetchErr.message}`);
 
     let finalized = 0;
+    let skippedCount = 0;
     const errors: { id: string; email: string; error: string }[] = [];
+
+    // Track already-processed document IDs to avoid double-finalizing group invoices
+    const processedDocIds = new Set<string>();
 
     for (const reg of registrations || []) {
       try {
         // Skip if already sent
         if (reg.invoice_sent) {
           console.log(`⏭️ ${reg.email}: already sent, skipping`);
+          skippedCount++;
           continue;
         }
 
         const documentId = reg.invoice_document_id;
 
-        // If no draft exists, create one first
         if (!documentId) {
-          console.log(`⏭️ ${reg.email}: no draft, skipping (use bulk-create-invoices first)`);
+          console.log(`⏭️ ${reg.email}: no draft, skipping`);
           errors.push({ id: reg.id, email: reg.email, error: "No draft invoice found. Create drafts first." });
+          continue;
+        }
+
+        // Skip if we already processed this document (group scenario)
+        if (processedDocIds.has(documentId)) {
+          console.log(`⏭️ ${reg.email}: doc #${documentId} already processed in this batch`);
+          // Still mark as sent
+          await supabase
+            .from("registrations")
+            .update({ invoice_sent: true })
+            .eq("id", reg.id);
+          continue;
+        }
+
+        // Step 0: Check document state before finalizing
+        const currentState = await getIEDocumentState(API_KEY, documentId);
+        console.log(`🔍 ${reg.email}: doc #${documentId} state="${currentState}"`);
+
+        if (currentState === "finalized" || currentState === "settled") {
+          console.log(`⏭️ ${reg.email}: doc #${documentId} already ${currentState} — skipping finalize`);
+          processedDocIds.add(documentId);
+          // Mark all group members as sent
+          await markGroupMembersSent(supabase, reg, documentId);
+          skippedCount++;
+          // Still send email if not yet sent
+          await sendInvoiceEmail(API_KEY, supabase, reg, documentId, customEmailSubject, customEmailBody);
           continue;
         }
 
@@ -82,60 +142,15 @@ serve(async (req) => {
         }
 
         console.log(`✅ ${reg.email}: invoice #${documentId} finalized`);
+        processedDocIds.add(documentId);
 
         // Step 2: Send by email
-        await new Promise((r) => setTimeout(r, 2000));
+        await sendInvoiceEmail(API_KEY, supabase, reg, documentId, customEmailSubject, customEmailBody);
 
-        const PLAN_LABELS: Record<string, string> = {
-          premium: "Formação — Premium Pass",
-          masterclass: "Formação — Masterclass",
-          bundle: "Formação — Premium + Masterclass",
-          gravacao: "Formação — Sessão HD + Pack Apoio",
-          "video-premium": "Formação — Sessão HD + Pack Apoio · Vídeo com IA",
-          "video-masterclass": "Formação — Masterclass · Vídeo com IA",
-          "video-bundle": "Formação — Masterclass + Sessão · Vídeo com IA",
-        };
-
-        const planKey = reg.plan_selected || "premium";
-        const itemDescription = PLAN_LABELS[planKey] || planKey;
-
-        const emailRes = await fetch(
-          `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              message: {
-                client: { email: reg.email, save: "0" },
-                subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
-                body: (customEmailBody || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
-                logo: "0",
-              },
-            }),
-          }
-        );
-
-        const emailSent = emailRes.ok;
-        console.log(`📧 ${reg.email}: email ${emailSent ? "sent" : "FAILED"}`);
-
-        // Step 3: Update registration
-        await supabase
-          .from("registrations")
-          .update({ invoice_sent: true })
-          .eq("id", reg.id);
-
-        // Step 4: Log in message_logs
-        await supabase.from("message_logs").insert({
-          registration_id: reg.id,
-          channel: "email",
-          provider: "invoicexpress",
-          template_key: "invoice_finalized",
-          status: emailSent ? "sent" : "failed",
-        });
+        // Step 3: Mark all group members as sent
+        await markGroupMembersSent(supabase, reg, documentId);
 
         finalized++;
-
-        // Rate limit
         await new Promise((r) => setTimeout(r, 1000));
       } catch (err: any) {
         console.error(`❌ ${reg.email}: ${err.message}`);
@@ -144,10 +159,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Bulk finalize done: ${finalized} finalized, ${errors.length} errors`);
+    console.log(`📊 Bulk finalize done: ${finalized} finalized, ${skippedCount} skipped, ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ finalized, errors, total: registrations?.length || 0 }),
+      JSON.stringify({ finalized, skipped: skippedCount, errors, total: registrations?.length || 0 }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
@@ -159,3 +174,77 @@ serve(async (req) => {
     });
   }
 });
+
+// ─── Helper: send invoice email ───
+async function sendInvoiceEmail(
+  API_KEY: string,
+  supabase: any,
+  reg: any,
+  documentId: string,
+  customEmailSubject?: string,
+  customEmailBody?: string,
+) {
+  await new Promise((r) => setTimeout(r, 2000));
+
+  const planKey = reg.plan_selected || "premium";
+  const itemDescription = PLAN_LABELS[planKey] || planKey;
+
+  const emailRes = await fetch(
+    `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        message: {
+          client: { email: reg.email, save: "0" },
+          subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`)
+            .replace(/\{\{plano\}\}/g, itemDescription)
+            .replace(/\{\{nome\}\}/g, reg.name || ""),
+          body: (customEmailBody || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`)
+            .replace(/\{\{plano\}\}/g, itemDescription)
+            .replace(/\{\{nome\}\}/g, reg.name || ""),
+          logo: "0",
+        },
+      }),
+    }
+  );
+
+  const emailSent = emailRes.ok;
+  console.log(`📧 ${reg.email}: email ${emailSent ? "sent" : "FAILED"}`);
+
+  // Log
+  await supabase.from("message_logs").insert({
+    registration_id: reg.id,
+    channel: "email",
+    provider: "invoicexpress",
+    template_key: "invoice_finalized",
+    status: emailSent ? "sent" : "failed",
+  });
+}
+
+// ─── Helper: mark group members as invoice_sent ───
+async function markGroupMembersSent(supabase: any, reg: any, documentId: string) {
+  // Always mark the current reg
+  await supabase
+    .from("registrations")
+    .update({ invoice_sent: true })
+    .eq("id", reg.id);
+
+  // If part of a group, mark all members
+  if (reg.group_payment_ref) {
+    const { data: groupMembers } = await supabase
+      .from("registrations")
+      .select("id")
+      .eq("group_payment_ref", reg.group_payment_ref);
+
+    if (groupMembers) {
+      for (const member of groupMembers) {
+        await supabase
+          .from("registrations")
+          .update({ invoice_sent: true, invoice_document_id: documentId } as any)
+          .eq("id", member.id);
+      }
+      console.log(`👥 Marked ${groupMembers.length} group members as invoice_sent`);
+    }
+  }
+}
