@@ -255,9 +255,9 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-                  Emitir Fatura-Recibo<span className="hidden sm:inline">&nbsp;e Enviar a Todos</span>
+                <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null || pendingCount === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                   {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                   Emitir Fatura-Recibo<span className="hidden sm:inline">&nbsp;e Enviar a Todos</span>{pendingCount > 0 && ` (${pendingCount})`}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
