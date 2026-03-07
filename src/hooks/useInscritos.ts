@@ -30,7 +30,7 @@ function mapRegistration(r: any): Inscrito {
   const webinarType = r.webinar === "video" ? "video" : "imagens";
   const planHasVideoPrefix = (r.plan_selected || "").startsWith("video-");
   const pricingContext = planHasVideoPrefix ? "video" : webinarType;
-  const planValues = PLAN_VALUES_BY_WEBINAR[pricingContext] || PLAN_VALUES_BY_WEBINAR.imagens;
+  const planValues = PLAN_VALUES_FALLBACK[pricingContext] || PLAN_VALUES_FALLBACK.imagens;
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
     id: r.id,
@@ -394,7 +394,7 @@ export function useInscritos() {
     const { error } = await supabase.from("registrations").update(updateData).eq("id", inscritoId);
     if (error) { console.error("Error updating plan:", error); return; }
     const webinarType = reg?.webinar === "video" ? "video" : "imagens";
-    const valor = (PLAN_VALUES_BY_WEBINAR[webinarType] || PLAN_VALUES_BY_WEBINAR.imagens)[newPlan] || 0;
+    const valor = (PLAN_VALUES_FALLBACK[webinarType] || PLAN_VALUES_FALLBACK.imagens)[newPlan] || 0;
     setInscritos((prev) =>
       prev.map((i) => i.id === inscritoId ? {
         ...i,
