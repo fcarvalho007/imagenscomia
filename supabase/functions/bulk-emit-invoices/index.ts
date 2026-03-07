@@ -10,16 +10,6 @@ const corsHeaders = {
 const ACCOUNT = "fomentarsonhos";
 const BASE_URL = `https://${ACCOUNT}.app.invoicexpress.com`;
 
-const PRICES: Record<string, number> = {
-  premium: 15.0,
-  masterclass: 47.0,
-  bundle: 57.0,
-  gravacao: 27.0,
-  "video-premium": 27.0,
-  "video-masterclass": 67.0,
-  "video-bundle": 107.0,
-};
-
 const PLAN_LABELS: Record<string, string> = {
   premium: "Formação — Premium Pass · Imagens com IA",
   masterclass: "Formação — Masterclass · Imagens com IA",
@@ -39,6 +29,29 @@ const PLAN_DESCRIPTIONS: Record<string, string> = {
   "video-masterclass": "Masterclass online de 3h · Vídeo com IA",
   "video-bundle": "Masterclass + sessão completa · Vídeo com IA",
 };
+
+/** Fetch per-plan prices (with IVA) from webinar_settings */
+async function fetchDBPrices(supabase: any): Promise<Record<string, number>> {
+  const { data } = await supabase
+    .from("webinar_settings")
+    .select("webinar, price_premium, price_masterclass, price_bundle");
+  const prices: Record<string, number> = {};
+  if (data) {
+    for (const row of data) {
+      if (row.webinar === "imagens") {
+        prices["premium"] = Number(row.price_premium) || 0;
+        prices["masterclass"] = Number(row.price_masterclass) || 0;
+        prices["bundle"] = Number(row.price_bundle) || 0;
+        prices["gravacao"] = Number(row.price_premium) || 0;
+      } else if (row.webinar === "video") {
+        prices["video-premium"] = Number(row.price_premium) || 0;
+        prices["video-masterclass"] = Number(row.price_masterclass) || 0;
+        prices["video-bundle"] = Number(row.price_bundle) || 0;
+      }
+    }
+  }
+  return prices;
+}
 
 interface Registration {
   id: string;
@@ -88,7 +101,6 @@ async function getIEDocumentState(API_KEY: string, documentId: string): Promise<
 
 // ─── Helper: recover document ID from message_logs ───
 async function recoverDocumentId(supabase: any, memberIds: string[]): Promise<string | null> {
-  // Check if any member already had an invoice emitted
   const { data: logs } = await supabase
     .from("message_logs")
     .select("registration_id")
@@ -99,7 +111,6 @@ async function recoverDocumentId(supabase: any, memberIds: string[]): Promise<st
 
   if (!logs || logs.length === 0) return null;
 
-  // Found a log — get the document_id from registrations (might have been on a different member)
   const { data: reg } = await supabase
     .from("registrations")
     .select("invoice_document_id")
@@ -108,7 +119,6 @@ async function recoverDocumentId(supabase: any, memberIds: string[]): Promise<st
 
   if (reg?.invoice_document_id) return reg.invoice_document_id;
 
-  // Also check other members that might still have the document_id
   const { data: regs } = await supabase
     .from("registrations")
     .select("invoice_document_id")
@@ -118,6 +128,9 @@ async function recoverDocumentId(supabase: any, memberIds: string[]): Promise<st
 
   return regs?.[0]?.invoice_document_id || null;
 }
+
+// Variable to hold DB prices (set in serve handler)
+let DB_PRICES: Record<string, number> = {};
 
 // ─── Helper: create, finalize & email one invoice-receipt ───
 async function emitInvoice(opts: {
@@ -160,8 +173,16 @@ async function emitInvoice(opts: {
       ? Math.round((perPerson / 1.23) * 100) / 100
       : perPerson;
   } else {
-    unitPrice = PRICES[planKey] || 15.0;
-    console.warn(`⚠️ ${buyerReg.email}: no paid_amount — fallback: ${unitPrice}€`);
+    // Fallback: use DB prices (with IVA)
+    const dbPrice = DB_PRICES[planKey] || 0;
+    if (dbPrice > 0) {
+      unitPrice = isPortuguese
+        ? Math.round((dbPrice / 1.23) * 100) / 100
+        : dbPrice;
+    } else {
+      unitPrice = 15.0;
+    }
+    console.warn(`⚠️ ${buyerReg.email}: no paid_amount — DB fallback: ${unitPrice}€`);
   }
 
   const today = new Date();
@@ -239,7 +260,6 @@ async function emitInvoice(opts: {
   console.log(`🔍 ${buyerReg.email}: doc #${documentId} state="${currentState}"`);
 
   if (currentState === "finalized" || currentState === "settled") {
-    // Already finalized — just mark as sent in DB and skip
     console.log(`⏭️ ${buyerReg.email}: doc #${documentId} already ${currentState} — skipping, marking as sent`);
     for (const memberId of allMemberIds) {
       await supabase
@@ -334,6 +354,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch DB prices (with IVA) — replaces hardcoded PRICES
+    DB_PRICES = await fetchDBPrices(supabase);
+    console.log("📦 DB prices loaded:", JSON.stringify(DB_PRICES));
+
     const body = await req.json().catch(() => ({}));
     const webinarFilter: string = body.webinar || "video";
     const customEmailSubject: string | undefined = body.email_subject;
@@ -393,7 +417,6 @@ serve(async (req) => {
     // ─── Process GROUPS ───
     for (const [groupRef, members] of groups) {
       try {
-        // Find the buyer = member with invoice_details, or first member
         const buyer = members.find((m) => invoiceMap.has(m.id)) || members[0];
         const invoiceDetail = invoiceMap.get(buyer.id) || null;
         const allMemberIds = members.map((m) => m.id);
@@ -403,13 +426,12 @@ serve(async (req) => {
 
         console.log(`👥 Group ${groupRef.slice(0, 8)}: ${quantity} members, buyer=${buyer.email}, total=${totalPaid}€`);
 
-        // Recovery: if buyer has no document_id, try to recover from message_logs or other members
+        // Recovery: if buyer has no document_id, try to recover
         if (!buyer.invoice_document_id) {
           const recoveredId = await recoverDocumentId(supabase, allMemberIds);
           if (recoveredId) {
-            console.log(`🔄 Group ${groupRef.slice(0, 8)}: recovered document #${recoveredId} from logs/members`);
+            console.log(`🔄 Group ${groupRef.slice(0, 8)}: recovered document #${recoveredId}`);
             buyer.invoice_document_id = recoveredId;
-            // Save on buyer
             await supabase
               .from("registrations")
               .update({ invoice_document_id: recoveredId } as any)
