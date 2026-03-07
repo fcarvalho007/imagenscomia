@@ -1,26 +1,29 @@
 
 
-# Plano: Remover badges de plano dos cartões do Pipeline
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema
-Os cartões do Pipeline mostram badges redundantes ("Sessão Prática", "MC Vídeo", "Pack Completo", "IMG+VID") quando as colunas já identificam o plano. Isto cria ruído visual, como visível nos screenshots.
+### Alteração
 
-## Alteração
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-**Ficheiro**: `src/components/crm/PipelineView.tsx`
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-Remover do componente `PipelineCard` (linhas 142-152):
-1. O badge de plano genérico (`badge.label` — mostra "Sessão Prática", "MC Vídeo", "Pack Completo", "Gratuito")
-2. O badge "IMG+VID" exclusivo do bundle
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-Manter intactos:
-- Badge "PÓS-WEBINAR"
-- Badge "Seleccionou e saiu"
-- Badge "Aguarda pgto" + tempo
-- Badge "Pago"
-- Badge de webinar (consolidado)
-- Badge "GRUPO"
-
-## Ficheiros alterados (1)
-- `src/components/crm/PipelineView.tsx` — remover badges de plano dos cartões
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 

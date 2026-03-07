@@ -139,17 +139,6 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
             </span>
           ) : null;
         })()}
-        <span
-          className="inline-block text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-          style={{ background: badge.bg, color: badge.color }}
-        >
-          {badge.label}
-        </span>
-        {inscrito.plan === "bundle" && (
-          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-green-100 text-green-700 uppercase tracking-wider">
-            IMG+VID
-          </span>
-        )}
         {inscrito.payment_status === "selected" && (
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
             Seleccionou e saiu
