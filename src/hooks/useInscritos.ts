@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Inscrito, Nota } from "@/pages/crm/mockData";
 import { detectGender } from "@/lib/genderDetection";
+import { useWebinarSettings, getPlanPrices } from "@/hooks/useWebinarSettings";
 
-
-const PLAN_VALUES_BY_WEBINAR: Record<string, Record<string, number>> = {
+// Fallback only used until DB settings load
+const PLAN_VALUES_FALLBACK: Record<string, Record<string, number>> = {
   imagens: { premium: 18.45, masterclass: 57.81, bundle: 76.26 },
   video: { premium: 33.21, masterclass: 82.41, bundle: 115.62 },
 };
