@@ -21,6 +21,7 @@ interface TableViewProps {
   fetchFailedEmailIds?: () => Promise<Set<string>>;
   lastEmailMap?: Map<string, LastEmailInfo>;
   onUpdateStepReached?: (id: string, step: 1 | 2 | 3 | 4 | 5) => Promise<void>;
+  missingNifIds?: Set<string>;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; color: string; label: string }> = {
