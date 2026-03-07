@@ -41,7 +41,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
 };
 
 const DEFAULT_EMAIL_SUBJECT = "Fatura-Recibo — {{plano}}";
-const DEFAULT_EMAIL_BODY = "Olá,\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos";
+const DEFAULT_EMAIL_BODY = "Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos";
 
 export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -208,9 +208,9 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                 />
               </div>
               <div>
-                <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  Corpo do email
-                </label>
+                 <label className="text-[10px] font-medium mb-1 block" style={{ color: "rgba(255,255,255,0.4)" }}>
+                   Corpo do email <span style={{ color: "rgba(255,255,255,0.25)" }}>({"{{nome}}"} = nome do cliente)</span>
+                 </label>
                 <Textarea
                   value={emailBody}
                   onChange={e => setEmailBody(e.target.value)}

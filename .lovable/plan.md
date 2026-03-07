@@ -1,31 +1,29 @@
 
 
-# Adicionar placeholder {{nome}} ao email da fatura-recibo
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Garantia de segurança
+### Alteração
 
-A substituição é feita **server-side nas edge functions**, antes de enviar ao InvoiceExpress. Com fallback para string vazia se o nome não existir — impossível aparecer `{{nome}}` em bruto.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-```
-// Lógica no servidor (edge function):
-const finalBody = body.replace("{{plano}}", itemDescription).replace("{{nome}}", reg.name || "");
-// InvoiceExpress recebe: "Olá João," — nunca vê {{nome}}
-```
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-## Alterações
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 1. Frontend — `InvoiceTable.tsx`
-- `DEFAULT_EMAIL_BODY`: mudar `"Olá,"` para `"Olá {{nome}},"`
-- Adicionar nota informativa: `{{nome}}` = nome do cliente, `{{plano}}` = nome do plano
-
-### 2. Edge Functions (3 ficheiros)
-Em `create-invoice`, `bulk-finalize-invoices`, `bulk-emit-invoices`:
-- Adicionar `.replace(/\{\{nome\}\}/g, clientName || "")` ao subject e body, junto ao replace de `{{plano}}` já existente
-- Usar regex global para cobrir múltiplas ocorrências
-
-## Ficheiros alterados (4)
-- `src/components/crm/faturacao/InvoiceTable.tsx`
-- `supabase/functions/create-invoice/index.ts`
-- `supabase/functions/bulk-finalize-invoices/index.ts`
-- `supabase/functions/bulk-emit-invoices/index.ts`
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
