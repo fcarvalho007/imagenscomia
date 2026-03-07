@@ -64,6 +64,8 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
       });
   }, [inscritos]);
 
+  const sentCount = inscritos.filter(i => i.invoice_sent).length;
+  const pendingCount = inscritos.filter(i => !i.invoice_sent).length;
   const missingNifCount = inscritos.filter(i => !idsWithNif.has(i.id)).length;
 
   const toggleSelect = (id: string) => {
@@ -179,12 +181,12 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
           Faturação · InvoiceExpress
         </h2>
-        {missingNifCount > 0 && (
-          <span className="flex items-center gap-1 text-[12px] font-medium text-amber-400">
-            <AlertTriangle size={13} />
-            {missingNifCount} sem dados fiscais
-          </span>
-        )}
+        <span className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
+          {sentCount > 0 && <span className="text-emerald-400">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
+          {sentCount > 0 && pendingCount > 0 && <span>·</span>}
+          {pendingCount > 0 && <span className="text-amber-300">{pendingCount} por emitir</span>}
+          {missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-400"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
+        </span>
 
         {/* Email customization */}
         <Collapsible open={emailOpen} onOpenChange={setEmailOpen}>
@@ -253,9 +255,9 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
-                  {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-                  Emitir Fatura-Recibo<span className="hidden sm:inline">&nbsp;e Enviar a Todos</span>
+                <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null || pendingCount === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+                   {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                   Emitir Fatura-Recibo<span className="hidden sm:inline">&nbsp;e Enviar a Todos</span>{pendingCount > 0 && ` (${pendingCount})`}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
