@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
-import WebinarSwitcherBar from "./WebinarSwitcherBar";
+
 
 
 type Period = "7d" | "14d" | "30d" | "all";
@@ -323,7 +323,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           <p className="text-sm text-ink-500">Visão geral do webinar em tempo real</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <WebinarSwitcherBar />
+          
           {/* Period selector */}
           <div className="flex items-center gap-1 bg-surface rounded-lg p-0.5">
             {(["7d","14d","30d","all"] as const).map((p) => (

@@ -9,7 +9,7 @@ import SendPaymentModal from "./modal/SendPaymentModal";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
-import WebinarSwitcherBar from "./WebinarSwitcherBar";
+
 import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface TableViewProps {
@@ -264,7 +264,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Tabela</h1>
           <p className="text-sm text-ink-500">{active.length} inscritos no total</p>
         </div>
-        <WebinarSwitcherBar />
+        
       </div>
 
       <BulkInvoiceButton />

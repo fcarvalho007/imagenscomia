@@ -7,7 +7,7 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG } from "@/config/webinarConfig";
 import type { WebinarKey } from "@/config/webinarConfig";
 import WebinarBadge from "./WebinarBadge";
-import WebinarSwitcherBar from "./WebinarSwitcherBar";
+
 import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface PipelineViewProps {
@@ -264,7 +264,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Pipeline</h1>
           <p className="text-sm text-ink-500">Visão kanban dos inscritos por estado</p>
         </div>
-        <WebinarSwitcherBar />
+        
       </div>
 
       <BulkInvoiceButton />
