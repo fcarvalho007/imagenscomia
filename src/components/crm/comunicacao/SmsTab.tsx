@@ -94,8 +94,6 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
   const avatarColors = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#06b6d4"];
   const getAvatarColor = (name: string) => avatarColors[name.length % avatarColors.length];
 
-  const firstRecipientName = recipients[0]?.nome || "";
-
   return (
     <div>
       {/* Tab header */}
@@ -104,8 +102,8 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
           <Smartphone size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Enviar SMS</h2>
-          <p className="text-[11px] text-white/40">Escolha o remetente, destinatários e escreva a mensagem</p>
+          <h2 className="text-sm font-bold text-slate-900">Enviar SMS</h2>
+          <p className="text-[11px] text-slate-500">Escolha o remetente, destinatários e escreva a mensagem</p>
         </div>
       </div>
 
@@ -117,7 +115,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
         <div className="space-y-5">
           {/* Provider cards */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Remetente</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest mb-2.5 text-slate-400">Remetente</label>
             <div className="grid grid-cols-2 gap-3">
               {([
                 { id: "smseasy" as Provider, name: "IMAGENSIA", sub: "SMSEasy", type: "Alfanumérico", desc: "Remetente com nome da marca" },
@@ -125,27 +123,26 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
               ] as const).map((p) => {
                 const active = provider === p.id;
                 return (
-                  <motion.button key={p.id} onClick={() => setProvider(p.id)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="relative rounded-xl p-4 text-left transition-all overflow-hidden" style={{ background: active ? "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(99,102,241,0.10))" : "rgba(255,255,255,0.03)", border: `1.5px solid ${active ? "rgba(59,130,246,0.4)" : "rgba(255,255,255,0.06)"}`, boxShadow: active ? "0 0 25px -5px rgba(59,130,246,0.2), inset 0 1px 0 rgba(255,255,255,0.05)" : "none" }}>
-                    {active && <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl pointer-events-none" style={{ background: "rgba(59,130,246,0.15)" }} />}
+                  <motion.button key={p.id} onClick={() => setProvider(p.id)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="relative rounded-xl p-4 text-left transition-all overflow-hidden" style={{ background: active ? "#EFF6FF" : "#FFFFFF", border: `1.5px solid ${active ? "#93C5FD" : "#E2E8F0"}`, boxShadow: active ? "0 0 20px -5px rgba(59,130,246,0.15)" : "0 1px 3px rgba(0,0,0,0.04)" }}>
                     <div className="relative flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: active ? "linear-gradient(135deg, #3b82f6, #6366f1)" : "rgba(255,255,255,0.06)" }}>
-                          {p.id === "smseasy" ? <Radio size={14} className={active ? "text-white" : "text-white/30"} /> : <Signal size={14} className={active ? "text-white" : "text-white/30"} />}
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: active ? "linear-gradient(135deg, #3b82f6, #6366f1)" : "#F1F5F9" }}>
+                          {p.id === "smseasy" ? <Radio size={14} className={active ? "text-white" : "text-slate-400"} /> : <Signal size={14} className={active ? "text-white" : "text-slate-400"} />}
                         </div>
                         <div>
-                          <div className="text-[13px] font-bold text-white/90">{p.name}</div>
-                          <div className="text-[10px] text-white/40">{p.sub}</div>
+                          <div className="text-[13px] font-bold text-slate-800">{p.name}</div>
+                          <div className="text-[10px] text-slate-400">{p.sub}</div>
                         </div>
                       </div>
                       <AnimatePresence>
                         {active && (
-                          <motion.span initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "rgba(59,130,246,0.25)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.3)" }}>Activo</motion.span>
+                          <motion.span initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }} className="text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ background: "#DBEAFE", color: "#2563eb", border: "1px solid #93C5FD" }}>Activo</motion.span>
                         )}
                       </AnimatePresence>
                     </div>
                     <div className="relative mt-3 flex items-center gap-2">
-                      <span className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: active ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.04)", color: active ? "#93c5fd" : "rgba(255,255,255,0.3)", border: `1px solid ${active ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.06)"}` }}>{p.type}</span>
-                      <span className="text-[9px] text-white/25">{p.desc}</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full font-medium" style={{ background: active ? "#DBEAFE" : "#F1F5F9", color: active ? "#2563eb" : "#94A3B8", border: `1px solid ${active ? "#BFDBFE" : "#E2E8F0"}` }}>{p.type}</span>
+                      <span className="text-[9px] text-slate-400">{p.desc}</span>
                     </div>
                   </motion.button>
                 );
@@ -156,15 +153,15 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
           {/* Recipients — multi-select */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>Destinatários ({recipients.length})</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Destinatários ({recipients.length})</label>
               <div className="flex items-center gap-2">
                 {recipients.length > 0 && (
-                  <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#f87171" }}>
+                  <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-red-50" style={{ color: "#ef4444" }}>
                     <X size={10} /> Limpar todos
                   </button>
                 )}
                 {filteredPool.length > 0 && (
-                  <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
+                  <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-blue-50" style={{ color: "#2563eb" }}>
                     <Users size={10} /> Seleccionar todos ({filteredPool.length})
                   </button>
                 )}
@@ -175,35 +172,35 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
             {recipients.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {recipients.map(r => (
-                  <span key={r.id} className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-medium" style={{ background: "rgba(59,130,246,0.12)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.25)" }}>
+                  <span key={r.id} className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-medium" style={{ background: "#EFF6FF", color: "#2563eb", border: "1px solid #BFDBFE" }}>
                     <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ background: getAvatarColor(r.nome) }}>{getInitials(r.nome)}</span>
                     {r.primeiro_nome || r.nome.split(" ")[0]}
-                    <button onClick={() => removeRecipient(r.id)} className="hover:bg-white/10 rounded-full p-0.5"><X size={10} /></button>
+                    <button onClick={() => removeRecipient(r.id)} className="hover:bg-blue-100 rounded-full p-0.5"><X size={10} /></button>
                   </span>
                 ))}
               </div>
             )}
 
             <div className="relative">
-              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" />
+              <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
                 onFocus={() => search && setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 placeholder="Pesquisar inscrito por nome ou número…"
-                className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)" }}
+                className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-white"
+                style={{ border: "1.5px solid #E2E8F0" }}
               />
               <AnimatePresence>
                 {showDropdown && searchResults.length > 0 && (
-                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-20 top-full left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(180deg, #1e293b, #172033)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-20 top-full left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-xl bg-white" style={{ border: "1px solid #E2E8F0" }}>
                     {searchResults.map((i) => (
-                      <button key={i.id} onMouseDown={() => addRecipient(i)} className="w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-white/5 transition-colors">
+                      <button key={i.id} onMouseDown={() => addRecipient(i)} className="w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-slate-50 transition-colors">
                         <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: getAvatarColor(i.nome) }}>{getInitials(i.nome)}</div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12px] font-medium text-white/85 truncate">{i.nome}</div>
-                          <div className="text-[10px] text-white/35">{i.whatsapp}</div>
+                          <div className="text-[12px] font-medium text-slate-800 truncate">{i.nome}</div>
+                          <div className="text-[10px] text-slate-400">{i.whatsapp}</div>
                         </div>
                       </button>
                     ))}
@@ -215,17 +212,17 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
 
           {/* Message composer */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Mensagem</label>
-            <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1.5px solid rgba(255,255,255,0.08)", backdropFilter: "blur(12px)" }}>
-              <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, maxChars * 3))} placeholder="Escreva a mensagem SMS…" rows={5} className="w-full bg-transparent px-4 py-3 text-sm text-white outline-none resize-none placeholder:text-white/20" />
+            <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-slate-400">Mensagem</label>
+            <div className="rounded-xl overflow-hidden bg-white" style={{ border: "1.5px solid #E2E8F0" }}>
+              <textarea value={text} onChange={(e) => setText(e.target.value.slice(0, maxChars * 3))} placeholder="Escreva a mensagem SMS…" rows={5} className="w-full bg-transparent px-4 py-3 text-sm text-slate-900 outline-none resize-none placeholder:text-slate-400" />
               <div className="px-4 pb-3 space-y-2">
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                <div className="h-1.5 rounded-full overflow-hidden bg-slate-200">
                   <motion.div className="h-full rounded-full" style={{ background: progressColor }} animate={{ width: `${Math.min(charPct, 100)}%` }} transition={{ type: "spring", stiffness: 300, damping: 30 }} />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-mono" style={{ color: progressColor }}>{charCount}/{maxChars}</span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: smsCount > 1 ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.04)", color: smsCount > 1 ? "#fbbf24" : "rgba(255,255,255,0.3)", border: `1px solid ${smsCount > 1 ? "rgba(245,158,11,0.2)" : "rgba(255,255,255,0.06)"}` }}>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full flex items-center gap-1" style={{ background: smsCount > 1 ? "rgba(245,158,11,0.1)" : "#F1F5F9", color: smsCount > 1 ? "#d97706" : "#94A3B8", border: `1px solid ${smsCount > 1 ? "rgba(245,158,11,0.2)" : "#E2E8F0"}` }}>
                       <MessageSquare size={8} />{smsCount} SMS
                     </span>
                   </div>
@@ -249,7 +246,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
         {/* RIGHT — Phone Preview */}
         <div className="hidden lg:flex flex-col items-center justify-start pt-8">
           <PhonePreview sender={senderLabel} message={text} />
-          <p className="text-[10px] text-white/20 mt-4 text-center">Pré-visualização em tempo real</p>
+          <p className="text-[10px] text-slate-400 mt-4 text-center">Pré-visualização em tempo real</p>
         </div>
       </div>
     </div>

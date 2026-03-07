@@ -10,20 +10,20 @@ interface ComunicacaoViewProps {
 
 export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
   return (
-    <div className="min-h-screen p-6 md:p-8" style={{ background: "#0f172a" }}>
+    <div className="min-h-screen p-6 md:p-8" style={{ background: "#F8FAFC" }}>
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-white">Comunicação</h1>
-        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <h1 className="text-xl font-bold text-slate-900">Comunicação</h1>
+        <p className="text-sm mt-1 text-slate-500">
           Envio manual de email ou SMS
         </p>
       </div>
 
       <Tabs defaultValue="email" className="w-full">
-        <TabsList className="bg-white/5 border border-white/10 mb-6">
-          <TabsTrigger value="email" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-white/50 gap-1.5">
+        <TabsList className="bg-white border border-slate-200 mb-6">
+          <TabsTrigger value="email" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 gap-1.5">
             <Mail size={14} /> Email
           </TabsTrigger>
-          <TabsTrigger value="sms" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-white/50 gap-1.5">
+          <TabsTrigger value="sms" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 gap-1.5">
             <MessageSquare size={14} /> SMS
           </TabsTrigger>
         </TabsList>
