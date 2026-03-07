@@ -13,11 +13,11 @@ const BASE_URL = `https://${ACCOUNT}.app.invoicexpress.com`;
 const PRICES: Record<string, number> = {
   premium: 15.0,
   masterclass: 47.0,
-  bundle: 62.0,
+  bundle: 57.0,
   gravacao: 27.0,
-  "video-premium": 15.0,
-  "video-masterclass": 47.0,
-  "video-bundle": 57.0,
+  "video-premium": 27.0,
+  "video-masterclass": 67.0,
+  "video-bundle": 107.0,
 };
 
 const PLAN_LABELS: Record<string, string> = {
@@ -56,12 +56,12 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const webinarFilter: string = body.webinar || "video";
 
-    // Fetch all paid registrations without an invoice yet
+    // Fetch all paid registrations without invoice sent yet
     let query = supabase
       .from("registrations")
-      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id, paid_amount")
+      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id, invoice_sent, paid_amount")
       .not("paid_at", "is", null)
-      .is("invoice_document_id", null);
+      .eq("invoice_sent", false);
 
     if (webinarFilter !== "all") {
       query = query.eq("webinar", webinarFilter);
@@ -72,7 +72,7 @@ serve(async (req) => {
 
     if (!registrations || registrations.length === 0) {
       return new Response(
-        JSON.stringify({ created: 0, skipped: 0, errors: [], message: "No eligible registrations" }),
+        JSON.stringify({ emitted: 0, errors: [], total: 0, message: "No eligible registrations" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -86,11 +86,10 @@ serve(async (req) => {
 
     const invoiceMap = new Map((allInvoiceDetails || []).map((d) => [d.registration_id, d]));
 
-    let created = 0;
-    let skipped = 0;
+    let emitted = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
-    console.log(`📄 Bulk invoice: ${registrations.length} eligible registrations (webinar=${webinarFilter})`);
+    console.log(`🚀 Bulk emit: ${registrations.length} eligible registrations (webinar=${webinarFilter})`);
 
     for (const reg of registrations) {
       try {
@@ -106,84 +105,143 @@ serve(async (req) => {
         const itemDescription = PLAN_LABELS[planKey] || planKey;
         const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
 
-        // Use paid_amount as source of truth (same logic as create-invoice)
         const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
+        const taxName = isPortuguese ? "IVA23" : "IVA0";
+        const taxExemption = isPortuguese ? undefined : "M01";
+
+        // Use paid_amount as source of truth
         let unitPrice: number;
         if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
           const paidAmount = parseFloat(reg.paid_amount);
           unitPrice = isPortuguese
             ? Math.round((paidAmount / 1.23) * 100) / 100
             : paidAmount;
-          console.log(`💰 ${reg.email}: paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€`);
         } else {
           unitPrice = PRICES[planKey] || 15.0;
-          console.warn(`⚠️ ${reg.email}: no paid_amount — fallback PRICES: ${unitPrice}€`);
+          console.warn(`⚠️ ${reg.email}: no paid_amount — fallback: ${unitPrice}€`);
         }
-
-        const taxName = isPortuguese ? "IVA23" : "IVA0";
-        const taxExemption = isPortuguese ? undefined : "M01";
 
         const today = new Date();
         const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
 
-        const invoicePayload = {
-          invoice: {
-            date: dateStr,
-            due_date: dateStr,
-            reference: reg.eupago_ref || reg.id.slice(0, 12),
-            observations: `Webinar: ${reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}`,
-            ...(taxExemption ? { tax_exemption: taxExemption } : {}),
-            client: {
-              name: clientName,
-              code: reg.email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
-              email: clientEmail,
-              fiscal_id: clientVat,
-              address: clientAddress,
-              postal_code: clientZip,
-              city: clientCity,
-              country: "Portugal",
-            },
-            items: [
-              {
-                name: itemDescription,
-                description: itemDetail,
-                unit_price: unitPrice.toFixed(2),
-                quantity: "1",
-                unit: "service",
-                tax: { name: taxName },
+        let documentId = reg.invoice_document_id;
+
+        // Step 1: Create invoice-receipt if no draft exists
+        if (!documentId) {
+          const invoicePayload = {
+            invoice: {
+              date: dateStr,
+              due_date: dateStr,
+              reference: reg.eupago_ref || reg.id.slice(0, 12),
+              observations: `Webinar: ${reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}`,
+              ...(taxExemption ? { tax_exemption: taxExemption } : {}),
+              client: {
+                name: clientName,
+                code: reg.email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
+                email: clientEmail,
+                fiscal_id: clientVat,
+                address: clientAddress,
+                postal_code: clientZip,
+                city: clientCity,
+                country: "Portugal",
               },
-            ],
-          },
-        };
+              items: [
+                {
+                  name: itemDescription,
+                  description: itemDetail,
+                  unit_price: unitPrice.toFixed(2),
+                  quantity: "1",
+                  unit: "service",
+                  tax: { name: taxName },
+                },
+              ],
+            },
+          };
 
-        const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(invoicePayload),
-        });
+          const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(invoicePayload),
+          });
 
-        const createData = await createRes.json();
+          const createData = await createRes.json();
 
-        if (!createRes.ok) {
-          console.error(`❌ ${reg.email}: InvoiceExpress error`, JSON.stringify(createData));
-          errors.push({ id: reg.id, email: reg.email, error: JSON.stringify(createData) });
-          // Rate limit delay even on error
+          if (!createRes.ok) {
+            console.error(`❌ ${reg.email}: create error`, JSON.stringify(createData));
+            errors.push({ id: reg.id, email: reg.email, error: `Create failed: ${JSON.stringify(createData)}` });
+            await new Promise((r) => setTimeout(r, 1000));
+            continue;
+          }
+
+          documentId = String(createData.invoice_receipt?.id || createData.id);
+          console.log(`📄 ${reg.email}: created draft #${documentId}`);
+
+          await supabase
+            .from("registrations")
+            .update({ invoice_document_id: documentId } as any)
+            .eq("id", reg.id);
+
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+
+        // Step 2: Finalize
+        const stateRes = await fetch(
+          `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ invoice: { state: "finalized" } }),
+          }
+        );
+
+        if (!stateRes.ok) {
+          const stateData = await stateRes.text();
+          console.error(`❌ ${reg.email}: finalize error`, stateData);
+          errors.push({ id: reg.id, email: reg.email, error: `Finalize failed: ${stateData}` });
           await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
 
-        const documentId = String(createData.invoice_receipt?.id || createData.id);
-        console.log(`✅ ${reg.email} → draft #${documentId}`);
+        console.log(`✅ ${reg.email}: finalized #${documentId}`);
 
-        // Save document ID for dedup
+        // Step 3: Send email via InvoiceExpress
+        await new Promise((r) => setTimeout(r, 2000));
+
+        const emailRes = await fetch(
+          `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              message: {
+                client: { email: clientEmail, save: "0" },
+                subject: `Fatura-Recibo — ${itemDescription}`,
+                body: `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+                logo: "0",
+              },
+            }),
+          }
+        );
+
+        const emailSent = emailRes.ok;
+        console.log(`📧 ${reg.email}: email ${emailSent ? "sent" : "FAILED"}`);
+
+        // Step 4: Update DB
         await supabase
           .from("registrations")
-          .update({ invoice_document_id: documentId } as any)
+          .update({ invoice_sent: true, invoice_document_id: documentId } as any)
           .eq("id", reg.id);
 
-        created++;
+        // Step 5: Log
+        await supabase.from("message_logs").insert({
+          registration_id: reg.id,
+          channel: "email",
+          provider: "invoicexpress",
+          template_key: "invoice_emitted",
+          status: emailSent ? "sent" : "failed",
+        });
 
-        // Rate limit: 1s between calls
+        emitted++;
         await new Promise((r) => setTimeout(r, 1000));
       } catch (err: any) {
         console.error(`❌ ${reg.email}: ${err.message}`);
@@ -192,14 +250,14 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Done: ${created} created, ${skipped} skipped, ${errors.length} errors`);
+    console.log(`📊 Done: ${emitted} emitted, ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ created, skipped, errors, total: registrations.length }),
+      JSON.stringify({ emitted, errors, total: registrations.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    console.error("bulk-create-invoices error:", error);
+    console.error("bulk-emit-invoices error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,

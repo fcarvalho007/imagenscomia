@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus } from "lucide-react";
+import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -30,7 +30,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
 export default function InvoiceTable({ inscritos, onRefresh }: Props) {
   const { webinarContext } = useWebinarContext();
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | null>(null);
+  const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
 
   const toggleSelect = (id: string) => {
@@ -80,10 +80,32 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
       const errEmails = (data.errors || []).map((e: any) => e.email).filter(Boolean).join(", ");
       toast({
         title: `${data.finalized} faturas emitidas e enviadas`,
-        description: errCount > 0 ? `${errCount} erro(s): ${errEmails || "ver detalhes"}. Podes tentar individualmente.` : "Sem erros",
+        description: errCount > 0 ? `${errCount} erro(s): ${errEmails || "ver detalhes"}` : "Sem erros",
         variant: errCount > 0 ? "destructive" : "default",
       });
       setSelected(new Set());
+      onRefresh();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setBulkRunning(null);
+    }
+  };
+
+  const handleBulkEmit = async () => {
+    if (!confirm(`Emitir e enviar faturas para TODOS os pagantes sem fatura do webinar "${webinarContext}"?\n\nIsto cria, finaliza e envia o email automaticamente.`)) return;
+    setBulkRunning("emit");
+    try {
+      const { data, error } = await supabase.functions.invoke("bulk-emit-invoices", {
+        body: { webinar: webinarContext === "consolidado" ? "all" : webinarContext },
+      });
+      if (error) throw error;
+      const errCount = data.errors?.length || 0;
+      toast({
+        title: `${data.emitted} faturas emitidas e enviadas`,
+        description: errCount > 0 ? `${errCount} erro(s)` : `${data.total} total elegíveis`,
+        variant: errCount > 0 ? "destructive" : "default",
+      });
       onRefresh();
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -110,7 +132,7 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex flex-col gap-2">
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
           Faturação · InvoiceExpress
         </h2>
@@ -119,9 +141,13 @@ export default function InvoiceTable({ inscritos, onRefresh }: Props) {
             {bulkRunning === "drafts" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
             Gerar Rascunhos
           </Button>
-          <Button size="sm" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
+          <Button size="sm" variant="outline" onClick={handleBulkFinalize} disabled={bulkRunning !== null || selected.size === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
             {bulkRunning === "finalize" ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             Enviar ({selected.size})
+          </Button>
+          <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
+            {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+            Emitir e Enviar Todas
           </Button>
         </div>
       </div>
