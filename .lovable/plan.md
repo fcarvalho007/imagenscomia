@@ -1,29 +1,54 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Melhorias de Faturacao — Auditoria e Plano
 
-### Alteração
+## Problemas identificados
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+### 1. Precos hardcoded e inconsistentes em 3 edge functions
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+Os precos fallback (`PRICES`) estao duplicados e **divergem** entre funcoes:
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+| Funcao | `bundle` | `video-premium` | `video-bundle` |
+|--------|----------|-----------------|----------------|
+| `bulk-emit-invoices` | 57.0 | 27.0 | 107.0 |
+| `bulk-create-invoices` | **62.0** | **15.0** | **57.0** |
+| `create-invoice` | 57.0 | 27.0 | 107.0 |
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+Estes valores ja existem na tabela `webinar_settings` (criada na ultima migracao). As 3 funcoes deviam ler de la em vez de hardcoded.
+
+### 2. `bulk-create-invoices` nao suporta grupos
+
+Cria rascunhos individuais para cada membro do grupo. Deveria consolidar como o `bulk-emit-invoices` ja faz — um unico rascunho para o comprador com `quantity = N`.
+
+### 3. `create-invoice` nao suporta grupos
+
+Ao clicar "Emitir e Enviar" na ficha individual de um membro de grupo, cria fatura individual com o `paid_amount` repartido (valor por pessoa). Deveria detectar o `group_payment_ref` e emitir a fatura consolidada ao comprador.
+
+### 4. `bulk-finalize-invoices` tem PLAN_LABELS hardcoded
+
+Tem a sua propria copia de labels e nao verifica o estado do documento antes de finalizar (ao contrario do `bulk-emit-invoices` que ja tem `getIEDocumentState`).
+
+## Plano de correcao
+
+### Ficheiro 1: `supabase/functions/bulk-create-invoices/index.ts`
+- Adicionar logica de agrupamento por `group_payment_ref` (igual ao `bulk-emit-invoices`)
+- Para grupos: criar UM rascunho para o comprador com `quantity = N` e total consolidado
+- Ler precos fallback de `webinar_settings` em vez de hardcoded
+
+### Ficheiro 2: `supabase/functions/create-invoice/index.ts`
+- Detectar `group_payment_ref` e buscar todos os membros do grupo
+- Emitir fatura consolidada ao comprador (membro com `invoice_details`)
+- Marcar todos os membros como `invoice_sent = true`
+- Ler precos fallback de `webinar_settings`
+
+### Ficheiro 3: `supabase/functions/bulk-emit-invoices/index.ts`
+- Substituir `PRICES` hardcoded por leitura de `webinar_settings`
+- Manter toda a logica de grupos existente (ja correcta)
+
+### Ficheiro 4: `supabase/functions/bulk-finalize-invoices/index.ts`
+- Adicionar verificacao de estado do documento (`getIEDocumentState`) antes de finalizar
+- Substituir `PLAN_LABELS` hardcoded por leitura de `webinar_settings`
+- Marcar todos os membros do grupo como `invoice_sent` quando a fatura do grupo e finalizada
+
+## Resumo: 4 ficheiros editados, 0 migracoes
 
