@@ -431,6 +431,48 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_sends: {
+        Row: {
+          channel: string
+          created_at: string
+          html_body: string | null
+          id: string
+          metadata: Json | null
+          recipients: Json
+          scheduled_at: string
+          status: string
+          subject: string | null
+          text_body: string | null
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          metadata?: Json | null
+          recipients?: Json
+          scheduled_at: string
+          status?: string
+          subject?: string | null
+          text_body?: string | null
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          html_body?: string | null
+          id?: string
+          metadata?: Json | null
+          recipients?: Json
+          scheduled_at?: string
+          status?: string
+          subject?: string | null
+          text_body?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

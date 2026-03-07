@@ -1,8 +1,9 @@
-import { Mail, MessageSquare } from "lucide-react";
+import { Mail, MessageSquare, Clock } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { Inscrito } from "@/pages/crm/mockData";
 import SmsTab from "./comunicacao/SmsTab";
 import EmailTab from "./comunicacao/EmailTab";
+import HistoricoTab from "./comunicacao/HistoricoTab";
 
 interface ComunicacaoViewProps {
   inscritos: Inscrito[];
@@ -26,6 +27,9 @@ export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
           <TabsTrigger value="sms" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 gap-1.5">
             <MessageSquare size={14} /> SMS
           </TabsTrigger>
+          <TabsTrigger value="historico" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 gap-1.5">
+            <Clock size={14} /> Histórico
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="email">
@@ -33,6 +37,9 @@ export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
         </TabsContent>
         <TabsContent value="sms">
           <SmsTab inscritos={inscritos} />
+        </TabsContent>
+        <TabsContent value="historico">
+          <HistoricoTab />
         </TabsContent>
       </Tabs>
     </div>
