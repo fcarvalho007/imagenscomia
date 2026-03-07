@@ -736,7 +736,7 @@ function getPostEventNodes(): NodeDef[] {
 
 function matchTemplate(templateKey: string, patterns: string[]): boolean {
   const k = templateKey.toLowerCase();
-  return patterns.some((p) => k.includes(p));
+  return patterns.some((p) => k === p);
 }
 
 function getTag(node: NodeDef, webinarPast: boolean, hasSentLogs: boolean, webinar: WebinarKey): TagType | null {
@@ -1054,7 +1054,8 @@ function Timeline({
       }
 
       const rawKey = n.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
-      const statsKey = `${webinar}_${rawKey}`;
+      const stripped = rawKey.startsWith(`${webinar}_`) ? rawKey.slice(webinar.length + 1) : rawKey;
+      const statsKey = `${webinar}_${stripped}`;
 
       if (emailStats && emailStats[statsKey]) {
         result[idx] = emailStats[statsKey];
@@ -1445,7 +1446,8 @@ function Timeline({
                 <button
                   onClick={() => {
                     const rawKey = node.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
-                    onClickSentCount?.(rawKey, node.title, webinar);
+                     const emailKey = rawKey.startsWith(`${webinar}_`) ? rawKey.slice(webinar.length + 1) : rawKey;
+                     onClickSentCount?.(emailKey, node.title, webinar);
                   }}
                   className="text-[13px] font-semibold hover:underline cursor-pointer"
                   style={{ color: "#1e40af" }}
