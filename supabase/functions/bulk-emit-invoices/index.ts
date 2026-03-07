@@ -40,6 +40,211 @@ const PLAN_DESCRIPTIONS: Record<string, string> = {
   "video-bundle": "Masterclass + sessão completa · Vídeo com IA",
 };
 
+interface Registration {
+  id: string;
+  email: string;
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  plan_selected: string | null;
+  paid_at: string | null;
+  webinar: string;
+  eupago_ref: string | null;
+  invoice_document_id: string | null;
+  invoice_sent: boolean;
+  paid_amount: number | null;
+  group_payment_ref: string | null;
+}
+
+interface InvoiceDetail {
+  registration_id: string;
+  invoice_name: string;
+  invoice_email: string;
+  invoice_vat: string;
+  invoice_address: string;
+  invoice_zip: string;
+  invoice_city: string;
+}
+
+// ─── Helper: create, finalize & email one invoice-receipt ───
+async function emitInvoice(opts: {
+  API_KEY: string;
+  supabase: any;
+  buyerReg: Registration;
+  invoiceDetail: InvoiceDetail | null;
+  allMemberIds: string[];
+  quantity: number;
+  totalPaid: number;
+  planKey: string;
+  customEmailSubject?: string;
+  customEmailBody?: string;
+}): Promise<{ ok: boolean; error?: string; drafted?: boolean }> {
+  const {
+    API_KEY, supabase, buyerReg, invoiceDetail, allMemberIds,
+    quantity, totalPaid, planKey, customEmailSubject, customEmailBody,
+  } = opts;
+
+  const hasInvoiceDetails = !!invoiceDetail;
+  const clientName = invoiceDetail?.invoice_name || buyerReg.name || "Consumidor Final";
+  const clientEmail = invoiceDetail?.invoice_email || buyerReg.email;
+  const clientVat = invoiceDetail?.invoice_vat || "999999990";
+  const clientAddress = invoiceDetail?.invoice_address || "";
+  const clientZip = invoiceDetail?.invoice_zip || "";
+  const clientCity = invoiceDetail?.invoice_city || "";
+
+  const itemDescription = PLAN_LABELS[planKey] || planKey;
+  const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
+
+  const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
+  const taxName = isPortuguese ? "IVA23" : "IVA0";
+  const taxExemption = isPortuguese ? undefined : "M01";
+
+  // Compute unit price from total paid
+  let unitPrice: number;
+  if (totalPaid > 0) {
+    const perPerson = totalPaid / quantity;
+    unitPrice = isPortuguese
+      ? Math.round((perPerson / 1.23) * 100) / 100
+      : perPerson;
+  } else {
+    unitPrice = PRICES[planKey] || 15.0;
+    console.warn(`⚠️ ${buyerReg.email}: no paid_amount — fallback: ${unitPrice}€`);
+  }
+
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+
+  let documentId = buyerReg.invoice_document_id;
+
+  // Step 1: Create invoice-receipt if no draft exists
+  if (!documentId) {
+    const invoicePayload = {
+      invoice: {
+        date: dateStr,
+        due_date: dateStr,
+        reference: buyerReg.eupago_ref || buyerReg.id.slice(0, 12),
+        observations: `Webinar: ${buyerReg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}${quantity > 1 ? ` · Grupo de ${quantity} pessoas` : ""}`,
+        ...(taxExemption ? { tax_exemption: taxExemption } : {}),
+        client: {
+          name: clientName,
+          code: clientEmail.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
+          email: clientEmail,
+          fiscal_id: clientVat,
+          address: clientAddress,
+          postal_code: clientZip,
+          city: clientCity,
+          country: "Portugal",
+        },
+        items: [
+          {
+            name: itemDescription,
+            description: itemDetail,
+            unit_price: unitPrice.toFixed(2),
+            quantity: String(quantity),
+            unit: "service",
+            tax: { name: taxName },
+          },
+        ],
+      },
+    };
+
+    const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(invoicePayload),
+    });
+
+    const createData = await createRes.json();
+
+    if (!createRes.ok) {
+      console.error(`❌ ${buyerReg.email}: create error`, JSON.stringify(createData));
+      return { ok: false, error: `Create failed: ${JSON.stringify(createData)}` };
+    }
+
+    documentId = String(createData.invoice_receipt?.id || createData.id);
+    console.log(`📄 ${buyerReg.email}: created draft #${documentId} (qty=${quantity})`);
+
+    // Save document ID on ALL members
+    for (const memberId of allMemberIds) {
+      await supabase
+        .from("registrations")
+        .update({ invoice_document_id: documentId } as any)
+        .eq("id", memberId);
+    }
+
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+
+  // Draft-only mode: no invoice_details → skip finalize + email
+  if (!hasInvoiceDetails) {
+    console.log(`📋 ${buyerReg.email}: draft only (no invoice details) — #${documentId}`);
+    return { ok: true, drafted: true };
+  }
+
+  // Step 2: Finalize
+  const stateRes = await fetch(
+    `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ invoice: { state: "finalized" } }),
+    }
+  );
+
+  if (!stateRes.ok) {
+    const stateData = await stateRes.text();
+    console.error(`❌ ${buyerReg.email}: finalize error`, stateData);
+    return { ok: false, error: `Finalize failed: ${stateData}` };
+  }
+
+  console.log(`✅ ${buyerReg.email}: finalized #${documentId}`);
+
+  // Step 3: Send email via InvoiceExpress
+  await new Promise((r) => setTimeout(r, 2000));
+
+  const emailRes = await fetch(
+    `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        message: {
+          client: { email: clientEmail, save: "0" },
+          subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`)
+            .replace(/\{\{plano\}\}/g, itemDescription)
+            .replace(/\{\{nome\}\}/g, buyerReg.name || ""),
+          body: (customEmailBody || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`)
+            .replace(/\{\{plano\}\}/g, itemDescription)
+            .replace(/\{\{nome\}\}/g, buyerReg.name || ""),
+          logo: "0",
+        },
+      }),
+    }
+  );
+
+  const emailSent = emailRes.ok;
+  console.log(`📧 ${buyerReg.email}: email ${emailSent ? "sent" : "FAILED"}`);
+
+  // Step 4: Update ALL members as invoice_sent
+  for (const memberId of allMemberIds) {
+    await supabase
+      .from("registrations")
+      .update({ invoice_sent: true, invoice_document_id: documentId } as any)
+      .eq("id", memberId);
+  }
+
+  // Step 5: Log
+  await supabase.from("message_logs").insert({
+    registration_id: buyerReg.id,
+    channel: "email",
+    provider: "invoicexpress",
+    template_key: "invoice_emitted",
+    status: emailSent ? "sent" : "failed",
+  });
+
+  return { ok: true };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -61,7 +266,7 @@ serve(async (req) => {
     // Fetch all paid registrations without invoice sent yet
     let query = supabase
       .from("registrations")
-      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id, invoice_sent, paid_amount")
+      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id, invoice_sent, paid_amount, group_payment_ref")
       .not("paid_at", "is", null)
       .eq("invoice_sent", false);
 
@@ -80,180 +285,110 @@ serve(async (req) => {
     }
 
     // Fetch invoice_details for all registrations
-    const regIds = registrations.map((r) => r.id);
+    const regIds = registrations.map((r: any) => r.id);
     const { data: allInvoiceDetails } = await supabase
       .from("invoice_details")
       .select("*")
       .in("registration_id", regIds);
 
-    const invoiceMap = new Map((allInvoiceDetails || []).map((d) => [d.registration_id, d]));
+    const invoiceMap = new Map((allInvoiceDetails || []).map((d: any) => [d.registration_id, d]));
+
+    // ─── Separate groups vs individuals ───
+    const groups = new Map<string, Registration[]>();
+    const individuals: Registration[] = [];
+
+    for (const reg of registrations as Registration[]) {
+      if (reg.group_payment_ref) {
+        const key = reg.group_payment_ref;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key)!.push(reg);
+      } else {
+        individuals.push(reg);
+      }
+    }
 
     let emitted = 0;
     let draftsOnly = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
-    console.log(`🚀 Bulk emit: ${registrations.length} eligible registrations (webinar=${webinarFilter})`);
+    console.log(`🚀 Bulk emit: ${registrations.length} eligible (${individuals.length} individual, ${groups.size} groups) webinar=${webinarFilter}`);
 
-    for (const reg of registrations) {
+    // ─── Process GROUPS ───
+    for (const [groupRef, members] of groups) {
       try {
-        const invoice = invoiceMap.get(reg.id);
-        const hasInvoiceDetails = !!invoice;
-        const clientName = invoice?.invoice_name || reg.name || "Consumidor Final";
-        const clientEmail = invoice?.invoice_email || reg.email;
-        const clientVat = invoice?.invoice_vat || "999999990";
-        const clientAddress = invoice?.invoice_address || "";
-        const clientZip = invoice?.invoice_zip || "";
-        const clientCity = invoice?.invoice_city || "";
+        // Find the buyer = member with invoice_details, or first member
+        const buyer = members.find((m) => invoiceMap.has(m.id)) || members[0];
+        const invoiceDetail = invoiceMap.get(buyer.id) || null;
+        const allMemberIds = members.map((m) => m.id);
+        const quantity = members.length;
+        const totalPaid = members.reduce((sum, m) => sum + (m.paid_amount ? Number(m.paid_amount) : 0), 0);
+        const planKey = buyer.plan_selected || "video-premium";
 
-        const planKey = reg.plan_selected || "premium";
-        const itemDescription = PLAN_LABELS[planKey] || planKey;
-        const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
+        console.log(`👥 Group ${groupRef.slice(0, 8)}: ${quantity} members, buyer=${buyer.email}, total=${totalPaid}€`);
 
-        const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
-        const taxName = isPortuguese ? "IVA23" : "IVA0";
-        const taxExemption = isPortuguese ? undefined : "M01";
-
-        // Use paid_amount as source of truth
-        let unitPrice: number;
-        if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
-          const paidAmount = parseFloat(reg.paid_amount);
-          unitPrice = isPortuguese
-            ? Math.round((paidAmount / 1.23) * 100) / 100
-            : paidAmount;
-        } else {
-          unitPrice = PRICES[planKey] || 15.0;
-          console.warn(`⚠️ ${reg.email}: no paid_amount — fallback: ${unitPrice}€`);
-        }
-
-        const today = new Date();
-        const dateStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
-
-        let documentId = reg.invoice_document_id;
-
-        // Step 1: Create invoice-receipt if no draft exists
-        if (!documentId) {
-          const invoicePayload = {
-            invoice: {
-              date: dateStr,
-              due_date: dateStr,
-              reference: reg.eupago_ref || reg.id.slice(0, 12),
-              observations: `Webinar: ${reg.webinar === "video" ? "Vídeo com IA" : "Imagens com IA"}`,
-              ...(taxExemption ? { tax_exemption: taxExemption } : {}),
-              client: {
-                name: clientName,
-                code: reg.email.replace(/[^a-zA-Z0-9]/g, "").slice(0, 30),
-                email: clientEmail,
-                fiscal_id: clientVat,
-                address: clientAddress,
-                postal_code: clientZip,
-                city: clientCity,
-                country: "Portugal",
-              },
-              items: [
-                {
-                  name: itemDescription,
-                  description: itemDetail,
-                  unit_price: unitPrice.toFixed(2),
-                  quantity: "1",
-                  unit: "service",
-                  tax: { name: taxName },
-                },
-              ],
-            },
-          };
-
-          const createRes = await fetch(`${BASE_URL}/invoice_receipts.json?api_key=${API_KEY}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify(invoicePayload),
-          });
-
-          const createData = await createRes.json();
-
-          if (!createRes.ok) {
-            console.error(`❌ ${reg.email}: create error`, JSON.stringify(createData));
-            errors.push({ id: reg.id, email: reg.email, error: `Create failed: ${JSON.stringify(createData)}` });
-            await new Promise((r) => setTimeout(r, 1000));
-            continue;
+        // Delete orphan drafts for non-buyer members
+        for (const member of members) {
+          if (member.id !== buyer.id && member.invoice_document_id) {
+            console.log(`🗑️ Deleting orphan draft #${member.invoice_document_id} for ${member.email}`);
+            await fetch(
+              `${BASE_URL}/invoice_receipts/${member.invoice_document_id}/change-state.json?api_key=${API_KEY}`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ invoice: { state: "deleted" } }),
+              }
+            );
+            await supabase
+              .from("registrations")
+              .update({ invoice_document_id: null } as any)
+              .eq("id", member.id);
+            await new Promise((r) => setTimeout(r, 500));
           }
-
-          documentId = String(createData.invoice_receipt?.id || createData.id);
-          console.log(`📄 ${reg.email}: created draft #${documentId}`);
-
-          await supabase
-            .from("registrations")
-            .update({ invoice_document_id: documentId } as any)
-            .eq("id", reg.id);
-
-          await new Promise((r) => setTimeout(r, 1000));
         }
 
-        // Draft-only mode: no invoice_details → skip finalize + email
-        if (!hasInvoiceDetails) {
-          console.log(`📋 ${reg.email}: draft only (no invoice details) — #${documentId}`);
-          draftsOnly++;
-          await new Promise((r) => setTimeout(r, 500));
-          continue;
-        }
-
-        // Step 2: Finalize
-        const stateRes = await fetch(
-          `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({ invoice: { state: "finalized" } }),
-          }
-        );
-
-        if (!stateRes.ok) {
-          const stateData = await stateRes.text();
-          console.error(`❌ ${reg.email}: finalize error`, stateData);
-          errors.push({ id: reg.id, email: reg.email, error: `Finalize failed: ${stateData}` });
-          await new Promise((r) => setTimeout(r, 1000));
-          continue;
-        }
-
-        console.log(`✅ ${reg.email}: finalized #${documentId}`);
-
-        // Step 3: Send email via InvoiceExpress
-        await new Promise((r) => setTimeout(r, 2000));
-
-        const emailRes = await fetch(
-          `${BASE_URL}/invoice_receipts/${documentId}/email-document.json?api_key=${API_KEY}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              message: {
-                client: { email: clientEmail, save: "0" },
-                subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
-                body: (customEmailBody || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
-                logo: "0",
-              },
-            }),
-          }
-        );
-
-        const emailSent = emailRes.ok;
-        console.log(`📧 ${reg.email}: email ${emailSent ? "sent" : "FAILED"}`);
-
-        // Step 4: Update DB
-        await supabase
-          .from("registrations")
-          .update({ invoice_sent: true, invoice_document_id: documentId } as any)
-          .eq("id", reg.id);
-
-        // Step 5: Log
-        await supabase.from("message_logs").insert({
-          registration_id: reg.id,
-          channel: "email",
-          provider: "invoicexpress",
-          template_key: "invoice_emitted",
-          status: emailSent ? "sent" : "failed",
+        const result = await emitInvoice({
+          API_KEY, supabase, buyerReg: buyer, invoiceDetail,
+          allMemberIds, quantity, totalPaid, planKey,
+          customEmailSubject, customEmailBody,
         });
 
-        emitted++;
+        if (!result.ok) {
+          errors.push({ id: buyer.id, email: buyer.email, error: result.error || "Unknown" });
+        } else if (result.drafted) {
+          draftsOnly++;
+        } else {
+          emitted++;
+        }
+
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch (err: any) {
+        console.error(`❌ Group ${groupRef.slice(0, 8)}: ${err.message}`);
+        errors.push({ id: groupRef, email: "group", error: err.message });
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+
+    // ─── Process INDIVIDUALS ───
+    for (const reg of individuals) {
+      try {
+        const invoiceDetail = invoiceMap.get(reg.id) || null;
+        const planKey = reg.plan_selected || "premium";
+        const totalPaid = reg.paid_amount ? Number(reg.paid_amount) : 0;
+
+        const result = await emitInvoice({
+          API_KEY, supabase, buyerReg: reg, invoiceDetail,
+          allMemberIds: [reg.id], quantity: 1, totalPaid, planKey,
+          customEmailSubject, customEmailBody,
+        });
+
+        if (!result.ok) {
+          errors.push({ id: reg.id, email: reg.email, error: result.error || "Unknown" });
+        } else if (result.drafted) {
+          draftsOnly++;
+        } else {
+          emitted++;
+        }
+
         await new Promise((r) => setTimeout(r, 1000));
       } catch (err: any) {
         console.error(`❌ ${reg.email}: ${err.message}`);
