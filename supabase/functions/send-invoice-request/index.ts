@@ -13,11 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    // Simple auth: require x-cron-secret or valid authorization
-    // Will be protected by verify_jwt=false in config.toml + this check
     const cronSecret = req.headers.get("x-cron-secret");
     const validCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
-    // Also allow invocation via supabase client (anon key in auth header)
     const authHeader = req.headers.get("authorization") || "";
     const hasAuth = authHeader.startsWith("Bearer ") && authHeader.length > 20;
     if (!validCron && !hasAuth) {
@@ -32,16 +29,34 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Accept optional body params
+    let bodyWebinar = "all";
+    let registrationIds: string[] | null = null;
+    try {
+      const body = await req.json();
+      if (body.webinar) bodyWebinar = body.webinar;
+      if (body.registration_ids && Array.isArray(body.registration_ids)) {
+        registrationIds = body.registration_ids;
+      }
+    } catch { /* no body is fine */ }
+
     const SITE_URL = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.lovable.app";
 
-    // Find paid video registrations without invoice_details
-    const { data: paidRegs, error: qErr } = await supabase
+    // Build query for paid registrations with edit_token
+    let query = supabase
       .from("registrations")
-      .select("id, email, first_name, edit_token")
-      .eq("webinar", "video")
+      .select("id, email, first_name, edit_token, webinar")
       .not("paid_at", "is", null)
       .not("edit_token", "is", null);
 
+    if (registrationIds && registrationIds.length > 0) {
+      // Specific IDs requested
+      query = query.in("id", registrationIds);
+    } else if (bodyWebinar !== "all") {
+      query = query.eq("webinar", bodyWebinar);
+    }
+
+    const { data: paidRegs, error: qErr } = await query;
     if (qErr) throw qErr;
     if (!paidRegs || paidRegs.length === 0) {
       return new Response(JSON.stringify({ sent: 0, message: "No paid registrations found" }), {
@@ -81,13 +96,10 @@ serve(async (req) => {
   <div style="background:#ffffff;border-radius:12px;padding:32px 28px;border:1px solid #e5e7eb;">
     <h1 style="font-size:20px;color:#111827;margin:0 0 12px;">Olá ${fname} 👋</h1>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Obrigado pela tua participação no webinar <strong>Cria Vídeo Profissional com IA</strong>!
+      Obrigado pela tua participação na formação do Frederico Carvalho!
     </p>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Apercebemo-nos que, no momento da tua inscrição, o nosso sistema actualizado de recolha de dados de faturação ainda não estava activo — e por isso os teus dados não ficaram registados.
-    </p>
-    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Pedimos desculpa pelo incómodo. 🙏 Para podermos emitir a tua fatura, precisamos que preenchas os dados abaixo — <strong>demora menos de 1 minuto</strong>:
+      Para podermos emitir a tua fatura, precisamos que preenchas os teus dados de faturação — <strong>demora menos de 1 minuto</strong>:
     </p>
     <div style="text-align:center;margin:0 0 24px;">
       <a href="${link}" style="display:inline-block;background:#7c3aed;color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;">

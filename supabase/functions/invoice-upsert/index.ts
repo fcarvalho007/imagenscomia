@@ -30,7 +30,7 @@ serve(async (req) => {
     // Validate edit_token
     const { data: reg } = await supabase
       .from("registrations")
-      .select("id, edit_token, edit_token_created_at")
+      .select("id, edit_token, edit_token_created_at, paid_at")
       .eq("id", registration_id)
       .eq("edit_token", edit_token)
       .maybeSingle();
@@ -92,8 +92,39 @@ serve(async (req) => {
       );
     }
 
+    // Auto-emit invoice if the registration is paid
+    let invoiceResult = null;
+    if (reg.paid_at) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const res = await fetch(`${supabaseUrl}/functions/v1/create-invoice`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            registration_id,
+            draft_only: false,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          invoiceResult = { success: true, document_id: data.document_id };
+          console.log(`Auto-emitted invoice for ${registration_id}: #${data.document_id}`);
+        } else {
+          invoiceResult = { success: false, error: data.error || "Unknown" };
+          console.error(`Auto-emit failed for ${registration_id}:`, data.error);
+        }
+      } catch (err: any) {
+        invoiceResult = { success: false, error: err.message };
+        console.error(`Auto-emit exception for ${registration_id}:`, err.message);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, invoice: invoiceResult }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {

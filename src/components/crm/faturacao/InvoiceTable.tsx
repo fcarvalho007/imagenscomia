@@ -268,6 +268,18 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
                 Cria, finaliza e envia a fatura-recibo por email a todos os pagantes sem fatura
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleSolicitarNif} disabled={bulkRunning !== null || missingNifCount === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50">
+                   {bulkRunning === "nif-request" as any ? <Loader2 size={13} className="animate-spin" /> : <AlertTriangle size={13} />}
+                   Solicitar NIF{missingNifCount > 0 && ` (${missingNifCount})`}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
+                Envia email aos inscritos sem NIF com link para preencherem os dados de faturação
+              </TooltipContent>
+            </Tooltip>
           </div>
         </TooltipProvider>
       </div>
