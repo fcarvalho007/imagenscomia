@@ -402,6 +402,20 @@ serve(async (req) => {
 
         console.log(`👥 Group ${groupRef.slice(0, 8)}: ${quantity} members, buyer=${buyer.email}, total=${totalPaid}€`);
 
+        // Recovery: if buyer has no document_id, try to recover from message_logs or other members
+        if (!buyer.invoice_document_id) {
+          const recoveredId = await recoverDocumentId(supabase, allMemberIds);
+          if (recoveredId) {
+            console.log(`🔄 Group ${groupRef.slice(0, 8)}: recovered document #${recoveredId} from logs/members`);
+            buyer.invoice_document_id = recoveredId;
+            // Save on buyer
+            await supabase
+              .from("registrations")
+              .update({ invoice_document_id: recoveredId } as any)
+              .eq("id", buyer.id);
+          }
+        }
+
         // Delete orphan drafts for non-buyer members
         for (const member of members) {
           if (member.id !== buyer.id && member.invoice_document_id) {
