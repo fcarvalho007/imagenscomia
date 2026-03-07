@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Download, RefreshCw } from "lucide-react";
+import { useWebinarContext } from "@/contexts/WebinarContext";
 import { Button } from "@/components/ui/button";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
