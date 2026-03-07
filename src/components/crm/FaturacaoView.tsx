@@ -137,5 +137,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         inscritos={inscritos}
       />
     </div>
+    </div>
   );
 }
