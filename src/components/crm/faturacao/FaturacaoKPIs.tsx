@@ -53,7 +53,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
   return (
     <div className="space-y-4">
       {/* Hero row — 3 big cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Receita Confirmada */}
         <div
           ref={animReceita.ref}
@@ -70,7 +70,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
               Receita Confirmada
             </span>
           </div>
-          <p className="text-2xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: "#22c55e" }}>
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums tracking-tight truncate" style={{ color: "#22c55e" }}>
             €{fmt(animReceita.value)}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -98,7 +98,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
               Margem Operacional
             </span>
           </div>
-          <p className="text-2xl sm:text-4xl md:text-5xl font-black tabular-nums tracking-tight" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums tracking-tight truncate" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>
             {margemPositiva ? "" : "-"}€{fmt(animMargem.value)}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
@@ -126,8 +126,8 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
               ROAS
             </span>
           </div>
-          <p className="text-3xl sm:text-5xl md:text-6xl font-black tabular-nums tracking-tight" style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }}>
-            {animRoas.value.toFixed(1)}<span className="text-xl sm:text-3xl">×</span>
+          <p className="text-2xl sm:text-4xl lg:text-5xl font-black tabular-nums tracking-tight truncate" style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }}>
+            {animRoas.value.toFixed(1)}<span className="text-lg sm:text-2xl">×</span>
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
             {paidMediaCosts > 0 ? `€${fmt(paidMediaCosts)} investidos em ads` : "Sem custos de ads registados"}

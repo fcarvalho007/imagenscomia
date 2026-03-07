@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
+import WebinarBadge from "@/components/crm/WebinarBadge";
+
+const PLAN_LABELS: Record<string, string> = {
+  premium: "Premium Pass",
+  masterclass: "Masterclass",
+  bundle: "Pack Completo",
+  gravacao: "Gravação",
+  video_premium: "Vídeo Premium",
+};
 import { toast } from "@/hooks/use-toast";
 
 interface Props {
@@ -151,7 +160,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
           </Button>
           <Button size="sm" onClick={handleBulkEmit} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white">
             {bulkRunning === "emit" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-            Emitir e Enviar Todas
+            Emitir<span className="hidden sm:inline">&nbsp;e Enviar</span> Todas
           </Button>
         </div>
       </div>
@@ -179,9 +188,14 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
               return (
                 <tr key={i.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <td className="px-3 py-2"><Checkbox checked={selected.has(i.id)} onCheckedChange={() => toggleSelect(i.id)} /></td>
-                  <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>{i.nome}</td>
+                  <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
+                    <span className="flex items-center gap-1.5">
+                      {i.nome}
+                      {webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
+                    </span>
+                  </td>
                   <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.5)" }}>{i.email}</td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{i.plan}</td>
+                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{PLAN_LABELS[i.plan] || i.plan}</td>
                   <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>€{i.valor.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium">
