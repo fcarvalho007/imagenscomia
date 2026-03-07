@@ -107,8 +107,8 @@ serve(async (req) => {
             body: JSON.stringify({
               message: {
                 client: { email: reg.email, save: "0" },
-                subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`).replace("{{plano}}", itemDescription),
-                body: customEmailBody || `Olá,\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`,
+                subject: (customEmailSubject || `Fatura-Recibo — {{plano}}`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
+                body: (customEmailBody || `Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`).replace(/\{\{plano\}\}/g, itemDescription).replace(/\{\{nome\}\}/g, reg.name || ""),
                 logo: "0",
               },
             }),
