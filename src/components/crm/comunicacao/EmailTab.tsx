@@ -17,12 +17,10 @@ interface EmailTabProps {
 function filterInscritos(list: Inscrito[], webinar: WebinarFilter | null, plano: PlanoFilter | null): Inscrito[] {
   return list.filter((i) => {
     if (i.status !== "activo") return false;
-    // webinar
     if (webinar && webinar !== "todos") {
       if (webinar === "imagens" && i.webinar !== "imagens") return false;
       if (webinar === "video" && i.webinar !== "video") return false;
     }
-    // plano
     if (plano && plano !== "todos") {
       if (plano === "pagos" && !i.paid_at) return false;
       if (plano === "premium" && i.plan !== "premium") return false;
@@ -63,34 +61,35 @@ export function FilterBar({
   }, [inscritos, webinar]);
 
   const chip = (active: boolean) => ({
-    background: active ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.04)",
-    color: active ? "#93c5fd" : "rgba(255,255,255,0.4)",
-    border: `1px solid ${active ? "rgba(59,130,246,0.35)" : "rgba(255,255,255,0.08)"}`,
+    background: active ? "rgba(37,99,235,0.1)" : "#FFFFFF",
+    color: active ? "#2563eb" : "#64748B",
+    border: `1px solid ${active ? "rgba(37,99,235,0.3)" : "#E2E8F0"}`,
   });
 
   return (
     <div className="space-y-2 mb-5">
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Webinar</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mr-1">Webinar</span>
         {([["todos", "Todos"], ["imagens", "Imagens IA"], ["video", "Vídeo IA"]] as [WebinarFilter, string][]).map(([v, l]) => (
           <button key={v} onClick={() => setWebinar(webinar === v ? null : v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(webinar === v)}>
             {l}{counts ? ` (${counts.w[v]})` : ""}
           </button>
         ))}
-        {webinar === null && <span className="text-[9px] italic text-white/20 ml-1">Sem filtro</span>}
+        {webinar === null && <span className="text-[9px] italic text-slate-300 ml-1">Sem filtro</span>}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 mr-1">Plano</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mr-1">Plano</span>
         {([["todos", "Todos"], ["pagos", "Pagos"], ["premium", "Premium"], ["masterclass", "Masterclass"], ["free", "Free"]] as [PlanoFilter, string][]).map(([v, l]) => (
           <button key={v} onClick={() => setPlano(plano === v ? null : v)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full transition-all" style={chip(plano === v)}>
             {l}{counts ? ` (${counts.p[v]})` : ""}
           </button>
         ))}
-        {plano === null && <span className="text-[9px] italic text-white/20 ml-1">Sem filtro</span>}
+        {plano === null && <span className="text-[9px] italic text-slate-300 ml-1">Sem filtro</span>}
       </div>
     </div>
   );
 }
+
 /* ── Rich text toolbar helpers ── */
 function execCmd(cmd: string, val?: string) {
   document.execCommand(cmd, false, val);
@@ -192,8 +191,8 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
           <Mail size={20} className="text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Enviar Email</h2>
-          <p className="text-[11px] text-white/40">Editor de texto, filtros e envio em lote</p>
+          <h2 className="text-sm font-bold text-slate-900">Enviar Email</h2>
+          <p className="text-[11px] text-slate-500">Editor de texto, filtros e envio em lote</p>
         </div>
       </div>
 
@@ -204,17 +203,17 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
         {/* Recipients */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Destinatários ({recipients.length})
             </label>
             <div className="flex items-center gap-2">
               {recipients.length > 0 && (
-                <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#f87171" }}>
+                <button onClick={() => setRecipients([])} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-red-50" style={{ color: "#ef4444" }}>
                   <X size={10} /> Limpar todos
                 </button>
               )}
               {filteredPool.length > 0 && (
-                <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: "#93c5fd" }}>
+                <button onClick={selectAllFiltered} className="text-[10px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-blue-50" style={{ color: "#2563eb" }}>
                   <Users size={10} /> Seleccionar todos ({filteredPool.length})
                 </button>
               )}
@@ -225,10 +224,10 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
           {recipients.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
               {recipients.map(r => (
-                <span key={r.id} className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-medium" style={{ background: "rgba(59,130,246,0.12)", color: "#93c5fd", border: "1px solid rgba(59,130,246,0.25)" }}>
+                <span key={r.id} className="flex items-center gap-1.5 rounded-full pl-1 pr-2 py-0.5 text-[11px] font-medium" style={{ background: "#EFF6FF", color: "#2563eb", border: "1px solid #BFDBFE" }}>
                   <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white" style={{ background: getAvatarColor(r.nome) }}>{getInitials(r.nome)}</span>
                   {r.primeiro_nome || r.nome.split(" ")[0]}
-                  <button onClick={() => removeRecipient(r.id)} className="hover:bg-white/10 rounded-full p-0.5"><X size={10} /></button>
+                  <button onClick={() => removeRecipient(r.id)} className="hover:bg-blue-100 rounded-full p-0.5"><X size={10} /></button>
                 </span>
               ))}
             </div>
@@ -242,18 +241,18 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
               onFocus={() => search && setShowDropdown(true)}
               onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
               placeholder="Pesquisar inscrito por nome ou email…"
-              className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)" }}
+              className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-white"
+              style={{ border: "1.5px solid #E2E8F0" }}
             />
             <AnimatePresence>
               {showDropdown && searchResults.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-20 top-full left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(180deg, #1e293b, #172033)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-20 top-full left-0 right-0 mt-1.5 rounded-xl overflow-hidden shadow-xl bg-white" style={{ border: "1px solid #E2E8F0" }}>
                   {searchResults.map(i => (
-                    <button key={i.id} onMouseDown={() => addRecipient(i)} className="w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-white/5 transition-colors">
+                    <button key={i.id} onMouseDown={() => addRecipient(i)} className="w-full text-left px-3 py-2.5 flex items-center gap-2.5 hover:bg-slate-50 transition-colors">
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: getAvatarColor(i.nome) }}>{getInitials(i.nome)}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12px] font-medium text-white/85 truncate">{i.nome}</div>
-                        <div className="text-[10px] text-white/35">{i.email}</div>
+                        <div className="text-[12px] font-medium text-slate-800 truncate">{i.nome}</div>
+                        <div className="text-[10px] text-slate-400">{i.email}</div>
                       </div>
                     </button>
                   ))}
@@ -265,36 +264,36 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
 
         {/* Subject */}
         <div>
-          <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "rgba(255,255,255,0.35)" }}>Assunto</label>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Assunto do email…" className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25" style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)" }} />
+          <label className="block text-[10px] font-bold uppercase tracking-widest mb-2 text-slate-400">Assunto</label>
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Assunto do email…" className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-white" style={{ border: "1.5px solid #E2E8F0" }} />
         </div>
 
         {/* Body — Rich editor or raw HTML */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="block text-[10px] font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.35)" }}>Corpo</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Corpo</label>
             <button onClick={() => {
               if (!rawMode && editorRef.current) setRawHtml(editorRef.current.innerHTML);
               if (rawMode && editorRef.current) editorRef.current.innerHTML = rawHtml;
               setRawMode(!rawMode);
-            }} className="text-[9px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-white/5" style={{ color: rawMode ? "#fbbf24" : "rgba(255,255,255,0.35)" }}>
+            }} className="text-[9px] font-semibold flex items-center gap-1 px-2 py-0.5 rounded-full transition-all hover:bg-slate-100" style={{ color: rawMode ? "#d97706" : "#94A3B8" }}>
               <Code size={10} /> {rawMode ? "Editor visual" : "HTML raw"}
             </button>
           </div>
 
           {rawMode ? (
-            <textarea value={rawHtml} onChange={(e) => setRawHtml(e.target.value)} rows={12} placeholder="<p>Olá…</p>" className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none resize-y font-mono placeholder:text-white/20" style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.08)" }} />
+            <textarea value={rawHtml} onChange={(e) => setRawHtml(e.target.value)} rows={12} placeholder="<p>Olá…</p>" className="w-full rounded-xl px-4 py-3 text-sm text-slate-900 outline-none resize-y font-mono placeholder:text-slate-400 bg-white" style={{ border: "1.5px solid #E2E8F0" }} />
           ) : (
-            <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.03)", border: "1.5px solid rgba(255,255,255,0.08)" }}>
+            <div className="rounded-xl overflow-hidden bg-white" style={{ border: "1.5px solid #E2E8F0" }}>
               {/* Toolbar */}
-              <div className="flex items-center gap-0.5 px-2 py-1.5 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+              <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-200">
                 {[
                   { cmd: "bold", icon: <Bold size={14} />, label: "Negrito" },
                   { cmd: "italic", icon: <Italic size={14} />, label: "Itálico" },
                   { cmd: "underline", icon: <Underline size={14} />, label: "Sublinhado" },
                   { cmd: "insertUnorderedList", icon: <List size={14} />, label: "Lista" },
                 ].map(b => (
-                  <button key={b.cmd} onMouseDown={(e) => { e.preventDefault(); execCmd(b.cmd); }} title={b.label} className="w-7 h-7 rounded flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors">
+                  <button key={b.cmd} onMouseDown={(e) => { e.preventDefault(); execCmd(b.cmd); }} title={b.label} className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
                     {b.icon}
                   </button>
                 ))}
@@ -302,12 +301,12 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
                   e.preventDefault();
                   const url = prompt("URL do link:");
                   if (url) execCmd("createLink", url);
-                }} title="Link" className="w-7 h-7 rounded flex items-center justify-center text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors">
+                }} title="Link" className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
                   <Link2 size={14} />
                 </button>
               </div>
               {/* Editable area */}
-              <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[200px] px-4 py-3 text-sm text-white outline-none prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_a]:text-blue-400 [&_a]:underline" style={{ lineHeight: 1.7 }} />
+              <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[200px] px-4 py-3 text-sm text-slate-900 outline-none prose prose-sm max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_a]:text-blue-600 [&_a]:underline" style={{ lineHeight: 1.7 }} />
             </div>
           )}
         </div>
@@ -315,7 +314,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
         {/* Send button */}
         <div className="flex items-center justify-between">
           {sending && (
-            <span className="text-[11px] text-white/50 font-mono">
+            <span className="text-[11px] text-slate-500 font-mono">
               {progress.sent}/{progress.total} enviados…
             </span>
           )}
@@ -329,27 +328,27 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
 
       {/* Results modal */}
       <Dialog open={!!results} onOpenChange={(open) => { if (!open) setResults(null); }}>
-        <DialogContent className="sm:max-w-md" style={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)" }}>
+        <DialogContent className="sm:max-w-md bg-white border-slate-200">
           <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              {failCount === 0 ? <CheckCircle2 size={20} className="text-green-400" /> : <XCircle size={20} className="text-amber-400" />}
+            <DialogTitle className="text-slate-900 flex items-center gap-2">
+              {failCount === 0 ? <CheckCircle2 size={20} className="text-green-500" /> : <XCircle size={20} className="text-amber-500" />}
               Envio concluído
             </DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogDescription className="text-slate-500">
               {successCount} enviados com sucesso{failCount > 0 ? `, ${failCount} falharam` : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-60 overflow-y-auto space-y-1 mt-2">
             {results?.map((r, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-[12px] py-1.5 px-2 rounded-lg" style={{ background: r.ok ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)" }}>
-                {r.ok ? <CheckCircle2 size={12} className="text-green-400 shrink-0" /> : <XCircle size={12} className="text-red-400 shrink-0" />}
-                <span className="text-white/80 truncate flex-1">{r.nome}</span>
-                <span className="text-white/30 text-[10px] truncate">{r.email}</span>
+              <div key={idx} className="flex items-center gap-2 text-[12px] py-1.5 px-2 rounded-lg" style={{ background: r.ok ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)" }}>
+                {r.ok ? <CheckCircle2 size={12} className="text-green-500 shrink-0" /> : <XCircle size={12} className="text-red-500 shrink-0" />}
+                <span className="text-slate-700 truncate flex-1">{r.nome}</span>
+                <span className="text-slate-400 text-[10px] truncate">{r.email}</span>
               </div>
             ))}
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={resetForm} className="flex-1 text-[12px] font-semibold py-2 rounded-lg text-white/70 hover:bg-white/5 transition-colors" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>Enviar outro</button>
+            <button onClick={resetForm} className="flex-1 text-[12px] font-semibold py-2 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors border border-slate-200">Enviar outro</button>
             <button onClick={() => setResults(null)} className="flex-1 text-[12px] font-semibold py-2 rounded-lg text-white" style={{ background: "#2563eb" }}>Fechar</button>
           </div>
         </DialogContent>
