@@ -161,7 +161,25 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
     }
   };
 
-  const handleIndividual = async (id: string, draftOnly: boolean) => {
+  const handleSolicitarNif = async () => {
+    const missingIds = inscritos.filter(i => !idsWithNif.has(i.id)).map(i => i.id);
+    if (missingIds.length === 0) { toast({ title: "Todos os inscritos já têm NIF" }); return; }
+    if (!confirm(`Enviar email a ${missingIds.length} inscrito(s) sem NIF para preencherem os dados de faturação?`)) return;
+    setBulkRunning("emit"); // reuse loading state
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-request", {
+        body: { webinar: webinarFilter, registration_ids: missingIds },
+      });
+      if (error) throw error;
+      toast({ title: `${data.sent} email(s) enviado(s)`, description: data.errors?.length ? `${data.errors.length} erro(s)` : "Sem erros" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setBulkRunning(null);
+    }
+  };
+
+
     setIndividualLoading(id);
     try {
       const { data, error } = await supabase.functions.invoke("create-invoice", {
@@ -266,6 +284,18 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
                 Cria, finaliza e envia a fatura-recibo por email a todos os pagantes sem fatura
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" onClick={handleSolicitarNif} disabled={bulkRunning !== null || missingNifCount === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50">
+                   {bulkRunning === "nif-request" as any ? <Loader2 size={13} className="animate-spin" /> : <AlertTriangle size={13} />}
+                   Solicitar NIF{missingNifCount > 0 && ` (${missingNifCount})`}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
+                Envia email aos inscritos sem NIF com link para preencherem os dados de faturação
               </TooltipContent>
             </Tooltip>
           </div>
