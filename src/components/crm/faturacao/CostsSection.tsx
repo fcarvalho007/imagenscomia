@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Loader2, TrendingUp, DollarSign, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, TrendingUp, Euro, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AcquisitionCost } from "@/components/crm/FaturacaoView";
+import { applyIVA } from "@/components/crm/FaturacaoView";
 import CostModal from "@/components/crm/faturacao/CostModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,18 +16,20 @@ interface Props {
   paidMediaCosts: number;
   onRefresh: () => void;
   showWebinarColumn?: boolean;
+  showIVA: boolean;
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh, showWebinarColumn }: Props) {
+export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh, showWebinarColumn, showIVA }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<AcquisitionCost | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const totalCosts = costs.reduce((s, c) => s + Number(c.amount), 0);
+  const receita = applyIVA(receitaConfirmada, showIVA);
   const cac = numPagamentos > 0 ? totalCosts / numPagamentos : 0;
-  const roas = paidMediaCosts > 0 ? receitaConfirmada / paidMediaCosts : 0;
+  const roas = paidMediaCosts > 0 ? receita / paidMediaCosts : 0;
 
   const handleDelete = async (id: string) => {
     if (!confirm("Eliminar este custo?")) return;
@@ -61,8 +64,8 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
       {/* Cost metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Total Custos", value: `€${fmt(totalCosts)}`, icon: DollarSign, color: "#ef4444" },
-          { label: "Custos Paid Media", value: `€${fmt(paidMediaCosts)}`, icon: DollarSign, color: "#f59e0b" },
+          { label: "Total Custos", value: `€${fmt(totalCosts)}`, icon: Euro, color: "#ef4444" },
+          { label: "Custos Paid Media", value: `€${fmt(paidMediaCosts)}`, icon: Euro, color: "#f59e0b" },
           { label: "CAC", value: `€${fmt(cac)}`, icon: TrendingUp, color: "#8b5cf6" },
           { label: "ROAS", value: roas > 0 ? `${roas.toFixed(2)}×` : "—", icon: TrendingUp, color: "#22c55e" },
         ].map(c => (

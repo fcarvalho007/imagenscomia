@@ -10,6 +10,7 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import WebinarBadge from "@/components/crm/WebinarBadge";
 import { toast } from "@/hooks/use-toast";
+import { applyIVA } from "@/components/crm/FaturacaoView";
 
 const PLAN_LABELS: Record<string, string> = {
   premium: "Premium Pass",
@@ -23,6 +24,7 @@ interface Props {
   inscritos: Inscrito[];
   onRefresh: () => void;
   webinarFilter: string;
+  showIVA: boolean;
 }
 
 type InvoiceState = "none" | "draft" | "sent" | "error";
@@ -43,7 +45,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
 const DEFAULT_EMAIL_SUBJECT = "Fatura-Recibo — {{plano}}";
 const DEFAULT_EMAIL_BODY = "Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos";
 
-export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Props) {
+export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, showIVA }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
@@ -175,6 +177,8 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
     }
   };
 
+  const ivaLabel = showIVA ? "c/ IVA" : "s/ IVA";
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
@@ -278,7 +282,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
               <th className="px-3 py-2 text-left font-medium text-slate-500">Nome</th>
               <th className="px-3 py-2 text-left font-medium hidden md:table-cell text-slate-500">Email</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Plano</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-500">Valor</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">Valor ({ivaLabel})</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Estado</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Ação</th>
             </tr>
@@ -288,6 +292,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
               const state = getInvoiceState(i);
               const cfg = STATE_CONFIG[state];
               const Icon = cfg.icon;
+              const displayValue = applyIVA(i.valor, showIVA);
               return (
                 <tr key={i.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                   <td className="px-3 py-2"><Checkbox checked={selected.has(i.id)} onCheckedChange={() => toggleSelect(i.id)} /></td>
@@ -313,7 +318,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                   </td>
                   <td className="px-3 py-2 hidden md:table-cell text-slate-500">{i.email}</td>
                   <td className="px-3 py-2 text-slate-600">{PLAN_LABELS[i.plan] || i.plan}</td>
-                  <td className="px-3 py-2 font-semibold text-slate-900">€{i.valor.toFixed(2)}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">€{displayValue.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium">
                       <Icon size={12} style={{ color: cfg.color }} />

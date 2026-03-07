@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { TrendingUp, TrendingDown, DollarSign, Users, Target, BarChart3, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, Euro, Users, Target, BarChart3, Zap } from "lucide-react";
+import { applyIVA } from "@/components/crm/FaturacaoView";
 
 interface Props {
   receitaConfirmada: number;
@@ -7,6 +8,7 @@ interface Props {
   numPagamentos: number;
   totalCosts: number;
   paidMediaCosts: number;
+  showIVA: boolean;
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -39,16 +41,20 @@ function useAnimatedValue(target: number, duration = 1800) {
   return { value, ref };
 }
 
-export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, numPagamentos, totalCosts, paidMediaCosts }: Props) {
-  const margem = receitaConfirmada - totalCosts;
+export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, numPagamentos, totalCosts, paidMediaCosts, showIVA }: Props) {
+  const receita = applyIVA(receitaConfirmada, showIVA);
+  const pipeline = applyIVA(pipelinePendente, showIVA);
+  const margem = receita - totalCosts;
   const margemPositiva = margem >= 0;
-  const roas = paidMediaCosts > 0 ? receitaConfirmada / paidMediaCosts : 0;
+  const roas = paidMediaCosts > 0 ? receita / paidMediaCosts : 0;
   const cac = numPagamentos > 0 ? totalCosts / numPagamentos : 0;
-  const ticketMedio = numPagamentos > 0 ? receitaConfirmada / numPagamentos : 0;
+  const ticketMedio = numPagamentos > 0 ? receita / numPagamentos : 0;
 
-  const animReceita = useAnimatedValue(receitaConfirmada);
+  const animReceita = useAnimatedValue(receita);
   const animMargem = useAnimatedValue(Math.abs(margem));
   const animRoas = useAnimatedValue(roas, 2200);
+
+  const ivaLabel = showIVA ? "c/ IVA" : "s/ IVA";
 
   return (
     <div className="space-y-4">
@@ -65,9 +71,9 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
           }}
         >
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
-            <DollarSign size={16} style={{ color: "#22c55e" }} />
+            <Euro size={16} style={{ color: "#22c55e" }} />
             <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Receita Confirmada
+              Receita Confirmada <span className="text-slate-400">({ivaLabel})</span>
             </span>
           </div>
           <p className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums tracking-tight truncate" style={{ color: "#22c55e" }}>
@@ -102,7 +108,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
             {margemPositiva ? "" : "-"}€{fmt(animMargem.value)}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2 text-slate-400">
-            Receita − Custos totais
+            Receita ({ivaLabel}) − Custos totais
           </p>
         </div>
 
@@ -138,7 +144,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
       {/* Secondary row — 4 compact cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Pipeline Pendente", value: `€${fmt(pipelinePendente)}`, icon: Target, color: "#f59e0b" },
+          { label: "Pipeline Pendente", value: `€${fmt(pipeline)}`, icon: Target, color: "#f59e0b" },
           { label: "Ticket Médio", value: `€${fmt(ticketMedio)}`, icon: BarChart3, color: "#8b5cf6" },
           { label: "Nº Pagamentos", value: String(numPagamentos), icon: Users, color: "#06b6d4" },
           { label: "CAC", value: cac > 0 ? `€${fmt(cac)}` : "—", icon: TrendingUp, color: "#f97316" },

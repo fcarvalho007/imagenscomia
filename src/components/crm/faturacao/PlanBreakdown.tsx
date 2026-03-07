@@ -1,9 +1,11 @@
 import type { Inscrito } from "@/pages/crm/mockData";
 import { Users } from "lucide-react";
+import { applyIVA } from "@/components/crm/FaturacaoView";
 
 interface Props {
   inscritos: Inscrito[];
   receitaConfirmada: number;
+  showIVA: boolean;
 }
 
 interface PlanRow {
@@ -30,7 +32,7 @@ const PLAN_CONFIG: Record<string, Record<string, { label: string }>> = {
   },
 };
 
-function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao"): PlanRow[] {
+function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao", showIVA: boolean): PlanRow[] {
   const config = PLAN_CONFIG[source];
   const filtered = inscritos.filter(i => i.registration_source === source && i.plan !== "free");
 
@@ -39,7 +41,7 @@ function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao"): PlanR
     const paidItems = matching.filter(i => i.payment_status === "paid");
     const pendingItems = matching.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
     const groupItems = matching.filter(i => !!i.group_payment_ref);
-    const total = paidItems.reduce((s, i) => s + (Number(i.valor) || 0), 0);
+    const total = paidItems.reduce((s, i) => s + applyIVA(Number(i.valor) || 0, showIVA), 0);
     const avgPrice = paidItems.length > 0 ? (total / paidItems.length) : 0;
     return {
       plan,
@@ -54,7 +56,7 @@ function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao"): PlanR
   });
 }
 
-function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: PlanRow[]; receitaConfirmada: number }) {
+function PlanTable({ title, rows, receitaConfirmada, ivaLabel }: { title: string; rows: PlanRow[]; receitaConfirmada: number; ivaLabel: string }) {
   const subtotal = rows.reduce((s, r) => s + r.total, 0);
 
   return (
@@ -64,7 +66,7 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
         <table className="w-full text-[12px] min-w-[500px]">
           <thead>
             <tr className="border-b border-slate-100">
-              {["Plano", "Preço médio", "Pagos", "Pendentes", "Total (€)"].map(h => (
+              {["Plano", `Preço médio (${ivaLabel})`, "Pagos", "Pendentes", `Total (${ivaLabel})`].map(h => (
                 <th key={h} className="px-3 py-2 text-left font-medium text-slate-500">{h}</th>
               ))}
               <th className="px-3 py-2 text-left font-medium hidden sm:table-cell"></th>
@@ -117,22 +119,24 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
   );
 }
 
-export default function PlanBreakdown({ inscritos, receitaConfirmada }: Props) {
-  const preRows = buildRows(inscritos, "webinar");
-  const postRows = buildRows(inscritos, "gravacao");
+export default function PlanBreakdown({ inscritos, receitaConfirmada, showIVA }: Props) {
+  const convertedReceita = applyIVA(receitaConfirmada, showIVA);
+  const preRows = buildRows(inscritos, "webinar", showIVA);
+  const postRows = buildRows(inscritos, "gravacao", showIVA);
   const freeCount = inscritos.filter(i => i.plan === "free").length;
+  const ivaLabel = showIVA ? "c/ IVA" : "s/ IVA";
 
   return (
     <div className="space-y-5">
       <h2 className="text-[15px] font-bold text-slate-900">Detalhe por Plano</h2>
-      <PlanTable title="Pré-Webinar (Early Bird)" rows={preRows} receitaConfirmada={receitaConfirmada} />
-      <PlanTable title="Pós-Webinar (Regular)" rows={postRows} receitaConfirmada={receitaConfirmada} />
+      <PlanTable title="Pré-Webinar (Early Bird)" rows={preRows} receitaConfirmada={convertedReceita} ivaLabel={ivaLabel} />
+      <PlanTable title="Pós-Webinar (Regular)" rows={postRows} receitaConfirmada={convertedReceita} ivaLabel={ivaLabel} />
       <div className="flex items-center justify-between">
         <p className="text-[11px] text-slate-400">
           Gratuitos: {freeCount} inscritos
         </p>
         <p className="text-[10px] text-slate-400">
-          Valores com IVA incluído
+          Valores {ivaLabel}
         </p>
       </div>
     </div>

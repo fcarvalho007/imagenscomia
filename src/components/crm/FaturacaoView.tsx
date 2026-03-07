@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { supabase } from "@/integrations/supabase/client";
 import FaturacaoKPIs from "@/components/crm/faturacao/FaturacaoKPIs";
@@ -20,6 +21,11 @@ export interface AcquisitionCost {
   category: string;
   webinar: string;
 }
+
+/** Remove IVA (23%) from a value that includes it */
+export const removeIVA = (v: number) => v / 1.23;
+/** Conditionally apply IVA conversion */
+export const applyIVA = (v: number, showIVA: boolean) => showIVA ? v : removeIVA(v);
 
 type FaturacaoTab = "todos" | "imagens" | "video";
 
@@ -42,6 +48,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   });
   const [costs, setCosts] = useState<AcquisitionCost[]>([]);
   const [loadingCosts, setLoadingCosts] = useState(true);
+  const [showIVA, setShowIVA] = useState(false);
 
   useEffect(() => {
     if (webinarContext === "imagens") setActiveTab("imagens");
@@ -109,6 +116,8 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
     URL.revokeObjectURL(url);
   };
 
+  const ivaLabel = showIVA ? "c/ IVA" : "s/ IVA";
+
   return (
     <div className="min-h-screen" style={{ background: "#F8FAFC" }}>
       <div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8">
@@ -122,7 +131,13 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
               Receitas, custos e emissão de faturas
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* IVA Toggle */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 shadow-sm">
+              <span className={`text-[11px] font-medium ${!showIVA ? "text-slate-900" : "text-slate-400"}`}>s/ IVA</span>
+              <Switch checked={showIVA} onCheckedChange={setShowIVA} className="h-5 w-9 data-[state=checked]:bg-slate-700 data-[state=unchecked]:bg-slate-300" />
+              <span className={`text-[11px] font-medium ${showIVA ? "text-slate-900" : "text-slate-400"}`}>c/ IVA</span>
+            </div>
             <Button size="sm" variant="outline" onClick={() => { onRefresh(); fetchCosts(); }} className="h-8 text-[12px] gap-1.5">
               <RefreshCw size={13} /> Atualizar
             </Button>
@@ -155,6 +170,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           numPagamentos={paid.length}
           totalCosts={totalCosts}
           paidMediaCosts={paidMediaCosts}
+          showIVA={showIVA}
         />
 
         <FaturacaoCharts
@@ -163,9 +179,10 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           totalCosts={totalCosts}
           inscritos={tabInscritos}
           costs={costs}
+          showIVA={showIVA}
         />
 
-        <PlanBreakdown inscritos={tabInscritos} receitaConfirmada={receitaConfirmada} />
+        <PlanBreakdown inscritos={tabInscritos} receitaConfirmada={receitaConfirmada} showIVA={showIVA} />
 
         <CostsSection
           costs={costs}
@@ -175,9 +192,10 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           paidMediaCosts={paidMediaCosts}
           onRefresh={fetchCosts}
           showWebinarColumn={activeTab === "todos"}
+          showIVA={showIVA}
         />
 
-        <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} />
+        <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} showIVA={showIVA} />
 
         <PLSummary
           receitaConfirmada={receitaConfirmada}
@@ -185,6 +203,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           costs={costs}
           totalCosts={totalCosts}
           inscritos={tabInscritos}
+          showIVA={showIVA}
         />
       </div>
     </div>
