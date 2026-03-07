@@ -87,6 +87,7 @@ serve(async (req) => {
     const invoiceMap = new Map((allInvoiceDetails || []).map((d) => [d.registration_id, d]));
 
     let emitted = 0;
+    let draftsOnly = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
     console.log(`🚀 Bulk emit: ${registrations.length} eligible registrations (webinar=${webinarFilter})`);
