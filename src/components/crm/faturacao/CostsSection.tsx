@@ -5,6 +5,7 @@ import type { AcquisitionCost } from "@/components/crm/FaturacaoView";
 import CostModal from "@/components/crm/faturacao/CostModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import WebinarBadge from "@/components/crm/WebinarBadge";
 
 interface Props {
   costs: AcquisitionCost[];
@@ -13,11 +14,12 @@ interface Props {
   receitaConfirmada: number;
   paidMediaCosts: number;
   onRefresh: () => void;
+  showWebinarColumn?: boolean;
 }
 
 const fmt = (v: number) => v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh }: Props) {
+export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh, showWebinarColumn }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<AcquisitionCost | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -89,6 +91,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
                 <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Valor</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Data</th>
                 <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Categoria</th>
+                {showWebinarColumn && <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Webinar</th>}
                 <th className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}></th>
               </tr>
             </thead>
@@ -104,6 +107,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
                       {c.category}
                     </span>
                   </td>
+                  {showWebinarColumn && <td className="px-3 py-2"><WebinarBadge webinar={c.webinar} /></td>}
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
                       <button onClick={() => { setEditingCost(c); setModalOpen(true); }} className="p-1 rounded hover:bg-white/10 transition-colors">
@@ -122,7 +126,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
                 <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Total</td>
                 <td className="hidden md:table-cell" />
                 <td className="px-3 py-2 font-bold" style={{ color: "#ef4444" }}>€{totalCosts.toFixed(2)}</td>
-                <td colSpan={3} />
+                <td colSpan={showWebinarColumn ? 4 : 3} />
               </tr>
             </tfoot>
           </table>

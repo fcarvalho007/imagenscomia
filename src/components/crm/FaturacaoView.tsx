@@ -27,7 +27,7 @@ interface FaturacaoViewProps {
   onRefresh: () => void;
 }
 
-const TAB_OPTIONS: { value: FaturacaoTab; label: string }[] = [
+const TAB_BASE: { value: FaturacaoTab; label: string }[] = [
   { value: "todos", label: "Todos" },
   { value: "imagens", label: "Imagens" },
   { value: "video", label: "Vídeo" },
@@ -63,6 +63,14 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   const pipelinePendente = useMemo(() => pending.reduce((s, i) => s + i.valor, 0), [pending]);
   const totalCosts = useMemo(() => costs.reduce((s, c) => s + Number(c.amount), 0), [costs]);
   const paidMediaCosts = useMemo(() => costs.filter(c => c.category === "paid_media").reduce((s, c) => s + Number(c.amount), 0), [costs]);
+
+  // Counts per webinar for tab labels
+  const paidCountImagens = useMemo(() => inscritos.filter(i => i.webinar === "imagens" && i.payment_status === "paid").length, [inscritos]);
+  const paidCountVideo = useMemo(() => inscritos.filter(i => i.webinar === "video" && i.payment_status === "paid").length, [inscritos]);
+  const tabOptions = useMemo(() => TAB_BASE.map(t => ({
+    ...t,
+    label: t.value === "todos" ? `Todos (${paidCountImagens + paidCountVideo})` : t.value === "imagens" ? `Imagens (${paidCountImagens})` : `Vídeo (${paidCountVideo})`,
+  })), [paidCountImagens, paidCountVideo]);
 
   const webinarForEdgeFunction = activeTab === "todos" ? "all" : activeTab;
 
@@ -117,11 +125,11 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
 
         {/* Tabs */}
         <div className="flex gap-1 rounded-lg p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
-          {TAB_OPTIONS.map(tab => (
+          {tabOptions.map(tab => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className="px-4 py-1.5 rounded-md text-[13px] font-medium transition-all"
+              className="px-3 sm:px-4 py-1.5 rounded-md text-[12px] sm:text-[13px] font-medium transition-all"
               style={{
                 background: activeTab === tab.value ? "rgba(255,255,255,0.1)" : "transparent",
                 color: activeTab === tab.value ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.4)",
@@ -157,6 +165,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           receitaConfirmada={receitaConfirmada}
           paidMediaCosts={paidMediaCosts}
           onRefresh={fetchCosts}
+          showWebinarColumn={activeTab === "todos"}
         />
 
         <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} />
