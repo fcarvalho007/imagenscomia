@@ -234,7 +234,30 @@ async function emitInvoice(opts: {
     return { ok: true, drafted: true };
   }
 
-  // Step 2: Finalize
+  // Step 2: Check document state in InvoiceExpress before finalizing
+  const currentState = await getIEDocumentState(API_KEY, documentId!);
+  console.log(`🔍 ${buyerReg.email}: doc #${documentId} state="${currentState}"`);
+
+  if (currentState === "finalized" || currentState === "settled") {
+    // Already finalized — just mark as sent in DB and skip
+    console.log(`⏭️ ${buyerReg.email}: doc #${documentId} already ${currentState} — skipping, marking as sent`);
+    for (const memberId of allMemberIds) {
+      await supabase
+        .from("registrations")
+        .update({ invoice_sent: true, invoice_document_id: documentId } as any)
+        .eq("id", memberId);
+    }
+    await supabase.from("message_logs").insert({
+      registration_id: buyerReg.id,
+      channel: "email",
+      provider: "invoicexpress",
+      template_key: "invoice_emitted",
+      status: "skipped_already_finalized",
+    });
+    return { ok: true, skipped: true };
+  }
+
+  // Finalize the document
   const stateRes = await fetch(
     `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
     {
