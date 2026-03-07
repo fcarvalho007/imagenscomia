@@ -414,7 +414,7 @@ export function useInscritos() {
         ...(markAsPaid ? { paid_at: new Date().toISOString(), payment_status: "paid" as const } : {}),
       } : i)
     );
-  }, [inscritos]);
+  }, []);
 
   const markAsPaid = useCallback(async (inscritoId: string) => {
     const now = new Date().toISOString();
