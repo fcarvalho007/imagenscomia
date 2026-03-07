@@ -20,12 +20,12 @@ const PLAN_COLORS: Record<string, string> = {
 };
 
 const TOOLTIP_STYLE = {
-  background: "rgba(15,23,42,0.95)",
-  border: "1px solid rgba(255,255,255,0.1)",
+  backgroundColor: "#FFFFFF",
+  border: "1px solid #E2E8F0",
   borderRadius: 10,
   fontSize: 12,
-  color: "#fff",
-  backdropFilter: "blur(8px)",
+  color: "#0F172A",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
 export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs }: Props) {
@@ -33,14 +33,12 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
   const chartHeight = isMobile ? 200 : 280;
   const smallChartHeight = isMobile ? 180 : 230;
 
-  // Bar chart data
   const barData = [
     { name: "Receita", value: receitaConfirmada, fill: "#22c55e" },
     { name: "Pipeline", value: pipelinePendente, fill: "#f59e0b" },
     { name: "Custos", value: totalCosts, fill: "#ef4444" },
   ];
 
-  // Donut chart — distribution by plan
   const planRevenue: Record<string, number> = {};
   const planCounts: Record<string, number> = {};
   inscritos.filter(i => i.payment_status === "paid" && i.plan !== "free").forEach(i => {
@@ -54,11 +52,9 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
     fill: PLAN_COLORS[name] || "#64748b",
   }));
 
-  // Margin gauge
   const margemPct = receitaConfirmada > 0 ? Math.max(0, Math.min(100, ((receitaConfirmada - totalCosts) / receitaConfirmada) * 100)) : 0;
   const custosPct = receitaConfirmada > 0 ? Math.min(100, (totalCosts / receitaConfirmada) * 100) : 0;
 
-  // Cost breakdown by category
   const costByCat: Record<string, number> = {};
   costs.forEach(c => { costByCat[c.category] = (costByCat[c.category] || 0) + Number(c.amount); });
   const costCatData = Object.entries(costByCat).map(([name, value]) => ({
@@ -74,17 +70,17 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
 
   return (
     <div className="space-y-4">
-      <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Visão Geral</h2>
+      <h2 className="text-[15px] font-bold text-slate-900">Visão Geral</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Bar chart */}
-        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Receita vs Pipeline vs Custos</p>
+        <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita vs Pipeline vs Custos</p>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={barData} barSize={isMobile ? 36 : 52}>
-              <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: isMobile ? 10 : 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} width={isMobile ? 45 : 60} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmt(v)} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+              <XAxis dataKey="name" tick={{ fill: "#64748B", fontSize: isMobile ? 10 : 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "#94A3B8", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `€${v}`} width={isMobile ? 45 : 60} />
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => fmt(v)} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
                 {barData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
               </Bar>
@@ -93,8 +89,8 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
         </div>
 
         {/* Donut chart */}
-        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Receita por Plano</p>
+        <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por Plano</p>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
@@ -107,7 +103,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
                   dataKey="value"
                   strokeWidth={0}
                   label={isMobile ? false : ({ name, value }: any) => `${name} — ${fmt(value)}`}
-                  labelLine={isMobile ? false : { stroke: "rgba(255,255,255,0.2)" }}
+                  labelLine={isMobile ? false : { stroke: "#CBD5E1" }}
                 >
                   {pieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                 </Pie>
@@ -122,23 +118,23 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center" style={{ height: chartHeight }}>
-              <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>Sem vendas registadas</p>
+              <p className="text-[13px] text-slate-400">Sem vendas registadas</p>
             </div>
           )}
         </div>
 
         {/* Margin gauge */}
-        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Estrutura de Custos</p>
+        <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Estrutura de Custos</p>
           <div className="space-y-6 py-4">
             <div>
               <div className="flex justify-between text-[11px] mb-2">
-                <span style={{ color: "rgba(255,255,255,0.5)" }}>Custos / Receita</span>
+                <span className="text-slate-500">Custos / Receita</span>
                 <span className="font-bold" style={{ color: custosPct > 80 ? "#ef4444" : custosPct > 50 ? "#f59e0b" : "#22c55e" }}>
                   {custosPct.toFixed(1)}%
                 </span>
               </div>
-              <div className="h-5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-5 rounded-full overflow-hidden bg-slate-100">
                 <div
                   className="h-full rounded-full transition-all duration-1000"
                   style={{
@@ -152,18 +148,18 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
                 />
               </div>
               <div className="flex justify-between text-[10px] mt-1.5">
-                <span style={{ color: "rgba(255,255,255,0.3)" }}>€0</span>
-                <span style={{ color: "rgba(255,255,255,0.3)" }}>{fmt(receitaConfirmada)}</span>
+                <span className="text-slate-400">€0</span>
+                <span className="text-slate-400">{fmt(receitaConfirmada)}</span>
               </div>
             </div>
             <div>
               <div className="flex justify-between text-[11px] mb-2">
-                <span style={{ color: "rgba(255,255,255,0.5)" }}>Margem</span>
+                <span className="text-slate-500">Margem</span>
                 <span className="font-bold" style={{ color: margemPct > 30 ? "#22c55e" : "#f59e0b" }}>
                   {margemPct.toFixed(1)}%
                 </span>
               </div>
-              <div className="h-5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-5 rounded-full overflow-hidden bg-slate-100">
                 <div
                   className="h-full rounded-full transition-all duration-1000"
                   style={{
@@ -177,8 +173,8 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
         </div>
 
         {/* Cost breakdown mini donut */}
-        <div className="rounded-2xl p-4 sm:p-5 border" style={{ background: "rgba(255,255,255,0.02)", borderColor: "rgba(255,255,255,0.06)" }}>
-          <p className="text-[12px] font-semibold mb-4" style={{ color: "rgba(255,255,255,0.55)" }}>Custos por Categoria</p>
+        <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Custos por Categoria</p>
           {costCatData.length > 0 ? (
             <ResponsiveContainer width="100%" height={smallChartHeight}>
               <PieChart>
@@ -191,7 +187,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
                   dataKey="value"
                   strokeWidth={0}
                   label={isMobile ? false : ({ name, value }: any) => `${name} ${fmt(value)}`}
-                  labelLine={isMobile ? false : { stroke: "rgba(255,255,255,0.15)" }}
+                  labelLine={isMobile ? false : { stroke: "#CBD5E1" }}
                 >
                   {costCatData.map((_, idx) => <Cell key={idx} fill={COST_COLORS[idx % COST_COLORS.length]} />)}
                 </Pie>
@@ -200,7 +196,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center" style={{ height: smallChartHeight }}>
-              <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.3)" }}>Sem custos registados</p>
+              <p className="text-[13px] text-slate-400">Sem custos registados</p>
             </div>
           )}
         </div>

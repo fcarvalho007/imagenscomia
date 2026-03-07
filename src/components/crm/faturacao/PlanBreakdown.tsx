@@ -39,9 +39,7 @@ function buildRows(inscritos: Inscrito[], source: "webinar" | "gravacao"): PlanR
     const paidItems = matching.filter(i => i.payment_status === "paid");
     const pendingItems = matching.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
     const groupItems = matching.filter(i => !!i.group_payment_ref);
-    // Use actual paid amounts instead of static price × count
     const total = paidItems.reduce((s, i) => s + (Number(i.valor) || 0), 0);
-    // Show average price per unit if there are paid items
     const avgPrice = paidItems.length > 0 ? (total / paidItems.length) : 0;
     return {
       plan,
@@ -61,45 +59,44 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
 
   return (
     <div>
-      <h3 className="text-[13px] font-semibold mb-2" style={{ color: "rgba(255,255,255,0.7)" }}>{title}</h3>
-      <div className="rounded-lg border overflow-x-auto" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)", WebkitOverflowScrolling: "touch" }}>
+      <h3 className="text-[13px] font-semibold mb-2 text-slate-700">{title}</h3>
+      <div className="rounded-lg border border-slate-200 bg-white overflow-x-auto shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
         <table className="w-full text-[12px] min-w-[500px]">
           <thead>
-            <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <tr className="border-b border-slate-100">
               {["Plano", "Preço médio", "Pagos", "Pendentes", "Total (€)"].map(h => (
-                <th key={h} className="px-3 py-2 text-left font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>{h}</th>
+                <th key={h} className="px-3 py-2 text-left font-medium text-slate-500">{h}</th>
               ))}
-              <th className="px-3 py-2 text-left font-medium hidden sm:table-cell" style={{ color: "rgba(255,255,255,0.4)" }}></th>
+              <th className="px-3 py-2 text-left font-medium hidden sm:table-cell"></th>
             </tr>
           </thead>
           <tbody>
             {rows.map(r => {
               const pct = receitaConfirmada > 0 ? (r.total / receitaConfirmada) * 100 : 0;
               return (
-                <tr key={r.plan} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                  <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
+                <tr key={r.plan} className="border-b border-slate-50">
+                  <td className="px-3 py-2 font-medium text-slate-900">
                     {r.label}
                     {r.hasGroup && (
-                      <span className="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold"
-                        style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
+                      <span className="ml-1.5 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-violet-50 text-violet-600">
                         <Users size={9} /> {r.groupCount} grupo
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2" style={{ color: "rgba(255,255,255,0.6)" }}>{r.price}</td>
+                  <td className="px-3 py-2 text-slate-600">{r.price}</td>
                   <td className="px-3 py-2" style={{ color: "#22c55e" }}>{r.paid}</td>
                   <td className="px-3 py-2">
                     {r.pending > 0 ? (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-600">
                         {r.pending}
                       </span>
                     ) : (
-                      <span style={{ color: "rgba(255,255,255,0.3)" }}>0</span>
+                      <span className="text-slate-300">0</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>€{r.total.toFixed(2)}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-900">€{r.total.toFixed(2)}</td>
                   <td className="px-3 py-2 w-24 hidden sm:table-cell">
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                    <div className="h-1.5 rounded-full overflow-hidden bg-slate-100">
                       <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: "#3b82f6" }} />
                     </div>
                   </td>
@@ -108,9 +105,9 @@ function PlanTable({ title, rows, receitaConfirmada }: { title: string; rows: Pl
             })}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <td colSpan={4} className="px-3 py-2 font-semibold" style={{ color: "rgba(255,255,255,0.6)" }}>Subtotal</td>
-              <td className="px-3 py-2 font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>€{subtotal.toFixed(2)}</td>
+            <tr className="border-t border-slate-200">
+              <td colSpan={4} className="px-3 py-2 font-semibold text-slate-600">Subtotal</td>
+              <td className="px-3 py-2 font-bold text-slate-900">€{subtotal.toFixed(2)}</td>
               <td className="hidden sm:table-cell" />
             </tr>
           </tfoot>
@@ -127,14 +124,14 @@ export default function PlanBreakdown({ inscritos, receitaConfirmada }: Props) {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Detalhe por Plano</h2>
+      <h2 className="text-[15px] font-bold text-slate-900">Detalhe por Plano</h2>
       <PlanTable title="Pré-Webinar (Early Bird)" rows={preRows} receitaConfirmada={receitaConfirmada} />
       <PlanTable title="Pós-Webinar (Regular)" rows={postRows} receitaConfirmada={receitaConfirmada} />
       <div className="flex items-center justify-between">
-        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+        <p className="text-[11px] text-slate-400">
           Gratuitos: {freeCount} inscritos
         </p>
-        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+        <p className="text-[10px] text-slate-400">
           Valores com IVA incluído
         </p>
       </div>

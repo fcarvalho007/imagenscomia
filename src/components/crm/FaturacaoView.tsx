@@ -43,14 +43,12 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   const [costs, setCosts] = useState<AcquisitionCost[]>([]);
   const [loadingCosts, setLoadingCosts] = useState(true);
 
-  // Sync activeTab with sidebar webinar context
   useEffect(() => {
     if (webinarContext === "imagens") setActiveTab("imagens");
     else if (webinarContext === "video") setActiveTab("video");
     else if (webinarContext === "consolidado") setActiveTab("todos");
   }, [webinarContext]);
 
-  // Filter inscritos by active tab
   const tabInscritos = useMemo(() => {
     if (activeTab === "todos") return inscritos;
     return inscritos.filter(i => i.webinar === activeTab);
@@ -76,7 +74,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   const totalCosts = useMemo(() => costs.reduce((s, c) => s + Number(c.amount), 0), [costs]);
   const paidMediaCosts = useMemo(() => costs.filter(c => c.category === "paid_media").reduce((s, c) => s + Number(c.amount), 0), [costs]);
 
-  // Counts per webinar for tab labels
   const paidCountImagens = useMemo(() => inscritos.filter(i => i.webinar === "imagens" && i.payment_status === "paid").length, [inscritos]);
   const paidCountVideo = useMemo(() => inscritos.filter(i => i.webinar === "video" && i.payment_status === "paid").length, [inscritos]);
   const tabOptions = useMemo(() => TAB_BASE.map(t => ({
@@ -113,15 +110,15 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#0F172A" }}>
+    <div className="min-h-screen" style={{ background: "#F8FAFC" }}>
       <div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold" style={{ color: "rgba(255,255,255,0.92)" }}>
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900">
               Faturação
             </h1>
-            <p className="text-[13px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+            <p className="text-[13px] text-slate-500">
               Receitas, custos e emissão de faturas
             </p>
           </div>
@@ -136,16 +133,16 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 rounded-lg p-1" style={{ background: "rgba(255,255,255,0.04)" }}>
+        <div className="flex gap-1 rounded-lg p-1 bg-white border border-slate-200">
           {tabOptions.map(tab => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
-              className="px-3 sm:px-4 py-1.5 rounded-md text-[12px] sm:text-[13px] font-medium transition-all"
-              style={{
-                background: activeTab === tab.value ? "rgba(255,255,255,0.1)" : "transparent",
-                color: activeTab === tab.value ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.4)",
-              }}
+              className={`px-3 sm:px-4 py-1.5 rounded-md text-[12px] sm:text-[13px] font-medium transition-all ${
+                activeTab === tab.value
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+              }`}
             >
               {tab.label}
             </button>
