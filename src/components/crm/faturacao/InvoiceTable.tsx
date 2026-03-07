@@ -165,6 +165,12 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
           Faturação · InvoiceExpress
         </h2>
+        {missingNifCount > 0 && (
+          <span className="flex items-center gap-1 text-[12px] font-medium text-amber-400">
+            <AlertTriangle size={13} />
+            {missingNifCount} sem dados fiscais
+          </span>
+        )}
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={handleBulkDrafts} disabled={bulkRunning !== null} className="h-8 text-[11px] sm:text-[12px] gap-1.5">
             {bulkRunning === "drafts" ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
@@ -208,6 +214,12 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                     <span className="flex items-center gap-1.5">
                       {i.nome}
                       {webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
+                      {!idsWithNif.has(i.id) && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
+                          <AlertTriangle size={9} />
+                          Sem NIF
+                        </span>
+                      )}
                     </span>
                   </td>
                   <td className="px-3 py-2 hidden md:table-cell" style={{ color: "rgba(255,255,255,0.5)" }}>{i.email}</td>
