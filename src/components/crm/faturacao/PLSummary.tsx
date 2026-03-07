@@ -22,9 +22,21 @@ export default function PLSummary({ receitaConfirmada, pipelinePendente, costs, 
   const costByPlatform: Record<string, number> = {};
   costs.forEach(c => { costByPlatform[c.platform] = (costByPlatform[c.platform] || 0) + Number(c.amount); });
 
+  // Per-webinar revenue breakdown
+  const revenueByWebinar: Record<string, number> = {};
+  inscritos.filter(i => i.payment_status === "paid").forEach(i => {
+    revenueByWebinar[i.webinar] = (revenueByWebinar[i.webinar] || 0) + (Number(i.valor) || 0);
+  });
+  const hasMultipleWebinars = Object.keys(revenueByWebinar).length > 1;
+
+  const WEBINAR_LABELS: Record<string, string> = { imagens: "📷 Imagens IA", video: "🎬 Vídeo IA" };
+
   const plLines = [
     { section: "RECEITAS", items: [
-      { label: "Receita confirmada", value: receitaConfirmada },
+      ...(hasMultipleWebinars
+        ? Object.entries(revenueByWebinar).map(([w, v]) => ({ label: WEBINAR_LABELS[w] || w, value: v }))
+        : []),
+      { label: "Receita confirmada", value: receitaConfirmada, bold: hasMultipleWebinars },
       { label: "Pipeline (pendente)", value: pipelinePendente, muted: true },
       { label: "Total potencial", value: receitaConfirmada + pipelinePendente, bold: true },
     ]},
