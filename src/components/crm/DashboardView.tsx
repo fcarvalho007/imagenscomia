@@ -5,6 +5,7 @@ import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
+import { useWebinarSettings, type WebinarSettings } from "@/hooks/useWebinarSettings";
 import WebinarBadge from "./WebinarBadge";
 
 
