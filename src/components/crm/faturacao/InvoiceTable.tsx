@@ -161,7 +161,25 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
     }
   };
 
-  const handleIndividual = async (id: string, draftOnly: boolean) => {
+  const handleSolicitarNif = async () => {
+    const missingIds = inscritos.filter(i => !idsWithNif.has(i.id)).map(i => i.id);
+    if (missingIds.length === 0) { toast({ title: "Todos os inscritos já têm NIF" }); return; }
+    if (!confirm(`Enviar email a ${missingIds.length} inscrito(s) sem NIF para preencherem os dados de faturação?`)) return;
+    setBulkRunning("emit"); // reuse loading state
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-request", {
+        body: { webinar: webinarFilter, registration_ids: missingIds },
+      });
+      if (error) throw error;
+      toast({ title: `${data.sent} email(s) enviado(s)`, description: data.errors?.length ? `${data.errors.length} erro(s)` : "Sem erros" });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setBulkRunning(null);
+    }
+  };
+
+
     setIndividualLoading(id);
     try {
       const { data, error } = await supabase.functions.invoke("create-invoice", {
