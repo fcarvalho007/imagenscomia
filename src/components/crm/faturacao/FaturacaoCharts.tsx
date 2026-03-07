@@ -1,6 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import type { Inscrito } from "@/pages/crm/mockData";
 import type { AcquisitionCost } from "@/components/crm/FaturacaoView";
+import { applyIVA } from "@/components/crm/FaturacaoView";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
@@ -9,9 +10,8 @@ interface Props {
   totalCosts: number;
   inscritos: Inscrito[];
   costs: AcquisitionCost[];
+  showIVA: boolean;
 }
-
-const fmt = (v: number) => `€${v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const PLAN_COLORS: Record<string, string> = {
   premium: "#3b82f6",
@@ -28,21 +28,27 @@ const TOOLTIP_STYLE = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
-export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs }: Props) {
+export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs, showIVA }: Props) {
   const isMobile = useIsMobile();
   const chartHeight = isMobile ? 200 : 280;
   const smallChartHeight = isMobile ? 180 : 230;
 
+  const receita = applyIVA(receitaConfirmada, showIVA);
+  const pipeline = applyIVA(pipelinePendente, showIVA);
+
+  const fmt = (v: number) => `€${v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const barData = [
-    { name: "Receita", value: receitaConfirmada, fill: "#22c55e" },
-    { name: "Pipeline", value: pipelinePendente, fill: "#f59e0b" },
+    { name: "Receita", value: receita, fill: "#22c55e" },
+    { name: "Pipeline", value: pipeline, fill: "#f59e0b" },
     { name: "Custos", value: totalCosts, fill: "#ef4444" },
   ];
 
   const planRevenue: Record<string, number> = {};
   const planCounts: Record<string, number> = {};
   inscritos.filter(i => i.payment_status === "paid" && i.plan !== "free").forEach(i => {
-    planRevenue[i.plan] = (planRevenue[i.plan] || 0) + i.valor;
+    const val = applyIVA(i.valor, showIVA);
+    planRevenue[i.plan] = (planRevenue[i.plan] || 0) + val;
     planCounts[i.plan] = (planCounts[i.plan] || 0) + 1;
   });
   const pieData = Object.entries(planRevenue).map(([name, value]) => ({
@@ -52,8 +58,8 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
     fill: PLAN_COLORS[name] || "#64748b",
   }));
 
-  const margemPct = receitaConfirmada > 0 ? Math.max(0, Math.min(100, ((receitaConfirmada - totalCosts) / receitaConfirmada) * 100)) : 0;
-  const custosPct = receitaConfirmada > 0 ? Math.min(100, (totalCosts / receitaConfirmada) * 100) : 0;
+  const margemPct = receita > 0 ? Math.max(0, Math.min(100, ((receita - totalCosts) / receita) * 100)) : 0;
+  const custosPct = receita > 0 ? Math.min(100, (totalCosts / receita) * 100) : 0;
 
   const costByCat: Record<string, number> = {};
   costs.forEach(c => { costByCat[c.category] = (costByCat[c.category] || 0) + Number(c.amount); });
@@ -68,6 +74,8 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
   const smallOuterRadius = isMobile ? 60 : 80;
   const smallInnerRadius = isMobile ? 32 : 45;
 
+  const ivaLabel = showIVA ? "c/ IVA" : "s/ IVA";
+
   return (
     <div className="space-y-4">
       <h2 className="text-[15px] font-bold text-slate-900">Visão Geral</h2>
@@ -75,7 +83,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Bar chart */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita vs Pipeline vs Custos</p>
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita vs Pipeline vs Custos <span className="text-slate-400">({ivaLabel})</span></p>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={barData} barSize={isMobile ? 36 : 52}>
               <XAxis dataKey="name" tick={{ fill: "#64748B", fontSize: isMobile ? 10 : 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
@@ -90,7 +98,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
 
         {/* Donut chart */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por Plano</p>
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por Plano <span className="text-slate-400">({ivaLabel})</span></p>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
@@ -149,7 +157,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
               </div>
               <div className="flex justify-between text-[10px] mt-1.5">
                 <span className="text-slate-400">€0</span>
-                <span className="text-slate-400">{fmt(receitaConfirmada)}</span>
+                <span className="text-slate-400">{fmt(receita)}</span>
               </div>
             </div>
             <div>
