@@ -66,6 +66,59 @@ interface InvoiceDetail {
   invoice_city: string;
 }
 
+// ─── Helper: check InvoiceExpress document state ───
+async function getIEDocumentState(API_KEY: string, documentId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/invoice_receipts/${documentId}.json?api_key=${API_KEY}`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`⚠️ GET doc #${documentId} failed: ${res.status} ${text}`);
+      return null;
+    }
+    const data = await res.json();
+    return data.invoice_receipt?.status || data.status || null;
+  } catch (e: any) {
+    console.warn(`⚠️ GET doc #${documentId} error: ${e.message}`);
+    return null;
+  }
+}
+
+// ─── Helper: recover document ID from message_logs ───
+async function recoverDocumentId(supabase: any, memberIds: string[]): Promise<string | null> {
+  // Check if any member already had an invoice emitted
+  const { data: logs } = await supabase
+    .from("message_logs")
+    .select("registration_id")
+    .eq("template_key", "invoice_emitted")
+    .eq("provider", "invoicexpress")
+    .in("registration_id", memberIds)
+    .limit(1);
+
+  if (!logs || logs.length === 0) return null;
+
+  // Found a log — get the document_id from registrations (might have been on a different member)
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("invoice_document_id")
+    .eq("id", logs[0].registration_id)
+    .single();
+
+  if (reg?.invoice_document_id) return reg.invoice_document_id;
+
+  // Also check other members that might still have the document_id
+  const { data: regs } = await supabase
+    .from("registrations")
+    .select("invoice_document_id")
+    .in("id", memberIds)
+    .not("invoice_document_id", "is", null)
+    .limit(1);
+
+  return regs?.[0]?.invoice_document_id || null;
+}
+
 // ─── Helper: create, finalize & email one invoice-receipt ───
 async function emitInvoice(opts: {
   API_KEY: string;
@@ -78,7 +131,7 @@ async function emitInvoice(opts: {
   planKey: string;
   customEmailSubject?: string;
   customEmailBody?: string;
-}): Promise<{ ok: boolean; error?: string; drafted?: boolean }> {
+}): Promise<{ ok: boolean; error?: string; drafted?: boolean; skipped?: boolean }> {
   const {
     API_KEY, supabase, buyerReg, invoiceDetail, allMemberIds,
     quantity, totalPaid, planKey, customEmailSubject, customEmailBody,
@@ -181,7 +234,30 @@ async function emitInvoice(opts: {
     return { ok: true, drafted: true };
   }
 
-  // Step 2: Finalize
+  // Step 2: Check document state in InvoiceExpress before finalizing
+  const currentState = await getIEDocumentState(API_KEY, documentId!);
+  console.log(`🔍 ${buyerReg.email}: doc #${documentId} state="${currentState}"`);
+
+  if (currentState === "finalized" || currentState === "settled") {
+    // Already finalized — just mark as sent in DB and skip
+    console.log(`⏭️ ${buyerReg.email}: doc #${documentId} already ${currentState} — skipping, marking as sent`);
+    for (const memberId of allMemberIds) {
+      await supabase
+        .from("registrations")
+        .update({ invoice_sent: true, invoice_document_id: documentId } as any)
+        .eq("id", memberId);
+    }
+    await supabase.from("message_logs").insert({
+      registration_id: buyerReg.id,
+      channel: "email",
+      provider: "invoicexpress",
+      template_key: "invoice_emitted",
+      status: "skipped_already_finalized",
+    });
+    return { ok: true, skipped: true };
+  }
+
+  // Finalize the document
   const stateRes = await fetch(
     `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
     {
@@ -309,6 +385,7 @@ serve(async (req) => {
 
     let emitted = 0;
     let draftsOnly = 0;
+    let skipped = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
     console.log(`🚀 Bulk emit: ${registrations.length} eligible (${individuals.length} individual, ${groups.size} groups) webinar=${webinarFilter}`);
@@ -325,6 +402,20 @@ serve(async (req) => {
         const planKey = buyer.plan_selected || "video-premium";
 
         console.log(`👥 Group ${groupRef.slice(0, 8)}: ${quantity} members, buyer=${buyer.email}, total=${totalPaid}€`);
+
+        // Recovery: if buyer has no document_id, try to recover from message_logs or other members
+        if (!buyer.invoice_document_id) {
+          const recoveredId = await recoverDocumentId(supabase, allMemberIds);
+          if (recoveredId) {
+            console.log(`🔄 Group ${groupRef.slice(0, 8)}: recovered document #${recoveredId} from logs/members`);
+            buyer.invoice_document_id = recoveredId;
+            // Save on buyer
+            await supabase
+              .from("registrations")
+              .update({ invoice_document_id: recoveredId } as any)
+              .eq("id", buyer.id);
+          }
+        }
 
         // Delete orphan drafts for non-buyer members
         for (const member of members) {
@@ -354,6 +445,8 @@ serve(async (req) => {
 
         if (!result.ok) {
           errors.push({ id: buyer.id, email: buyer.email, error: result.error || "Unknown" });
+        } else if (result.skipped) {
+          skipped++;
         } else if (result.drafted) {
           draftsOnly++;
         } else {
@@ -383,6 +476,8 @@ serve(async (req) => {
 
         if (!result.ok) {
           errors.push({ id: reg.id, email: reg.email, error: result.error || "Unknown" });
+        } else if (result.skipped) {
+          skipped++;
         } else if (result.drafted) {
           draftsOnly++;
         } else {
@@ -397,10 +492,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${errors.length} errors`);
+    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${skipped} skipped (already finalized), ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ emitted, draftsOnly, errors, total: registrations.length }),
+      JSON.stringify({ emitted, draftsOnly, skipped, errors, total: registrations.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
