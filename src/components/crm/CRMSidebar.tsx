@@ -59,11 +59,10 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
           <select
             value={webinarContext}
             onChange={(e) => setWebinarContext(e.target.value as WebinarCtxType)}
-            className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1"
+            className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400"
             style={{
               background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.10)",
-              focusRingColor: activeOption.color,
             }}
           >
             {WEBINAR_OPTIONS.map((opt) => (
