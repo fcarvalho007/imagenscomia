@@ -58,7 +58,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   useEffect(() => { fetchCosts(); }, [fetchCosts]);
 
   const paid = useMemo(() => tabInscritos.filter(i => i.payment_status === "paid"), [tabInscritos]);
-  const pending = useMemo(() => tabInscritos.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected"), [tabInscritos]);
+  const pending = useMemo(() => tabInscritos.filter(i => (i.payment_status === "awaiting_payment" || i.payment_status === "selected") && !i.lost_at), [tabInscritos]);
   const receitaConfirmada = useMemo(() => paid.reduce((s, i) => s + i.valor, 0), [paid]);
   const pipelinePendente = useMemo(() => pending.reduce((s, i) => s + i.valor, 0), [pending]);
   const totalCosts = useMemo(() => costs.reduce((s, c) => s + Number(c.amount), 0), [costs]);

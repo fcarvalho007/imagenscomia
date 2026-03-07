@@ -19,7 +19,7 @@ function mapRegistration(r: any): Inscrito {
   // Determine payment status (3 states)
   const payment_status: Inscrito["payment_status"] = r.paid_at
     ? "paid"
-    : (r.upgrade_clicked_at || r.eupago_ref)
+    : (r.upgrade_clicked_at || r.eupago_ref) && plan !== "free"
        ? "awaiting_payment"
        : r.plan_selected && r.plan_selected !== "free" && !r.plan_selected.endsWith("-free")
         ? "selected"
@@ -27,7 +27,9 @@ function mapRegistration(r: any): Inscrito {
 
 
   const webinarType = r.webinar === "video" ? "video" : "imagens";
-  const planValues = PLAN_VALUES_BY_WEBINAR[webinarType] || PLAN_VALUES_BY_WEBINAR.imagens;
+  const planHasVideoPrefix = (r.plan_selected || "").startsWith("video-");
+  const pricingContext = planHasVideoPrefix ? "video" : webinarType;
+  const planValues = PLAN_VALUES_BY_WEBINAR[pricingContext] || PLAN_VALUES_BY_WEBINAR.imagens;
   const gender = (r.gender_override as "M" | "F" | "U") || detectGender(r.name || "");
   return {
     id: r.id,
