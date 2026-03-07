@@ -65,9 +65,25 @@ function CRMInner() {
   const filteredInscritos = filterByWebinar(inscritos, webinarContext);
 
   const [lastEmailMap, setLastEmailMap] = useState<Map<string, LastEmailInfo>>(new Map());
+  const [missingNifIds, setMissingNifIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     fetchMessageLogsSummary().then(setLastEmailMap);
   }, [fetchMessageLogsSummary]);
+
+  // Fetch paid registrations missing invoice_details (NIF)
+  useEffect(() => {
+    const paidIds = inscritos.filter(i => i.paid_at && i.plan !== "free").map(i => i.id);
+    if (paidIds.length === 0) { setMissingNifIds(new Set()); return; }
+    supabase
+      .from("invoice_details")
+      .select("registration_id")
+      .in("registration_id", paidIds)
+      .then(({ data }) => {
+        const withNif = new Set((data || []).map((d: any) => d.registration_id));
+        setMissingNifIds(new Set(paidIds.filter(id => !withNif.has(id))));
+      });
+  }, [inscritos]);
 
   const handleLogout = useCallback(async () => {
     await supabase.auth.signOut();
@@ -116,6 +132,7 @@ function CRMInner() {
             fetchFailedEmailIds={fetchFailedEmailIds}
             lastEmailMap={lastEmailMap}
             onUpdateStepReached={updateStepReached}
+            missingNifIds={missingNifIds}
           />
         )}
         {activeView === "faturacao" && (
