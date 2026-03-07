@@ -476,6 +476,8 @@ serve(async (req) => {
 
         if (!result.ok) {
           errors.push({ id: reg.id, email: reg.email, error: result.error || "Unknown" });
+        } else if (result.skipped) {
+          skipped++;
         } else if (result.drafted) {
           draftsOnly++;
         } else {
@@ -490,10 +492,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${errors.length} errors`);
+    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${skipped} skipped (already finalized), ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ emitted, draftsOnly, errors, total: registrations.length }),
+      JSON.stringify({ emitted, draftsOnly, skipped, errors, total: registrations.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
