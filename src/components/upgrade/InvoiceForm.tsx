@@ -20,6 +20,7 @@ interface Props {
   editToken?: string;
   webinar?: string;
   defaultName?: string;
+  context?: "checkout" | "standalone";
   onValidChange: (valid: boolean) => void;
   onSaveError?: (hasError: boolean) => void;
 }
@@ -33,7 +34,7 @@ const AUTOCOMPLETE_MAP: Record<keyof InvoiceData, string> = {
   invoice_email: "email",
 };
 
-export function InvoiceForm({ userEmail, registrationId, editToken, webinar, defaultName, onValidChange, onSaveError }: Props) {
+export function InvoiceForm({ userEmail, registrationId, editToken, webinar, defaultName, context = "checkout", onValidChange, onSaveError }: Props) {
   const [form, setForm] = useState<InvoiceData>({
     invoice_name: defaultName || "",
     invoice_vat: "",
@@ -239,7 +240,7 @@ export function InvoiceForm({ userEmail, registrationId, editToken, webinar, def
           </span>
         )}
       </div>
-      <p className="text-[13px] text-ink-400 mb-4">Preencher antes de confirmar o pagamento.</p>
+      {context === "checkout" && <p className="text-[13px] text-ink-400 mb-4">Preencher antes de confirmar o pagamento.</p>}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {field("invoice_name", "Nome / Empresa", "Ex.: Maria Silva ou Silva & Co, Lda")}

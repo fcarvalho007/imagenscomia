@@ -53,6 +53,8 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   video_recursos_masterclass: "Recursos — Masterclass",
   video_recursos_bundle: "Recursos — Bundle",
   video_group_payment_summary: "Confirmação grupo — resumo para comprador",
+  invoice_request: "Solicitação de dados de faturação",
+  invoice_filled_notification: "Notificação — dados de faturação preenchidos",
 };
 
 export function getTemplateLabel(key: string): string {
