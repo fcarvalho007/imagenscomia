@@ -64,6 +64,8 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
       });
   }, [inscritos]);
 
+  const sentCount = inscritos.filter(i => i.invoice_sent).length;
+  const pendingCount = inscritos.filter(i => !i.invoice_sent).length;
   const missingNifCount = inscritos.filter(i => !idsWithNif.has(i.id)).length;
 
   const toggleSelect = (id: string) => {
