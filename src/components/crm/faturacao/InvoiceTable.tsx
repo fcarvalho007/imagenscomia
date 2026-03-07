@@ -181,12 +181,12 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
         <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>
           Faturação · InvoiceExpress
         </h2>
-        {missingNifCount > 0 && (
-          <span className="flex items-center gap-1 text-[12px] font-medium text-amber-400">
-            <AlertTriangle size={13} />
-            {missingNifCount} sem dados fiscais
-          </span>
-        )}
+        <span className="flex items-center gap-2 text-[12px] font-medium" style={{ color: "rgba(255,255,255,0.45)" }}>
+          {sentCount > 0 && <span className="text-emerald-400">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
+          {sentCount > 0 && pendingCount > 0 && <span>·</span>}
+          {pendingCount > 0 && <span className="text-amber-300">{pendingCount} por emitir</span>}
+          {missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-400"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
+        </span>
 
         {/* Email customization */}
         <Collapsible open={emailOpen} onOpenChange={setEmailOpen}>
