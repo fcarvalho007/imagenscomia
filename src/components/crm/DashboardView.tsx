@@ -142,6 +142,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
   const [videoVisitors, setVideoVisitors] = useState(0);
+  const { settings: webinarSettingsMap, loading: wsLoading } = useWebinarSettings();
 
   useEffect(() => {
     supabase.from("analytics_cache").select("value").eq("key", "landing_visitors_video").maybeSingle()
@@ -149,11 +150,17 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   }, []);
 
   const dashConfig = useMemo(() => {
-    const base = getDashboardConfig(webinarContext);
-    if (webinarContext === "video") return { ...base, visitors: videoVisitors };
-    if (webinarContext === "consolidado") return { ...base, visitors: WEBINAR_DASHBOARD_CONFIG.imagens.visitors + videoVisitors };
+    // Use DB settings if loaded, otherwise fallback to hardcoded
+    const base = webinarSettingsMap.size > 0
+      ? getDashboardConfigFromDB(webinarContext, webinarSettingsMap)
+      : getDashboardConfig(webinarContext);
+    if (webinarContext === "video") return { ...base, visitors: videoVisitors || base.visitors };
+    if (webinarContext === "consolidado") {
+      const imgVisitors = webinarSettingsMap.get("imagens")?.landing_visitors ?? WEBINAR_DASHBOARD_CONFIG.imagens.visitors;
+      return { ...base, visitors: imgVisitors + videoVisitors };
+    }
     return base;
-  }, [webinarContext, videoVisitors]);
+  }, [webinarContext, videoVisitors, webinarSettingsMap]);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);
