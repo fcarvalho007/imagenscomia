@@ -1,29 +1,73 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Auditoria e Plano: Faturação CRM
 
-### Alteração
+## Estado Actual
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+### Proteção contra duplicados
+A função `bulk-emit-invoices` **já tem proteção**:
+- Filtra apenas `invoice_sent = false` — registos já emitidos são excluídos automaticamente
+- Se já existe `invoice_document_id` (rascunho), reutiliza-o em vez de criar novo
+- Marca `invoice_sent = true` após emissão bem-sucedida
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+**Risco residual**: se a função falhar a meio (timeout), alguns registos podem ficar com rascunho criado mas não finalizado. Isto é tratado correctamente — na próxima execução, o rascunho existente é reutilizado.
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+### Dados pendentes por webinar
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+**Imagens** (4 pagantes sem fatura):
+| Nome | Valor | NIF preenchido? |
+|------|-------|-----------------|
+| Graça Sá da Bandeira | €18.45 | Sim |
+| Jorge Isabelinho | €18.45 | Não |
+| Maria Soares | €76.26 | Não |
+| Pedro Vilarinho | €76.26 | Não |
+
+**Video** (30 pagantes sem fatura): já auditados anteriormente — 21 com NIF, 9 sem NIF.
+
+**Imagens já emitidas**: 11 faturas (10 enviadas + 1 com draft finalizado).
+
+---
+
+## Problemas identificados
+
+1. **Faturação não tem abas próprias** — depende do switcher global no topo do CRM, o que obriga a mudar o contexto de todo o CRM para ver faturas de outro webinar.
+
+2. **Webinar Imagens** tem 4 pagantes sem fatura emitida — a mesma função `bulk-emit-invoices` já os suporta (basta passar `webinar: "imagens"`).
+
+---
+
+## Plano de alterações
+
+### 1. Adicionar abas internas na FaturacaoView
+
+Adicionar um sistema de tabs (Todos / Imagens / Vídeo) **dentro** da secção Faturação, independente do switcher global. As abas filtram os `inscritos` localmente:
+
+```
+┌──────────┬───────────┬──────────┐
+│  Todos   │  Imagens  │  Vídeo   │
+└──────────┴───────────┴──────────┘
+```
+
+- **Ficheiro**: `src/components/crm/FaturacaoView.tsx`
+- Adicionar estado local `activeTab` com 3 opções
+- Filtrar `inscritos` e `costs` pelo tab activo (em vez do `webinarContext` global)
+- Os botões de emissão na `InvoiceTable` passam o `activeTab` como parâmetro `webinar`
+- KPIs, charts e PlanBreakdown recebem os dados filtrados pelo tab
+
+### 2. InvoiceTable usa o tab activo para emissão
+
+- **Ficheiro**: `src/components/crm/faturacao/InvoiceTable.tsx`
+- Receber nova prop `webinarFilter` em vez de ler `webinarContext`
+- Os botões "Emitir e Enviar Todas" e "Gerar Rascunhos" passam `webinarFilter` ao edge function
+- Isto garante que ao clicar "Emitir" na tab Imagens, só processa registos de imagens
+
+### 3. CRM.tsx passa inscritos sem filtro à FaturacaoView
+
+- **Ficheiro**: `src/pages/CRM.tsx`
+- Alterar para passar `inscritos` (todos) em vez de `filteredInscritos` à FaturacaoView, para que as abas internas façam a filtragem
+
+### Ficheiros alterados (3)
+- `src/components/crm/FaturacaoView.tsx` — abas internas + filtragem local
+- `src/components/crm/faturacao/InvoiceTable.tsx` — usar prop `webinarFilter`
+- `src/pages/CRM.tsx` — passar todos os inscritos à FaturacaoView
 
