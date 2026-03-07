@@ -178,8 +178,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
       setBulkRunning(null);
     }
   };
-
-
+  const handleIndividual = async (id: string, draftOnly: boolean) => {
     setIndividualLoading(id);
     try {
       const { data, error } = await supabase.functions.invoke("create-invoice", {

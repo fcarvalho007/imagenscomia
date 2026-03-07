@@ -1,28 +1,29 @@
 
 
-# Corrigir build error + melhorar página /fatura
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## 1. Build error em InvoiceTable.tsx (linha 182)
+### Alteração
 
-A função `handleIndividual` perdeu a sua declaração. Na linha 182 falta:
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-```typescript
-const handleIndividual = async (id: string, draftOnly: boolean) => {
-```
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-O corpo da função começa na linha 183 (`setIndividualLoading(id);`) sem a assinatura. Basta adicionar a linha em falta.
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-## 2. Melhorar página /fatura sem parâmetros
-
-Quando alguém acede a `/fatura` sem `rid` e `t`, a página mostra apenas "Link inválido. Verifica o email que recebeste." — pouco informativo.
-
-Substituir por uma página mais amigável com:
-- Ícone visual (FileText ou similar)
-- Título claro: "Página de dados de faturação"
-- Explicação: "Esta página é usada para preencher os dados necessários para a emissão da tua fatura. Acede através do link enviado por email."
-- Contacto WhatsApp (já existe o componente `WhatsAppSupportButton`)
-
-### Ficheiros a alterar
-1. **`src/components/crm/faturacao/InvoiceTable.tsx`** — adicionar declaração da função `handleIndividual` na linha 182
-2. **`src/pages/Fatura.tsx`** — redesenhar o estado sem parâmetros com UI mais clara
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
