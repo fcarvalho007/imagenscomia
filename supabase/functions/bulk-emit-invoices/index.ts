@@ -87,6 +87,7 @@ serve(async (req) => {
     const invoiceMap = new Map((allInvoiceDetails || []).map((d) => [d.registration_id, d]));
 
     let emitted = 0;
+    let draftsOnly = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
     console.log(`🚀 Bulk emit: ${registrations.length} eligible registrations (webinar=${webinarFilter})`);
@@ -94,6 +95,7 @@ serve(async (req) => {
     for (const reg of registrations) {
       try {
         const invoice = invoiceMap.get(reg.id);
+        const hasInvoiceDetails = !!invoice;
         const clientName = invoice?.invoice_name || reg.name || "Consumidor Final";
         const clientEmail = invoice?.invoice_email || reg.email;
         const clientVat = invoice?.invoice_vat || "999999990";
@@ -184,6 +186,14 @@ serve(async (req) => {
           await new Promise((r) => setTimeout(r, 1000));
         }
 
+        // Draft-only mode: no invoice_details → skip finalize + email
+        if (!hasInvoiceDetails) {
+          console.log(`📋 ${reg.email}: draft only (no invoice details) — #${documentId}`);
+          draftsOnly++;
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
+        }
+
         // Step 2: Finalize
         const stateRes = await fetch(
           `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
@@ -250,10 +260,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Done: ${emitted} emitted, ${errors.length} errors`);
+    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ emitted, errors, total: registrations.length }),
+      JSON.stringify({ emitted, draftsOnly, errors, total: registrations.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
