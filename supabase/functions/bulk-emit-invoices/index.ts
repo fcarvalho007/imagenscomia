@@ -385,6 +385,7 @@ serve(async (req) => {
 
     let emitted = 0;
     let draftsOnly = 0;
+    let skipped = 0;
     const errors: { id: string; email: string; error: string }[] = [];
 
     console.log(`🚀 Bulk emit: ${registrations.length} eligible (${individuals.length} individual, ${groups.size} groups) webinar=${webinarFilter}`);
@@ -444,6 +445,8 @@ serve(async (req) => {
 
         if (!result.ok) {
           errors.push({ id: buyer.id, email: buyer.email, error: result.error || "Unknown" });
+        } else if (result.skipped) {
+          skipped++;
         } else if (result.drafted) {
           draftsOnly++;
         } else {
