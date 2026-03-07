@@ -103,9 +103,22 @@ serve(async (req) => {
         const clientCity = invoice?.invoice_city || "";
 
         const planKey = reg.plan_selected || "premium";
-        const unitPrice = PRICES[planKey] || 15.0;
         const itemDescription = PLAN_LABELS[planKey] || planKey;
         const itemDetail = PLAN_DESCRIPTIONS[planKey] || itemDescription;
+
+        // Use paid_amount as source of truth (same logic as create-invoice)
+        const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
+        let unitPrice: number;
+        if (reg.paid_amount && parseFloat(reg.paid_amount) > 0) {
+          const paidAmount = parseFloat(reg.paid_amount);
+          unitPrice = isPortuguese
+            ? Math.round((paidAmount / 1.23) * 100) / 100
+            : paidAmount;
+          console.log(`💰 ${reg.email}: paid_amount=${paidAmount}€ → unitPrice=${unitPrice}€`);
+        } else {
+          unitPrice = PRICES[planKey] || 15.0;
+          console.warn(`⚠️ ${reg.email}: no paid_amount — fallback PRICES: ${unitPrice}€`);
+        }
 
         const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
         const taxName = isPortuguese ? "IVA23" : "IVA0";
