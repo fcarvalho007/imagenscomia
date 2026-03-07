@@ -120,7 +120,6 @@ serve(async (req) => {
           console.warn(`⚠️ ${reg.email}: no paid_amount — fallback PRICES: ${unitPrice}€`);
         }
 
-        const isPortuguese = clientVat === "999999990" || /^[1-9]\d{8}$/.test(clientVat);
         const taxName = isPortuguese ? "IVA23" : "IVA0";
         const taxExemption = isPortuguese ? undefined : "M01";
 
