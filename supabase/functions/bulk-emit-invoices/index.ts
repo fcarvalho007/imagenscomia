@@ -260,10 +260,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`📊 Done: ${emitted} emitted, ${errors.length} errors`);
+    console.log(`📊 Done: ${emitted} emitted, ${draftsOnly} drafts, ${errors.length} errors`);
 
     return new Response(
-      JSON.stringify({ emitted, errors, total: registrations.length }),
+      JSON.stringify({ emitted, draftsOnly, errors, total: registrations.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
