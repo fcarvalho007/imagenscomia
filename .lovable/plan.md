@@ -1,29 +1,33 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Emissão Inteligente: Rascunho vs Completa
 
-### Alteração
+## Alteração
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+Modificar `bulk-emit-invoices` para detectar automaticamente se o registo tem `invoice_details` preenchido:
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+- **COM invoice_details** (têm NIF): fluxo completo — criar → finalizar → enviar email
+- **SEM invoice_details** (os 9 sem NIF): apenas criar rascunho no InvoiceExpress e guardar o `invoice_document_id` na BD. **Não finaliza, não envia email.**
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+## Implementação (1 ficheiro)
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### `supabase/functions/bulk-emit-invoices/index.ts`
+
+Após a linha 96 (`const invoice = invoiceMap.get(reg.id)`), adicionar flag:
+
+```typescript
+const hasInvoiceDetails = !!invoice; // true = tem NIF, false = só rascunho
+```
+
+Após criar o rascunho (linha 184), se `!hasInvoiceDetails`:
+- Log: `📋 ${reg.email}: draft only (no invoice details)`
+- Incrementar contador `draftsOnly++`
+- `continue` — saltar Steps 2, 3, 4, 5
+
+O response final incluirá `{ emitted, draftsOnly, errors, total }` para que saibas exactamente quantas foram emitidas e quantas ficaram como rascunho.
+
+## Resultado esperado
+
+- ~21 faturas emitidas e enviadas automaticamente
+- 9 rascunhos criados no InvoiceExpress, prontos para actualizar com NIF e finalizar depois
 
