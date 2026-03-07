@@ -219,7 +219,7 @@ serve(async (req) => {
               message: {
                 client: { email: clientEmail, save: "0" },
                 subject: (email_subject || `Fatura-Recibo — {{plano}}`).replace("{{plano}}", itemDescription),
-                body: email_body || `Segue em anexo a fatura-recibo referente à sua compra.\n\nObrigado pela confiança.\nFrederico Carvalho`,
+                body: email_body || `Olá,\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos`,
                 logo: "0",
               },
             }),

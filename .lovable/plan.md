@@ -1,46 +1,29 @@
 
 
-# Personalizar mensagem do email da Fatura-Recibo
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Viabilidade — Confirmada ✅
+### Alteração
 
-O InvoiceExpress suporta corpo de email personalizado no endpoint `email-document`. O sistema já envia o **subject** e **body** como parâmetros — o PDF da fatura vai automaticamente em anexo. Não é enviado nenhum email separado; a mensagem acompanha directamente o documento via InvoiceExpress.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-## Alteração
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-Actualizar o texto default do corpo do email em **2 locais**:
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 1. `src/components/crm/faturacao/InvoiceTable.tsx` (linha 44)
-
-Alterar o `DEFAULT_EMAIL_BODY` para uma mensagem calorosa em PT-PT que contextualiza o pagamento e identifica a empresa:
-
-```
-Olá,
-
-Segue em anexo a sua fatura-recibo referente ao serviço subscrito.
-
-Muito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.
-
-Se tiver qualquer questão, não hesite em responder a este email.
-
-Com os melhores cumprimentos,
-Frederico Carvalho
-Fomentar Sonhos
-```
-
-### 2. `supabase/functions/create-invoice/index.ts` (linha 222)
-
-Actualizar o fallback hardcoded com o mesmo texto, para que a edge function use esta mensagem quando não recebe `email_body` do frontend.
-
-### 3. `supabase/functions/bulk-finalize-invoices/index.ts` e `bulk-emit-invoices/index.ts`
-
-Actualizar o mesmo fallback nestas duas functions para consistência.
-
-O campo continua editável no CRM antes do envio — esta alteração muda apenas o texto pré-preenchido.
-
-## Ficheiros alterados (4)
-- `src/components/crm/faturacao/InvoiceTable.tsx` — novo default body
-- `supabase/functions/create-invoice/index.ts` — fallback body
-- `supabase/functions/bulk-finalize-invoices/index.ts` — fallback body
-- `supabase/functions/bulk-emit-invoices/index.ts` — fallback body
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
