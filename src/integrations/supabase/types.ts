@@ -449,6 +449,69 @@ export type Database = {
         }
         Relationships: []
       }
+      webinar_settings: {
+        Row: {
+          color: string
+          created_at: string | null
+          cutoff_date: string | null
+          emoji: string
+          event_date: string | null
+          label: string
+          landing_visitors: number | null
+          live_avg_duration: string | null
+          live_date: string | null
+          live_likes: number | null
+          live_new_subs: number | null
+          live_peak_viewers: number | null
+          live_views: number | null
+          price_bundle: number | null
+          price_masterclass: number | null
+          price_premium: number | null
+          updated_at: string | null
+          webinar: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          cutoff_date?: string | null
+          emoji?: string
+          event_date?: string | null
+          label: string
+          landing_visitors?: number | null
+          live_avg_duration?: string | null
+          live_date?: string | null
+          live_likes?: number | null
+          live_new_subs?: number | null
+          live_peak_viewers?: number | null
+          live_views?: number | null
+          price_bundle?: number | null
+          price_masterclass?: number | null
+          price_premium?: number | null
+          updated_at?: string | null
+          webinar: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          cutoff_date?: string | null
+          emoji?: string
+          event_date?: string | null
+          label?: string
+          landing_visitors?: number | null
+          live_avg_duration?: string | null
+          live_date?: string | null
+          live_likes?: number | null
+          live_new_subs?: number | null
+          live_peak_viewers?: number | null
+          live_views?: number | null
+          price_bundle?: number | null
+          price_masterclass?: number | null
+          price_premium?: number | null
+          updated_at?: string | null
+          webinar?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

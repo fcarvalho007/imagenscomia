@@ -5,6 +5,7 @@ import { genderEmoji } from "@/lib/genderDetection";
 import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
+import { useWebinarSettings, type WebinarSettings } from "@/hooks/useWebinarSettings";
 import WebinarBadge from "./WebinarBadge";
 
 
@@ -12,6 +13,37 @@ import WebinarBadge from "./WebinarBadge";
 type Period = "7d" | "14d" | "30d" | "all";
 
 /* ── Dashboard config helpers ── */
+function getDashboardConfigFromDB(ctx: WebinarCtxType, settingsMap: Map<string, WebinarSettings>) {
+  const img = settingsMap.get("imagens");
+  const vid = settingsMap.get("video");
+
+  const buildConfig = (s: WebinarSettings | undefined) => ({
+    visitors: s?.landing_visitors ?? 0,
+    cutoffDate: s?.cutoff_date ? new Date(s.cutoff_date) : null,
+    liveResults: s?.live_views != null ? {
+      views: s.live_views,
+      avgDuration: s.live_avg_duration || "",
+      peakViewers: s.live_peak_viewers || 0,
+      likes: s.live_likes || 0,
+      newSubs: s.live_new_subs || 0,
+      date: s.live_date || "",
+    } : null,
+  });
+
+  if (ctx === "video") return buildConfig(vid);
+  if (ctx === "consolidado") {
+    const imgCfg = buildConfig(img);
+    const vidCfg = buildConfig(vid);
+    return {
+      visitors: imgCfg.visitors + vidCfg.visitors,
+      cutoffDate: imgCfg.cutoffDate,
+      liveResults: imgCfg.liveResults,
+    };
+  }
+  return buildConfig(img);
+}
+
+// Legacy fallback when DB hasn't loaded yet
 function getDashboardConfig(ctx: WebinarCtxType) {
   if (ctx === "video") return WEBINAR_DASHBOARD_CONFIG.video;
   if (ctx === "consolidado") return {
@@ -110,6 +142,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
   const [videoVisitors, setVideoVisitors] = useState(0);
+  const { settings: webinarSettingsMap, loading: wsLoading } = useWebinarSettings();
 
   useEffect(() => {
     supabase.from("analytics_cache").select("value").eq("key", "landing_visitors_video").maybeSingle()
@@ -117,11 +150,17 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
   }, []);
 
   const dashConfig = useMemo(() => {
-    const base = getDashboardConfig(webinarContext);
-    if (webinarContext === "video") return { ...base, visitors: videoVisitors };
-    if (webinarContext === "consolidado") return { ...base, visitors: WEBINAR_DASHBOARD_CONFIG.imagens.visitors + videoVisitors };
+    // Use DB settings if loaded, otherwise fallback to hardcoded
+    const base = webinarSettingsMap.size > 0
+      ? getDashboardConfigFromDB(webinarContext, webinarSettingsMap)
+      : getDashboardConfig(webinarContext);
+    if (webinarContext === "video") return { ...base, visitors: videoVisitors || base.visitors };
+    if (webinarContext === "consolidado") {
+      const imgVisitors = webinarSettingsMap.get("imagens")?.landing_visitors ?? WEBINAR_DASHBOARD_CONFIG.imagens.visitors;
+      return { ...base, visitors: imgVisitors + videoVisitors };
+    }
     return base;
-  }, [webinarContext, videoVisitors]);
+  }, [webinarContext, videoVisitors, webinarSettingsMap]);
 
   // Email counts (24h + 7 days) — split by provider
   const [resendSent24h, setResendSent24h] = useState(0);

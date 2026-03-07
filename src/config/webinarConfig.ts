@@ -34,7 +34,7 @@ export const LIVE_URL_VIDEO = "https://imagenscomia.com/live-video";
 export const UPGRADE_URL_VIDEO = "https://imagenscomia.com/upgrade-video";
 export const INVITES_URL = "https://imagenscomia.com/convites";
 
-/** Dashboard-specific constants per webinar */
+/** @deprecated Use useWebinarSettings() hook instead — kept temporarily for non-DB-aware code */
 export const WEBINAR_DASHBOARD_CONFIG = {
   imagens: {
     visitors: 2686,
