@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle, ChevronDown, Mail } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle, ChevronDown, Mail, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -292,9 +292,17 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
                 <tr key={i.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <td className="px-3 py-2"><Checkbox checked={selected.has(i.id)} onCheckedChange={() => toggleSelect(i.id)} /></td>
                   <td className="px-3 py-2 font-medium" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 flex-wrap">
                       {i.nome}
                       {webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
+                      {i.group_payment_ref && (() => {
+                        const groupCount = inscritos.filter(g => g.group_payment_ref === i.group_payment_ref).length;
+                        return groupCount > 1 ? (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full border" style={{ background: "rgba(139,92,246,0.12)", color: "#a78bfa", borderColor: "rgba(139,92,246,0.2)" }}>
+                            <Users size={9} /> ×{groupCount}
+                          </span>
+                        ) : null;
+                      })()}
                       {!idsWithNif.has(i.id) && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
                           <AlertTriangle size={9} />

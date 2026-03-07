@@ -130,9 +130,14 @@ export default function PlanBreakdown({ inscritos, receitaConfirmada }: Props) {
       <h2 className="text-[15px] font-bold" style={{ color: "rgba(255,255,255,0.85)" }}>Detalhe por Plano</h2>
       <PlanTable title="Pré-Webinar (Early Bird)" rows={preRows} receitaConfirmada={receitaConfirmada} />
       <PlanTable title="Pós-Webinar (Regular)" rows={postRows} receitaConfirmada={receitaConfirmada} />
-      <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-        Gratuitos: {freeCount} inscritos
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+          Gratuitos: {freeCount} inscritos
+        </p>
+        <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+          Valores com IVA incluído
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,20 @@ export default function CostModal({ cost, onClose, onSaved }: Props) {
   const [category, setCategory] = useState(cost?.category || "paid_media");
   const [webinar, setWebinar] = useState(cost?.webinar || (webinarContext === "consolidado" ? "video" : webinarContext));
   const [saving, setSaving] = useState(false);
+  const [webinarOptions, setWebinarOptions] = useState<{ value: string; label: string; emoji: string }[]>([]);
+
+  useEffect(() => {
+    supabase.from("webinar_settings").select("webinar, label, emoji").then(({ data }) => {
+      if (data && data.length > 0) {
+        setWebinarOptions(data.map((d: any) => ({ value: d.webinar, label: d.label, emoji: d.emoji })));
+      } else {
+        setWebinarOptions([
+          { value: "imagens", label: "Imagens IA", emoji: "📷" },
+          { value: "video", label: "Vídeo IA", emoji: "🎬" },
+        ]);
+      }
+    });
+  }, []);
 
   const handleSave = async () => {
     if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
@@ -126,8 +140,9 @@ export default function CostModal({ cost, onClose, onSaved }: Props) {
                 className="w-full rounded-lg px-3 py-2 text-[13px]"
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.85)" }}
               >
-                <option value="imagens">📷 Imagens IA</option>
-                <option value="video">🎬 Vídeo IA</option>
+                {webinarOptions.map(w => (
+                  <option key={w.value} value={w.value}>{w.emoji} {w.label}</option>
+                ))}
               </select>
             </div>
           </div>
