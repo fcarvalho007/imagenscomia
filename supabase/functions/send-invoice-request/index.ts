@@ -87,7 +87,7 @@ serve(async (req) => {
       const fname = reg.first_name || "participante";
       const link = `${SITE_URL}/fatura?rid=${reg.id}&t=${reg.edit_token}`;
 
-      const subject = `${fname}, precisamos dos teus dados de faturação`;
+      const subject = `${fname}, dados de faturação para a formação`;
       const html = `
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
@@ -96,10 +96,13 @@ serve(async (req) => {
   <div style="background:#ffffff;border-radius:12px;padding:32px 28px;border:1px solid #e5e7eb;">
     <h1 style="font-size:20px;color:#111827;margin:0 0 12px;">Olá ${fname} 👋</h1>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Obrigado pela tua participação na formação do Frederico Carvalho!
+      Obrigado por teres participado na minha formação!
     </p>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
-      Para podermos emitir a tua fatura, precisamos que preenchas os teus dados de faturação — <strong>demora menos de 1 minuto</strong>:
+      Num primeiro momento, o meu sistema não pediu automaticamente os dados de faturação a um pequeno grupo de participantes — e foste um deles. Peço desculpa pelo incómodo.
+    </p>
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 16px;">
+      Para que eu possa emitir a fatura, preciso apenas que preenchas um formulário rápido — <strong>demora menos de 1 minuto</strong>:
     </p>
     <div style="text-align:center;margin:0 0 24px;">
       <a href="${link}" style="display:inline-block;background:#7c3aed;color:#ffffff;font-size:15px;font-weight:600;padding:14px 32px;border-radius:10px;text-decoration:none;">
@@ -107,10 +110,16 @@ serve(async (req) => {
       </a>
     </div>
     <p style="font-size:13px;color:#6b7280;line-height:1.5;margin:0 0 8px;">
-      Dados necessários: Nome/Empresa, NIF, Morada, Código Postal, Localidade e Email de faturação.
+      Dados necessários: Nome ou Empresa, NIF, Morada, Código Postal, Localidade e Email de faturação.
     </p>
-    <p style="font-size:12px;color:#9ca3af;text-align:center;margin:16px 0 0;">
-      Se tiveres dúvidas, responde directamente a este email.
+    <p style="font-size:13px;color:#6b7280;line-height:1.5;margin:0 0 16px;">
+      Assim que preencheres, a fatura é emitida e enviada automaticamente.
+    </p>
+    <p style="font-size:14px;color:#374151;margin:0 0 4px;">Obrigado pela compreensão!</p>
+    <p style="font-size:14px;color:#111827;font-weight:600;margin:0 0 16px;">Frederico Carvalho</p>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 12px;">
+    <p style="font-size:12px;color:#9ca3af;text-align:center;margin:0;">
+      Se tiver dúvidas, responda directamente a este email.
     </p>
   </div>
 </div>
