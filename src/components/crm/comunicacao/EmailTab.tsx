@@ -147,7 +147,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
 
   const getHtml = useCallback(() => {
     if (rawMode) return rawHtml;
-    return editorRef.current?.innerHTML || "";
+    return rawHtml || editorRef.current?.innerHTML || "";
   }, [rawMode, rawHtml]);
 
   /* ── Send test to admin ── */
@@ -363,7 +363,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
                   </button>
                 </div>
                 {/* Editable area */}
-                <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[200px] px-4 py-3 text-sm text-slate-900 outline-none prose prose-sm max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_a]:text-blue-600 [&_a]:underline" style={{ lineHeight: 1.7 }} />
+                <div ref={editorRef} contentEditable suppressContentEditableWarning onInput={() => setRawHtml(editorRef.current?.innerHTML || "")} className="min-h-[200px] px-4 py-3 text-sm text-slate-900 outline-none prose prose-sm max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_a]:text-blue-600 [&_a]:underline" style={{ lineHeight: 1.7 }} />
               </div>
             )}
           </div>
