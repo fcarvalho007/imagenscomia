@@ -49,7 +49,6 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
     else if (webinarContext === "video") setActiveTab("video");
     else if (webinarContext === "consolidado") setActiveTab("todos");
   }, [webinarContext]);
-  const [loadingCosts, setLoadingCosts] = useState(true);
 
   // Filter inscritos by active tab
   const tabInscritos = useMemo(() => {
