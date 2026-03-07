@@ -1,34 +1,29 @@
 
 
-# Plano: Indicador visual de NIF em falta nos pagantes
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema
-Clientes que pagaram mas não têm NIF preenchido (`invoice_details` sem registo) não são visualmente distinguidos na tabela de faturação nem na ficha do cliente. Isto dificulta saber quem contactar para pedir dados fiscais.
+### Alteração
 
-## Solução
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-### 1. InvoiceTable — badge "Sem NIF" na tabela de faturação
-**Ficheiro**: `src/components/crm/faturacao/InvoiceTable.tsx`
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-- Fazer fetch dos `invoice_details` para todos os `inscritos` exibidos (query por `registration_id in (...)`)
-- Para cada pagante sem registo em `invoice_details`, mostrar um badge laranja/âmbar **"Sem NIF"** junto ao nome (ao lado do WebinarBadge existente)
-- Pagantes com NIF preenchido: sem badge extra (estado normal)
-- Adicionar uma contagem no header: "X sem dados fiscais" em âmbar para dar visão rápida
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 2. InvoiceSection (ficha do cliente) — alerta visual mais forte
-**Ficheiro**: `src/components/crm/modal/InvoiceSection.tsx`
-
-- Quando `hasData === false` (consumidor final / sem NIF), substituir o texto discreto "consumidor final" por um banner âmbar com ícone de alerta: **"⚠ Sem dados de faturação — contactar cliente para solicitar NIF"**
-- Incluir botão "Copiar template" que copia uma mensagem pré-formatada para enviar ao cliente pedindo os dados
-
-### 3. TableView — indicador na tabela principal (opcional mas útil)
-**Ficheiro**: `src/components/crm/TableView.tsx`
-
-- Na coluna de plano ou na célula do nome, para pagantes (`payment_status === "paid"`), mostrar um ponto âmbar (dot) se o registo não tem `invoice_details`
-- Isto requer o mesmo fetch de `invoice_details` — pode ser feito uma vez e passado como prop ou Set de IDs
-
-## Ficheiros alterados (3)
-- `src/components/crm/faturacao/InvoiceTable.tsx` — badge "Sem NIF" + contagem no header
-- `src/components/crm/modal/InvoiceSection.tsx` — banner de alerta âmbar quando sem dados
-- `src/components/crm/TableView.tsx` — dot âmbar para pagantes sem NIF
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 

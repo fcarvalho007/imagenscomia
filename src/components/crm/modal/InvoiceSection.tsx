@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Copy, Check, FileText, Send, Loader2, FilePlus } from "lucide-react";
+import { Copy, Check, FileText, Send, Loader2, FilePlus, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -98,6 +98,13 @@ export default function InvoiceSection({
 
   const hasData = !!data;
 
+  const handleCopyTemplate = (name: string, email: string) => {
+    const msg = `Olá ${name.split(" ")[0]},\n\nPara podermos emitir a sua fatura, precisamos dos seguintes dados:\n\n• Nome completo ou empresa\n• NIF\n• Morada\n• Código postal e localidade\n• Email para envio da fatura\n\nObrigado!`;
+    navigator.clipboard.writeText(msg);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <>
       <div className="border-t border-border/40 my-5" />
@@ -106,9 +113,6 @@ export default function InvoiceSection({
         <div className="flex items-center gap-1.5">
           <FileText size={14} className="text-muted-foreground" />
           <h3 className="font-medium text-[13px] text-foreground">Faturação</h3>
-          <span className="text-[11px] text-muted-foreground">
-            · {hasData ? "dados preenchidos" : "consumidor final"}
-          </span>
         </div>
         <button
           onClick={onToggleInvoiceSent}
@@ -123,6 +127,24 @@ export default function InvoiceSection({
           {localSent ? "Enviada ✓" : "Marcar enviada"}
         </button>
       </div>
+
+      {/* Missing NIF alert */}
+      {!hasData && (
+        <div className="flex items-start gap-2 mb-3 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
+          <AlertTriangle size={14} className="mt-0.5 flex-shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <p className="text-[12px] font-semibold">Sem dados de faturação</p>
+            <p className="text-[11px] mt-0.5 text-amber-700">Contactar cliente para solicitar NIF e morada.</p>
+          </div>
+          <button
+            onClick={() => handleCopyTemplate("Cliente", "")}
+            className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 transition-colors whitespace-nowrap"
+          >
+            {copied ? <Check size={10} /> : <Copy size={10} />}
+            {copied ? "Copiado" : "Copiar template"}
+          </button>
+        </div>
+      )}
 
       {/* Invoice status badge */}
       {localDocId && (
