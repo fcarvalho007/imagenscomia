@@ -146,21 +146,14 @@ export function useInscritos() {
 
   const deleteInscrito = useCallback(async (inscritoId: string) => {
     try {
-      const adminEmail = sessionStorage.getItem("crm_admin_email") || "";
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-registration`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-crm-admin-email": adminEmail,
-          },
-          body: JSON.stringify({ registration_id: inscritoId }),
-        }
-      );
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.error("Error deleting registration:", errData);
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
+      const { data, error } = await supabase.functions.invoke("delete-registration", {
+        body: { registration_id: inscritoId },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+      if (error) {
+        console.error("Error deleting registration:", error);
         return;
       }
     } catch (err) {
@@ -205,21 +198,24 @@ export function useInscritos() {
   }, []);
 
   const toggleDoNotContact = useCallback(async (inscritoId: string) => {
-    const current = inscritos.find((i) => i.id === inscritoId);
-    if (!current) return;
-    const newVal = !current.do_not_contact;
+    let newVal: boolean;
+    setInscritos((prev) => {
+      const current = prev.find((i) => i.id === inscritoId);
+      newVal = current ? !current.do_not_contact : true;
+      return prev;
+    });
     const { error } = await supabase
       .from("registrations")
-      .update({ do_not_contact: newVal } as any)
+      .update({ do_not_contact: newVal! } as any)
       .eq("id", inscritoId);
     if (error) {
       console.error("Error toggling do_not_contact:", error);
       return;
     }
     setInscritos((prev) =>
-      prev.map((i) => (i.id === inscritoId ? { ...i, do_not_contact: newVal } : i))
+      prev.map((i) => (i.id === inscritoId ? { ...i, do_not_contact: newVal! } : i))
     );
-  }, [inscritos]);
+  }, []);
 
   const fetchMessageLogs = useCallback(async (registrationId: string) => {
     const { data, error } = await supabase
@@ -335,23 +331,29 @@ export function useInscritos() {
   }, []);
 
   const toggleInvoiceSent = useCallback(async (inscritoId: string) => {
-    const current = inscritos.find((i) => i.id === inscritoId);
-    if (!current) return;
-    const newVal = !current.invoice_sent;
+    let newVal: boolean;
+    setInscritos((prev) => {
+      const current = prev.find((i) => i.id === inscritoId);
+      newVal = current ? !current.invoice_sent : true;
+      return prev;
+    });
     const { error } = await supabase
       .from("registrations")
-      .update({ invoice_sent: newVal } as any)
+      .update({ invoice_sent: newVal! } as any)
       .eq("id", inscritoId);
     if (error) { console.error("Error toggling invoice_sent:", error); return; }
     setInscritos((prev) =>
-      prev.map((i) => (i.id === inscritoId ? { ...i, invoice_sent: newVal } : i))
+      prev.map((i) => (i.id === inscritoId ? { ...i, invoice_sent: newVal! } : i))
     );
-  }, [inscritos]);
+  }, []);
 
   const grantPremium = useCallback(async (inscritoId: string, adminEmail: string) => {
-    const current = inscritos.find((i) => i.id === inscritoId);
-    if (!current) return;
-    const isGranted = !!current.premium_granted_at;
+    let isGranted = false;
+    setInscritos((prev) => {
+      const current = prev.find((i) => i.id === inscritoId);
+      isGranted = !!current?.premium_granted_at;
+      return prev;
+    });
     const now = new Date().toISOString();
     const updateData = isGranted
       ? { premium_granted_at: null, premium_granted_by: null }
@@ -382,18 +384,24 @@ export function useInscritos() {
           : i
       )
     );
-  }, [inscritos]);
+  }, []);
 
   const updatePlan = useCallback(async (inscritoId: string, newPlan: string, markAsPaid?: boolean) => {
-    const reg = inscritos.find((i) => i.id === inscritoId);
-    if (!reg) return;
-    const prefix = reg.webinar === "video" ? "video-" : "";
+    let prefix = "";
+    let webinarType = "imagens";
+    setInscritos((prev) => {
+      const reg = prev.find((i) => i.id === inscritoId);
+      if (reg) {
+        prefix = reg.webinar === "video" ? "video-" : "";
+        webinarType = reg.webinar === "video" ? "video" : "imagens";
+      }
+      return prev;
+    });
     const dbPlan = newPlan === "free" ? null : `${prefix}${newPlan}`;
     const updateData: Record<string, any> = { plan_selected: dbPlan, lost_at: null, lost_reason: null };
     if (markAsPaid) updateData.paid_at = new Date().toISOString();
     const { error } = await supabase.from("registrations").update(updateData).eq("id", inscritoId);
     if (error) { console.error("Error updating plan:", error); return; }
-    const webinarType = reg?.webinar === "video" ? "video" : "imagens";
     const valor = (PLAN_VALUES_FALLBACK[webinarType] || PLAN_VALUES_FALLBACK.imagens)[newPlan] || 0;
     setInscritos((prev) =>
       prev.map((i) => i.id === inscritoId ? {

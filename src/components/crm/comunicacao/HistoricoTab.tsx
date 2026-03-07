@@ -14,25 +14,28 @@ interface LogGroup {
 export default function HistoricoTab() {
   const [logs, setLogs] = useState<LogGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTruncated, setIsTruncated] = useState(false);
 
   useEffect(() => {
     async function fetchLogs() {
       setLoading(true);
 
       // Fetch email logs
-      const { data: emailRows } = await supabase
+      const { data: emailRows, count: emailCount } = await supabase
         .from("email_send_logs")
-        .select("email_key, status, sent_at")
+        .select("email_key, status, sent_at", { count: "exact" })
         .order("sent_at", { ascending: false })
-        .limit(1000);
+        .limit(2000);
 
       // Fetch SMS logs
-      const { data: smsRows } = await supabase
+      const { data: smsRows, count: smsCount } = await supabase
         .from("message_logs")
-        .select("template_key, status, created_at, channel")
+        .select("template_key, status, created_at, channel", { count: "exact" })
         .eq("channel", "sms")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
+
+      const truncated = (emailCount && emailCount > 2000) || (smsCount && smsCount > 1000);
 
       const groups = new Map<string, LogGroup>();
 
@@ -65,6 +68,7 @@ export default function HistoricoTab() {
 
       const sorted = Array.from(groups.values()).sort((a, b) => b.date.localeCompare(a.date));
       setLogs(sorted);
+      setIsTruncated(!!truncated);
       setLoading(false);
     }
     fetchLogs();
@@ -150,6 +154,12 @@ export default function HistoricoTab() {
           </tbody>
         </table>
       </div>
+
+      {isTruncated && (
+        <p className="text-[10px] text-slate-400 text-center mt-3 italic">
+          ⚠️ Dados truncados — apenas os registos mais recentes são exibidos
+        </p>
+      )}
     </div>
   );
 }

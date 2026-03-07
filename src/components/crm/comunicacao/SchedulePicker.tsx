@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -11,15 +11,22 @@ interface SchedulePickerProps {
 }
 
 export default function SchedulePicker({ scheduledAt, onChange }: SchedulePickerProps) {
-  const [enabled, setEnabled] = useState(false);
+  const enabled = !!scheduledAt;
   const [time, setTime] = useState("09:00");
+
+  // Sync time from prop when scheduledAt changes externally
+  useEffect(() => {
+    if (scheduledAt) {
+      const h = String(scheduledAt.getHours()).padStart(2, "0");
+      const m = String(scheduledAt.getMinutes()).padStart(2, "0");
+      setTime(`${h}:${m}`);
+    }
+  }, [scheduledAt]);
 
   const toggle = () => {
     if (enabled) {
-      setEnabled(false);
       onChange(null);
     } else {
-      setEnabled(true);
       const d = new Date();
       d.setDate(d.getDate() + 1);
       const [h, m] = time.split(":").map(Number);
