@@ -78,7 +78,8 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8 min-h-screen" style={{ background: "#0F172A" }}>
+    <div className="min-h-screen" style={{ background: "#0F172A" }}>
+    <div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
