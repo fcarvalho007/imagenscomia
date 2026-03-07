@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -40,6 +40,22 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter }: Pr
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
+  const [idsWithNif, setIdsWithNif] = useState<Set<string>>(new Set());
+
+  // Fetch invoice_details to know which registrations have NIF
+  useEffect(() => {
+    if (inscritos.length === 0) return;
+    const ids = inscritos.map(i => i.id);
+    supabase
+      .from("invoice_details")
+      .select("registration_id")
+      .in("registration_id", ids)
+      .then(({ data }) => {
+        if (data) setIdsWithNif(new Set(data.map((d: any) => d.registration_id)));
+      });
+  }, [inscritos]);
+
+  const missingNifCount = inscritos.filter(i => !idsWithNif.has(i.id)).length;
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
