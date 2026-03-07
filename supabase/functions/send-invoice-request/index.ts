@@ -137,6 +137,15 @@ serve(async (req) => {
         });
         if (sendErr) throw sendErr;
         sent++;
+
+        // Log to message_logs for CRM timeline
+        await supabase.from("message_logs").insert({
+          registration_id: reg.id,
+          channel: "email",
+          provider: "resend",
+          template_key: "invoice_request",
+          status: "sent",
+        });
       } catch (err: any) {
         errors.push(`${reg.email}: ${err.message || "unknown"}`);
       }

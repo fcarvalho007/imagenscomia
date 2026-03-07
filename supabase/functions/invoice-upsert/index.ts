@@ -123,6 +123,40 @@ serve(async (req) => {
       }
     }
 
+    // Notify Frederico that billing data was filled
+    try {
+      const notifyHtml = `
+<div style="font-family:Arial,sans-serif;padding:16px;">
+  <h2 style="font-size:16px;color:#111;">📋 Dados de faturação preenchidos</h2>
+  <table style="font-size:14px;color:#374151;border-collapse:collapse;">
+    <tr><td style="padding:4px 12px 4px 0;font-weight:600;">Nome/Empresa:</td><td>${payload.invoice_name}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:600;">NIF:</td><td>${payload.invoice_vat}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:600;">Email fatura:</td><td>${payload.invoice_email}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-weight:600;">Fatura auto-emitida:</td><td>${invoiceResult?.success ? "✅ Sim (#" + invoiceResult.document_id + ")" : reg.paid_at ? "❌ Falhou" : "⏳ Pagamento pendente"}</td></tr>
+  </table>
+</div>`;
+
+      await supabase.functions.invoke("send-email", {
+        body: {
+          to: "fredericodigital@gmail.com",
+          subject: `📋 NIF preenchido — ${payload.invoice_name}`,
+          html: notifyHtml,
+          group: "admin-notification",
+        },
+      });
+
+      // Log notification in message_logs
+      await supabase.from("message_logs").insert({
+        registration_id,
+        channel: "email",
+        provider: "resend",
+        template_key: "invoice_filled_notification",
+        status: "sent",
+      });
+    } catch (notifyErr: any) {
+      console.error("Admin notification failed:", notifyErr.message);
+    }
+
     return new Response(
       JSON.stringify({ success: true, invoice: invoiceResult }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
