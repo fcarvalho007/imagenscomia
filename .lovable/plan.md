@@ -1,32 +1,29 @@
 
 
-# Fix: Faturação Page — Invisible Text
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Root Cause
+### Alteração
 
-The FaturacaoView uses white text (`rgba(255,255,255,...)`) designed for a dark background, but **has no background set**. It inherits the body's white `bg-background`, making all text invisible (white on white).
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-Other CRM views handle this correctly:
-- Dashboard/Pipeline: `bg-off-white` + dark text
-- Comunicação: `style={{ background: "#0f172a" }}` + white text
-- **Faturação: NO background + white text = invisible**
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-## Fix (1 file, 1 line)
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### `src/components/crm/FaturacaoView.tsx`
-
-Change the outer `<div>` from:
-```tsx
-<div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8">
-```
-To:
-```tsx
-<div className="p-4 md:p-8 max-w-[1400px] mx-auto space-y-8 min-h-screen" style={{ background: "#0F172A" }}>
-```
-
-This adds:
-- `min-h-screen` to fill the viewport
-- Dark background matching the sidebar and ComunicacaoView
-
-All text, KPIs, charts, tables, and buttons will become visible immediately. No other changes needed.
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
