@@ -59,7 +59,7 @@ serve(async (req) => {
     // Fetch all paid registrations without an invoice yet
     let query = supabase
       .from("registrations")
-      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id")
+      .select("id, email, name, first_name, last_name, plan_selected, paid_at, webinar, eupago_ref, invoice_document_id, paid_amount")
       .not("paid_at", "is", null)
       .is("invoice_document_id", null);
 
