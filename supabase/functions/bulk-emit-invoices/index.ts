@@ -186,6 +186,14 @@ serve(async (req) => {
           await new Promise((r) => setTimeout(r, 1000));
         }
 
+        // Draft-only mode: no invoice_details → skip finalize + email
+        if (!hasInvoiceDetails) {
+          console.log(`📋 ${reg.email}: draft only (no invoice details) — #${documentId}`);
+          draftsOnly++;
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
+        }
+
         // Step 2: Finalize
         const stateRes = await fetch(
           `${BASE_URL}/invoice_receipts/${documentId}/change-state.json?api_key=${API_KEY}`,
