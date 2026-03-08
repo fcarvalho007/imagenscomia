@@ -219,6 +219,20 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
               )
             )}
           </ul>
+
+          {cfg.exclusiveSection && (
+            <>
+              <Separator className="bg-gray-200" />
+              <div className="bg-violet-50/60 border border-violet-200/60 rounded-lg px-4 py-3">
+                <p className="text-xs font-bold text-violet-700 flex items-center gap-1.5">
+                  ✦ Exclusivo Pack IA Completo
+                </p>
+                <p className="text-xs text-violet-600/80 mt-1">
+                  Acesso antecipado garantido ao próximo evento com preço early bird.
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <button
