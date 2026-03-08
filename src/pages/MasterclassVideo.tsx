@@ -106,7 +106,7 @@ const agenda = [
     bullets: ["Casos reais com marcas portuguesas", "Erros mais comuns — corrigidos ao vivo"],
   },
   {
-    num: "03", title: "Edição com Linguagem Natural", borderColor: "border-l-teal-500",
+    num: "03", title: "Edição com Linguagem Natural", borderColor: "#14b8a6",
     desc: "Edição no Filmora com comandos em linguagem natural. Ajuste de rácios, transições e áudio sem conhecimentos técnicos. Do clip gerado ao vídeo publicável em menos de 10 minutos.",
     bullets: ["Demonstração completa ao vivo", "Checklist de publicação por plataforma"],
   },
