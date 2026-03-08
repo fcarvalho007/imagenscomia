@@ -51,6 +51,7 @@ const PLANS: Record<Plan, {
   immediateAccess?: boolean;
   showMasterclassDate?: boolean;
   highlightBenefitIndex?: number;
+  exclusiveSection?: boolean;
 }> = {
   gravacao: {
     title: "Sessão Prática",
