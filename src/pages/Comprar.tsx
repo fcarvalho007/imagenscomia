@@ -8,6 +8,11 @@ import { Separator } from "@/components/ui/separator";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
 
+// ── Pós-Masterclass ──────────────────────────────────────────
+// Alterar para true após 13 de Março de 2026
+const POST_MASTERCLASS_MODE = false;
+// ─────────────────────────────────────────────────────────────
+
 const MASTERCLASS_CUTOFF = new Date("2026-03-12T13:30:00Z");
 
 function getBenefitIcon(text: string, color: string) {
