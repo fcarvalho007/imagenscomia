@@ -1779,24 +1779,28 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     />
   );
 
+  const SUB_TABS = [
+    { key: "pre" as const, label: "Pré-Webinar", emoji: "📡", activeBg: "#1e40af" },
+    { key: "post" as const, label: "Pós-Evento", emoji: "🕐", activeBg: "#f59e0b" },
+    { key: "mc" as const, label: "Masterclass", emoji: "📽", activeBg: "#16a34a" },
+  ];
+
   const SubTabPills = () => (
     <div className="flex items-center gap-1.5 mb-5">
-      {(["pre", "post"] as const).map((tab) => {
-        const isActive = flowSubTab === tab;
-        const label = tab === "pre" ? "Pré-Webinar" : "Pós-Evento";
-        const emoji = tab === "pre" ? "📡" : "🕐";
+      {SUB_TABS.map((tab) => {
+        const isActive = flowSubTab === tab.key;
         return (
           <button
-            key={tab}
-            onClick={() => setFlowSubTab(tab)}
+            key={tab.key}
+            onClick={() => setFlowSubTab(tab.key)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all"
             style={{
-              background: isActive ? (tab === "pre" ? "#1e40af" : "#f59e0b") : "#f1f5f9",
+              background: isActive ? tab.activeBg : "#f1f5f9",
               color: isActive ? "#fff" : "#64748b",
               border: `1px solid ${isActive ? "transparent" : "#e2e8f0"}`,
             }}
           >
-            {emoji} {label}
+            {tab.emoji} {tab.label}
           </button>
         );
       })}
