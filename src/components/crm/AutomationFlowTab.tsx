@@ -1098,7 +1098,8 @@ function Timeline({
     localStorage.setItem("crm_sms_drafts", JSON.stringify(updated));
   };
   const isPostTab = flowSubTab === "post";
-  const nodes = useMemo(() => isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab]);
+  const isMcTab = flowSubTab === "mc";
+  const nodes = useMemo(() => isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
