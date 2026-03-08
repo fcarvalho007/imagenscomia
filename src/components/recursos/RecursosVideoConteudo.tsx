@@ -141,7 +141,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
               {/* Recursos */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recursos</p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
 
                   <a
                     href={VIDEO_RECURSOS_CONFIG.audioUrl}
