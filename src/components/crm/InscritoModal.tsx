@@ -17,6 +17,7 @@ import TabResumo from "./modal/TabResumo";
 import TabActividade from "./modal/TabActividade";
 import TabHistorico from "./modal/TabHistorico";
 import TabLinkPagamento from "./modal/TabLinkPagamento";
+import MiniTimeline from "./modal/MiniTimeline";
 import ResendModal from "./modal/ResendModal";
 import SendPaymentModal from "./modal/SendPaymentModal";
 
