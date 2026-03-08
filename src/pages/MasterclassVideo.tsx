@@ -96,7 +96,7 @@ const problems = [
 
 const agenda = [
   {
-    num: "01", title: "Agentes de IA em Pipeline", borderColor: "border-l-green-600",
+    num: "01", title: "Agentes de IA em Pipeline", borderColor: "#16a34a",
     desc: "Como configurar agentes especializados no Gemini que trabalham em sequência — do briefing ao prompt técnico, sem intervenção manual.",
     bullets: ["Os 3 GEMs para vídeo profissional", "Como encadear instruções entre agentes", "Ficheiro GEM pronto a importar (incluído)"],
   },
