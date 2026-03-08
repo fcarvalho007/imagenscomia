@@ -101,7 +101,7 @@ const agenda = [
     bullets: ["Os 3 GEMs para vídeo profissional", "Como encadear instruções entre agentes", "Ficheiro GEM pronto a importar (incluído)"],
   },
   {
-    num: "02", title: "Fluxos de Montagem Automáticos", borderColor: "border-l-emerald-500",
+    num: "02", title: "Fluxos de Montagem Automáticos", borderColor: "#10b981",
     desc: "Storyboard automático no Kling Canvas. First/last frame para consistência visual garantida. Pipeline de 7 passos do briefing ao clip publicável.",
     bullets: ["Casos reais com marcas portuguesas", "Erros mais comuns — corrigidos ao vivo"],
   },
