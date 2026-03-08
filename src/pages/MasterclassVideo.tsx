@@ -259,6 +259,7 @@ const MasterclassVideo = () => {
       >
         <button
           onClick={navigateCta}
+          aria-label="Garantir acesso à Masterclass"
           className="w-full font-heading font-bold text-white text-[14px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
