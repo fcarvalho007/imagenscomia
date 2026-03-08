@@ -1,29 +1,53 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Inserir template video_masterclass_day3 na base de dados
+
+## Situação actual
+
+- `video_masterclass_thankyou` — na DB com copy do utilizador ✓
+- `video_masterclass_day1` — na DB com copy do utilizador ✓
+- `video_masterclass_day3` — **NÃO está na DB**. Existe apenas como fallback HTML na edge function, com copy genérico escrito pela IA.
+
+## O que vou fazer
+
+Inserir o template `video_masterclass_day3` na tabela `email_templates` via SQL (insert tool), com copy profissional reescrito. O template segue o padrão visual verde (Masterclass) e a voz do Frederico.
+
+### Copy do template — video_masterclass_day3
+
+**Assunto**: `O que vem a seguir, {{fname}}`
+
+**Corpo** (resumo do conteúdo):
+
+> Olá {{fname}},
+>
+> Já passaram três dias desde a Masterclass.
+>
+> Espero que tenhas tido tempo de experimentar pelo menos um dos fluxos que trabalhámos. Não precisa de ser perfeito — precisa de acontecer.
+>
+> Tenho recebido mensagens de pessoas que já produziram os primeiros clips com o sistema. Se ainda não chegaste lá, não te preocupes. O acesso aos recursos não tem prazo.
+>
+> **CTA**: Aceder à minha área de recursos → (imagenscomia.com/recursos-video)
+>
+> ---
+>
+> Nas próximas semanas vou continuar a produzir conteúdo sobre IA aplicada a marketing e criação de vídeo — no podcast, na newsletter e em novos eventos.
+>
+> Se ainda não acompanhas:
+> → Newsletter Digital Sprint (semanal)
+> → Podcast Marketing por Idiotas · RFM
+>
+> E se tiveres colegas ou clientes que possam beneficiar deste sistema, podes partilhar a página da sessão em imagenscomia.com/video.
+>
+> ---
+>
+> Obrigado por teres estado presente.
+>
+> Frederico Carvalho
+> DIGITALFC · fredericocarvalho.pt
+
+Este copy já existe no fallback da edge function — vou usá-lo como base para o HTML profissional na DB, com o mesmo padrão visual (header verde gradient, CTA verde, tipografia Georgia) dos outros 2 templates.
 
 ### Alteração
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
-
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
-
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
-
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+1 operação SQL INSERT via insert tool — sem alteração de código frontend.
 
