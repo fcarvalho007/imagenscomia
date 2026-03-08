@@ -339,10 +339,13 @@ const MasterclassVideo = () => {
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={12} style={{ display: "inline-block", width: "100%", maxWidth: 400 }}>
               <button
                 onClick={navigateCta}
+                aria-label="Garantir acesso à Masterclass Vídeo com IA"
                 className="w-full font-heading font-bold text-white text-[14px] sm:text-[16px] py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl cursor-pointer border-none"
                 style={{ background: "#16A34A" }}
               >
-                {ctaLabel} <ArrowRight className="inline w-4 h-4 ml-1" />
+                <span className="sm:hidden">{ctaLabelShort}</span>
+                <span className="hidden sm:inline">{ctaLabel}</span>
+                {" "}<ArrowRight className="inline w-4 h-4 ml-1" />
               </button>
             </ElectricBorder>
           </motion.div>
