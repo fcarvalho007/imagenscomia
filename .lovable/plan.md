@@ -1,29 +1,35 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Refinamentos Mobile — /recursos-video
 
-### Alteração
+## Avaliação
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+A página está bem construída e já responsiva. Identifico refinamentos menores:
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### Média prioridade
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+1. **Índice da sessão — padding interno excessivo em 375px** — Cada chapter card tem `p-4` e o container `p-5`. Em mobile, o padding acumulado consome espaço útil. Reduzir para `p-3 sm:p-4` nos cards e `p-4 sm:p-5` no container.
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+2. **Sidebar recursos — links sem touch target suficiente** — Os resource links têm `p-3` (48px total com ícone), que é adequado, mas a área de toque pode ser melhorada com `min-h-[48px]` para garantir conformidade WCAG.
+
+3. **Sidebar em mobile ocupa full-width sem grid de 2 colunas** — Em mobile (< lg), os 4 resource cards empilham verticalmente. Num viewport 375px está OK, mas entre 500-767px poderiam ser 2 colunas para aproveitar o espaço.
+
+### Baixa prioridade
+
+4. **Login card padding** — O card de login tem `p-8` fixo. Em 375px, reduzir para `p-6 sm:p-8` daria mais respiro lateral.
+
+5. **Chapter descriptions truncam longas** — As descrições são extensas. Em mobile, o texto é legível mas denso. Não requer alteração — o `leading-relaxed` já ajuda.
+
+6. **Acessibilidade — iframe sem `loading="lazy"`** — O Vimeo iframe podia ter `loading="lazy"` para melhorar LCP quando o utilizador faz scroll.
+
+## Plano de implementação
+
+| # | Ficheiro | Alteração |
+|---|---|---|
+| 1 | `RecursosVideoConteudo.tsx` | Chapter cards: `p-3 sm:p-4`; container: `p-4 sm:p-5` |
+| 2 | `RecursosVideoConteudo.tsx` | Resource links na sidebar: grid `grid-cols-1 sm:grid-cols-2 lg:grid-cols-1` para 2 colunas em tablets |
+| 3 | `RecursosVideoConteudo.tsx` | Vimeo iframe: adicionar `loading="lazy"` |
+| 4 | `RecursosVideoLogin.tsx` | Card padding: `p-6 sm:p-8` |
+
+Todas as alterações são CSS/atributos — sem mudanças de lógica.
 
