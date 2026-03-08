@@ -178,6 +178,7 @@ const MasterclassVideo = () => {
 
   /* JSON-LD structured data */
   useEffect(() => {
+    document.getElementById("masterclass-jsonld")?.remove();
     const jsonLd = document.createElement("script");
     jsonLd.type = "application/ld+json";
     jsonLd.id = "masterclass-jsonld";
