@@ -582,7 +582,7 @@ const MasterclassVideo = () => {
           <Accordion type="single" collapsible className="mt-8 space-y-2">
             {faqs.map((faq, i) => (
               <ScrollReveal key={i} delay={i * 0.05}>
-                <AccordionItem value={`faq-${i}`} className="rounded-xl border-none px-5" style={{ background: "rgba(255,255,255,0.03)", borderBottom: `1px solid ${DARK_BORDER}` }}>
+                <AccordionItem value={`faq-${i}`} className="rounded-xl border-b-0 px-5" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
                   <AccordionTrigger className="text-[15px] font-heading font-semibold text-white hover:no-underline py-4">
                     {faq.q}
                   </AccordionTrigger>
