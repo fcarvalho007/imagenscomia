@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Inscrito, Nota } from "@/pages/crm/mockData";
 import { detectGender } from "@/lib/genderDetection";
 import { useWebinarSettings, getPlanPrices } from "@/hooks/useWebinarSettings";
+import { toast } from "@/hooks/use-toast";
 
 // Fallback only used until DB settings load
 const PLAN_VALUES_FALLBACK: Record<string, Record<string, number>> = {
@@ -83,6 +84,9 @@ export function useInscritos() {
   const [inscritos, setInscritos] = useState<Inscrito[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const prevCountRef = useRef<number | null>(null);
+  const prevPaidRef = useRef<Set<string>>(new Set());
+
   const fetchData = useCallback(async () => {
     const { data, error } = await supabase
       .from("registrations")
@@ -93,7 +97,38 @@ export function useInscritos() {
     if (error) {
       console.error("Error fetching registrations:", error);
     } else {
-      setInscritos((data || []).map(mapRegistration));
+      const mapped = (data || []).map(mapRegistration);
+
+      // Detect new registrations
+      if (prevCountRef.current !== null && mapped.length > prevCountRef.current) {
+        const diff = mapped.length - prevCountRef.current;
+        toast({
+          title: `${diff} novo${diff > 1 ? "s" : ""} inscrito${diff > 1 ? "s" : ""}`,
+          description: `Total: ${mapped.length} inscritos`,
+        });
+      }
+
+      // Detect new payments
+      const currentPaid = new Set(mapped.filter((i) => i.paid_at).map((i) => i.id));
+      if (prevCountRef.current !== null) {
+        const newPayments = [...currentPaid].filter((id) => !prevPaidRef.current.has(id));
+        if (newPayments.length > 0) {
+          const names = newPayments
+            .map((id) => mapped.find((i) => i.id === id))
+            .filter(Boolean)
+            .map((i) => i!.primeiro_nome)
+            .slice(0, 3)
+            .join(", ");
+          toast({
+            title: `💰 ${newPayments.length} novo${newPayments.length > 1 ? "s" : ""} pagamento${newPayments.length > 1 ? "s" : ""}`,
+            description: names,
+          });
+        }
+      }
+
+      prevCountRef.current = mapped.length;
+      prevPaidRef.current = currentPaid;
+      setInscritos(mapped);
     }
     setLoading(false);
   }, []);

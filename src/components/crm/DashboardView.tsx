@@ -7,6 +7,7 @@ import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, WEBINAR_DASHBOARD_CONFIG, VIDEO_WEBINAR_DATE, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 import { useWebinarSettings, type WebinarSettings } from "@/hooks/useWebinarSettings";
 import WebinarBadge from "./WebinarBadge";
+import ConversionFunnelBlock from "./ConversionFunnelBlock";
 
 
 
@@ -473,6 +474,9 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           A filtrar por <strong>últimos {period === "7d" ? "7" : period === "14d" ? "14" : "30"} dias</strong> · Visitantes mostram total acumulado (desde 8 Fev)
         </div>
       )}
+
+      {/* Conversion Funnel Block */}
+      <ConversionFunnelBlock inscritos={filteredInscritos} />
 
       {/* Funnel */}
       <div className="bg-white border border-border rounded-xl p-6 mb-5">

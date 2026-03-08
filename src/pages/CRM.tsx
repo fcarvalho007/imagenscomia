@@ -10,6 +10,7 @@ import FollowUpView from "@/components/crm/FollowUpView";
 import ComunicacaoView from "@/components/crm/ComunicacaoView";
 import FaturacaoView from "@/components/crm/FaturacaoView";
 import InscritoModal from "@/components/crm/InscritoModal";
+import CRMCommandPalette from "@/components/crm/CRMCommandPalette";
 import { useInscritos } from "@/hooks/useInscritos";
 import type { Inscrito } from "@/pages/crm/mockData";
 import type { LastEmailInfo } from "@/components/crm/templateLabels";
@@ -109,6 +110,7 @@ function CRMInner() {
 
   return (
     <div className="flex min-h-screen">
+      <CRMCommandPalette inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />
       <CRMSidebar
         activeView={activeView}
         onChangeView={setActiveView}
