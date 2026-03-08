@@ -1,29 +1,40 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Masterclass Vídeo — Secção CRM + Templates
 
-### Alteração
+## O que vamos fazer
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+1. **Nova sub-tab "Masterclass"** no fluxo de Automações (ao lado de "Pré-Webinar" e "Pós-Evento"), com emoji 📽 e cor verde
+2. **4 nodes visuais** no fluxo: Thankyou (imediato), Day 1 email, Day 1 SMS, Day 3 email
+3. **Template keys e labels** registados para matching e display
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+## Alterações por ficheiro
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+### `src/components/crm/AutomationFlowTab.tsx`
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+- Add 3 new `DAY_GROUP_CONFIG` entries: `mc_thankyou` (green), `mc_d1` (amber), `mc_d3` (red)
+- Create `getMasterclassNodes(): NodeDef[]` with 4 nodes:
+  - Step 1: `video_masterclass_thankyou` — imediato, dia 12, segmento masterclass+bundle, requirePaid
+  - Step 2: `video_masterclass_day1` — 13 Mar 10h, segmento masterclass+bundle, requirePaid
+  - Step 3: SMS `sms_masterclass_day1` — 13 Mar 11h, manual, requirePaid+requirePhone, texto: "Ola! A gravacao da Masterclass e os materiais estao disponiveis em imagenscomia.com/recursos-video — usa o email de registo. Deixa a tua avaliacao Google aqui: [link]. Ate ja! — Frederico"
+  - Step 4: `video_masterclass_day3` — 15 Mar 10h, segmento masterclass+bundle, requirePaid
+- Expand `SubTabPills` to include a third tab `"mc"` with label "Masterclass" and emoji 📽, purple background when active
+- Update `flowSubTab` state type from `"pre" | "post"` to `"pre" | "post" | "mc"`
+- In `Timeline`, when `flowSubTab === "mc"`, use `getMasterclassNodes()` and filter inscritos to masterclass+bundle paid
+
+### `src/components/crm/FollowUpView.tsx`
+
+- Add 3 new template keys to `TEMPLATE_KEYS`: `video_masterclass_thankyou`, `video_masterclass_day1`, `video_masterclass_day3`
+
+### `src/components/crm/templateLabels.ts`
+
+- Add 4 labels:
+  - `video_masterclass_thankyou`: "Pós-Masterclass — Obrigado"
+  - `video_masterclass_day1`: "Masterclass Day 1 — Recursos + Avaliação"
+  - `sms_masterclass_day1`: "SMS Masterclass Day 1 — Lembrete avaliação"
+  - `video_masterclass_day3`: "Masterclass Day 3 — Fecho + próximos passos"
+
+## Lógica de elegibilidade
+
+Todos os nodes filtram por `planFilter: ["masterclass", "bundle"]` com `requirePaid: true`. O SMS adiciona `requirePhone: true`. Reutiliza a função `computeEligible` existente sem alterações.
 
