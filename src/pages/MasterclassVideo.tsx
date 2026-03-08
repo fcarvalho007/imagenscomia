@@ -61,8 +61,8 @@ const StaggeredWords = ({ text, startDelay = 0.3 }: { text: string; startDelay?:
 
 /* ── Google badge ── */
 const GoogleBadge = () => (
-  <div className="inline-flex items-center gap-[10px] rounded-[10px] px-[14px] py-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}>
-    <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0">
+  <div className="inline-flex items-center gap-2 sm:gap-[10px] rounded-[10px] px-3 sm:px-[14px] py-[8px]" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}>
+    <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0 sm:w-5 sm:h-5">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -71,17 +71,17 @@ const GoogleBadge = () => (
     <div className="w-px h-[18px] mx-[2px]" style={{ background: "rgba(255,255,255,0.10)" }} />
     <div className="flex flex-col gap-px">
       <div className="flex items-center gap-1">
-        <span className="font-heading font-bold text-[14px]" style={{ color: "#F8FAFC" }}>5,0</span>
-        <span style={{ fontSize: 13, lineHeight: 1, color: "#FBBC05" }}>★★★★★</span>
+        <span className="font-heading font-bold text-[13px] sm:text-[14px]" style={{ color: "#F8FAFC" }}>5,0</span>
+        <span style={{ fontSize: 12, lineHeight: 1, color: "#FBBC05" }}>★★★★★</span>
       </div>
-      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.50)" }}>1 194 avaliações no Google</span>
+      <span className="text-[11px] sm:text-[13px]" style={{ color: "rgba(255,255,255,0.50)" }}>1 194 avaliações no Google</span>
     </div>
   </div>
 );
 
 /* ── Section title ── */
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="font-heading font-extrabold text-[28px] sm:text-[34px] leading-[1.15] mb-6 text-center text-white" style={{ letterSpacing: "-0.5px" }}>
+  <h2 className="font-heading font-extrabold text-[22px] sm:text-[28px] md:text-[34px] leading-[1.15] mb-4 sm:mb-6 text-center text-white" style={{ letterSpacing: "-0.5px" }}>
     {children}
   </h2>
 );
@@ -163,6 +163,7 @@ const DARK_950 = "#020617";
 const DARK_BORDER = "rgba(255,255,255,0.08)";
 
 const ctaLabel = MASTERCLASS_LIVE ? "Garantir o meu lugar — €67 + IVA" : "Garantir acesso imediato — €67 + IVA";
+const ctaLabelShort = MASTERCLASS_LIVE ? "Garantir o meu lugar — €67" : "Acesso imediato — €67";
 const ctaNav = "/comprar?plan=masterclass";
 const ctaBundleNav = "/comprar?plan=bundle";
 
@@ -224,23 +225,23 @@ const MasterclassVideo = () => {
         className="fixed top-0 left-0 right-0 z-50"
         style={{ background: "linear-gradient(90deg, #020617 0%, rgba(22,163,74,0.15) 50%, #14532d 100%)" }}
       >
-        <div className="container mx-auto px-4 py-2.5 max-sm:py-2 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 font-heading text-[11px] sm:text-[13px] font-semibold uppercase tracking-[1.5px] text-white/90">
-              <Play className="w-3.5 h-3.5" style={{ color: "#4ade80" }} />
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-flex items-center gap-1 sm:gap-1.5 font-heading text-[10px] sm:text-[13px] font-semibold uppercase tracking-[1px] sm:tracking-[1.5px] text-white/90 truncate">
+              <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" style={{ color: "#4ade80" }} />
               {MASTERCLASS_LIVE ? "MASTERCLASS · 12 MAR" : "MASTERCLASS · GRAVAÇÃO"}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <span className="hidden sm:block text-[14px] font-heading font-bold text-white">
               67 € <span className="text-white/50 font-normal text-[12px]">+ IVA</span>
             </span>
             <button
               onClick={navigateCta}
-              className="shrink-0 text-[13px] font-heading font-semibold text-white px-5 max-sm:px-3 py-2.5 rounded-full transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-green-500/50 focus-visible:ring-offset-2"
+              className="shrink-0 text-[12px] sm:text-[13px] font-heading font-semibold text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-green-500/50 focus-visible:ring-offset-2"
               style={{ background: "#16A34A", boxShadow: "0 4px 14px rgba(22,163,74,0.35)" }}
             >
-              {MASTERCLASS_LIVE ? "Garantir o meu lugar" : "Garantir acesso"}
+              {MASTERCLASS_LIVE ? "Garantir lugar" : "Acesso"}
             </button>
           </div>
         </div>
@@ -251,46 +252,46 @@ const MasterclassVideo = () => {
         initial={{ y: 80 }}
         animate={{ y: showMobileCta ? 0 : 80 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed bottom-0 left-0 right-0 z-50 sm:hidden px-4 pb-4 pt-2"
-        style={{ background: "linear-gradient(to top, rgba(2,6,23,0.95) 60%, transparent)" }}
+        className="fixed bottom-0 left-0 right-0 z-50 sm:hidden px-4 pt-2"
+        style={{ background: "linear-gradient(to top, rgba(2,6,23,0.95) 60%, transparent)", paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}
       >
         <button
           onClick={navigateCta}
-          className="w-full font-heading font-bold text-white text-[15px] py-3.5 rounded-xl cursor-pointer"
+          className="w-full font-heading font-bold text-white text-[14px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
-          {ctaLabel}
+          {ctaLabelShort} <ArrowRight className="inline w-4 h-4 ml-1" />
         </button>
       </motion.div>
 
       {/* ═══ SECÇÃO 1 — HERO ═══ */}
-      <section className="relative overflow-hidden flex items-center justify-center" style={{ minHeight: "90vh", background: DARK_950, paddingTop: 80, paddingBottom: 80 }}>
+      <section className="relative overflow-hidden flex items-center justify-center px-4" style={{ minHeight: "min(90vh, 800px)", background: DARK_950, paddingTop: 48, paddingBottom: 48 }}>
         {/* Background video */}
         <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.3, objectFit: "cover" }}>
           <source src="/videos/hero-vidro.mp4" type="video/mp4" />
         </video>
-        {/* Orbs */}
+        {/* Orbs — smaller on mobile */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-          <div className="absolute rounded-full" style={{ width: 500, height: 500, background: "#16a34a", opacity: 0.14, top: "-5%", left: "-8%", filter: "blur(80px)", animation: "pulse 8s ease-in-out infinite" }} />
-          <div className="absolute rounded-full" style={{ width: 400, height: 400, background: "#059669", opacity: 0.09, top: "10%", right: "-5%", filter: "blur(80px)", animation: "pulse 10s ease-in-out infinite reverse" }} />
+          <div className="absolute rounded-full" style={{ width: "clamp(250px, 50vw, 500px)", height: "clamp(250px, 50vw, 500px)", background: "#16a34a", opacity: 0.14, top: "-5%", left: "-8%", filter: "blur(80px)", animation: "pulse 8s ease-in-out infinite" }} />
+          <div className="absolute rounded-full" style={{ width: "clamp(200px, 40vw, 400px)", height: "clamp(200px, 40vw, 400px)", background: "#059669", opacity: 0.09, top: "10%", right: "-5%", filter: "blur(80px)", animation: "pulse 10s ease-in-out infinite reverse" }} />
         </div>
         {/* Noise */}
         <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.035, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundRepeat: "repeat", backgroundSize: "256px 256px" }} />
 
-        <div className="relative px-5 text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 860 }}>
+        <div className="relative text-center w-full mx-auto" style={{ zIndex: 2, maxWidth: 860 }}>
           {/* Badge */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.1 }}>
-            <span className="inline-flex items-center gap-2 font-heading text-[10px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-4" style={{ border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
-              📽 {MASTERCLASS_LIVE ? "MASTERCLASS AO VIVO · 12 DE MARÇO · 10H–13H" : "MASTERCLASS · GRAVAÇÃO DISPONÍVEL"}
+            <span className="inline-flex items-center gap-1.5 sm:gap-2 font-heading text-[9px] sm:text-[11px] font-semibold uppercase tracking-[1px] sm:tracking-[2px] px-3 sm:px-4 py-1.5 rounded-full mb-3 sm:mb-4" style={{ border: "1px solid rgba(74,222,128,0.25)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
+              📽 {MASTERCLASS_LIVE ? "MASTERCLASS AO VIVO · 12 MAR · 10H–13H" : "MASTERCLASS · GRAVAÇÃO DISPONÍVEL"}
             </span>
           </motion.div>
 
           {/* H1 */}
-          <h1 className="font-heading leading-[1.05] text-white mb-4 mx-auto text-[32px] md:text-[44px] lg:text-[56px]" style={{ fontWeight: 900, maxWidth: 860, textShadow: "0 0 80px rgba(22,163,74,0.15)" }}>
-            <span className="tracking-[-0.5px] md:tracking-[-1px]">
+          <h1 className="font-heading leading-[1.08] text-white mb-3 sm:mb-4 mx-auto text-[26px] sm:text-[36px] md:text-[44px] lg:text-[56px]" style={{ fontWeight: 900, maxWidth: 860, textShadow: "0 0 80px rgba(22,163,74,0.15)" }}>
+            <span className="tracking-[-0.3px] sm:tracking-[-0.5px] md:tracking-[-1px]">
               <StaggeredWords startDelay={0.2} text="O sistema completo de produção de" />
             </span>
-            <br className="hidden md:block" />
+            <br className="hidden sm:block" />
             <motion.span
               initial="hidden" whileInView="visible" viewport={vpOnce}
               variants={wordReveal}
@@ -309,7 +310,7 @@ const MasterclassVideo = () => {
 
           {/* Subtitle */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.5 }}>
-            <p className="text-[16px] sm:text-[18px] leading-relaxed max-w-[620px] mx-auto mb-6" style={{ color: "#94a3b8" }}>
+            <p className="text-[14px] sm:text-[16px] md:text-[18px] leading-relaxed max-w-[620px] mx-auto mb-5 sm:mb-6" style={{ color: "#94a3b8" }}>
               {MASTERCLASS_LIVE
                 ? "Três horas ao vivo para construir um processo autónomo — agentes de IA, fluxos de montagem e edição em linguagem natural. Sem depender de equipa. Sem começar do zero cada vez."
                 : "Três horas para construir um processo autónomo — agentes de IA, fluxos de montagem e edição em linguagem natural. Sem depender de equipa. Sem começar do zero cada vez."}
@@ -319,14 +320,14 @@ const MasterclassVideo = () => {
           {/* Date indicator (live only) */}
           {MASTERCLASS_LIVE && (
             <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.55 }}>
-              <div className="flex flex-wrap justify-center gap-3 mb-8">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
                 <div className="inline-flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "rgba(6,9,26,0.75)", border: "1px solid rgba(22,163,74,0.2)" }}>
-                  <Calendar className="w-4 h-4" style={{ color: "#4ade80" }} />
-                  <span className="text-[13px] text-white/80">Quinta-feira, 12 de Março</span>
+                  <Calendar className="w-4 h-4 shrink-0" style={{ color: "#4ade80" }} />
+                  <span className="text-[12px] sm:text-[13px] text-white/80">Quinta-feira, 12 de Março</span>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-lg px-3 py-2" style={{ background: "rgba(6,9,26,0.75)", border: "1px solid rgba(22,163,74,0.2)" }}>
-                  <Clock className="w-4 h-4" style={{ color: "#4ade80" }} />
-                  <span className="text-[13px] text-white/80">10h00 — 13h00 (Portugal)</span>
+                  <Clock className="w-4 h-4 shrink-0" style={{ color: "#4ade80" }} />
+                  <span className="text-[12px] sm:text-[13px] text-white/80">10h00 — 13h00 (Portugal)</span>
                 </div>
               </div>
             </motion.div>
@@ -337,7 +338,7 @@ const MasterclassVideo = () => {
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={12} style={{ display: "inline-block", width: "100%", maxWidth: 400 }}>
               <button
                 onClick={navigateCta}
-                className="w-full font-heading font-bold text-white text-[16px] py-4 px-8 rounded-xl cursor-pointer border-none"
+                className="w-full font-heading font-bold text-white text-[14px] sm:text-[16px] py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl cursor-pointer border-none"
                 style={{ background: "#16A34A" }}
               >
                 {ctaLabel} <ArrowRight className="inline w-4 h-4 ml-1" />
@@ -347,7 +348,7 @@ const MasterclassVideo = () => {
 
           {/* Google badge */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ ...defaultTransition, delay: 0.7 }}>
-            <div className="mt-6">
+            <div className="mt-5 sm:mt-6">
               <GoogleBadge />
             </div>
           </motion.div>
@@ -355,20 +356,20 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 2 — PROBLEMA ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#0f172a" }}>
-        <div className="container mx-auto px-5 max-w-[960px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: "#0f172a" }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[960px]">
           <ScrollReveal>
             <SectionTitle>Quem produz vídeo com IA sem sistema perde tempo e dinheiro</SectionTitle>
           </ScrollReveal>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 mt-8 sm:mt-10">
             {problems.map((p, i) => {
               const Icon = p.icon;
               return (
                 <ScrollReveal key={i} delay={i * 0.1}>
-                  <SpotlightCard className="rounded-xl border p-6 h-full" style={{ background: "rgba(255,255,255,0.03)", borderColor: DARK_BORDER }}>
-                    <Icon className="w-7 h-7 mb-3" style={{ color: "#4ade80" }} />
-                    <h3 className="font-heading font-bold text-[18px] text-white mb-2">{p.title}</h3>
-                    <p className="text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>{p.desc}</p>
+                  <SpotlightCard className="rounded-xl border p-5 sm:p-6 h-full" style={{ background: "rgba(255,255,255,0.03)", borderColor: DARK_BORDER }}>
+                    <Icon className="w-6 h-6 sm:w-7 sm:h-7 mb-3" style={{ color: "#4ade80" }} />
+                    <h3 className="font-heading font-bold text-[16px] sm:text-[18px] text-white mb-2">{p.title}</h3>
+                    <p className="text-[13px] sm:text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>{p.desc}</p>
                   </SpotlightCard>
                 </ScrollReveal>
               );
@@ -378,24 +379,24 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 3 — O QUE É ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
-        <div className="container mx-auto px-5 max-w-[860px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: DARK_950 }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[860px]">
           <ScrollReveal>
             <SectionTitle>3 horas. Um sistema. Resultado no dia seguinte.</SectionTitle>
-            <p className="text-center text-[16px] mb-12" style={{ color: "#94a3b8" }}>
+            <p className="text-center text-[14px] sm:text-[16px] mb-8 sm:mb-12" style={{ color: "#94a3b8" }}>
               Demonstrações reais. Casos práticos. Sem teoria desnecessária.
             </p>
           </ScrollReveal>
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {agenda.map((item, i) => (
               <ScrollReveal key={i} delay={i * 0.1}>
-                <div className={`rounded-xl p-6`} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeft: `4px solid`, borderLeftColor: item.borderColor }}>
-                  <span className="font-heading font-bold text-[13px] uppercase tracking-[0.1em]" style={{ color: "rgba(74,222,128,0.5)" }}>{item.num}</span>
-                  <h3 className="font-heading font-bold text-[20px] text-white mt-1 mb-2">{item.title}</h3>
-                  <p className="text-[14px] leading-relaxed mb-3" style={{ color: "#94a3b8" }}>{item.desc}</p>
+                <div className="rounded-xl p-4 sm:p-6" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeft: `4px solid`, borderLeftColor: item.borderColor }}>
+                  <span className="font-heading font-bold text-[12px] sm:text-[13px] uppercase tracking-[0.1em]" style={{ color: "rgba(74,222,128,0.5)" }}>{item.num}</span>
+                  <h3 className="font-heading font-bold text-[17px] sm:text-[20px] text-white mt-1 mb-2">{item.title}</h3>
+                  <p className="text-[13px] sm:text-[14px] leading-relaxed mb-3" style={{ color: "#94a3b8" }}>{item.desc}</p>
                   <ul className="space-y-1.5">
                     {item.bullets.map((b, j) => (
-                      <li key={j} className="flex items-start gap-2 text-[14px]" style={{ color: "#cbd5e1" }}>
+                      <li key={j} className="flex items-start gap-2 text-[13px] sm:text-[14px]" style={{ color: "#cbd5e1" }}>
                         <ArrowRight className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: "#4ade80" }} />
                         {b}
                       </li>
@@ -409,20 +410,20 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 4 — PARA QUEM É ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#0f172a" }}>
-        <div className="container mx-auto px-5 max-w-[960px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: "#0f172a" }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[960px]">
           <ScrollReveal>
             <SectionTitle>Para quem é</SectionTitle>
           </ScrollReveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mt-6 sm:mt-8">
             <ScrollReveal delay={0.1}>
-              <div className="rounded-xl p-6" style={{ background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.15)" }}>
-                <h3 className="font-heading font-bold text-[16px] text-white mb-4 flex items-center gap-2">
-                  <Check className="w-5 h-5" style={{ color: "#4ade80" }} /> Certo se...
+              <div className="rounded-xl p-4 sm:p-6" style={{ background: "rgba(22,163,74,0.06)", border: "1px solid rgba(22,163,74,0.15)" }}>
+                <h3 className="font-heading font-bold text-[15px] sm:text-[16px] text-white mb-3 sm:mb-4 flex items-center gap-2">
+                  <Check className="w-5 h-5 shrink-0" style={{ color: "#4ade80" }} /> Certo se...
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5 sm:space-y-3">
                   {forWhom.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed" style={{ color: "#cbd5e1" }}>
+                    <li key={i} className="flex items-start gap-2 sm:gap-2.5 text-[13px] sm:text-[14px] leading-relaxed" style={{ color: "#cbd5e1" }}>
                       <Check className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#4ade80" }} />
                       {item}
                     </li>
@@ -431,13 +432,13 @@ const MasterclassVideo = () => {
               </div>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <div className="rounded-xl p-6" style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.12)" }}>
-                <h3 className="font-heading font-bold text-[16px] text-white mb-4 flex items-center gap-2">
-                  <XCircle className="w-5 h-5" style={{ color: "#f87171" }} /> Não é para quem...
+              <div className="rounded-xl p-4 sm:p-6" style={{ background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.12)" }}>
+                <h3 className="font-heading font-bold text-[15px] sm:text-[16px] text-white mb-3 sm:mb-4 flex items-center gap-2">
+                  <XCircle className="w-5 h-5 shrink-0" style={{ color: "#f87171" }} /> Não é para quem...
                 </h3>
-                <ul className="space-y-3">
+                <ul className="space-y-2.5 sm:space-y-3">
                   {notFor.map((item, i) => (
-                    <li key={i} className="flex items-start gap-2.5 text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>
+                    <li key={i} className="flex items-start gap-2 sm:gap-2.5 text-[13px] sm:text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>
                       <XCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#f87171" }} />
                       {item}
                     </li>
@@ -450,32 +451,32 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 5 — O QUE RECEBES ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
-        <div className="container mx-auto px-5 max-w-[700px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: DARK_950 }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[700px]">
           <ScrollReveal>
             <SectionTitle>O que está incluído — €67 + IVA</SectionTitle>
           </ScrollReveal>
-          <div className="space-y-3 mt-8">
+          <div className="space-y-2.5 sm:space-y-3 mt-6 sm:mt-8">
             {packItems.map((item, i) => {
               const Icon = item.Icon;
               return (
                 <ScrollReveal key={i} delay={i * 0.05}>
-                  <div className="flex items-start gap-3 rounded-lg px-4 py-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
-                    <Icon className="w-5 h-5 mt-0.5 shrink-0" style={{ color: "#4ade80" }} />
-                    <span className="text-[15px] text-white/90">{item.title}</span>
+                  <div className="flex items-start gap-3 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 mt-0.5 shrink-0" style={{ color: "#4ade80" }} />
+                    <span className="text-[13px] sm:text-[15px] text-white/90">{item.title}</span>
                   </div>
                 </ScrollReveal>
               );
             })}
           </div>
           <ScrollReveal delay={0.4}>
-            <div className="mt-10 text-center">
+            <div className="mt-8 sm:mt-10 text-center">
               <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={12} style={{ display: "inline-block", width: "100%", maxWidth: 400 }}>
-                <button onClick={navigateCta} className="w-full font-heading font-bold text-white text-[16px] py-4 px-8 rounded-xl cursor-pointer border-none" style={{ background: "#16A34A" }}>
+                <button onClick={navigateCta} className="w-full font-heading font-bold text-white text-[14px] sm:text-[16px] py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl cursor-pointer border-none" style={{ background: "#16A34A" }}>
                   {ctaLabel} <ArrowRight className="inline w-4 h-4 ml-1" />
                 </button>
               </ElectricBorder>
-              <p className="text-[13px] mt-3" style={{ color: "#64748b" }}>
+              <p className="text-[12px] sm:text-[13px] mt-3" style={{ color: "#64748b" }}>
                 Pagamento seguro via EuPago · MB WAY · Multibanco · Cartão
               </p>
             </div>
@@ -484,23 +485,23 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 6 — UPGRADE PACK ═══ */}
-      <section className="py-16 md:py-24" style={{ background: "linear-gradient(180deg, #0f172a 0%, #1a2e1a 50%, #0f172a 100%)" }}>
-        <div className="container mx-auto px-5 max-w-[700px] text-center">
+      <section className="py-12 sm:py-16 md:py-24" style={{ background: "linear-gradient(180deg, #0f172a 0%, #1a2e1a 50%, #0f172a 100%)" }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[700px] text-center">
           <ScrollReveal>
-            <p className="font-heading font-semibold text-[13px] uppercase tracking-[0.14em] mb-3" style={{ color: "#4ade80" }}>PACK IA COMPLETO</p>
+            <p className="font-heading font-semibold text-[12px] sm:text-[13px] uppercase tracking-[0.14em] mb-2 sm:mb-3" style={{ color: "#4ade80" }}>PACK IA COMPLETO</p>
             <SectionTitle>Quer o sistema completo — Imagens e Vídeo?</SectionTitle>
-            <p className="text-[16px] leading-relaxed mb-6" style={{ color: "#94a3b8" }}>
+            <p className="text-[14px] sm:text-[16px] leading-relaxed mb-5 sm:mb-6" style={{ color: "#94a3b8" }}>
               O Pack IA Completo inclui esta Masterclass + a Sessão Prática de Vídeo + o Pack completo de Imagens com IA.
-              <br />Tudo num único acesso.
+              <br className="hidden sm:block" /><span className="sm:hidden"> </span>Tudo num único acesso.
             </p>
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <span className="text-[14px] line-through" style={{ color: "#64748b" }}>€121</span>
-              <span className="font-heading font-bold text-[28px] text-white">€107 <span className="text-[14px] font-normal" style={{ color: "#64748b" }}>+ IVA</span></span>
-              <span className="text-[13px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}>Poupas €14</span>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+              <span className="text-[13px] sm:text-[14px] line-through" style={{ color: "#64748b" }}>€121</span>
+              <span className="font-heading font-bold text-[24px] sm:text-[28px] text-white">€107 <span className="text-[13px] sm:text-[14px] font-normal" style={{ color: "#64748b" }}>+ IVA</span></span>
+              <span className="text-[12px] sm:text-[13px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(74,222,128,0.12)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.2)" }}>Poupas €14</span>
             </div>
             <button
               onClick={navigateBundle}
-              className="font-heading font-bold text-white text-[15px] py-3.5 px-8 rounded-xl cursor-pointer border transition-all"
+              className="font-heading font-bold text-white text-[13px] sm:text-[15px] py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl cursor-pointer border transition-all w-full sm:w-auto"
               style={{ background: "rgba(22,163,74,0.15)", borderColor: "rgba(22,163,74,0.3)", boxShadow: "0 4px 20px rgba(22,163,74,0.1)" }}
             >
               <Package className="inline w-4 h-4 mr-2" />
@@ -511,34 +512,34 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 7 — APRESENTADOR ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
-        <div className="container mx-auto px-5 max-w-[860px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: DARK_950 }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[860px]">
           <ScrollReveal>
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+            <div className="flex flex-col items-center text-center md:text-left md:flex-row gap-6 sm:gap-8 md:gap-12">
               <div className="shrink-0">
                 <img
                   src={fredericoPhoto}
                   alt="Frederico Carvalho"
-                  className="w-[160px] h-[160px] md:w-[200px] md:h-[200px] rounded-full object-cover"
+                  className="w-[120px] h-[120px] sm:w-[160px] sm:h-[160px] md:w-[200px] md:h-[200px] rounded-full object-cover"
                   style={{ border: "3px solid rgba(22,163,74,0.3)", boxShadow: "0 0 40px rgba(22,163,74,0.15)" }}
                   loading="lazy"
                 />
               </div>
               <div>
-                <h3 className="font-heading font-extrabold text-[24px] sm:text-[28px] text-white mb-1">Frederico Carvalho</h3>
-                <p className="text-[14px] mb-4" style={{ color: "#64748b" }}>20 anos de experiência em marketing digital para empresas</p>
-                <div className="space-y-3">
+                <h3 className="font-heading font-extrabold text-[22px] sm:text-[24px] md:text-[28px] text-white mb-1">Frederico Carvalho</h3>
+                <p className="text-[13px] sm:text-[14px] mb-3 sm:mb-4" style={{ color: "#64748b" }}>20 anos de experiência em marketing digital para empresas</p>
+                <div className="space-y-2.5 sm:space-y-3 text-left">
                   {speakerCredentials.map((c, i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <span className="text-[18px] shrink-0">{c.emoji}</span>
+                    <div key={i} className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-[16px] sm:text-[18px] shrink-0">{c.emoji}</span>
                       <div>
-                        <span className="font-heading font-semibold text-[14px] text-white">{c.title}</span>
-                        <span className="text-[13px] ml-1" style={{ color: "#94a3b8" }}>— {c.sub}</span>
+                        <span className="font-heading font-semibold text-[13px] sm:text-[14px] text-white">{c.title}</span>
+                        <span className="text-[12px] sm:text-[13px] ml-1" style={{ color: "#94a3b8" }}>— {c.sub}</span>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-5"><GoogleBadge /></div>
+                <div className="mt-4 sm:mt-5"><GoogleBadge /></div>
               </div>
             </div>
           </ScrollReveal>
@@ -546,25 +547,25 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 8 — TESTEMUNHOS ═══ */}
-      <section className="py-20 md:py-28" style={{ background: "#0f172a" }}>
-        <div className="container mx-auto px-5 max-w-[960px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: "#0f172a" }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[960px]">
           <ScrollReveal>
             <SectionTitle>O que dizem os participantes</SectionTitle>
           </ScrollReveal>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 mt-8 sm:mt-10">
             {testimonials.map((t, i) => (
               <ScrollReveal key={i} delay={i * 0.08}>
-                <div className="rounded-xl p-5 h-full flex flex-col" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-heading font-bold text-[13px]" style={{ background: t.gradient }}>
+                <div className="rounded-xl p-4 sm:p-5 h-full flex flex-col" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
+                  <div className="flex items-center gap-3 mb-2.5 sm:mb-3">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-heading font-bold text-[12px] sm:text-[13px]" style={{ background: t.gradient }}>
                       {t.initials}
                     </div>
                     <div>
-                      <p className="font-heading font-semibold text-[14px] text-white">{t.name}</p>
-                      <p className="text-[11px]" style={{ color: "#64748b" }}>{t.role}</p>
+                      <p className="font-heading font-semibold text-[13px] sm:text-[14px] text-white">{t.name}</p>
+                      <p className="text-[10px] sm:text-[11px]" style={{ color: "#64748b" }}>{t.role}</p>
                     </div>
                   </div>
-                  <p className="text-[13px] leading-relaxed flex-1" style={{ color: "#94a3b8" }}>"{t.quote}"</p>
+                  <p className="text-[12px] sm:text-[13px] leading-relaxed flex-1" style={{ color: "#94a3b8" }}>"{t.quote}"</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -573,19 +574,19 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 9 — FAQ ═══ */}
-      <section className="py-20 md:py-28" style={{ background: DARK_950 }}>
-        <div className="container mx-auto px-5 max-w-[700px]">
+      <section className="py-14 sm:py-20 md:py-28" style={{ background: DARK_950 }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[700px]">
           <ScrollReveal>
             <SectionTitle>Perguntas frequentes</SectionTitle>
           </ScrollReveal>
-          <Accordion type="single" collapsible className="mt-8 space-y-2">
+          <Accordion type="single" collapsible className="mt-6 sm:mt-8 space-y-2">
             {faqs.map((faq, i) => (
               <ScrollReveal key={i} delay={i * 0.05}>
-                <AccordionItem value={`faq-${i}`} className="rounded-xl border-b-0 px-5" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
-                  <AccordionTrigger className="text-[15px] font-heading font-semibold text-white hover:no-underline py-4">
+                <AccordionItem value={`faq-${i}`} className="rounded-xl border-b-0 px-4 sm:px-5" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
+                  <AccordionTrigger className="text-[13px] sm:text-[15px] font-heading font-semibold text-white hover:no-underline py-3.5 sm:py-4 text-left">
                     {faq.q}
                   </AccordionTrigger>
-                  <AccordionContent className="text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>
+                  <AccordionContent className="text-[13px] sm:text-[14px] leading-relaxed" style={{ color: "#94a3b8" }}>
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
@@ -596,24 +597,24 @@ const MasterclassVideo = () => {
       </section>
 
       {/* ═══ SECÇÃO 10 — CTA FINAL ═══ */}
-      <section className="py-20 md:py-28 text-center" style={{ background: "linear-gradient(180deg, #0f172a 0%, #071a0e 50%, #020617 100%)" }}>
-        <div className="container mx-auto px-5 max-w-[600px]">
+      <section className="py-14 sm:py-20 md:py-28 pb-28 sm:pb-20 text-center" style={{ background: "linear-gradient(180deg, #0f172a 0%, #071a0e 50%, #020617 100%)" }}>
+        <div className="container mx-auto px-4 sm:px-5 max-w-[600px]">
           <ScrollReveal>
-            <h2 className="font-heading font-extrabold text-[28px] sm:text-[36px] leading-[1.15] text-white mb-4" style={{ letterSpacing: "-0.5px" }}>
+            <h2 className="font-heading font-extrabold text-[22px] sm:text-[28px] md:text-[36px] leading-[1.15] text-white mb-3 sm:mb-4" style={{ letterSpacing: "-0.5px" }}>
               Três horas que mudam a forma como produces vídeo.
             </h2>
-            <p className="text-[16px] mb-8" style={{ color: "#94a3b8" }}>
+            <p className="text-[14px] sm:text-[16px] mb-6 sm:mb-8" style={{ color: "#94a3b8" }}>
               Acesso imediato. Gravação incluída. Sistema pronto a usar.
             </p>
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={12} style={{ display: "inline-block", width: "100%", maxWidth: 400 }}>
-              <button onClick={navigateCta} className="w-full font-heading font-bold text-white text-[16px] py-4 px-8 rounded-xl cursor-pointer border-none" style={{ background: "#16A34A" }}>
+              <button onClick={navigateCta} className="w-full font-heading font-bold text-white text-[14px] sm:text-[16px] py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl cursor-pointer border-none" style={{ background: "#16A34A" }}>
                 {ctaLabel} <ArrowRight className="inline w-4 h-4 ml-1" />
               </button>
             </ElectricBorder>
-            <p className="text-[13px] mt-4" style={{ color: "#64748b" }}>
+            <p className="text-[12px] sm:text-[13px] mt-3 sm:mt-4" style={{ color: "#64748b" }}>
               Pagamento seguro via EuPago · Satisfação garantida
             </p>
-            <p className="text-[13px] mt-1" style={{ color: "#64748b" }}>
+            <p className="text-[12px] sm:text-[13px] mt-1" style={{ color: "#64748b" }}>
               Dúvidas? fredericodigital@gmail.com · WhatsApp
             </p>
           </ScrollReveal>
