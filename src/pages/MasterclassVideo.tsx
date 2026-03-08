@@ -268,7 +268,7 @@ const MasterclassVideo = () => {
       {/* ═══ SECÇÃO 1 — HERO ═══ */}
       <section className="relative overflow-hidden flex items-center justify-center px-4" style={{ minHeight: "min(90vh, 800px)", background: DARK_950, paddingTop: 48, paddingBottom: 48 }}>
         {/* Background video */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.3, objectFit: "cover" }}>
+        <video autoPlay loop muted playsInline preload="none" className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.3, objectFit: "cover" }}>
           <source src="/videos/hero-vidro.mp4" type="video/mp4" />
         </video>
         {/* Orbs — smaller on mobile */}
