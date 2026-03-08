@@ -58,7 +58,7 @@ export const ProgramSection = () => {
       <div className="space-y-6">
         {systems.map((s, i) => (
           <ScrollReveal key={i} delay={i * 0.1}>
-            <div className={`bg-background border border-border ${s.borderColor} border-l-4 rounded-r-lg p-7 shadow-card`}>
+            <div className={`bg-background border border-border ${s.borderColor} border-l-4 rounded-r-lg p-5 sm:p-7 shadow-card`}>
               <div className="flex flex-col md:flex-row md:items-start gap-4">
                 <span className="font-heading font-extrabold text-[42px] text-[hsl(262,83%,58%)]/15 leading-none md:min-w-[60px] md:text-right">{s.num}</span>
                 <div className="flex-1">

@@ -140,12 +140,11 @@ export const HeroSection = () => {
               return (
                 <div
                   key={idx}
-                  className="rounded-xl px-3 py-3 flex flex-col items-center gap-1"
+                  className="rounded-xl px-3 py-3 flex flex-col items-center gap-1 min-w-[calc(50%-6px)] sm:min-w-[130px]"
                   style={{
                     background: "rgba(6, 9, 26, 0.75)",
                     backdropFilter: "blur(8px)",
                     border: "1px solid rgba(37,99,235,0.20)",
-                    minWidth: 130,
                   }}
                 >
                   <Icon className="w-5 h-5 shrink-0" style={{ color: "#60A5FA" }} />

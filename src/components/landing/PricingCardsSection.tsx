@@ -24,6 +24,7 @@ export const PricingCardsSection = () => {
         <div className="max-w-[420px] mx-auto">
           <ScrollReveal>
             <div className="bg-background border border-border rounded-lg p-8 sm:p-10 flex flex-col shadow-card">
+            <div className="bg-background border border-border rounded-lg p-6 sm:p-10 flex flex-col shadow-card">
               <p className="font-heading font-semibold text-[14px] uppercase tracking-[0.08em] text-ink-500 mb-1">PACK COMPLETO</p>
               <p className="font-heading font-medium text-[12px] uppercase tracking-[0.1em] text-ink-400 mb-3">GRAVAÇÃO + GUIA + TEMPLATES</p>
               <div className="flex items-baseline gap-2 mb-1">

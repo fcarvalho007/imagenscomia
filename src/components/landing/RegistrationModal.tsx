@@ -154,7 +154,7 @@ export const RegistrationModal = () => {
             exit="exit"
             transition={{ type: "spring", stiffness: 350, damping: 25 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[460px] bg-background rounded-2xl p-8 overflow-y-auto max-h-[90vh] shadow-card-lg"
+            className="relative w-full max-w-[460px] bg-background rounded-2xl p-5 sm:p-8 overflow-y-auto max-h-[90vh] shadow-card-lg"
             style={{
               border: "1px solid rgba(255,255,255,0.08)",
               boxShadow: "0 25px 60px rgba(0,0,0,0.40), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
