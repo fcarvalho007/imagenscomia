@@ -668,7 +668,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             ].map((m, idx) => (
               <div key={idx} className="bg-surface/60 rounded-lg px-4 py-3 text-center">
                 <m.icon size={16} className="text-ink-400 mx-auto mb-1.5" />
-                <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none">{m.value}</p>
+                <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none break-words">{m.value}</p>
                 <p className="text-[11px] text-ink-500 mt-1">{m.label}</p>
               </div>
             ))}

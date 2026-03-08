@@ -1710,7 +1710,7 @@ function Timeline({
         );
       })}
       <Sheet open={showSmsReport} onOpenChange={(v) => !v && setShowSmsReport(false)}>
-        <SheetContent side="right" className="w-[400px] sm:max-w-[400px] flex flex-col p-0">
+        <SheetContent side="right" className="w-full sm:w-[400px] sm:max-w-[400px] flex flex-col p-0">
           <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
             <SheetTitle className="text-[15px]">📱 Relatório SMS</SheetTitle>
             <SheetDescription className="text-[12px]">Resultado do envio em lote</SheetDescription>
