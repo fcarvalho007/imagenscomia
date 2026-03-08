@@ -112,7 +112,7 @@ export const HeroSection = () => {
                 textShadow: "0 2px 40px rgba(0,0,0,0.5)",
               }}
             >
-              Aprende a Criar Imagens Profissionais<br />com Inteligência Artificial
+              Aprende a Criar Imagens Profissionais<br className="hidden sm:inline" />com Inteligência Artificial
             </span>
           </h1>
         </motion.div>
