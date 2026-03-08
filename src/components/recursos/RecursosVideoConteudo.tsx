@@ -105,7 +105,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
 
             {/* Card: Índice + Apoio */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
 
                 {/* Índice */}
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
