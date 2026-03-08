@@ -507,7 +507,8 @@ const MasterclassVideo = () => {
             </div>
             <button
               onClick={navigateBundle}
-              className="font-heading font-bold text-white text-[13px] sm:text-[15px] py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl cursor-pointer border transition-all w-full sm:w-auto"
+              aria-label="Comprar Pack IA Completo por 107 euros"
+              className="font-heading font-bold text-white text-[13px] sm:text-[15px] py-3 sm:py-3.5 px-4 sm:px-8 rounded-xl cursor-pointer border transition-all w-full sm:w-auto"
               style={{ background: "rgba(22,163,74,0.15)", borderColor: "rgba(22,163,74,0.3)", boxShadow: "0 4px 20px rgba(22,163,74,0.1)" }}
             >
               <Package className="inline w-4 h-4 mr-2" />
