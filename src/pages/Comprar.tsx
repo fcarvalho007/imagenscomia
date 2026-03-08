@@ -62,7 +62,7 @@ const PLANS: Record<Plan, {
       { text: "Sessão Vídeo com IA HD ~70 min, sem cortes" },
       { text: "Workbook PDF resumo da sessão" },
       { text: "Guia técnico dos 3 GEMs para vídeo" },
-      { text: "Sessão Q&A ao vivo — 10 de Março, 14h30" },
+      ...(!POST_MASTERCLASS_MODE ? [{ text: "Sessão Q&A ao vivo — 10 de Março, 14h30" }] : []),
     ],
     ctaLabel: "Quero a Sessão Prática →",
     planLabel: "Sessão Prática · €27 + IVA",
