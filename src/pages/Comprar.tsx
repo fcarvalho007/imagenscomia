@@ -8,6 +8,11 @@ import { Separator } from "@/components/ui/separator";
 
 type Plan = "masterclass" | "bundle" | "gravacao";
 
+// ── Pós-Masterclass ──────────────────────────────────────────
+// Alterar para true após 13 de Março de 2026
+const POST_MASTERCLASS_MODE = false;
+// ─────────────────────────────────────────────────────────────
+
 const MASTERCLASS_CUTOFF = new Date("2026-03-12T13:30:00Z");
 
 function getBenefitIcon(text: string, color: string) {
@@ -46,6 +51,7 @@ const PLANS: Record<Plan, {
   immediateAccess?: boolean;
   showMasterclassDate?: boolean;
   highlightBenefitIndex?: number;
+  exclusiveSection?: boolean;
 }> = {
   gravacao: {
     title: "Sessão Prática",
@@ -57,7 +63,7 @@ const PLANS: Record<Plan, {
       { text: "Sessão Vídeo com IA HD ~70 min, sem cortes" },
       { text: "Workbook PDF resumo da sessão" },
       { text: "Guia técnico dos 3 GEMs para vídeo" },
-      { text: "Sessão Q&A ao vivo — 10 de Março, 14h30" },
+      ...(!POST_MASTERCLASS_MODE ? [{ text: "Sessão Q&A ao vivo — 10 de Março, 14h30" }] : []),
     ],
     ctaLabel: "Quero a Sessão Prática →",
     planLabel: "Sessão Prática · €27 + IVA",
@@ -70,10 +76,12 @@ const PLANS: Record<Plan, {
     title: "Masterclass Vídeo",
     price: "€67",
     ivaNote: "+ IVA",
-    subPriceNote: "3 horas intensivas com o Frederico.",
-    showMasterclassDate: true,
+    subPriceNote: POST_MASTERCLASS_MODE
+      ? "Gravação completa da Masterclass ao vivo — 3 horas."
+      : "3 horas intensivas com o Frederico.",
+    showMasterclassDate: !POST_MASTERCLASS_MODE,
     benefits: [
-      { text: "3 horas ao vivo com o Frederico" },
+      { text: POST_MASTERCLASS_MODE ? "Gravação completa 3h — acesso imediato" : "3 horas ao vivo com o Frederico" },
       { text: "Sistema completo de criação de vídeo com IA" },
       { text: "Prompts reutilizáveis para a tua empresa" },
       { text: "Gravação da Masterclass incluída" },
@@ -92,13 +100,14 @@ const PLANS: Record<Plan, {
     savingsBadge: "Poupas €14",
     ivaNote: "+ IVA",
     subPriceNote: "Tudo incluído num só pacote.",
-    showMasterclassDate: true,
-    highlightBenefitIndex: 3,
+    showMasterclassDate: !POST_MASTERCLASS_MODE,
+    highlightBenefitIndex: POST_MASTERCLASS_MODE ? undefined : 3,
+    exclusiveSection: POST_MASTERCLASS_MODE,
     benefits: [
       { text: "📹 Vídeo com IA", isSectionHeader: true },
       { text: "Sessão completa HD ~70 min, sem cortes" },
       { text: "Workbook + Guia GEMs para vídeo" },
-      { text: "3 horas ao vivo — Masterclass completa" },
+      { text: POST_MASTERCLASS_MODE ? "Masterclass Vídeo com IA (gravação 3h)" : "3 horas ao vivo — Masterclass completa" },
       { text: "Gravação da Masterclass incluída" },
       { text: "🖼️ Imagens com IA (incluído)", isSectionHeader: true },
       { text: "Sessão HD 60 min — Imagens com IA" },
@@ -210,6 +219,20 @@ function PlanCard({ plan, onSelect, isMobile }: { plan: Plan; onSelect: () => vo
               )
             )}
           </ul>
+
+          {cfg.exclusiveSection && (
+            <>
+              <Separator className="bg-gray-200" />
+              <div className="bg-violet-50/60 border border-violet-200/60 rounded-lg px-4 py-3">
+                <p className="text-xs font-bold text-violet-700 flex items-center gap-1.5">
+                  ✦ Exclusivo Pack IA Completo
+                </p>
+                <p className="text-xs text-violet-600/80 mt-1">
+                  Acesso antecipado garantido ao próximo evento com preço early bird.
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         <button
