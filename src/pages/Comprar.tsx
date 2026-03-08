@@ -75,10 +75,12 @@ const PLANS: Record<Plan, {
     title: "Masterclass Vídeo",
     price: "€67",
     ivaNote: "+ IVA",
-    subPriceNote: "3 horas intensivas com o Frederico.",
-    showMasterclassDate: true,
+    subPriceNote: POST_MASTERCLASS_MODE
+      ? "Gravação completa da Masterclass ao vivo — 3 horas."
+      : "3 horas intensivas com o Frederico.",
+    showMasterclassDate: !POST_MASTERCLASS_MODE,
     benefits: [
-      { text: "3 horas ao vivo com o Frederico" },
+      { text: POST_MASTERCLASS_MODE ? "Gravação completa 3h — acesso imediato" : "3 horas ao vivo com o Frederico" },
       { text: "Sistema completo de criação de vídeo com IA" },
       { text: "Prompts reutilizáveis para a tua empresa" },
       { text: "Gravação da Masterclass incluída" },
