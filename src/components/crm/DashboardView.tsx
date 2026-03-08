@@ -1015,12 +1015,12 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
       {/* Duvidas */}
       <div className="bg-white border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
             <h3 className="font-heading font-bold text-sm text-ink-900">Dúvidas dos Inscritos</h3>
             <p className="text-xs text-ink-400">Respostas ao {isVideo ? "Passo 4" : "Passo 2"} do flow de inscrição</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
               ✍️ {stats.comDuvida.filter(i => i.duvida.includes("Outro:")).length} personalizadas
             </span>
