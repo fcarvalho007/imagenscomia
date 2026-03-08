@@ -1106,13 +1106,21 @@ function Timeline({
 
   const POST_EVENT_CUTOFF = new Date("2026-03-05T11:00:00Z").getTime();
   const filteredInscritos = useMemo(() => {
+    if (isMcTab) {
+      return inscritos.filter((i) => {
+        if (i.webinar !== "video") return false;
+        const plan = i.plan || "free";
+        if (!["masterclass", "bundle"].includes(plan)) return false;
+        return !!(i.paid_at || i.premium_granted_at);
+      });
+    }
     if (!isPostTab) return inscritos;
     return inscritos.filter((i) => {
       if (i.webinar !== "video") return false;
       const created = new Date(i.timestamp).getTime();
       return created >= POST_EVENT_CUTOFF;
     });
-  }, [inscritos, isPostTab]);
+  }, [inscritos, isPostTab, isMcTab]);
 
   const inscritosCount = filteredInscritos.filter((i) => {
     if (webinar === "video") return i.webinar === "video";
