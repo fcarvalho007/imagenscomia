@@ -564,6 +564,85 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
   ];
 }
 
+/* ─── MASTERCLASS NODES (video only) ─── */
+function getMasterclassNodes(): NodeDef[] {
+  return [
+    {
+      type: "trigger",
+      title: "📽 Masterclass Vídeo · 12 Março",
+      subtitle: "Participantes pagos · Masterclass + Bundle",
+      templateKeyMatch: [],
+      iconEmoji: "🎬",
+      borderColorOverride: "#16a34a",
+      dayGroup: "mc_thankyou",
+    },
+    {
+      type: "email",
+      title: "Email pós-Masterclass — Obrigado",
+      subtitle: "12 de Março · 14h · enviado imediatamente após o fim",
+      templateKeyMatch: ["video_masterclass_thankyou"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#16a34a",
+      customTag: { label: "12 MAR · AUTOMÁTICO", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_thankyou",
+    },
+    {
+      type: "email",
+      title: "Email MC+24h — Recursos + Avaliação",
+      subtitle: "13 de Março · 10h · gravação + link de review Google",
+      templateKeyMatch: ["video_masterclass_day1"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "13 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
+      note: "Inclui link para gravação da Masterclass e pedido de avaliação Google",
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_d1",
+    },
+    {
+      type: "email",
+      channel: "sms",
+      title: "SMS MC+24h — Lembrete avaliação",
+      subtitle: "13 de Março · 11h · só quem tem telefone",
+      templateKeyMatch: ["sms_masterclass_day1"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "13 MAR · MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      smsSendConfig: {
+        planFilter: ["masterclass", "bundle"],
+        webinarFilter: "current",
+        smsText: "Ola! A gravacao da Masterclass e os materiais estao disponiveis em imagenscomia.com/recursos-video — usa o email de registo. Deixa a tua avaliacao Google aqui: g.page/r/CaZCB4qF_TkhEB0/review — Ate ja! — Frederico",
+        requirePhone: true,
+        requirePaid: true,
+      },
+      dayGroup: "mc_d1",
+    },
+    {
+      type: "email",
+      title: "Email MC+72h — Fecho + próximos passos",
+      subtitle: "15 de Março · 10h · final da sequência",
+      templateKeyMatch: ["video_masterclass_day3"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "15 MAR · FECHO", bg: "#fee2e2", color: "#dc2626" },
+      note: "Email de fechamento com recursos finais e próximos passos",
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_d3",
+    },
+    {
+      type: "end",
+      title: "Sequência Masterclass concluída",
+      subtitle: "Participante recebeu todos os emails pós-Masterclass",
+      templateKeyMatch: [],
+      dayGroup: "end",
+    },
+  ];
+}
+
 /* ─── POST-EVENT NODES (video only) ─── */
 function getPostEventNodes(): NodeDef[] {
   return [
