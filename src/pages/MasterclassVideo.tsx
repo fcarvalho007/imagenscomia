@@ -359,7 +359,7 @@ const MasterclassVideo = () => {
           <div className="space-y-6">
             {agenda.map((item, i) => (
               <ScrollReveal key={i} delay={i * 0.1}>
-                <div className={`rounded-xl border-l-4 ${item.borderColor} p-6`} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeftWidth: 4 }}>
+                <div className={`rounded-xl p-6`} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeft: `4px solid`, borderLeftColor: item.borderColor }}>
                   <span className="font-heading font-bold text-[13px] uppercase tracking-[0.1em]" style={{ color: "rgba(74,222,128,0.5)" }}>{item.num}</span>
                   <h3 className="font-heading font-bold text-[20px] text-white mt-1 mb-2">{item.title}</h3>
                   <p className="text-[14px] leading-relaxed mb-3" style={{ color: "#94a3b8" }}>{item.desc}</p>
