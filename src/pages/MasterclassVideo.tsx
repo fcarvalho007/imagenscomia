@@ -178,6 +178,7 @@ const MasterclassVideo = () => {
 
   /* JSON-LD structured data */
   useEffect(() => {
+    document.getElementById("masterclass-jsonld")?.remove();
     const jsonLd = document.createElement("script");
     jsonLd.type = "application/ld+json";
     jsonLd.id = "masterclass-jsonld";
@@ -238,6 +239,7 @@ const MasterclassVideo = () => {
             </span>
             <button
               onClick={navigateCta}
+              aria-label="Garantir lugar na Masterclass"
               className="shrink-0 text-[12px] sm:text-[13px] font-heading font-semibold text-white px-3 sm:px-5 py-2 sm:py-2.5 rounded-full transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-green-500/50 focus-visible:ring-offset-2"
               style={{ background: "#16A34A", boxShadow: "0 4px 14px rgba(22,163,74,0.35)" }}
             >
@@ -257,6 +259,7 @@ const MasterclassVideo = () => {
       >
         <button
           onClick={navigateCta}
+          aria-label="Garantir acesso à Masterclass"
           className="w-full font-heading font-bold text-white text-[14px] py-3.5 rounded-xl cursor-pointer"
           style={{ background: "#16A34A", boxShadow: "0 4px 20px rgba(22,163,74,0.4)" }}
         >
@@ -267,7 +270,7 @@ const MasterclassVideo = () => {
       {/* ═══ SECÇÃO 1 — HERO ═══ */}
       <section className="relative overflow-hidden flex items-center justify-center px-4" style={{ minHeight: "min(90vh, 800px)", background: DARK_950, paddingTop: 48, paddingBottom: 48 }}>
         {/* Background video */}
-        <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.3, objectFit: "cover" }}>
+        <video autoPlay loop muted playsInline preload="none" className="absolute inset-0 w-full h-full" style={{ zIndex: 0, opacity: 0.3, objectFit: "cover" }}>
           <source src="/videos/hero-vidro.mp4" type="video/mp4" />
         </video>
         {/* Orbs — smaller on mobile */}
@@ -338,10 +341,13 @@ const MasterclassVideo = () => {
             <ElectricBorder color="#22C55E" speed={0.8} chaos={0.08} borderRadius={12} style={{ display: "inline-block", width: "100%", maxWidth: 400 }}>
               <button
                 onClick={navigateCta}
+                aria-label="Garantir acesso à Masterclass Vídeo com IA"
                 className="w-full font-heading font-bold text-white text-[14px] sm:text-[16px] py-3.5 sm:py-4 px-6 sm:px-8 rounded-xl cursor-pointer border-none"
                 style={{ background: "#16A34A" }}
               >
-                {ctaLabel} <ArrowRight className="inline w-4 h-4 ml-1" />
+                <span className="sm:hidden">{ctaLabelShort}</span>
+                <span className="hidden sm:inline">{ctaLabel}</span>
+                {" "}<ArrowRight className="inline w-4 h-4 ml-1" />
               </button>
             </ElectricBorder>
           </motion.div>
@@ -501,7 +507,8 @@ const MasterclassVideo = () => {
             </div>
             <button
               onClick={navigateBundle}
-              className="font-heading font-bold text-white text-[13px] sm:text-[15px] py-3 sm:py-3.5 px-6 sm:px-8 rounded-xl cursor-pointer border transition-all w-full sm:w-auto"
+              aria-label="Comprar Pack IA Completo por 107 euros"
+              className="font-heading font-bold text-white text-[13px] sm:text-[15px] py-3 sm:py-3.5 px-4 sm:px-8 rounded-xl cursor-pointer border transition-all w-full sm:w-auto"
               style={{ background: "rgba(22,163,74,0.15)", borderColor: "rgba(22,163,74,0.3)", boxShadow: "0 4px 20px rgba(22,163,74,0.1)" }}
             >
               <Package className="inline w-4 h-4 mr-2" />
