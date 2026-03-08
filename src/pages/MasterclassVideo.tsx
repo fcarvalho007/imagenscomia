@@ -176,6 +176,36 @@ const MasterclassVideo = () => {
     ogUrl: "https://imagenscomia.com/masterclass-video",
   });
 
+  /* JSON-LD structured data */
+  useEffect(() => {
+    const jsonLd = document.createElement("script");
+    jsonLd.type = "application/ld+json";
+    jsonLd.id = "masterclass-jsonld";
+    jsonLd.textContent = JSON.stringify(MASTERCLASS_LIVE ? {
+      "@context": "https://schema.org",
+      "@type": "EducationEvent",
+      "name": "Masterclass Vídeo com IA — Sistema Completo de Produção",
+      "description": "3 horas ao vivo com Frederico Carvalho. Agentes de IA, fluxos de montagem e edição em linguagem natural.",
+      "startDate": "2026-03-12T10:00:00+00:00",
+      "endDate": "2026-03-12T13:00:00+00:00",
+      "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": { "@type": "VirtualLocation", "url": "https://imagenscomia.com/masterclass-video" },
+      "organizer": { "@type": "Organization", "name": "DIGITALFC", "url": "https://digitalfc.pt" },
+      "performer": { "@type": "Person", "name": "Frederico Carvalho" },
+      "offers": { "@type": "Offer", "price": "67", "priceCurrency": "EUR", "url": "https://imagenscomia.com/comprar?plan=masterclass", "availability": "https://schema.org/InStock" },
+    } : {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": "Masterclass Vídeo com IA — Sistema Completo de Produção",
+      "description": "Gravação de 3 horas com Frederico Carvalho. Agentes de IA, fluxos de montagem e edição em linguagem natural.",
+      "provider": { "@type": "Organization", "name": "DIGITALFC", "url": "https://digitalfc.pt" },
+      "offers": { "@type": "Offer", "price": "67", "priceCurrency": "EUR", "url": "https://imagenscomia.com/comprar?plan=masterclass" },
+    });
+    document.head.appendChild(jsonLd);
+    return () => { document.getElementById("masterclass-jsonld")?.remove(); };
+  }, []);
+
   const [showMobileCta, setShowMobileCta] = useState(false);
   useEffect(() => {
     const onScroll = () => setShowMobileCta(window.scrollY > 600);
