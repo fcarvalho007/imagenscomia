@@ -95,17 +95,17 @@ const problems = [
 
 const agenda = [
   {
-    num: "01", title: "Agentes de IA em Pipeline", borderColor: "border-l-green-600",
+    num: "01", title: "Agentes de IA em Pipeline", borderColor: "#16a34a",
     desc: "Como configurar agentes especializados no Gemini que trabalham em sequência — do briefing ao prompt técnico, sem intervenção manual.",
     bullets: ["Os 3 GEMs para vídeo profissional", "Como encadear instruções entre agentes", "Ficheiro GEM pronto a importar (incluído)"],
   },
   {
-    num: "02", title: "Fluxos de Montagem Automáticos", borderColor: "border-l-emerald-500",
+    num: "02", title: "Fluxos de Montagem Automáticos", borderColor: "#10b981",
     desc: "Storyboard automático no Kling Canvas. First/last frame para consistência visual garantida. Pipeline de 7 passos do briefing ao clip publicável.",
     bullets: ["Casos reais com marcas portuguesas", "Erros mais comuns — corrigidos ao vivo"],
   },
   {
-    num: "03", title: "Edição com Linguagem Natural", borderColor: "border-l-teal-500",
+    num: "03", title: "Edição com Linguagem Natural", borderColor: "#14b8a6",
     desc: "Edição no Filmora com comandos em linguagem natural. Ajuste de rácios, transições e áudio sem conhecimentos técnicos. Do clip gerado ao vídeo publicável em menos de 10 minutos.",
     bullets: ["Demonstração completa ao vivo", "Checklist de publicação por plataforma"],
   },
@@ -174,6 +174,36 @@ const MasterclassVideo = () => {
     description: "3 horas ao vivo com Frederico Carvalho. Agentes de IA, fluxos de montagem e edição em linguagem natural. €67 + IVA.",
     ogUrl: "https://imagenscomia.com/masterclass-video",
   });
+
+  /* JSON-LD structured data */
+  useEffect(() => {
+    const jsonLd = document.createElement("script");
+    jsonLd.type = "application/ld+json";
+    jsonLd.id = "masterclass-jsonld";
+    jsonLd.textContent = JSON.stringify(MASTERCLASS_LIVE ? {
+      "@context": "https://schema.org",
+      "@type": "EducationEvent",
+      "name": "Masterclass Vídeo com IA — Sistema Completo de Produção",
+      "description": "3 horas ao vivo com Frederico Carvalho. Agentes de IA, fluxos de montagem e edição em linguagem natural.",
+      "startDate": "2026-03-12T10:00:00+00:00",
+      "endDate": "2026-03-12T13:00:00+00:00",
+      "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
+      "eventStatus": "https://schema.org/EventScheduled",
+      "location": { "@type": "VirtualLocation", "url": "https://imagenscomia.com/masterclass-video" },
+      "organizer": { "@type": "Organization", "name": "DIGITALFC", "url": "https://digitalfc.pt" },
+      "performer": { "@type": "Person", "name": "Frederico Carvalho" },
+      "offers": { "@type": "Offer", "price": "67", "priceCurrency": "EUR", "url": "https://imagenscomia.com/comprar?plan=masterclass", "availability": "https://schema.org/InStock" },
+    } : {
+      "@context": "https://schema.org",
+      "@type": "Course",
+      "name": "Masterclass Vídeo com IA — Sistema Completo de Produção",
+      "description": "Gravação de 3 horas com Frederico Carvalho. Agentes de IA, fluxos de montagem e edição em linguagem natural.",
+      "provider": { "@type": "Organization", "name": "DIGITALFC", "url": "https://digitalfc.pt" },
+      "offers": { "@type": "Offer", "price": "67", "priceCurrency": "EUR", "url": "https://imagenscomia.com/comprar?plan=masterclass" },
+    });
+    document.head.appendChild(jsonLd);
+    return () => { document.getElementById("masterclass-jsonld")?.remove(); };
+  }, []);
 
   const [showMobileCta, setShowMobileCta] = useState(false);
   useEffect(() => {
@@ -359,7 +389,7 @@ const MasterclassVideo = () => {
           <div className="space-y-6">
             {agenda.map((item, i) => (
               <ScrollReveal key={i} delay={i * 0.1}>
-                <div className={`rounded-xl border-l-4 ${item.borderColor} p-6`} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeftWidth: 4 }}>
+                <div className={`rounded-xl p-6`} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}`, borderLeft: `4px solid`, borderLeftColor: item.borderColor }}>
                   <span className="font-heading font-bold text-[13px] uppercase tracking-[0.1em]" style={{ color: "rgba(74,222,128,0.5)" }}>{item.num}</span>
                   <h3 className="font-heading font-bold text-[20px] text-white mt-1 mb-2">{item.title}</h3>
                   <p className="text-[14px] leading-relaxed mb-3" style={{ color: "#94a3b8" }}>{item.desc}</p>
@@ -551,7 +581,7 @@ const MasterclassVideo = () => {
           <Accordion type="single" collapsible className="mt-8 space-y-2">
             {faqs.map((faq, i) => (
               <ScrollReveal key={i} delay={i * 0.05}>
-                <AccordionItem value={`faq-${i}`} className="rounded-xl border-none px-5" style={{ background: "rgba(255,255,255,0.03)", borderBottom: `1px solid ${DARK_BORDER}` }}>
+                <AccordionItem value={`faq-${i}`} className="rounded-xl border-b-0 px-5" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${DARK_BORDER}` }}>
                   <AccordionTrigger className="text-[15px] font-heading font-semibold text-white hover:no-underline py-4">
                     {faq.q}
                   </AccordionTrigger>
