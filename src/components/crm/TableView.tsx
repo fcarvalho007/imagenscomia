@@ -271,7 +271,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       <BulkInvoiceButton />
 
       {/* Quick Filter Chips */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 overflow-x-auto max-sm:pb-1">
         <button className={chipClass("awaiting")} onClick={() => toggleQuickFilter("awaiting")}>
           <Filter size={12} /> Aguardam pagamento
           <span className="text-[10px] opacity-70">({counts.awaiting})</span>
@@ -305,20 +305,20 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-2.5 mb-4">
-        <div className="relative">
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="relative flex-1 min-w-[180px] max-w-[300px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
           <input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder="Pesquisar nome, email ou telefone..."
-            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-[260px] outline-none focus:ring-1 focus:ring-blue-300"
+            placeholder="Pesquisar..."
+            className="pl-9 pr-3 py-2 text-sm bg-white border border-border rounded-lg w-full outline-none focus:ring-1 focus:ring-blue-300"
           />
         </div>
         <select
           value={planFilter}
           onChange={(e) => { setPlanFilter(e.target.value); setPage(0); }}
-          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none max-sm:flex-1 max-sm:min-w-[calc(50%-4px)]"
         >
           <option value="all">Todos os planos</option>
           <option value="free">Gratuito</option>
@@ -329,7 +329,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         <select
           value={paymentFilter}
           onChange={(e) => { setPaymentFilter(e.target.value); setPage(0); }}
-          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none max-sm:flex-1 max-sm:min-w-[calc(50%-4px)]"
         >
           <option value="all">Todos os estados</option>
           <option value="selected">Seleccionou e saiu</option>
@@ -340,12 +340,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         <select
           value={stepFilter}
           onChange={(e) => { setStepFilter(e.target.value); setPage(0); }}
-          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none"
+          className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none max-sm:flex-1 max-sm:min-w-[calc(50%-4px)]"
         >
           <option value="all">Todos os passos</option>
           {[1,2,3,4,5].map((s) => <option key={s} value={s}>Passo {s}</option>)}
         </select>
-        <button onClick={() => exportCSV()} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white">
+        <button onClick={() => exportCSV()} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white max-sm:w-full max-sm:justify-center">
           <Download size={14} /> Exportar CSV
         </button>
       </div>

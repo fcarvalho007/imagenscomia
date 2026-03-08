@@ -254,7 +254,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
       {/* Filters */}
       <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-6 lg:gap-8">
         {/* LEFT — Form */}
         <div className="space-y-5">
           {/* Recipients */}

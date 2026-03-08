@@ -903,11 +903,12 @@ function DayGroupContainer({
 
   return (
     <div
+      className="overflow-hidden"
       style={{
         background: config.bgColor,
         borderLeft: `4px solid ${config.borderColor}`,
         borderRadius: 12,
-        padding: "20px 20px 16px",
+        padding: "16px 12px 12px",
         position: "relative",
       }}
     >

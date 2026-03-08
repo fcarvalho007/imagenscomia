@@ -437,36 +437,35 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
           <h1 className="font-heading font-bold text-[22px] text-ink-900">Dashboard</h1>
           <p className="text-sm text-ink-500">Visão geral do webinar em tempo real</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Period selector */}
-          <div className="flex items-center gap-1 bg-surface rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-surface rounded-lg p-0.5 overflow-x-auto max-sm:max-w-[calc(100vw-100px)]">
             {(["7d","14d","30d","all"] as const).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${period === p ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-700"}`}
+                className={`px-2.5 py-1 rounded-md text-[11px] sm:text-[12px] font-medium transition-colors whitespace-nowrap ${period === p ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-700"}`}
               >
-                {p === "7d" ? "7 dias" : p === "14d" ? "14 dias" : p === "30d" ? "30 dias" : "Desde início"}
+                {p === "7d" ? "7d" : p === "14d" ? "14d" : p === "30d" ? "30d" : "Tudo"}
               </button>
             ))}
           </div>
-          {/* Cutoff badge */}
+          {/* Cutoff badge — hide on small screens */}
           {dashConfig.cutoffDate && (
-            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-ink-100 text-ink-500 border border-ink-200">
+            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-ink-100 text-ink-500 border border-ink-200 hidden sm:inline">
               Dados até: 20 Fev 2026
             </span>
           )}
           {onRefresh && (
             <button
               onClick={async () => { setRefreshing(true); await onRefresh(); setRefreshing(false); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium bg-surface text-ink-600 hover:bg-ink-100 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] sm:text-[13px] font-medium bg-surface text-ink-600 hover:bg-ink-100 transition-colors"
             >
               <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </button>
           )}
-          <p className="text-[13px] text-ink-400">{dateStr}</p>
+          <p className="text-[12px] text-ink-400 hidden sm:block">{dateStr}</p>
         </div>
       </div>
       {period !== "all" && (
