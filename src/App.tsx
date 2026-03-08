@@ -55,6 +55,7 @@ const App = () => (
           <Route path="/fatura" element={<Fatura />} />
           <Route path="/video-lp" element={<VideoLPPage />} />
           <Route path="/recursos-video" element={<RecursosVideo />} />
+          <Route path="/masterclass-video" element={<MasterclassVideo />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
