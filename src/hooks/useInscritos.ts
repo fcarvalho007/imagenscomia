@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Inscrito, Nota } from "@/pages/crm/mockData";
 import { detectGender } from "@/lib/genderDetection";
 import { useWebinarSettings, getPlanPrices } from "@/hooks/useWebinarSettings";
+import { toast } from "@/hooks/use-toast";
 
 // Fallback only used until DB settings load
 const PLAN_VALUES_FALLBACK: Record<string, Record<string, number>> = {
