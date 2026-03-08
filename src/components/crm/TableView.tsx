@@ -271,7 +271,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       <BulkInvoiceButton />
 
       {/* Quick Filter Chips */}
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 overflow-x-auto max-sm:pb-1">
         <button className={chipClass("awaiting")} onClick={() => toggleQuickFilter("awaiting")}>
           <Filter size={12} /> Aguardam pagamento
           <span className="text-[10px] opacity-70">({counts.awaiting})</span>
