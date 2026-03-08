@@ -1380,7 +1380,7 @@ function Timeline({
             const isCustomized = !!customSmsTexts[tplKey];
 
             return (
-              <div className="flex flex-col items-end gap-1.5" style={{ maxWidth: 300 }}>
+              <div className="flex flex-col items-end gap-1.5 max-sm:items-start max-sm:w-full" style={{ maxWidth: 300 }}>
                 {counts && (
                   counts.sent > 0 ? (
                     <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
