@@ -668,7 +668,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
             ].map((m, idx) => (
               <div key={idx} className="bg-surface/60 rounded-lg px-4 py-3 text-center">
                 <m.icon size={16} className="text-ink-400 mx-auto mb-1.5" />
-                <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none">{m.value}</p>
+                <p className="font-heading font-extrabold text-[22px] text-ink-900 leading-none break-words">{m.value}</p>
                 <p className="text-[11px] text-ink-500 mt-1">{m.label}</p>
               </div>
             ))}
@@ -679,7 +679,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
       {/* Email Follow-up Status */}
       <div className="bg-white border border-border rounded-xl p-5 mb-5">
-        <div className="flex items-center gap-2.5 mb-4">
+        <div className="flex items-center gap-2.5 mb-4 flex-wrap">
           <Mail size={18} className="text-blue-600" />
           <div>
             <h3 className="font-heading font-bold text-[14px] text-ink-900">Emails de Follow-up Resend</h3>
@@ -1015,12 +1015,12 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
       {/* Duvidas */}
       <div className="bg-white border border-border rounded-xl p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
             <h3 className="font-heading font-bold text-sm text-ink-900">Dúvidas dos Inscritos</h3>
             <p className="text-xs text-ink-400">Respostas ao {isVideo ? "Passo 4" : "Passo 2"} do flow de inscrição</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
               ✍️ {stats.comDuvida.filter(i => i.duvida.includes("Outro:")).length} personalizadas
             </span>
@@ -1145,8 +1145,8 @@ function PostWebinarAction() {
       <p className="text-[12px] text-ink-400 mb-4">Envios manuais para inscritos do Vídeo IA</p>
 
       <div className="border border-border rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-[14px] text-ink-800 flex items-center gap-2">
               <Mail size={16} className="text-green-600" /> Email Pós-Webinar
             </p>
@@ -1161,7 +1161,7 @@ function PostWebinarAction() {
               <Send size={14} /> Enviar email pós-webinar
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[12px] text-ink-500">Tens a certeza?</span>
               <button
                 onClick={handleSend}

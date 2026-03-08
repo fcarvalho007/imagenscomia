@@ -216,7 +216,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
       </div>
 
       {/* Pill tabs */}
-      <div className="flex gap-1 mb-5">
+      <div className="flex gap-1 mb-5 overflow-x-auto whitespace-nowrap">
         {TABS.map((tab) => (
           <button
             key={tab.key}

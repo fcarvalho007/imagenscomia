@@ -11,7 +11,7 @@ interface ComunicacaoViewProps {
 
 export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
   return (
-    <div className="min-h-screen p-6 md:p-8" style={{ background: "#F8FAFC" }}>
+    <div className="min-h-screen p-4 md:p-8" style={{ background: "#F8FAFC" }}>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-slate-900">Comunicação</h1>
         <p className="text-sm mt-1 text-slate-500">

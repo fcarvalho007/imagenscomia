@@ -1380,7 +1380,7 @@ function Timeline({
             const isCustomized = !!customSmsTexts[tplKey];
 
             return (
-              <div className="flex flex-col items-end gap-1.5" style={{ maxWidth: 300 }}>
+              <div className="flex flex-col items-end gap-1.5 max-sm:items-start max-sm:w-full" style={{ maxWidth: 300 }}>
                 {counts && (
                   counts.sent > 0 ? (
                     <span className="text-[13px] font-semibold" style={{ color: "#7c3aed" }}>
@@ -1710,7 +1710,7 @@ function Timeline({
         );
       })}
       <Sheet open={showSmsReport} onOpenChange={(v) => !v && setShowSmsReport(false)}>
-        <SheetContent side="right" className="w-[400px] sm:max-w-[400px] flex flex-col p-0">
+        <SheetContent side="right" className="w-full sm:w-[400px] sm:max-w-[400px] flex flex-col p-0">
           <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
             <SheetTitle className="text-[15px]">📱 Relatório SMS</SheetTitle>
             <SheetDescription className="text-[12px]">Resultado do envio em lote</SheetDescription>
