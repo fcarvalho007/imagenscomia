@@ -679,7 +679,7 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
 
       {/* Email Follow-up Status */}
       <div className="bg-white border border-border rounded-xl p-5 mb-5">
-        <div className="flex items-center gap-2.5 mb-4">
+        <div className="flex items-center gap-2.5 mb-4 flex-wrap">
           <Mail size={18} className="text-blue-600" />
           <div>
             <h3 className="font-heading font-bold text-[14px] text-ink-900">Emails de Follow-up Resend</h3>
