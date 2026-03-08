@@ -83,7 +83,7 @@ export default function RecursosVideoLogin({ onAuthed }: Props) {
         </div>
 
         {/* Card */}
-        <div className="bg-[hsl(var(--white))] rounded-2xl border border-[hsl(var(--border))] shadow-sm p-8">
+        <div className="bg-[hsl(var(--white))] rounded-2xl border border-[hsl(var(--border))] shadow-sm p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email-video" className="text-[hsl(var(--ink-700))] font-medium">

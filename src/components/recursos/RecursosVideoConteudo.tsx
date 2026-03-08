@@ -89,6 +89,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
                   referrerPolicy="strict-origin-when-cross-origin"
+                  loading="lazy"
                   style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
                   title="Webinar — Vídeo com IA · 5 Mar · Frederico Carvalho"
                 />
@@ -105,7 +106,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
 
             {/* Card: Índice + Apoio */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
 
                 {/* Índice */}
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-4">
@@ -115,7 +116,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                   {VIDEO_RECURSOS_CONFIG.chapters.map((ch, i) => (
                     <li
                       key={i}
-                      className="flex gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
+                      className="flex gap-3 p-3 sm:p-4 rounded-xl bg-gray-50 border border-gray-100"
                     >
                       <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center shrink-0 mt-0.5">
                         <span className="text-[11px] font-bold text-white">{i + 1}</span>
@@ -140,7 +141,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
               {/* Recursos */}
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recursos</p>
-                <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
 
                   <a
                     href={VIDEO_RECURSOS_CONFIG.audioUrl}
