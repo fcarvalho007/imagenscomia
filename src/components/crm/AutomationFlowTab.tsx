@@ -115,6 +115,10 @@ const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
   post_convert: { label: "SEQUÊNCIA DE CONVERSÃO", number: "→", borderColor: "#3b82f6", bgColor: "#f8fafc" },
   post_close: { label: "FECHO", number: "✕", borderColor: "#ef4444", bgColor: "#fef2f2" },
   post_paid: { label: "CLIENTES PAGOS", number: "€", borderColor: "#16a34a", bgColor: "#f0fdf4" },
+  // masterclass
+  mc_thankyou: { label: "PÓS-MASTERCLASS · 12 MARÇO", number: "0", borderColor: "#16a34a", bgColor: "#f0fdf4" },
+  mc_d1: { label: "DIA 1 — 13 MARÇO", number: "1", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  mc_d3: { label: "DIA 3 — 15 MARÇO · FECHO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
 };
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
@@ -560,6 +564,85 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
   ];
 }
 
+/* ─── MASTERCLASS NODES (video only) ─── */
+function getMasterclassNodes(): NodeDef[] {
+  return [
+    {
+      type: "trigger",
+      title: "📽 Masterclass Vídeo · 12 Março",
+      subtitle: "Participantes pagos · Masterclass + Bundle",
+      templateKeyMatch: [],
+      iconEmoji: "🎬",
+      borderColorOverride: "#16a34a",
+      dayGroup: "mc_thankyou",
+    },
+    {
+      type: "email",
+      title: "Email pós-Masterclass — Obrigado",
+      subtitle: "12 de Março · 14h · enviado imediatamente após o fim",
+      templateKeyMatch: ["video_masterclass_thankyou"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#16a34a",
+      customTag: { label: "12 MAR · AUTOMÁTICO", bg: "#dcfce7", color: "#16a34a" },
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_thankyou",
+    },
+    {
+      type: "email",
+      title: "Email MC+24h — Recursos + Avaliação",
+      subtitle: "13 de Março · 10h · gravação + link de review Google",
+      templateKeyMatch: ["video_masterclass_day1"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "13 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
+      note: "Inclui link para gravação da Masterclass e pedido de avaliação Google",
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_d1",
+    },
+    {
+      type: "email",
+      channel: "sms",
+      title: "SMS MC+24h — Lembrete avaliação",
+      subtitle: "13 de Março · 11h · só quem tem telefone",
+      templateKeyMatch: ["sms_masterclass_day1"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "13 MAR · MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      smsSendConfig: {
+        planFilter: ["masterclass", "bundle"],
+        webinarFilter: "current",
+        smsText: "Ola! A gravacao da Masterclass e os materiais estao disponiveis em imagenscomia.com/recursos-video — usa o email de registo. Deixa a tua avaliacao Google aqui: g.page/r/CaZCB4qF_TkhEB0/review — Ate ja! — Frederico",
+        requirePhone: true,
+        requirePaid: true,
+      },
+      dayGroup: "mc_d1",
+    },
+    {
+      type: "email",
+      title: "Email MC+72h — Fecho + próximos passos",
+      subtitle: "15 de Março · 10h · final da sequência",
+      templateKeyMatch: ["video_masterclass_day3"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "15 MAR · FECHO", bg: "#fee2e2", color: "#dc2626" },
+      note: "Email de fechamento com recursos finais e próximos passos",
+      audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      dayGroup: "mc_d3",
+    },
+    {
+      type: "end",
+      title: "Sequência Masterclass concluída",
+      subtitle: "Participante recebeu todos os emails pós-Masterclass",
+      templateKeyMatch: [],
+      dayGroup: "end",
+    },
+  ];
+}
+
 /* ─── POST-EVENT NODES (video only) ─── */
 function getPostEventNodes(): NodeDef[] {
   return [
@@ -975,7 +1058,7 @@ function Timeline({
   emailStats?: EmailStats;
   emailStatsLoading?: boolean;
   onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
-  flowSubTab?: "pre" | "post";
+  flowSubTab?: "pre" | "post" | "mc";
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
@@ -1015,20 +1098,29 @@ function Timeline({
     localStorage.setItem("crm_sms_drafts", JSON.stringify(updated));
   };
   const isPostTab = flowSubTab === "post";
-  const nodes = useMemo(() => isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab]);
+  const isMcTab = flowSubTab === "mc";
+  const nodes = useMemo(() => isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
 
   const POST_EVENT_CUTOFF = new Date("2026-03-05T11:00:00Z").getTime();
   const filteredInscritos = useMemo(() => {
+    if (isMcTab) {
+      return inscritos.filter((i) => {
+        if (i.webinar !== "video") return false;
+        const plan = i.plan || "free";
+        if (!["masterclass", "bundle"].includes(plan)) return false;
+        return !!(i.paid_at || i.premium_granted_at);
+      });
+    }
     if (!isPostTab) return inscritos;
     return inscritos.filter((i) => {
       if (i.webinar !== "video") return false;
       const created = new Date(i.timestamp).getTime();
       return created >= POST_EVENT_CUTOFF;
     });
-  }, [inscritos, isPostTab]);
+  }, [inscritos, isPostTab, isMcTab]);
 
   const inscritosCount = filteredInscritos.filter((i) => {
     if (webinar === "video") return i.webinar === "video";
@@ -1660,7 +1752,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   const [drawerEmailKey, setDrawerEmailKey] = useState("");
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
-  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post">("pre");
+  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post" | "mc">("pre");
 
   const handleClickSentCount = (emailKey: string, title: string, webinar: WebinarKey) => {
     setDrawerEmailKey(emailKey);
@@ -1687,24 +1779,28 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     />
   );
 
+  const SUB_TABS = [
+    { key: "pre" as const, label: "Pré-Webinar", emoji: "📡", activeBg: "#1e40af" },
+    { key: "post" as const, label: "Pós-Evento", emoji: "🕐", activeBg: "#f59e0b" },
+    { key: "mc" as const, label: "Masterclass", emoji: "📽", activeBg: "#16a34a" },
+  ];
+
   const SubTabPills = () => (
     <div className="flex items-center gap-1.5 mb-5">
-      {(["pre", "post"] as const).map((tab) => {
-        const isActive = flowSubTab === tab;
-        const label = tab === "pre" ? "Pré-Webinar" : "Pós-Evento";
-        const emoji = tab === "pre" ? "📡" : "🕐";
+      {SUB_TABS.map((tab) => {
+        const isActive = flowSubTab === tab.key;
         return (
           <button
-            key={tab}
-            onClick={() => setFlowSubTab(tab)}
+            key={tab.key}
+            onClick={() => setFlowSubTab(tab.key)}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all"
             style={{
-              background: isActive ? (tab === "pre" ? "#1e40af" : "#f59e0b") : "#f1f5f9",
+              background: isActive ? tab.activeBg : "#f1f5f9",
               color: isActive ? "#fff" : "#64748b",
               border: `1px solid ${isActive ? "transparent" : "#e2e8f0"}`,
             }}
           >
-            {emoji} {label}
+            {tab.emoji} {tab.label}
           </button>
         );
       })}
