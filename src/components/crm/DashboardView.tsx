@@ -137,7 +137,81 @@ function abbreviateSource(s: string) {
   return s;
 }
 
-export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
+function MasterclassKPIs({ inscritos }: { inscritos: Inscrito[] }) {
+  const mcParticipants = useMemo(
+    () => inscritos.filter((i) => i.webinar === "video" && ["masterclass", "bundle", "video-masterclass", "video-bundle"].includes(i.plan) && (i.paid_at || i.premium_granted_at)),
+    [inscritos]
+  );
+
+  const [emailStats, setEmailStats] = useState<{ thankyou: number; day1: number; day3: number }>({ thankyou: 0, day1: 0, day3: 0 });
+
+  useEffect(() => {
+    const keys = ["video_masterclass_thankyou", "video_masterclass_day1", "video_masterclass_day3"];
+    supabase
+      .from("message_logs")
+      .select("template_key")
+      .in("template_key", keys)
+      .eq("status", "sent")
+      .eq("channel", "email")
+      .then(({ data }) => {
+        const counts = { thankyou: 0, day1: 0, day3: 0 };
+        (data || []).forEach((r) => {
+          if (r.template_key === "video_masterclass_thankyou") counts.thankyou++;
+          else if (r.template_key === "video_masterclass_day1") counts.day1++;
+          else if (r.template_key === "video_masterclass_day3") counts.day3++;
+        });
+        setEmailStats(counts);
+      });
+  }, []);
+
+  const totalEmails = emailStats.thankyou + emailStats.day1 + emailStats.day3;
+
+  return (
+    <div className="bg-white border border-border rounded-xl p-5 mb-5">
+      <div className="flex items-center gap-2.5 mb-4">
+        <span className="text-[20px]">📽</span>
+        <div>
+          <h3 className="font-heading font-bold text-[14px] text-ink-800">Masterclass Vídeo</h3>
+          <p className="text-[12px] text-ink-400">KPIs pós-Masterclass · 12 de Março</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 max-sm:grid-cols-1 gap-4">
+        <div className="bg-surface/60 rounded-lg px-4 py-3 text-center">
+          <Users size={16} className="text-ink-400 mx-auto mb-1.5" />
+          <p className="font-heading font-extrabold text-[24px] text-ink-900 leading-none">{mcParticipants.length}</p>
+          <p className="text-[11px] text-ink-500 mt-1">Participantes confirmados</p>
+          <p className="text-[10px] text-ink-400">Masterclass + Bundle pagos</p>
+        </div>
+        <div className="bg-surface/60 rounded-lg px-4 py-3 text-center">
+          <Send size={16} className="text-ink-400 mx-auto mb-1.5" />
+          <p className="font-heading font-extrabold text-[24px] text-ink-900 leading-none">{totalEmails}</p>
+          <p className="text-[11px] text-ink-500 mt-1">Emails entregues</p>
+          <p className="text-[10px] text-ink-400">3 steps da sequência</p>
+        </div>
+        <div className="bg-surface/60 rounded-lg px-4 py-3">
+          <Mail size={16} className="text-ink-400 mx-auto mb-1.5" />
+          <div className="space-y-1.5 mt-1">
+            {[
+              { label: "Obrigado", count: emailStats.thankyou, color: "#16a34a" },
+              { label: "Day 1", count: emailStats.day1, color: "#f59e0b" },
+              { label: "Day 3", count: emailStats.day3, color: "#ef4444" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center justify-between text-[12px]">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                  {s.label}
+                </span>
+                <span className="font-heading font-bold">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
