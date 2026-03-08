@@ -91,6 +91,7 @@ const problems = [
   { icon: Layers, title: "Ferramentas sem método", desc: "Sabes usar o Kling e o Flow, mas cada vídeo começa do zero. Não há processo, há tentativa-erro." },
   { icon: Video, title: "Consistência visual impossível", desc: "As personagens mudam de cara entre clips. Os rácios estão errados. O resultado não é publicável." },
   { icon: Timer, title: "Velocidade que não escala", desc: "Demoras horas no que deveria demorar minutos. A IA não poupa tempo — sem método, multiplica o caos." },
+] as const;
 ];
 
 const agenda = [
