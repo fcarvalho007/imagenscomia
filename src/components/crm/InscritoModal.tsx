@@ -351,13 +351,16 @@ export default function InscritoModal({
             {/* Tab content */}
             <div className="flex-1 p-4 md:p-6">
               {activeTab === "resumo" && (
-                <TabResumo
-                  inscrito={inscrito}
-                  crossHistory={crossHistory}
-                  historyLoading={historyLoading}
-                  hasMasterclassImagens={hasMasterclassImagens}
-                  masterclassImagensRecord={masterclassImagensRecord}
-                />
+                <>
+                  <MiniTimeline inscrito={inscrito} messageLogs={messageLogs} paymentEvents={paymentEvents} />
+                  <TabResumo
+                    inscrito={inscrito}
+                    crossHistory={crossHistory}
+                    historyLoading={historyLoading}
+                    hasMasterclassImagens={hasMasterclassImagens}
+                    masterclassImagensRecord={masterclassImagensRecord}
+                  />
+                </>
               )}
               {activeTab === "actividade" && (
                 <TabActividade messageLogs={messageLogs} paymentEvents={paymentEvents} loading={logsLoading} inscrito={inscrito} />

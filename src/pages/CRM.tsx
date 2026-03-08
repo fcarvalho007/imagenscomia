@@ -110,6 +110,7 @@ function CRMInner() {
 
   return (
     <div className="flex min-h-screen">
+      <CRMCommandPalette inscritos={inscritos} onSelectInscrito={setSelectedInscrito} />
       <CRMSidebar
         activeView={activeView}
         onChangeView={setActiveView}

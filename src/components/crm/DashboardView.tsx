@@ -475,6 +475,9 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       )}
 
+      {/* Conversion Funnel Block */}
+      <ConversionFunnelBlock inscritos={filteredInscritos} />
+
       {/* Funnel */}
       <div className="bg-white border border-border rounded-xl p-6 mb-5">
         <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de Inscrição</h2>
