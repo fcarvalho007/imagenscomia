@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.send-video-masterclass-day3]
 verify_jwt = false
+
+[functions.send-video-masterclass-thankyou]
+verify_jwt = false
+
+[functions.send-video-masterclass-day1]
+verify_jwt = false
