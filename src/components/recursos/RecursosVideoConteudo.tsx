@@ -115,7 +115,7 @@ export default function RecursosVideoConteudo({ userData, onLogout }: Props) {
                   {VIDEO_RECURSOS_CONFIG.chapters.map((ch, i) => (
                     <li
                       key={i}
-                      className="flex gap-3 p-4 rounded-xl bg-gray-50 border border-gray-100"
+                      className="flex gap-3 p-3 sm:p-4 rounded-xl bg-gray-50 border border-gray-100"
                     >
                       <div className="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center shrink-0 mt-0.5">
                         <span className="text-[11px] font-bold text-white">{i + 1}</span>
