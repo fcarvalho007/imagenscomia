@@ -645,6 +645,9 @@ export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }
         </div>
       </div>
 
+      {/* Masterclass KPIs — video only */}
+      {isVideo && <MasterclassKPIs inscritos={inscritos} />}
+
       {/* Pipeline + Pending >6h — 2 columns */}
       {(stats.pendentes.length > 0 || stats.pendingOver6h.length > 0) && (
         <div className="grid grid-cols-2 max-md:grid-cols-1 gap-4 mb-5">

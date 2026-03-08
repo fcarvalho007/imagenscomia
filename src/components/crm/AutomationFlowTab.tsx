@@ -614,7 +614,7 @@ function getMasterclassNodes(): NodeDef[] {
       smsSendConfig: {
         planFilter: ["masterclass", "bundle"],
         webinarFilter: "current",
-        smsText: "Ola! A gravacao da Masterclass e os materiais estao disponiveis em imagenscomia.com/recursos-video — usa o email de registo. Deixa a tua avaliacao Google aqui: g.page/r/CaZCB4qF_TkhEB0/review — Ate ja! — Frederico",
+        smsText: "FC: A gravação da Masterclass já está disponível. Acede em imagenscomia.com/recursos-video — Frederico",
         requirePhone: true,
         requirePaid: true,
       },
