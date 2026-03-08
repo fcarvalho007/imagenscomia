@@ -212,6 +212,7 @@ function MasterclassKPIs({ inscritos }: { inscritos: Inscrito[] }) {
 }
 
 
+export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
