@@ -40,7 +40,7 @@ export const StickyTopBar = () => {
           onClick={() => open()}
           className="shrink-0 text-[13px] font-heading font-semibold text-white bg-green-600 hover:bg-green-700 px-5 max-sm:px-3 py-2.5 rounded-full transition-all shadow-[0_4px_14px_0_rgba(22,163,74,0.35)]"
         >
-          Quero inscrever-me!
+          <span className="sm:hidden">Inscrever-me</span><span className="hidden sm:inline">Quero inscrever-me!</span>
         </button>
       </div>
     </motion.div>
