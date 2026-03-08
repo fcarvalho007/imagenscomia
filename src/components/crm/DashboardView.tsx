@@ -1145,8 +1145,8 @@ function PostWebinarAction() {
       <p className="text-[12px] text-ink-400 mb-4">Envios manuais para inscritos do Vídeo IA</p>
 
       <div className="border border-border rounded-lg p-4">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-[14px] text-ink-800 flex items-center gap-2">
               <Mail size={16} className="text-green-600" /> Email Pós-Webinar
             </p>
