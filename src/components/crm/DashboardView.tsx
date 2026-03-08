@@ -1161,7 +1161,7 @@ function PostWebinarAction() {
               <Send size={14} /> Enviar email pós-webinar
             </button>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[12px] text-ink-500">Tens a certeza?</span>
               <button
                 onClick={handleSend}
