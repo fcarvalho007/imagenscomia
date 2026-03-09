@@ -647,6 +647,73 @@ function getMasterclassNodes(): NodeDef[] {
   ];
 }
 
+/* ─── MASTERCLASS SALES NODES (video only) ─── */
+function getMasterclassSalesNodes(): NodeDef[] {
+  return [
+    {
+      type: "trigger",
+      title: "🎯 Venda Masterclass — Push Comercial",
+      subtitle: "Premium Pass pagos · sem Masterclass/Bundle",
+      templateKeyMatch: [],
+      iconEmoji: "🎯",
+      borderColorOverride: "#8b5cf6",
+      dayGroup: "mc_sell_invite",
+    },
+    {
+      type: "email",
+      title: "Email 1 — Convite Masterclass",
+      subtitle: "9 de Março · 10h · valor da sessão + early bird",
+      templateKeyMatch: ["video_mc_sales_invite"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#8b5cf6",
+      customTag: { label: "9 MAR · 10H", bg: "#f3e8ff", color: "#7c3aed" },
+      note: "Apresenta a Masterclass como próximo passo natural para quem já tem o Premium Pass",
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "mc_sell_invite",
+    },
+    {
+      type: "email",
+      channel: "sms",
+      title: "SMS — Lembrete Masterclass",
+      subtitle: "10 de Março · 11h · Premium com telefone",
+      templateKeyMatch: ["sms_mc_sales_reminder"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "10 MAR · MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      smsSendConfig: {
+        planFilter: ["premium"],
+        webinarFilter: "current",
+        smsText: "Ola! A Masterclass Video com IA e na quinta 12 Mar as 10h. Como ja tens o Premium Pass, podes fazer upgrade para Bundle com desconto em imagenscomia.com/comprar — Frederico",
+        requirePhone: true,
+        requirePaid: true,
+      },
+      dayGroup: "mc_sell_push",
+    },
+    {
+      type: "email",
+      title: "Email 2 — Última oportunidade",
+      subtitle: "11 de Março · 10h · urgência + prova social",
+      templateKeyMatch: ["video_mc_sales_closing"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "11 MAR · ÚLTIMO EMAIL", bg: "#fee2e2", color: "#dc2626" },
+      note: "Último push antes da Masterclass · inclui testemunhos e contagem regressiva",
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "mc_sell_close",
+    },
+    {
+      type: "end",
+      title: "Masterclass 12 Mar · 10h",
+      subtitle: "Fim da sequência de venda — conversão ou não",
+      templateKeyMatch: [],
+      dayGroup: "end",
+    },
+  ];
+}
+
 /* ─── POST-EVENT NODES (video only) ─── */
 function getPostEventNodes(): NodeDef[] {
   return [
