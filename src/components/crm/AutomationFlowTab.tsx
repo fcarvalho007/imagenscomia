@@ -1824,7 +1824,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   const [drawerEmailKey, setDrawerEmailKey] = useState("");
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
-  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post" | "mc">("pre");
+  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post" | "mc" | "mc_sell">("pre");
 
   const handleClickSentCount = (emailKey: string, title: string, webinar: WebinarKey) => {
     setDrawerEmailKey(emailKey);
