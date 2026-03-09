@@ -1171,7 +1171,8 @@ function Timeline({
   };
   const isPostTab = flowSubTab === "post";
   const isMcTab = flowSubTab === "mc";
-  const nodes = useMemo(() => isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab]);
+  const isMcSellTab = flowSubTab === "mc_sell";
+  const nodes = useMemo(() => isMcSellTab ? getMasterclassSalesNodes() : isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab, isMcSellTab]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
