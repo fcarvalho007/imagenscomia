@@ -119,6 +119,10 @@ const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
   mc_thankyou: { label: "PÓS-MASTERCLASS · 12 MARÇO", number: "0", borderColor: "#16a34a", bgColor: "#f0fdf4" },
   mc_d1: { label: "DIA 1 — 13 MARÇO", number: "1", borderColor: "#f59e0b", bgColor: "#fffbeb" },
   mc_d3: { label: "DIA 3 — 15 MARÇO · FECHO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  // masterclass sales
+  mc_sell_invite: { label: "CONVITE · 9 MARÇO", number: "1", borderColor: "#8b5cf6", bgColor: "#faf5ff" },
+  mc_sell_push: { label: "PUSH · 10 MARÇO", number: "2", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  mc_sell_close: { label: "VÉSPERA · 11 MARÇO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
 };
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
