@@ -1864,6 +1864,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     { key: "pre" as const, label: "Pré-Webinar", emoji: "📡", activeBg: "#1e40af" },
     { key: "post" as const, label: "Pós-Evento", emoji: "🕐", activeBg: "#f59e0b" },
     { key: "mc" as const, label: "Masterclass", emoji: "📽", activeBg: "#16a34a" },
+    { key: "mc_sell" as const, label: "Venda MC", emoji: "🎯", activeBg: "#7c3aed" },
   ];
 
   const SubTabPills = () => (
