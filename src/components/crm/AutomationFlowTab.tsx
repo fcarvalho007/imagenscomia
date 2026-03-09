@@ -119,6 +119,10 @@ const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
   mc_thankyou: { label: "PÓS-MASTERCLASS · 12 MARÇO", number: "0", borderColor: "#16a34a", bgColor: "#f0fdf4" },
   mc_d1: { label: "DIA 1 — 13 MARÇO", number: "1", borderColor: "#f59e0b", bgColor: "#fffbeb" },
   mc_d3: { label: "DIA 3 — 15 MARÇO · FECHO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  // masterclass sales
+  mc_sell_invite: { label: "CONVITE · 9 MARÇO", number: "1", borderColor: "#8b5cf6", bgColor: "#faf5ff" },
+  mc_sell_push: { label: "PUSH · 10 MARÇO", number: "2", borderColor: "#f59e0b", bgColor: "#fffbeb" },
+  mc_sell_close: { label: "VÉSPERA · 11 MARÇO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
 };
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
@@ -643,6 +647,73 @@ function getMasterclassNodes(): NodeDef[] {
   ];
 }
 
+/* ─── MASTERCLASS SALES NODES (video only) ─── */
+function getMasterclassSalesNodes(): NodeDef[] {
+  return [
+    {
+      type: "trigger",
+      title: "🎯 Venda Masterclass — Push Comercial",
+      subtitle: "Premium Pass pagos · sem Masterclass/Bundle",
+      templateKeyMatch: [],
+      iconEmoji: "🎯",
+      borderColorOverride: "#8b5cf6",
+      dayGroup: "mc_sell_invite",
+    },
+    {
+      type: "email",
+      title: "Email 1 — Convite Masterclass",
+      subtitle: "9 de Março · 10h · valor da sessão + early bird",
+      templateKeyMatch: ["video_mc_sales_invite"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#8b5cf6",
+      customTag: { label: "9 MAR · 10H", bg: "#f3e8ff", color: "#7c3aed" },
+      note: "Apresenta a Masterclass como próximo passo natural para quem já tem o Premium Pass",
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "mc_sell_invite",
+    },
+    {
+      type: "email",
+      channel: "sms",
+      title: "SMS — Lembrete Masterclass",
+      subtitle: "10 de Março · 11h · Premium com telefone",
+      templateKeyMatch: ["sms_mc_sales_reminder"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#f59e0b",
+      customTag: { label: "10 MAR · MANUAL · SMS", bg: "#fef3c7", color: "#d97706" },
+      smsSendConfig: {
+        planFilter: ["premium"],
+        webinarFilter: "current",
+        smsText: "Ola! A Masterclass Video com IA e na quinta 12 Mar as 10h. Como ja tens o Premium Pass, podes fazer upgrade para Bundle com desconto em imagenscomia.com/comprar — Frederico",
+        requirePhone: true,
+        requirePaid: true,
+      },
+      dayGroup: "mc_sell_push",
+    },
+    {
+      type: "email",
+      title: "Email 2 — Última oportunidade",
+      subtitle: "11 de Março · 10h · urgência + prova social",
+      templateKeyMatch: ["video_mc_sales_closing"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#ef4444",
+      customTag: { label: "11 MAR · ÚLTIMO EMAIL", bg: "#fee2e2", color: "#dc2626" },
+      note: "Último push antes da Masterclass · inclui testemunhos e contagem regressiva",
+      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      dayGroup: "mc_sell_close",
+    },
+    {
+      type: "end",
+      title: "Masterclass 12 Mar · 10h",
+      subtitle: "Fim da sequência de venda — conversão ou não",
+      templateKeyMatch: [],
+      dayGroup: "end",
+    },
+  ];
+}
+
 /* ─── POST-EVENT NODES (video only) ─── */
 function getPostEventNodes(): NodeDef[] {
   return [
@@ -1059,7 +1130,7 @@ function Timeline({
   emailStats?: EmailStats;
   emailStatsLoading?: boolean;
   onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
-  flowSubTab?: "pre" | "post" | "mc";
+  flowSubTab?: "pre" | "post" | "mc" | "mc_sell";
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
@@ -1100,13 +1171,22 @@ function Timeline({
   };
   const isPostTab = flowSubTab === "post";
   const isMcTab = flowSubTab === "mc";
-  const nodes = useMemo(() => isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab]);
+  const isMcSellTab = flowSubTab === "mc_sell";
+  const nodes = useMemo(() => isMcSellTab ? getMasterclassSalesNodes() : isMcTab ? getMasterclassNodes() : isPostTab ? getPostEventNodes() : getNodes(webinar), [webinar, isPostTab, isMcTab, isMcSellTab]);
   const now = Date.now();
   const webinarPast = WEBINAR_CONFIG[webinar].startDate.getTime() < now;
   const showSendNow = webinar === "video" && now > VIDEO_WEBINAR_DATE.getTime() && !isPostTab;
 
   const POST_EVENT_CUTOFF = new Date("2026-03-05T11:00:00Z").getTime();
   const filteredInscritos = useMemo(() => {
+    if (isMcSellTab) {
+      return inscritos.filter((i) => {
+        if (i.webinar !== "video") return false;
+        const plan = i.plan || "free";
+        if (plan !== "premium") return false;
+        return !!(i.paid_at || i.premium_granted_at);
+      });
+    }
     if (isMcTab) {
       return inscritos.filter((i) => {
         if (i.webinar !== "video") return false;
@@ -1753,7 +1833,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
   const [drawerEmailKey, setDrawerEmailKey] = useState("");
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerWebinar, setDrawerWebinar] = useState<WebinarKey | "consolidado">("video");
-  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post" | "mc">("pre");
+  const [flowSubTab, setFlowSubTab] = useState<"pre" | "post" | "mc" | "mc_sell">("pre");
 
   const handleClickSentCount = (emailKey: string, title: string, webinar: WebinarKey) => {
     setDrawerEmailKey(emailKey);
@@ -1784,6 +1864,7 @@ export default function AutomationFlowTab({ inscritos, logs, logsLoading, onOpen
     { key: "pre" as const, label: "Pré-Webinar", emoji: "📡", activeBg: "#1e40af" },
     { key: "post" as const, label: "Pós-Evento", emoji: "🕐", activeBg: "#f59e0b" },
     { key: "mc" as const, label: "Masterclass", emoji: "📽", activeBg: "#16a34a" },
+    { key: "mc_sell" as const, label: "Venda MC", emoji: "🎯", activeBg: "#7c3aed" },
   ];
 
   const SubTabPills = () => (
