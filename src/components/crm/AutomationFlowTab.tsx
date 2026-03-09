@@ -1130,7 +1130,7 @@ function Timeline({
   emailStats?: EmailStats;
   emailStatsLoading?: boolean;
   onClickSentCount?: (emailKey: string, title: string, webinar: WebinarKey) => void;
-  flowSubTab?: "pre" | "post" | "mc";
+  flowSubTab?: "pre" | "post" | "mc" | "mc_sell";
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
