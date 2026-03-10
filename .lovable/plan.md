@@ -1,29 +1,33 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Diagnóstico: SMS não funciona
 
-### Alteração
+## Problema
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+A edge function `send-sms` está deployada e operacional. O problema é externo -- **ambos os gateways de SMS estão em falha por questões de conta/credenciais**, não de código.
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### 1. SMSEasy (IMAGENSIA) -- Credenciais inválidas
+```
+SMSEasy 401: {"error":{"code":103,"description":"Username or password unknown"}}
+```
+O secret `SMSONLINE_API_KEY` configurado no projecto está a ser rejeitado pela API da SMSOnline. As credenciais expiraram ou foram alteradas no painel SMSOnline.
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+**Acção necessária:** Ir ao painel da SMSOnline (login.smsonline.pt), confirmar o username e password activos, e actualizar o secret `SMSONLINE_API_KEY` no formato `username:password`.
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### 2. E-goi (915 015 508) -- Saldo insuficiente
+```
+E-goi 400: INSUFICIENT_BALANCE - The client balance does not allow to send sms
+```
+A conta E-goi não tem saldo para enviar SMS. O `EGOI_API_KEY` está correcto (a autenticação passa), mas o envio é recusado por falta de créditos.
+
+**Acção necessária:** Carregar saldo SMS na conta E-goi.
+
+## Resumo
+
+| Provider | Estado | Causa | Acção |
+|----------|--------|-------|-------|
+| SMSEasy | ❌ 401 | Credenciais inválidas | Actualizar `SMSONLINE_API_KEY` |
+| E-goi | ❌ 400 | Saldo insuficiente | Carregar saldo na conta E-goi |
+
+Não há alterações de código necessárias. A edge function, o CORS e o fluxo do CRM estão todos operacionais.
 
