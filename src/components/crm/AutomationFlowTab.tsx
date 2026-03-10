@@ -700,7 +700,7 @@ function getMasterclassSalesNodes(): NodeDef[] {
       borderColorOverride: "#ef4444",
       customTag: { label: "11 MAR · ÚLTIMO EMAIL", bg: "#fee2e2", color: "#dc2626" },
       note: "Último push antes da Masterclass · inclui testemunhos e contagem regressiva",
-      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
       dayGroup: "mc_sell_close",
     },
     {
