@@ -905,7 +905,7 @@ function getPostEventNodes(): NodeDef[] {
       smsSendConfig: {
         planFilter: ["premium", "masterclass", "bundle"],
         webinarFilter: "current",
-        smsText: "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico",
+        smsText: "Lembrete: a sessao Q&A comeca as 14:30. Entra aqui: https://us02web.zoom.us/j/88370994509?jst=3 — Frederico",
         requirePhone: true,
         requirePaid: true,
       },
