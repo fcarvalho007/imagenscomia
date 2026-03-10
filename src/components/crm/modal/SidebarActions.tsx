@@ -21,6 +21,48 @@ interface SidebarActionsProps {
   onMarkAsLost?: (id: string, reason?: string) => Promise<void>;
 }
 
+/* ── Mini component: Send Recursos email button ── */
+function SendRecursosButton({ inscrito, btnBase }: { inscrito: Inscrito; btnBase: string }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    if (!confirm(`Enviar email de acesso aos recursos para ${inscrito.nome}?`)) return;
+    setSending(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const adminEmail = session.data.session?.user?.email || "";
+      const { data, error } = await supabase.functions.invoke("send-video-recursos-single", {
+        body: { registration_id: inscrito.id },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setSent(true);
+        toast.success(`Email de recursos enviado para ${inscrito.email}`);
+      } else {
+        toast.error(data?.error || "Falha ao enviar email");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao enviar email de recursos");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleSend}
+      disabled={sending || sent}
+      className={btnBase + " mt-1"}
+      style={{ background: sent ? "rgba(34,197,94,0.15)" : "rgba(99,102,241,0.12)", color: sent ? "#22c55e" : "#a5b4fc" }}
+    >
+      {sending ? <Loader2 size={13} className="animate-spin" /> : sent ? <Check size={13} /> : <BookOpen size={13} />}
+      {sent ? "Email de recursos enviado ✓" : "Enviar email de recursos"}
+    </button>
+  );
+}
+
 export default function SidebarActions({
   inscrito, onToggleFollowUp, onArchive, onDelete,
   onOpenResendModal, onOpenSendPayment, onToggleInvoiceSent,
