@@ -123,6 +123,8 @@ const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
   mc_sell_invite: { label: "CONVITE · 9 MARÇO", number: "1", borderColor: "#8b5cf6", bgColor: "#faf5ff" },
   mc_sell_push: { label: "PUSH · 10 MARÇO", number: "2", borderColor: "#f59e0b", bgColor: "#fffbeb" },
   mc_sell_close: { label: "VÉSPERA · 11 MARÇO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  // Q&A
+  post_qa: { label: "Q&A · 10 MARÇO · 14H30", number: "6", borderColor: "#3b82f6", bgColor: "#eff6ff" },
 };
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
@@ -876,6 +878,38 @@ function getPostEventNodes(): NodeDef[] {
         requirePaid: true,
       },
       dayGroup: "post_paid",
+    },
+    // ── Q&A · 10 MARÇO ──
+    {
+      type: "email",
+      title: "Email lembrete Q&A",
+      subtitle: "10 de Março · 13h · clientes pagos",
+      templateKeyMatch: ["video_qa_reminder"],
+      sendOffsetHours: null,
+      iconEmoji: "✉️",
+      borderColorOverride: "#3b82f6",
+      customTag: { label: "10 MAR · 13H", bg: "#dbeafe", color: "#1d4ed8" },
+      audienceFilter: { planFilter: ["premium", "masterclass", "bundle"], requirePaid: true },
+      dayGroup: "post_qa",
+    },
+    {
+      type: "email",
+      title: "SMS lembrete Q&A",
+      subtitle: "10 de Março · 13h · clientes pagos com telefone",
+      templateKeyMatch: ["sms_reminder_qa_post"],
+      sendOffsetHours: null,
+      iconEmoji: "📱",
+      borderColorOverride: "#3b82f6",
+      customTag: { label: "10 MAR · 13H · SMS", bg: "#dbeafe", color: "#1d4ed8" },
+      channel: "sms",
+      smsSendConfig: {
+        planFilter: ["premium", "masterclass", "bundle"],
+        webinarFilter: "current",
+        smsText: "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico",
+        requirePhone: true,
+        requirePaid: true,
+      },
+      dayGroup: "post_qa",
     },
     {
       type: "end",
