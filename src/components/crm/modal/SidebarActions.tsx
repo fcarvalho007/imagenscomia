@@ -1,7 +1,9 @@
-import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard, MessageSquare } from "lucide-react";
+import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard, MessageSquare, BookOpen } from "lucide-react";
 import { useState } from "react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import SmsComposer from "./SmsComposer";
 
 interface SidebarActionsProps {
@@ -17,6 +19,48 @@ interface SidebarActionsProps {
   onUpdatePlan?: (id: string, plan: string, markAsPaid?: boolean) => Promise<void>;
   onMarkAsPaid?: (id: string) => Promise<void>;
   onMarkAsLost?: (id: string, reason?: string) => Promise<void>;
+}
+
+/* ── Mini component: Send Recursos email button ── */
+function SendRecursosButton({ inscrito, btnBase }: { inscrito: Inscrito; btnBase: string }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSend = async () => {
+    if (!confirm(`Enviar email de acesso aos recursos para ${inscrito.nome}?`)) return;
+    setSending(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const adminEmail = session.data.session?.user?.email || "";
+      const { data, error } = await supabase.functions.invoke("send-video-recursos-single", {
+        body: { registration_id: inscrito.id },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        setSent(true);
+        toast.success(`Email de recursos enviado para ${inscrito.email}`);
+      } else {
+        toast.error(data?.error || "Falha ao enviar email");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao enviar email de recursos");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleSend}
+      disabled={sending || sent}
+      className={btnBase + " mt-1"}
+      style={{ background: sent ? "rgba(34,197,94,0.15)" : "rgba(99,102,241,0.12)", color: sent ? "#22c55e" : "#a5b4fc" }}
+    >
+      {sending ? <Loader2 size={13} className="animate-spin" /> : sent ? <Check size={13} /> : <BookOpen size={13} />}
+      {sent ? "Email de recursos enviado ✓" : "Enviar email de recursos"}
+    </button>
+  );
 }
 
 export default function SidebarActions({
@@ -180,6 +224,11 @@ export default function SidebarActions({
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* SEND RESOURCE EMAIL */}
+      {(inscrito.paid_at || inscrito.premium_granted_at) && inscrito.plan_selected && inscrito.plan_selected !== "free" && (
+        <SendRecursosButton inscrito={inscrito} btnBase={btnBase} />
       )}
 
       {/* MARK AS PAID */}

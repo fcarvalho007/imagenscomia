@@ -1,28 +1,29 @@
 
 
-# Enviar email de recursos individualmente a partir da ficha de cliente
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## O que fazer
+### Alteração
 
-### 1. Criar edge function `send-video-recursos-single`
-Nova edge function que aceita `{ registration_id }` (ou `{ email }`) e envia o email de recursos apropriado ao plano do inscrito. Reutiliza os mesmos templates HTML da `send-video-recursos-access` (premium, masterclass, bundle). Faz:
-- Lookup do registo por `registration_id` na tabela `registrations`
-- Verifica que `paid_at` não é null (ou `premium_granted_at`)
-- Determina o template correcto com base em `plan_selected`
-- Envia via `send-email` centralizado
-- Regista em `message_logs` e `email_send_logs`
-- Verificação de admin via header `x-crm-admin-email`
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-### 2. Adicionar botão "Enviar email de recursos" no `SidebarActions.tsx`
-Visível apenas para inscritos pagos (`paid_at` ou `premium_granted_at`) com plano premium/masterclass/bundle. Ao clicar:
-- Confirmação: "Enviar email de acesso aos recursos para {nome}?"
-- Chama `supabase.functions.invoke("send-video-recursos-single", { body: { registration_id } })`
-- Feedback visual (loading → sucesso/erro)
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-### 3. Enviar agora para susana.vieira@farmaciasreisbarata.pt
-Após deploy, invocar a função manualmente para este email específico.
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-## Ficheiros alterados
-- `supabase/functions/send-video-recursos-single/index.ts` (novo)
-- `src/components/crm/modal/SidebarActions.tsx` (adicionar botão)
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
