@@ -1,7 +1,9 @@
-import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard, MessageSquare } from "lucide-react";
+import { Mail, Star, Archive, Trash2, Bell, Send, Loader2, Check, XCircle, CreditCard, MessageSquare, BookOpen } from "lucide-react";
 import { useState } from "react";
 import type { Inscrito } from "@/pages/crm/mockData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import SmsComposer from "./SmsComposer";
 
 interface SidebarActionsProps {
