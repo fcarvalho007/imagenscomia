@@ -384,6 +384,9 @@ export default function InscritoModal({
                   setReminderData={setReminderData}
                 />
               )}
+              {activeTab === "comunicacao" && (
+                <TabComunicacao inscrito={inscrito} onLogsRefresh={refreshLogs} />
+              )}
             </div>
           </div>
         </div>
