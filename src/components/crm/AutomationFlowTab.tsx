@@ -532,7 +532,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "10 MAR · 14H00", bg: "#dbeafe", color: "#1d4ed8" },
       channel: "sms",
       smsSendConfig: {
-        planFilter: ["premium"],
+        planFilter: ["premium", "bundle"],
         webinarFilter: "all",
         smsText: "Lembrete: a sessao Q&A comeca as 14:30. O link de acesso foi enviado por email. Ate ja! — Frederico",
         requirePhone: true,
