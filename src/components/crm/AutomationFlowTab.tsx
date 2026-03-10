@@ -668,8 +668,8 @@ function getMasterclassSalesNodes(): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#8b5cf6",
       customTag: { label: "9 MAR · 10H", bg: "#f3e8ff", color: "#7c3aed" },
-      note: "Apresenta a Masterclass como próximo passo natural para quem já tem o Premium Pass",
-      audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      note: "Apresenta o Premium Pass e a Masterclass como oportunidade para quem ainda não comprou",
+      audienceFilter: { planFilter: ["free"], excludePaid: true },
       dayGroup: "mc_sell_invite",
     },
     {
