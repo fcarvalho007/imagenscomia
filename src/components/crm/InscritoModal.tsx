@@ -17,6 +17,7 @@ import TabResumo from "./modal/TabResumo";
 import TabActividade from "./modal/TabActividade";
 import TabHistorico from "./modal/TabHistorico";
 import TabLinkPagamento from "./modal/TabLinkPagamento";
+import TabComunicacao from "./modal/TabComunicacao";
 import MiniTimeline from "./modal/MiniTimeline";
 import ResendModal from "./modal/ResendModal";
 import SendPaymentModal from "./modal/SendPaymentModal";
@@ -54,12 +55,13 @@ function fmtDate(iso: string) {
   return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 
-type TabKey = "resumo" | "actividade" | "historico" | "pagamento";
+type TabKey = "resumo" | "actividade" | "historico" | "pagamento" | "comunicacao";
 const TABS: { key: TabKey; label: string }[] = [
   { key: "resumo", label: "Resumo" },
   { key: "actividade", label: "Actividade" },
   { key: "historico", label: "Histórico" },
   { key: "pagamento", label: "Link & Pagamento" },
+  { key: "comunicacao", label: "Comunicação" },
 ];
 
 export default function InscritoModal({
@@ -381,6 +383,9 @@ export default function InscritoModal({
                   copyEmailBody={copyEmailBody} buildGmailLink={buildGmailLink}
                   setReminderData={setReminderData}
                 />
+              )}
+              {activeTab === "comunicacao" && (
+                <TabComunicacao inscrito={inscrito} onLogsRefresh={refreshLogs} />
               )}
             </div>
           </div>
