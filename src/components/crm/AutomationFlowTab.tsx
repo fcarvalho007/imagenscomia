@@ -123,6 +123,8 @@ const DAY_GROUP_CONFIG: Record<string, DayGroupConfig> = {
   mc_sell_invite: { label: "CONVITE · 9 MARÇO", number: "1", borderColor: "#8b5cf6", bgColor: "#faf5ff" },
   mc_sell_push: { label: "PUSH · 10 MARÇO", number: "2", borderColor: "#f59e0b", bgColor: "#fffbeb" },
   mc_sell_close: { label: "VÉSPERA · 11 MARÇO", number: "3", borderColor: "#ef4444", bgColor: "#fef2f2" },
+  // Q&A
+  post_qa: { label: "Q&A · 10 MARÇO · 14H30", number: "6", borderColor: "#3b82f6", bgColor: "#eff6ff" },
 };
 
 function computeEligible(node: NodeDef, inscritos: Inscrito[]): number {
