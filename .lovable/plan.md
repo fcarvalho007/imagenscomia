@@ -1,28 +1,29 @@
 
 
-# Resultado da auditoria: CORS headers
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Estado actual
+### Alteração
 
-Das 46 edge functions, **45 estão correctas** com os headers `x-supabase-client-platform*` completos.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-**1 função ficou por actualizar:**
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-| Função | Headers actuais |
-|--------|----------------|
-| `backfill-sms-logs` | ❌ Falta `x-supabase-client-platform*` — tem apenas `"authorization, x-client-info, apikey, content-type, x-crm-admin-email"` |
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-## Risco
-
-Baixo — esta função é chamada manualmente do CRM (não por utilizadores finais), mas deve ser padronizada por consistência.
-
-## Correcção
-
-Actualizar `supabase/functions/backfill-sms-logs/index.ts` linha 7 para incluir o header completo:
-
-```
-"authorization, x-client-info, apikey, content-type, x-cron-secret, x-crm-admin-email, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version"
-```
-
-Redeploy da função.
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
