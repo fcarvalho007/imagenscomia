@@ -89,12 +89,13 @@ serve(async (req) => {
       return true; // will filter below
     });
 
-    // Re-query with paid fields
+    // Re-query with paid fields, filtering by plan (premium + bundle only)
     const { data: allRegs, error: allErr } = await supabase
       .from("registrations")
-      .select("id, email, first_name, whatsapp, paid_at, premium_granted_at")
+      .select("id, email, first_name, whatsapp, paid_at, premium_granted_at, plan_selected")
       .eq("webinar", "video")
-      .eq("do_not_contact", false);
+      .eq("do_not_contact", false)
+      .in("plan_selected", ["video-premium", "premium", "video-bundle", "bundle"]);
 
     if (allErr) throw allErr;
 

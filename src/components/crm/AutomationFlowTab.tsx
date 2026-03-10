@@ -889,7 +889,7 @@ function getPostEventNodes(): NodeDef[] {
       iconEmoji: "✉️",
       borderColorOverride: "#3b82f6",
       customTag: { label: "10 MAR · 13H", bg: "#dbeafe", color: "#1d4ed8" },
-      audienceFilter: { planFilter: ["premium", "masterclass", "bundle"], requirePaid: true },
+      audienceFilter: { planFilter: ["premium", "bundle"], requirePaid: true },
       dayGroup: "post_qa",
     },
     {
@@ -903,7 +903,7 @@ function getPostEventNodes(): NodeDef[] {
       customTag: { label: "10 MAR · 13H · SMS", bg: "#dbeafe", color: "#1d4ed8" },
       channel: "sms",
       smsSendConfig: {
-        planFilter: ["premium", "masterclass", "bundle"],
+        planFilter: ["premium", "bundle"],
         webinarFilter: "current",
         smsText: "Lembrete: a sessao Q&A comeca as 14:30. Entra aqui: https://us02web.zoom.us/j/88370994509?jst=3 — Frederico",
         requirePhone: true,
