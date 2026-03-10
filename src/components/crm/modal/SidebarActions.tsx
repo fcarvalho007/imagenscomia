@@ -184,6 +184,11 @@ export default function SidebarActions({
         </div>
       )}
 
+      {/* SEND RESOURCE EMAIL */}
+      {(inscrito.paid_at || inscrito.premium_granted_at) && inscrito.plan_selected && inscrito.plan_selected !== "free" && (
+        <SendRecursosButton inscrito={inscrito} btnBase={btnBase} />
+      )}
+
       {/* MARK AS PAID */}
       {onMarkAsPaid && !inscrito.paid_at && inscrito.plan_selected && inscrito.plan_selected !== "free" && (
         <button
