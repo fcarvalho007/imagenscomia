@@ -122,6 +122,37 @@ export function InvoiceForm({ userEmail, registrationId, editToken, webinar, def
           invoice_email: d.invoice_email || userEmail,
         });
         setPrefilled(true);
+      } else if (userEmail) {
+        // Fallback: try to find invoice_details from a previous registration with the same email
+        const { data: prevRegs } = await supabase
+          .from("registrations")
+          .select("id")
+          .eq("email", userEmail)
+          .neq("id", reg.id)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        if (prevRegs && prevRegs.length > 0) {
+          for (const pr of prevRegs) {
+            const { data: prevInv } = await supabase
+              .from("invoice_details" as any)
+              .select("*")
+              .eq("registration_id", pr.id)
+              .maybeSingle();
+            if (prevInv) {
+              const d = prevInv as any;
+              setForm({
+                invoice_name: d.invoice_name || defaultName || "",
+                invoice_vat: d.invoice_vat || "",
+                invoice_address: d.invoice_address || "",
+                invoice_zip: d.invoice_zip || "",
+                invoice_city: d.invoice_city || "",
+                invoice_email: d.invoice_email || userEmail,
+              });
+              setPrefilled(true);
+              break;
+            }
+          }
+        }
       }
     })();
   }, [userEmail, regId, token, webinar]);
