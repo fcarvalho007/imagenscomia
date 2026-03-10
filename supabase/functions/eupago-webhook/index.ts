@@ -956,6 +956,78 @@ async function processPayment(data: PaymentData) {
       console.error("Invoice email error (non-blocking):", invoiceErr);
     }
 
+    // ── Safety net: send /fatura link if invoice_details missing ──
+    try {
+      const { data: invoiceCheck } = await supabase
+        .from("invoice_details")
+        .select("registration_id")
+        .eq("registration_id", matchedRegId)
+        .maybeSingle();
+
+      if (!invoiceCheck) {
+        const { data: regForFatura } = await supabase
+          .from("registrations")
+          .select("email, first_name, name, edit_token")
+          .eq("id", matchedRegId)
+          .maybeSingle();
+
+        if (regForFatura?.edit_token) {
+          // Idempotency
+          const { data: alreadySentFatura } = await supabase
+            .from("message_logs")
+            .select("id")
+            .eq("registration_id", matchedRegId)
+            .eq("template_key", "invoice_data_request_auto")
+            .eq("status", "sent")
+            .limit(1);
+
+          if (!alreadySentFatura || alreadySentFatura.length === 0) {
+            const faturaFname = regForFatura.first_name || (regForFatura.name || "").split(" ")[0] || "";
+            const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
+            const faturaLink = `${siteUrl}/fatura?rid=${matchedRegId}&t=${regForFatura.edit_token}`;
+
+            const faturaHtml = `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6">
+              <h2 style="margin:0 0 16px;font-size:20px;color:#0f172a">Dados para fatura</h2>
+              <p>Olá ${faturaFname},</p>
+              <p>O pagamento foi confirmado com sucesso. Para que a fatura possa ser emitida, é necessário preencher os dados de faturação:</p>
+              <p style="margin:24px 0"><a href="${faturaLink}" style="display:inline-block;padding:14px 28px;background:#1e40af;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">Preencher dados de faturação →</a></p>
+              <p style="font-size:13px;color:#64748b">A fatura será emitida automaticamente assim que os dados forem preenchidos.</p>
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/>
+              <p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p>
+              <p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p>
+            </div>`;
+
+            const faturaSupabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const faturaSrvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            const faturaRes = await fetch(`${faturaSupabaseUrl}/functions/v1/send-email`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${faturaSrvKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: regForFatura.email,
+                subject: "Dados para fatura — preencher aqui",
+                html: faturaHtml,
+              }),
+            });
+            const faturaData = await faturaRes.json();
+
+            await supabase.from("message_logs").insert({
+              registration_id: matchedRegId,
+              channel: "email",
+              provider: faturaData.provider || "unknown",
+              template_key: "invoice_data_request_auto",
+              status: faturaData.success ? "sent" : "failed",
+              provider_message_id: faturaData.messageId || null,
+              error: faturaData.success ? null : JSON.stringify(faturaData.error || faturaData),
+            });
+
+            console.log(`📧 Auto invoice data request ${faturaData.success ? "sent" : "FAILED"} to ${regForFatura.email}`);
+          }
+        }
+      }
+    } catch (faturaErr) {
+      console.error("Invoice data request email error (non-blocking):", faturaErr);
+    }
+
     // ── Email ao cliente: payment confirmation (video-aware) ──
     try {
       const RESEND_API_KEY_CUST = Deno.env.get("RESEND_API_KEY");
