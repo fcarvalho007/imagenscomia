@@ -1,29 +1,31 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Resultados da verificação + Tab de Comunicação na ficha de cliente
 
-### Alteração
+## 1. Inscritos Bundle sem email de recursos
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+Encontrei **2 inscritos bundle** que **não receberam** o email de recursos:
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+| Nome | Email | Plano | Webinar |
+|------|-------|-------|---------|
+| Pedro Vilarinho | pedro.vilarinho@gmail.com | bundle | imagens |
+| Silvana Curado | silvanacurado@gmail.com | bundle | imagens |
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+Todos os outros bundle (video-bundle) já receberam. Na implementação, invocarei a edge function `send-video-recursos-single` para ambos.
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+## 2. Nova tab "Comunicação" na ficha de cliente
+
+Adicionar uma 5ª tab ao `InscritoModal` chamada **"Comunicação"** que permite enviar email ou SMS individualmente a esse inscrito.
+
+### Conteúdo da tab:
+- **SMS**: Reutiliza o `SmsComposer` já existente (com selector de provider SMSEasy/E-goi), mas embebido na tab em vez de inline na sidebar
+- **Email**: Campo de assunto + editor HTML simples (textarea) + botão enviar que chama `send-email` via edge function, pré-preenchendo o destinatário com o email do inscrito
+- **Botão "Enviar email de recursos"**: Atalho rápido para a edge function `send-video-recursos-single` (visível apenas para pagos)
+
+### Ficheiros alterados:
+- `src/components/crm/modal/TabComunicacao.tsx` (novo) — componente da tab com SMS composer + email composer individual
+- `src/components/crm/InscritoModal.tsx` — adicionar tab "Comunicação" ao array TABS e renderizar `TabComunicacao`
+
+### Acções imediatas (no mesmo deploy):
+- Enviar email de recursos para Pedro Vilarinho e Silvana Curado via `send-video-recursos-single`
 
