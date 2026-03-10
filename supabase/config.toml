@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.send-video-masterclass-day1]
 verify_jwt = false
+
+[functions.send-video-qa-reminder]
+verify_jwt = false
