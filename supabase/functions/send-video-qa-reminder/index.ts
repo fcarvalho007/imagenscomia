@@ -74,22 +74,7 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Get paid registrants
-    const { data: registrants, error: queryErr } = await supabase
-      .from("registrations")
-      .select("id, email, first_name, whatsapp")
-      .eq("webinar", "video")
-      .eq("do_not_contact", false);
-
-    if (queryErr) throw queryErr;
-
-    // Filter to paid only
-    const paidRegistrants = (registrants || []).filter((r: any) => {
-      // We need paid_at or premium_granted_at — re-query with those fields
-      return true; // will filter below
-    });
-
-    // Re-query with paid fields, filtering by plan (premium + bundle only)
+    // Get paid registrants (premium + bundle only)
     const { data: allRegs, error: allErr } = await supabase
       .from("registrations")
       .select("id, email, first_name, whatsapp, paid_at, premium_granted_at, plan_selected")
