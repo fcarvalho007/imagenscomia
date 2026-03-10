@@ -653,7 +653,7 @@ function getMasterclassSalesNodes(): NodeDef[] {
     {
       type: "trigger",
       title: "🎯 Venda Masterclass — Push Comercial",
-      subtitle: "Premium Pass pagos · sem Masterclass/Bundle",
+      subtitle: "Inscritos gratuitos · sem compra",
       templateKeyMatch: [],
       iconEmoji: "🎯",
       borderColorOverride: "#8b5cf6",
