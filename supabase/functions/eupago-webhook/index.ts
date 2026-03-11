@@ -1122,69 +1122,81 @@ async function processPayment(data: PaymentData) {
             console.log(`📧 ${tpl.templateKey} ${custData.success ? "sent" : "FAILED"} to ${regCust.email} via ${custData.provider || "unknown"}`);
           }
         } else {
-          // ── Imagens webinar: existing generic template ──
-          const { data: customerEmailSent } = await supabase
-            .from("message_logs")
-            .select("id")
-            .eq("registration_id", matchedRegId)
-            .eq("template_key", "payment_confirmed_customer")
-            .eq("status", "sent")
-            .limit(1);
+          // ── Imagens webinar: plan-specific templates ──
+          const imgTemplatesToSend: { templateKey: string; subject: string; htmlFallback: string }[] = [];
 
-          if (customerEmailSent && customerEmailSent.length > 0) {
-            console.log("📧 Customer confirmation already sent — skipping");
-          } else {
-            const custPlanLabel = ({ premium: "Premium Pass", masterclass: "Masterclass IA", bundle: "Bundle (Premium + Masterclass)" } as Record<string, string>)[regCust.plan_selected || ""] || regCust.plan_selected || "N/A";
-            const eupagoRefDisplay = transactionID || reference || regCust.eupago_ref || "N/A";
-            const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
-            const primaryAccessUrl = `${siteUrl}/live`;
-            const whatsappUrl = "https://wa.me/351915015508?text=Preciso%20de%20ajuda%20com%20a%20minha%20inscri%C3%A7%C3%A3o";
+          const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
 
-            const customerSubject = "Pagamento confirmado — obrigado pela confiança";
-            const customerHtml = `<h2>Pagamento confirmado</h2>
-              <p>Agradece-se a confiança. O pagamento foi confirmado e a inscrição está garantida.</p>
-              <hr/>
-              <p><strong>Resumo</strong></p>
-              <ul>
-                <li><strong>Plano:</strong> ${custPlanLabel}</li>
-                <li><strong>Referência:</strong> ${eupagoRefDisplay}</li>
-                <li><strong>Email associado:</strong> ${regCust.email}</li>
-              </ul>
-              <p><strong>Próximo passo</strong></p>
-              <p><a href="${primaryAccessUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:#0ea5e9;color:#ffffff;text-decoration:none;">Aceder / Preparar participação</a></p>
-              <p style="font-size:13px;color:#64748b;">Se o botão não abrir, usar este link: ${primaryAccessUrl}</p>
-              <hr/>
-              <p><strong>Faturação</strong></p>
-              <p>A fatura será emitida e enviada posteriormente para o email indicado nos dados de faturação.</p>
-              <p><strong>Suporte</strong></p>
-              <p>Se for necessária ajuda, contacto directo via WhatsApp: <a href="${whatsappUrl}">+351 915 015 508</a></p>
-              <p>Com os melhores cumprimentos,<br/>Frederico Carvalho</p>`;
+          const imgPremiumHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Pagamento confirmado ✅</h2><p>Olá ${fname},</p><p>O teu pagamento foi confirmado e o teu <strong>acesso à gravação</strong> do webinar <em>Imagens com IA</em> está ativo.</p><ul style="padding-left:20px;margin:12px 0"><li>Gravação completa da sessão prática</li><li>Workbook Resumo da Sessão (PDF)</li><li>Pack de recursos exclusivos</li></ul><p style="margin:24px 0"><a href="${siteUrl}/recursos" style="display:inline-block;padding:14px 28px;background:#1e40af;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px">Aceder aos Recursos →</a></p><p style="font-size:13px;color:#64748b">Para aceder, insere o email com que te registaste.</p><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+
+          const imgMasterclassHtml = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:32px 24px;color:#1e293b;line-height:1.6"><h2 style="margin:0 0 16px;font-size:22px;color:#0f172a">Lugar garantido ✅</h2><p>Olá ${fname},</p><p>O teu pagamento foi confirmado e o teu lugar na <strong>Masterclass de IA</strong> está reservado.</p><ul style="padding-left:20px;margin:12px 0"><li>Formação intensiva e prática</li><li>Acesso vitalício à gravação</li><li>Materiais exclusivos e templates</li></ul><hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0"/><p>Suporte: <a href="https://wa.me/351915015508" style="color:#2563eb">WhatsApp +351 915 015 508</a></p><p style="margin-top:24px">Com os melhores cumprimentos,<br/><strong>Frederico Carvalho</strong></p></div>`;
+
+          if (["premium", "gravacao"].includes(normalizedPlan) || normalizedPlan === "bundle") {
+            imgTemplatesToSend.push({ templateKey: "imagens_payment_premium", subject: `Pagamento confirmado ✅ — aqui está o teu acesso`, htmlFallback: imgPremiumHtml });
+          }
+          if (["masterclass"].includes(normalizedPlan) || normalizedPlan === "bundle") {
+            imgTemplatesToSend.push({ templateKey: "imagens_payment_masterclass", subject: `Lugar garantido na Masterclass ✅`, htmlFallback: imgMasterclassHtml });
+          }
+
+          for (const tpl of imgTemplatesToSend) {
+            const { data: alreadySentImg } = await supabase
+              .from("message_logs")
+              .select("id")
+              .eq("registration_id", matchedRegId)
+              .eq("template_key", tpl.templateKey)
+              .eq("status", "sent")
+              .limit(1);
+
+            if (alreadySentImg && alreadySentImg.length > 0) {
+              console.log(`📧 ${tpl.templateKey} already sent — skipping`);
+              continue;
+            }
+
+            const { data: dbTplImg } = await supabase
+              .from("email_templates")
+              .select("subject, html_body")
+              .eq("template_key", tpl.templateKey)
+              .eq("is_active", true)
+              .maybeSingle();
+
+            const finalSubjectImg = (dbTplImg?.subject || tpl.subject).replace(/\{\{fname\}\}/g, fname);
+            const finalHtmlImg = (dbTplImg?.html_body || tpl.htmlFallback).replace(/\{\{fname\}\}/g, fname);
 
             const imgSupabaseUrl = Deno.env.get("SUPABASE_URL")!;
             const imgSrvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-            const customerRes = await fetch(`${imgSupabaseUrl}/functions/v1/send-email`, {
+            const imgRes = await fetch(`${imgSupabaseUrl}/functions/v1/send-email`, {
               method: "POST",
               headers: { Authorization: `Bearer ${imgSrvKey}`, "Content-Type": "application/json" },
               body: JSON.stringify({
                 to: regCust.email,
-                subject: customerSubject,
-                html: customerHtml,
+                subject: finalSubjectImg,
+                html: finalHtmlImg,
               }),
             });
-            const customerData = await customerRes.json();
+            const imgData = await imgRes.json();
 
             await supabase.from("message_logs").insert({
               registration_id: matchedRegId,
               channel: "email",
-              provider: customerData.provider || "unknown",
-              template_key: "payment_confirmed_customer",
-              status: customerData.success ? "sent" : "failed",
-              provider_message_id: customerData.messageId || null,
+              provider: imgData.provider || "unknown",
+              template_key: tpl.templateKey,
+              status: imgData.success ? "sent" : "failed",
+              provider_message_id: imgData.messageId || null,
               payment_url: null,
-              error: customerData.success ? null : JSON.stringify(customerData.error || customerData),
+              error: imgData.success ? null : JSON.stringify(imgData.error || imgData),
             });
 
-            console.log(`📧 Customer confirmation ${customerData.success ? "sent" : "FAILED"} to ${regCust.email} via ${customerData.provider || "unknown"}`);
+            await supabase.from("email_send_logs").insert({
+              email_key: tpl.templateKey,
+              recipient_email: regCust.email,
+              fname: fname,
+              webinar: "imagens",
+              status: imgData.success ? "sent" : "failed",
+              resend_id: imgData.messageId || null,
+              error_message: imgData.success ? null : JSON.stringify(imgData.error || imgData),
+            });
+
+            console.log(`📧 ${tpl.templateKey} ${imgData.success ? "sent" : "FAILED"} to ${regCust.email} via ${imgData.provider || "unknown"}`);
           }
         }
       }
