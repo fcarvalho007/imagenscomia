@@ -11,8 +11,6 @@ const ADMIN_ALLOWLIST = ["fredericodigital@gmail.com"];
 
 const SITE = "https://imagenscomia.lovable.app";
 const WHATSAPP = "https://wa.me/351915015508";
-const CALENDAR_MASTERCLASS = "https://calendar.app.google/qX6CxAwxafWHNEaYA";
-const ZOOM_LINK = "https://us02web.zoom.us/j/83247090160?jst=3";
 
 /* ──────────────────────────── shared HTML helpers ──────────────────────────── */
 
@@ -38,7 +36,7 @@ const footer = `
 const resourceItem = (emoji: string, title: string, desc: string) =>
   `<tr><td style="padding:6px 0;vertical-align:top;width:28px;font-size:16px">${emoji}</td><td style="padding:6px 0"><strong style="color:#1e293b;font-size:14px">${title}</strong><br/><span style="color:#64748b;font-size:13px">${desc}</span></td></tr>`;
 
-/* ──────────────────────────── TEMPLATES ──────────────────────────── */
+/* ──────────────────────────── TEMPLATES (post-event, immediate access) ────── */
 
 function premiumHtml(fname: string): string {
   return wrapper(`
@@ -58,18 +56,6 @@ function premiumHtml(fname: string): string {
       </div>
       ${cta(`${SITE}/recursos-video`, "Aceder aos Recursos →")}
       <p style="font-size:13px;color:#64748b;text-align:center;margin:-16px 0 24px">Para aceder, insere o email com que te registaste.</p>
-      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:20px 24px;margin:32px 0">
-        <p style="margin:0 0 4px;font-weight:700;font-size:15px;color:#0369a1">💬 Sessão Q&A ao vivo</p>
-        <p style="margin:0 0 12px;font-size:14px;color:#0284c7">Esclarece todas as tuas dúvidas em directo</p>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;color:#1e293b">
-          <tr><td style="padding:3px 0">📅 Terça-feira, 10 de Março de 2026</td></tr>
-          <tr><td style="padding:3px 0">🕝 14h30 — 15h30</td></tr>
-          <tr><td style="padding:3px 0">💻 Online, ao vivo (Zoom)</td></tr>
-        </table>
-        ${cta("https://us02web.zoom.us/j/88370994509?jst=3", "Entrar na Sessão Q&A (Zoom) →", "#0284c7")}
-        <p style="font-size:13px;color:#64748b;text-align:center;margin:4px 0 12px">Para entrar, usa o email com que te registaste.</p>
-        ${cta("https://calendar.app.google/mmuW5XuzRzRLm2qVA", "Guardar Q&A no Calendário →", "#0369a1")}
-      </div>
     </div>
     ${footer}
   `);
@@ -77,22 +63,20 @@ function premiumHtml(fname: string): string {
 
 function masterclassHtml(fname: string): string {
   return wrapper(`
-    ${header("O teu lugar está confirmado 🎓")}
+    ${header("A gravação da Masterclass está disponível 🎓")}
     <div style="padding:32px;color:#1e293b;line-height:1.7">
       <p style="font-size:15px">Olá <strong>${fname}</strong>,</p>
-      <p style="font-size:15px">O teu lugar na <strong>Masterclass — Produção de Vídeo com IA</strong> está confirmado. Aqui ficam os detalhes e próximos passos.</p>
+      <p style="font-size:15px">A gravação completa da <strong>Masterclass — Produção de Vídeo com IA</strong> está disponível para consulta imediata.</p>
       <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:24px 0">
-        <p style="margin:0 0 12px;font-weight:700;font-size:15px;color:#6b21a8">📋 Detalhes da sessão</p>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
-          <tr><td style="padding:4px 0">📅 <strong>Quinta-feira, 12 de Março de 2026</strong></td></tr>
-          <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
-          <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
-          <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
+        <p style="margin:0 0 12px;font-weight:700;font-size:15px;color:#6b21a8">🎓 O teu acesso inclui:</p>
+        <table style="width:100%;border-collapse:collapse">
+          ${resourceItem("🎬", "Gravação completa", "3 horas de formação intensiva")}
+          ${resourceItem("📋", "Materiais exclusivos", "Templates práticos e guias")}
+          ${resourceItem("🔁", "Acesso vitalício", "Revê ao teu ritmo, sem limite")}
         </table>
-        ${cta(ZOOM_LINK, "Entrar na Sessão (Zoom) →", "#7c3aed")}
-        <p style="font-size:13px;color:#64748b;text-align:center;margin:0">Para entrar, usa o email com que te registaste.</p>
       </div>
-      ${cta(CALENDAR_MASTERCLASS, "Guardar no Calendário →", "#7c3aed")}
+      ${cta(`${SITE}/recursos-video`, "Aceder à Gravação →", "#7c3aed")}
+      <p style="font-size:13px;color:#64748b;text-align:center;margin:-16px 0 24px">Para aceder, insere o email com que te registaste.</p>
     </div>
     ${footer}
   `);
@@ -112,22 +96,11 @@ function bundleHtml(fname: string): string {
           ${resourceItem("💎", "Guia de GEMs (Google Gemini)", "Cria os teus próprios GEMs de vídeo")}
           ${resourceItem("⚡", "Ficheiro GEM pronto a usar", "Importa directamente para o Gemini")}
           ${resourceItem("🎧", "Áudio da sessão", "Ouve em qualquer lugar")}
-          ${resourceItem("🎓", "Masterclass — 12 de Março", "3 horas ao vivo + gravação incluída")}
+          ${resourceItem("🎓", "Masterclass — gravação completa", "3 horas de formação intensiva + materiais")}
         </table>
       </div>
       ${cta(`${SITE}/recursos-video`, "Aceder aos Recursos →")}
       <p style="font-size:13px;color:#64748b;text-align:center;margin:-16px 0 24px">Para aceder, insere o email com que te registaste.</p>
-      <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:20px 24px;margin:24px 0">
-        <p style="margin:0 0 12px;font-weight:700;font-size:15px;color:#6b21a8">🎓 Masterclass — Produção de Vídeo com IA</p>
-        <table style="width:100%;border-collapse:collapse;font-size:14px;color:#1e293b">
-          <tr><td style="padding:4px 0">📅 <strong>Quinta-feira, 12 de Março de 2026</strong></td></tr>
-          <tr><td style="padding:4px 0">🕙 <strong>10h00 — 13h00</strong> (3 horas)</td></tr>
-          <tr><td style="padding:4px 0">💻 Online, ao vivo</td></tr>
-          <tr><td style="padding:4px 0">🎥 Gravação incluída — acesso após a sessão</td></tr>
-        </table>
-        ${cta(ZOOM_LINK, "Entrar na Sessão (Zoom) →", "#7c3aed")}
-        ${cta(CALENDAR_MASTERCLASS, "Guardar no Calendário →", "#6b21a8")}
-      </div>
     </div>
     ${footer}
   `);
@@ -144,7 +117,7 @@ interface TemplateDef {
 
 const TEMPLATES: TemplateDef[] = [
   { key: "video_recursos_premium", subject: "{{fname}}, os teus recursos do webinar Vídeo com IA estão prontos 🎬", plans: ["video-premium", "premium", "gravacao"], buildHtml: premiumHtml },
-  { key: "video_recursos_masterclass", subject: "{{fname}}, confirmação e próximos passos — Masterclass Vídeo com IA 🎓", plans: ["video-masterclass", "masterclass"], buildHtml: masterclassHtml },
+  { key: "video_recursos_masterclass", subject: "{{fname}}, a gravação da Masterclass Vídeo com IA está disponível 🎓", plans: ["video-masterclass", "masterclass"], buildHtml: masterclassHtml },
   { key: "video_recursos_bundle", subject: "{{fname}}, está tudo pronto — acesso completo Vídeo com IA ✅", plans: ["video-bundle", "bundle"], buildHtml: bundleHtml },
 ];
 
