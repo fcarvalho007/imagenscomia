@@ -27,7 +27,6 @@ function buildFallbackHtml(fname: string): string {
       <p style="color:#333;font-size:15px;line-height:1.7;margin:0;">📦 Nas próximas <strong>24 horas</strong>, vou enviar-te o acesso à gravação completa, materiais e tudo o que foi partilhado durante a sessão.</p>
     </div>
 
-    <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 16px;">Mesmo que não tenhas conseguido estar presente, vais receber tudo na mesma.</p>
     <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 24px;">Qualquer dúvida, responde directamente a este email.</p>
 
     <div style="border-top:1px solid #eee;padding-top:20px;margin-top:24px;">
