@@ -1,24 +1,29 @@
 
 
-# Corrigir página /guia-prompts — iframe deve ocupar toda a altura do ecrã
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Problema
+### Alteração
 
-O iframe tem `height="800"` fixo (800px) e o container usa `flex items-center justify-center`, o que centra verticalmente o iframe num espaço limitado. O resultado é um iframe pequeno que não aproveita o ecrã.
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-## Solução
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-Fazer o iframe ocupar **100% da viewport** (full-screen embed):
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-- Remover `items-center justify-center` e `px-4 py-6` do container
-- Usar `flex flex-col` com `h-screen` no container
-- Substituir `height="800"` por `className="flex-1 w-full"` para o iframe crescer e ocupar todo o espaço
-- Remover `maxWidth: "1200px"` para o conteúdo preencher a largura total
-- Manter `border: none` e `borderRadius` apenas nos cantos superiores
-
-### Ficheiro alterado
-
-| Ficheiro | Alteração |
-|----------|-----------|
-| `src/pages/GuiaPrompts.tsx` | Container full-screen, iframe flex-1 sem altura fixa |
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 

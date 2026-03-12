@@ -9,18 +9,11 @@ export default function GuiaPrompts() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center px-4 py-6">
+    <div className="h-screen bg-[#0f0f0f] flex flex-col">
       <iframe
         src="https://guiapromptsvideo.manus.space"
-        width="100%"
-        height="800"
-        style={{
-          border: "none",
-          borderRadius: "8px",
-          maxWidth: "1200px",
-          display: "block",
-          margin: "0 auto",
-        }}
+        className="flex-1 w-full"
+        style={{ border: "none" }}
         loading="lazy"
         allow="clipboard-write"
         title="Guia de Prompts para Vídeo com IA"
