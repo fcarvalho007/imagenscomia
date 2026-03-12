@@ -1,31 +1,29 @@
 
 
-# Duplicar /recursos-video → /recursos-masterclass
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-Nova página de recursos dedicada à Masterclass, com estrutura idêntica à de /recursos-video mas com branding, sessionStorage keys e conteúdo próprios.
+### Alteração
 
-## Ficheiros a criar
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-### 1. `src/pages/RecursosMasterclass.tsx`
-Cópia de `RecursosVideo.tsx` com:
-- sessionStorage keys: `recursos_masterclass_token`, `recursos_masterclass_email`, `recursos_masterclass_plan`, `recursos_masterclass_name`
-- Componentes próprios: `RecursosMasterclassLogin` e `RecursosMasterclassConteudo`
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-### 2. `src/components/recursos/RecursosMasterclassLogin.tsx`
-Cópia de `RecursosVideoLogin.tsx` com:
-- Branding "Masterclass · Vídeo com IA" em vez de "Vídeo com IA"
-- sessionStorage keys com prefixo `recursos_masterclass_`
-- Mesma lógica de acesso cross-webinar (planos masterclass/bundle/video-masterclass/video-bundle)
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-### 3. `src/components/recursos/RecursosMasterclassConteudo.tsx`
-Cópia de `RecursosVideoConteudo.tsx` com:
-- Config `MASTERCLASS_RECURSOS_CONFIG` com URLs vazios/placeholder para Vimeo, áudio, workbook, etc.
-- Header "Masterclass — Recursos"
-- Capítulos placeholder para preencher depois
-- Sem upsell de Masterclass (já estão na Masterclass)
-
-## Ficheiro a editar
-
-### 4. `src/App.tsx`
-- Adicionar rota `/recursos-masterclass` → `RecursosMasterclass`
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
