@@ -598,7 +598,7 @@ function getMasterclassNodes(): NodeDef[] {
       type: "email",
       channel: "sms",
       title: "SMS Reminder — Masterclass hoje",
-      subtitle: "12 de Março · 8h00 · 2h antes da sessão",
+      subtitle: "12 de Março · 9h00 · 1h antes da sessão",
       templateKeyMatch: ["sms_masterclass_reminder"],
       sendOffsetHours: null,
       iconEmoji: "📱",
