@@ -25,6 +25,7 @@ import Fatura from "./pages/Fatura";
 import VideoLPPage from "./pages/VideoLP";
 import RecursosVideo from "./pages/RecursosVideo";
 import MasterclassVideo from "./pages/MasterclassVideo";
+import GuiaPrompts from "./pages/GuiaPrompts";
 
 const queryClient = new QueryClient();
 
