@@ -1,29 +1,50 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Agendar envio automático do Masterclass Reminder às 09h00 de hoje
 
-### Alteração
+## Situação actual
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+A edge function `send-video-masterclass-reminder` existe e está funcional, mas **não tem cron job**. Só pode ser invocada manualmente (via CRM ou chamada directa). Isto significa que se ninguém a invocar manualmente às 9h, os emails não saem.
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+A função já tem idempotência (verifica `message_logs` antes de enviar), por isso é segura para agendar via cron.
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+## Plano
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### 1. Criar cron job para 12 de Março às 09h00 (hora de Portugal = UTC)
+
+Portugal continental em Março está em UTC (WET, antes da mudança para horário de verão a 29 de Março). Portanto, 09h00 PT = 09:00 UTC.
+
+Criar o cron job via SQL:
+
+```sql
+SELECT cron.schedule(
+  'video-masterclass-reminder-20260312',
+  '0 9 12 3 *',
+  $$
+  SELECT net.http_post(
+    url := 'https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/send-video-masterclass-reminder',
+    headers := '{"Content-Type": "application/json", "x-cron-secret": "..."}'::jsonb,
+    body := '{}'::jsonb
+  ) AS request_id;
+  $$
+);
+```
+
+Usa `x-cron-secret` para autenticação, consistente com os outros cron jobs existentes.
+
+### 2. Sem alterações de código
+
+A edge function já:
+- Filtra `plan_selected IN ('masterclass', 'bundle')` ✅
+- Verifica `paid_at` ou `premium_granted_at` ✅
+- Tem idempotência via `message_logs` ✅
+- Respeita `do_not_contact` ✅
+
+Não precisa de nenhuma alteração.
+
+### Ficheiros / acções
+
+| Acção | Detalhe |
+|-------|---------|
+| SQL (insert, não migration) | Criar cron job `video-masterclass-reminder-20260312` para `0 9 12 3 *` |
 
