@@ -129,7 +129,7 @@ serve(async (req) => {
         const fallbackHtml = buildHtml(reg.first_name || "");
         const rawHtml = tpl?.html_body ?? fallbackHtml;
         const html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
-        const emailSubject = (tpl?.subject ?? "🎬 A Masterclass começa hoje às 10h — link de acesso").replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const emailSubject = (tpl?.subject ?? "🎬 Daqui a 2 horas — a Masterclass começa às 10h").replace(/\{\{fname\}\}/g, reg.first_name || "");
 
         const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, emailSubject, html);
         const ok = result.success === true;
