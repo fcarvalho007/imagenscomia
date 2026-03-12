@@ -16,18 +16,23 @@ function buildFallbackHtml(fname: string): string {
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
   <div style="background:linear-gradient(135deg,#064e3b 0%,#16a34a 100%);padding:36px 28px 28px;text-align:center;">
     <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Masterclass · Vídeo Profissional com IA</p>
-    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">A sessão terminou.</h1>
   </div>
   <div style="padding:32px 28px;">
     <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Olá ${fname},</p>
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">A Masterclass <em>Vídeo Profissional com IA</em> chegou ao fim.</p>
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 20px;">Obrigado pela tua participação — espero que tenha sido útil.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Chegou ao fim a Masterclass de Vídeo Profissional com Inteligência Artificial e a sequência de conteúdos ao tema de conteúdo visual.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 20px;">Para quem teve a oportunidade de assistir ao vivo, obrigado pela presença e participação.</p>
 
     <div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:20px 20px;border-radius:0 8px 8px 0;margin:0 0 24px;">
-      <p style="color:#333;font-size:15px;line-height:1.7;margin:0;">📦 Nas próximas <strong>24 horas</strong>, vou enviar-te o acesso à gravação completa, materiais e tudo o que foi partilhado durante a sessão.</p>
+      <p style="color:#333;font-size:15px;line-height:1.7;margin:0;">📦 Nas próximas <strong>24 horas</strong>, vou enviar novo email, com o acesso à gravação completa, materiais e conteúdo complementar do que foi partilhado durante a sessão.</p>
     </div>
 
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 24px;">Qualquer dúvida, responde directamente a este email.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 8px;">Adicionalmente:</p>
+    <ol style="color:#333;font-size:15px;line-height:1.8;margin:0 0 20px;padding-left:20px;">
+      <li style="margin-bottom:8px;">Para rever o conteúdo e ficheiros do webinar <strong>Imagens com IA</strong> (18 Fev):<br><a href="https://imagenscomia.com/recursos" style="color:#16a34a;text-decoration:underline;">https://imagenscomia.com/recursos</a></li>
+      <li>Para rever o conteúdo e ficheiros do webinar <strong>Vídeo com IA</strong> (12 Fev):<br><a href="https://imagenscomia.com/recursos-video" style="color:#16a34a;text-decoration:underline;">https://imagenscomia.com/recursos-video</a></li>
+    </ol>
+    <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 20px;">Acesso através do email registado na plataforma.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 24px;">Acredito que a documentação e os processos vão trazer valor acrescentado.</p>
 
     <div style="border-top:1px solid #eee;padding-top:20px;margin-top:24px;">
       <p style="color:#333;font-size:15px;font-weight:700;margin:0 0 2px;">Frederico Carvalho</p>
