@@ -1684,7 +1684,9 @@ function Timeline({
                 <button
                   onClick={() => {
                     const rawKey = node.templateKeyMatch[0]?.replace(/-/g, "_").replace("stage_0", "confirmation") || "";
-                     const emailKey = rawKey.startsWith(`${webinar}_`) ? rawKey.slice(webinar.length + 1) : rawKey;
+                     const emailKey = rawKey.includes("masterclass") || rawKey.includes("mc_sales")
+                       ? rawKey
+                       : rawKey.startsWith(`${webinar}_`) ? rawKey.slice(webinar.length + 1) : rawKey;
                      onClickSentCount?.(emailKey, node.title, webinar);
                   }}
                   className="text-[13px] font-semibold hover:underline cursor-pointer"
