@@ -101,10 +101,12 @@ serve(async (req) => {
   try {
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("authorization") || "";
+    const crmAdminEmail = req.headers.get("x-crm-admin-email");
     const isCron = cronSecret === Deno.env.get("CRON_SECRET");
     const isServiceRole = authHeader.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "__none__");
+    const isCrmAdmin = crmAdminEmail === "fredericodigital@gmail.com";
 
-    if (!isCron && !isServiceRole) {
+    if (!isCron && !isServiceRole && !isCrmAdmin) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
