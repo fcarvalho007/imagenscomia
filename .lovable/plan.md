@@ -1,29 +1,44 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Disparo do email `video_masterclass_thankyou`
 
-### Alteração
+## Problema actual
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+A query filtra apenas `webinar = 'video'`, excluindo compradores de masterclass/bundle do webinar de Imagens.
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+## Audiência correcta
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+**Recebe:** Todos os que pagaram (ou receberam acesso premium) com plano `masterclass`, `bundle`, `video-masterclass` ou `video-bundle` — de **ambos** os webinars (imagens e video).
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+**Não recebe:** Free e Premium (apenas gravação).
+
+## Alteração
+
+### `supabase/functions/send-video-masterclass-thankyou/index.ts`
+
+Remover `.eq("webinar", "video")` da query para abranger ambos os webinars. Adicionar deduplicação por email (mesmo utilizador pode ter registo em ambos os webinars — enviar apenas 1 email).
+
+```diff
+- .eq("webinar", "video")
+- .eq("do_not_contact", false)
+- .in("plan_selected", ["masterclass", "bundle", "video-masterclass", "video-bundle"]);
++ .eq("do_not_contact", false)
++ .in("plan_selected", ["masterclass", "bundle", "video-masterclass", "video-bundle"]);
+```
+
+Adicionar deduplicação:
+```typescript
+// Deduplicate by email (keep first match)
+const seen = new Set<string>();
+const deduped = eligible.filter(r => {
+  if (seen.has(r.email)) return false;
+  seen.add(r.email);
+  return true;
+});
+```
+
+### Deploy e disparo
+
+1. Deploy da função actualizada
+2. Invocar a função para disparar os emails
 
