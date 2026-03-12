@@ -57,6 +57,7 @@ const App = () => (
           <Route path="/video-lp" element={<VideoLPPage />} />
           <Route path="/recursos-video" element={<RecursosVideo />} />
           <Route path="/masterclass-video" element={<MasterclassVideo />} />
+          <Route path="/guia-prompts" element={<GuiaPrompts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
