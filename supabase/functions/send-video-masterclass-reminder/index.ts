@@ -18,7 +18,7 @@ function buildHtml(fname: string): string {
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
   <div style="background:linear-gradient(135deg,#064e3b 0%,#16a34a 100%);padding:36px 28px 28px;text-align:center;">
     <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Masterclass · Vídeo Profissional com IA</p>
-    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">Daqui a 2 horas, ${fname}.</h1>
+    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">Daqui a 1 hora, ${fname}.</h1>
   </div>
   <div style="padding:32px 28px;">
     <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Olá ${fname},</p>
@@ -129,7 +129,7 @@ serve(async (req) => {
         const fallbackHtml = buildHtml(reg.first_name || "");
         const rawHtml = tpl?.html_body ?? fallbackHtml;
         const html = rawHtml.replace(/\{\{fname\}\}/g, reg.first_name || "");
-        const emailSubject = (tpl?.subject ?? "🎬 Daqui a 2 horas — a Masterclass começa às 10h").replace(/\{\{fname\}\}/g, reg.first_name || "");
+        const emailSubject = (tpl?.subject ?? "🎬 Daqui a 1 hora — a Masterclass começa às 10h").replace(/\{\{fname\}\}/g, reg.first_name || "");
 
         const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, emailSubject, html);
         const ok = result.success === true;
