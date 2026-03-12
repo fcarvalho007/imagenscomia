@@ -16,18 +16,19 @@ function buildFallbackHtml(fname: string): string {
 <div style="max-width:600px;margin:0 auto;background:#ffffff;">
   <div style="background:linear-gradient(135deg,#064e3b 0%,#16a34a 100%);padding:36px 28px 28px;text-align:center;">
     <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Masterclass · Vídeo Profissional com IA</p>
-    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">Obrigado, ${fname}.</h1>
+    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">A sessão terminou.</h1>
   </div>
   <div style="padding:32px 28px;">
     <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Olá ${fname},</p>
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Foi um prazer ter-te na Masterclass de hoje.</p>
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 20px;">Espero que tenhas saído com ideias claras sobre como usar IA para criar vídeo profissional.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">A Masterclass <em>Vídeo Profissional com IA</em> chegou ao fim.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 20px;">Obrigado pela tua participação — espero que tenha sido útil.</p>
 
     <div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:20px 20px;border-radius:0 8px 8px 0;margin:0 0 24px;">
-      <p style="color:#333;font-size:15px;line-height:1.7;margin:0;">📦 Nas próximas <strong>24 horas</strong>, vou enviar-te o acesso à página de recursos da Masterclass — com a gravação completa, materiais e tudo o que foi partilhado durante a sessão.</p>
+      <p style="color:#333;font-size:15px;line-height:1.7;margin:0;">📦 Nas próximas <strong>24 horas</strong>, vou enviar-te o acesso à gravação completa, materiais e tudo o que foi partilhado durante a sessão.</p>
     </div>
 
-    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 24px;">Entretanto, se tiveres alguma dúvida, responde directamente a este email.</p>
+    <p style="color:#333;font-size:15px;line-height:1.7;margin:0 0 16px;">Mesmo que não tenhas conseguido estar presente, vais receber tudo na mesma.</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 24px;">Qualquer dúvida, responde directamente a este email.</p>
 
     <div style="border-top:1px solid #eee;padding-top:20px;margin-top:24px;">
       <p style="color:#333;font-size:15px;font-weight:700;margin:0 0 2px;">Frederico Carvalho</p>
@@ -118,7 +119,7 @@ serve(async (req) => {
         const fname = reg.first_name || "";
         const rawHtml = tpl?.html_body ?? buildFallbackHtml(fname);
         const html = rawHtml.replace(/\{\{fname\}\}/g, fname);
-        const subject = (tpl?.subject ?? "Obrigado por estares presente, {{fname}}.").replace(/\{\{fname\}\}/g, fname);
+        const subject = (tpl?.subject ?? "A Masterclass terminou — obrigado, {{fname}}.").replace(/\{\{fname\}\}/g, fname);
 
         const result = await callSendEmail(supabaseUrl, serviceRoleKey, reg.email, subject, html);
         const ok = result.success === true;
