@@ -585,7 +585,7 @@ function getMasterclassNodes(): NodeDef[] {
     {
       type: "email",
       title: "Email Reminder — Masterclass hoje às 10h",
-      subtitle: "12 de Março · 8h30 · participantes pagos",
+      subtitle: "12 de Março · 8h00 · 2h antes da sessão",
       templateKeyMatch: ["video_masterclass_reminder"],
       sendOffsetHours: null,
       iconEmoji: "✉️",
@@ -598,7 +598,7 @@ function getMasterclassNodes(): NodeDef[] {
       type: "email",
       channel: "sms",
       title: "SMS Reminder — Masterclass hoje",
-      subtitle: "12 de Março · 8h30 · só quem tem telefone",
+      subtitle: "12 de Março · 8h00 · 2h antes da sessão",
       templateKeyMatch: ["sms_masterclass_reminder"],
       sendOffsetHours: null,
       iconEmoji: "📱",
