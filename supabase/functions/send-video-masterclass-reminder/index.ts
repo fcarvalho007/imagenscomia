@@ -14,23 +14,36 @@ const ZOOM_LINK = "https://us06web.zoom.us/j/85839886498";
 function buildHtml(fname: string): string {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:system-ui,-apple-system,sans-serif;">
-<div style="max-width:600px;margin:0 auto;background:#ffffff;padding:32px 28px;">
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">Olá ${fname},</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 16px;">A <strong>Masterclass "Vídeo com IA"</strong> começa hoje às <strong>10h00</strong> (hora de Portugal).</p>
-  <p style="color:#333;font-size:16px;line-height:1.6;margin:0 0 24px;">Entra directamente pelo Zoom quando estiveres pronto:</p>
-
-  <div style="text-align:center;margin:0 0 24px;">
-    <a href="${ZOOM_LINK}" style="display:inline-block;background:#16a34a;color:#fff;padding:13px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Entrar na Masterclass →</a>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Georgia,serif;">
+<div style="max-width:600px;margin:0 auto;background:#ffffff;">
+  <div style="background:linear-gradient(135deg,#064e3b 0%,#16a34a 100%);padding:36px 28px 28px;text-align:center;">
+    <p style="color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:1px;text-transform:uppercase;margin:0 0 8px;">Masterclass · Vídeo Profissional com IA</p>
+    <h1 style="color:#ffffff;font-size:24px;font-weight:700;margin:0;line-height:1.3;">Daqui a 2 horas, ${fname}.</h1>
   </div>
+  <div style="padding:32px 28px;">
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 16px;">Olá ${fname},</p>
+    <p style="color:#333;font-size:16px;line-height:1.7;margin:0 0 20px;">A <strong>Masterclass "Vídeo Profissional com IA"</strong> começa às <strong>10h00</strong> (hora de Portugal). Está quase!</p>
 
-  <p style="color:#555;font-size:14px;margin:0 0 8px;">📌 A sala abre alguns minutos antes do início.</p>
-  <p style="color:#555;font-size:14px;margin:0 0 24px;">⏱ Duração estimada: ~3 horas (10h–13h).</p>
+    <div style="background:#f0fdf4;border-left:4px solid #16a34a;padding:20px 20px;border-radius:0 8px 8px 0;margin:0 0 24px;">
+      <p style="color:#333;font-size:15px;line-height:1.8;margin:0;">
+        🕐 <strong>Horário:</strong> 10h00 – 13h00<br>
+        💻 <strong>Plataforma:</strong> Zoom (link abaixo)<br>
+        📋 <strong>Preparação:</strong> computador ligado, bloco de notas à mão<br>
+        🎧 <strong>Recomendação:</strong> usa auscultadores para melhor áudio
+      </p>
+    </div>
 
-  <div style="border-top:1px solid #eee;padding-top:16px;margin-top:32px;">
-    <p style="color:#333;font-size:16px;margin:0 0 4px;">Até já,</p>
-    <p style="color:#333;font-size:16px;font-weight:700;margin:0 0 4px;">Frederico Carvalho</p>
-    <p style="color:#999;font-size:12px;margin:0;">DIGITALFC</p>
+    <div style="text-align:center;margin:0 0 24px;">
+      <a href="${ZOOM_LINK}" style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px;">Entrar na Masterclass →</a>
+    </div>
+
+    <p style="color:#555;font-size:14px;margin:0 0 24px;text-align:center;">A sala abre ~5 minutos antes do início.</p>
+
+    <div style="border-top:1px solid #eee;padding-top:20px;margin-top:24px;">
+      <p style="color:#333;font-size:16px;margin:0 0 4px;">Até já,</p>
+      <p style="color:#333;font-size:15px;font-weight:700;margin:0 0 2px;">Frederico Carvalho</p>
+      <p style="color:#999;font-size:12px;margin:0;">DIGITALFC · <a href="https://fredericocarvalho.pt" style="color:#999;text-decoration:none;">fredericocarvalho.pt</a></p>
+    </div>
   </div>
 </div>
 </body></html>`;
