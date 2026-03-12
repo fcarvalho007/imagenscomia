@@ -267,10 +267,10 @@ serve(async (req) => {
 
       const { data: registrants, error: qErr } = await supabase
         .from("registrations")
-        .select("id, email, first_name, name, plan_selected")
+        .select("id, email, first_name, name, plan_selected, paid_at, premium_granted_at")
         .eq("webinar", "video")
-        .not("paid_at", "is", null)
-        .in("plan_selected", tpl.plans);
+        .in("plan_selected", tpl.plans)
+        .or("paid_at.not.is.null,premium_granted_at.not.is.null");
 
       if (qErr) {
         stat.errors.push(`Query error: ${qErr.message}`);

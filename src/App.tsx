@@ -25,6 +25,7 @@ import Fatura from "./pages/Fatura";
 import VideoLPPage from "./pages/VideoLP";
 import RecursosVideo from "./pages/RecursosVideo";
 import MasterclassVideo from "./pages/MasterclassVideo";
+import GuiaPrompts from "./pages/GuiaPrompts";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/video-lp" element={<VideoLPPage />} />
           <Route path="/recursos-video" element={<RecursosVideo />} />
           <Route path="/masterclass-video" element={<MasterclassVideo />} />
+          <Route path="/guia-prompts" element={<GuiaPrompts />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
