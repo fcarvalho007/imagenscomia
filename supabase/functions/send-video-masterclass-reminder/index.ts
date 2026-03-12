@@ -88,8 +88,7 @@ serve(async (req) => {
     const { data: registrants, error: queryErr } = await supabase
       .from("registrations")
       .select("id, email, first_name")
-      .eq("webinar", "video")
-      .in("plan_selected", ["masterclass", "bundle"])
+      .in("plan_selected", ["masterclass", "bundle", "video-masterclass", "video-bundle"])
       .eq("do_not_contact", false)
       .or("paid_at.not.is.null,premium_granted_at.not.is.null");
 
