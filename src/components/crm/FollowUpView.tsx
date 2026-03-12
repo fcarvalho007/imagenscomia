@@ -147,13 +147,26 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
     goToAudit({ templateKey, provider: "resend", confirmedOnly: true, subTab: "envios" });
   }, [goToAudit]);
 
-  const handleOpenEditor = useCallback((templateKey: string) => {
+  const handleOpenEditor = useCallback(async (templateKey: string) => {
+    // Try local state first
     const tpl = emailTemplates.find((t) => t.template_key === templateKey);
     if (tpl) {
       setSelectedTemplate(tpl);
-    } else {
-      toast.error("Template não configurado");
+      return;
     }
+    // Fallback: fetch directly from DB
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("template_key, name, subject, html_body, updated_at, updated_by")
+      .eq("template_key", templateKey)
+      .maybeSingle();
+    if (error || !data) {
+      toast.error(`Template "${templateKey}" não encontrado na base de dados`);
+      return;
+    }
+    const fetched = data as EmailTemplate;
+    setEmailTemplates((prev) => [...prev, fetched]);
+    setSelectedTemplate(fetched);
   }, [emailTemplates]);
 
   const handleEditorSaved = useCallback((updated: EmailTemplate) => {
