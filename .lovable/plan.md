@@ -1,29 +1,33 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Refinar design do email `video_masterclass_thankyou`
 
-### Alteração
+O template actual tem um design funcional mas básico. Vou elevar o design visual mantendo a identidade da marca (gradiente verde, Georgia serif, tom pessoal).
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Melhorias de design
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+### Header
+- Adicionar um **H1** no banner verde: "Obrigado pela presença" (consistente com outros templates que têm título no header)
+- Adicionar um **ícone decorativo** ✅ antes do subtítulo
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+### Corpo
+- **Separar visualmente** os blocos de conteúdo com mais espaçamento
+- Estilizar os **links dos recursos como botões** em vez de URLs em texto — mais clicáveis e profissionais
+- Adicionar **ícones inline** (📚, 🎬) nos itens da lista para diferenciação visual
+- Melhorar a **tipografia**: texto de acesso mais subtil (cor cinza), hierarquia mais clara
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### Assinatura
+- Adicionar **avatar/foto** do Frederico (URL externo ou placeholder)
+- Layout lado a lado (foto + texto) para a assinatura
+
+### Geral
+- Adicionar **rodapé** com texto legal/unsubscribe em cinza claro (profissionalismo)
+- Melhorar o **callout box** verde — adicionar padding e ícone mais visível
+
+## Ficheiros alterados
+
+| Ficheiro | Alteração |
+|----------|-----------|
+| `supabase/functions/send-video-masterclass-thankyou/index.ts` | Novo HTML do fallback com design refinado |
+| DB `email_templates` | UPDATE `html_body` para `video_masterclass_thankyou` |
 
