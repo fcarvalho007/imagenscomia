@@ -35,7 +35,6 @@ export default function RecursosVideoLogin({ onAuthed }: Props) {
         .from("registrations")
         .select("edit_token, first_name, plan_selected, paid_at, premium_granted_at")
         .eq("email", email.toLowerCase().trim())
-        .eq("webinar", "video")
         .order("paid_at", { ascending: false, nullsFirst: false })
         .order("premium_granted_at", { ascending: false, nullsFirst: false })
         .limit(1);
