@@ -1,34 +1,29 @@
 
 
-# Corrigir conteúdo do template `video_masterclass_thankyou`
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-## Alterações
+### Alteração
 
-### 1. Fallback HTML no edge function (`supabase/functions/send-video-masterclass-thankyou/index.ts`)
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-Substituir o corpo do email (linhas 17-35) pelo novo conteúdo:
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-- **Header**: manter "Masterclass · Vídeo Profissional com IA" (já está)
-- **H1**: Remover "A sessão terminou." — sem título H1 explícito, ou usar algo neutro
-- **Corpo novo**:
-  - "Olá {{fname}},"
-  - "Chegou ao fim a Masterclass de Vídeo Profissional com Inteligência Artificial e a sequência de conteúdos ao tema de conteúdo visual."
-  - "Para quem teve a oportunidade de assistir ao vivo, obrigado pela presença e participação."
-  - Bloco verde: "📦 Nas próximas 24 horas, vou enviar novo email, com o acesso à gravação completa, materiais e conteúdo complementar do que foi partilhado durante a sessão."
-  - "Adicionalmente:" com lista numerada:
-    1. "Para rever o conteúdo e ficheiros do webinar Imagens com IA (18 Fev):" + link recursos
-    2. "Para rever o conteúdo e ficheiros do webinar Vídeo com IA (12 Fev):" + link recursos-video
-  - "Acesso através do email registado na plataforma."
-  - "Acredito que a documentação e os processos vão trazer valor acrescentado."
-- **Assinatura**: manter Frederico Carvalho / DIGITALFC
-
-### 2. Base de dados (`email_templates`)
-
-UPDATE do `html_body` na tabela `email_templates` para `template_key = 'video_masterclass_thankyou'` com o mesmo HTML actualizado.
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
 ### Ficheiros alterados
-| Ficheiro | Alteração |
-|----------|-----------|
-| `supabase/functions/send-video-masterclass-thankyou/index.ts` | Novo corpo do fallback HTML |
-| DB `email_templates` | UPDATE html_body |
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
