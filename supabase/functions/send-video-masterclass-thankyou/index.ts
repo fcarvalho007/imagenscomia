@@ -117,8 +117,7 @@ serve(async (req) => {
 
     const { data: registrants, error: queryErr } = await supabase
       .from("registrations")
-      .select("id, email, first_name, paid_at, premium_granted_at, plan_selected")
-      .eq("webinar", "video")
+      .select("id, email, first_name, paid_at, premium_granted_at, plan_selected, webinar")
       .eq("do_not_contact", false)
       .in("plan_selected", ["masterclass", "bundle", "video-masterclass", "video-bundle"]);
 
@@ -128,14 +127,22 @@ serve(async (req) => {
       (r) => r.paid_at || r.premium_granted_at
     );
 
-    if (eligible.length === 0) {
+    // Deduplicate by email (user may have registrations in both webinars)
+    const seenEmails = new Set<string>();
+    const deduped = eligible.filter((r) => {
+      if (seenEmails.has(r.email)) return false;
+      seenEmails.add(r.email);
+      return true;
+    });
+
+    if (deduped.length === 0) {
       return new Response(JSON.stringify({ sent: 0, skipped: 0, errors: 0, reason: "no_eligible" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const emails = eligible.map((r) => r.email);
+    const emails = deduped.map((r) => r.email);
     const { data: alreadySent } = await supabase
       .from("email_send_logs")
       .select("recipient_email")
@@ -144,7 +151,7 @@ serve(async (req) => {
       .in("recipient_email", emails);
 
     const sentSet = new Set((alreadySent || []).map((m) => m.recipient_email));
-    const toSend = eligible.filter((r) => !sentSet.has(r.email));
+    const toSend = deduped.filter((r) => !sentSet.has(r.email));
 
     const { data: tpl } = await supabase
       .from("email_templates")
