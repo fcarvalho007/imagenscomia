@@ -1266,7 +1266,7 @@ function Timeline({
       const created = new Date(i.timestamp).getTime();
       return created >= POST_EVENT_CUTOFF;
     });
-  }, [inscritos, isPostTab, isMcTab]);
+  }, [inscritos, isPostTab, isMcTab, isMcSellTab]);
 
   const inscritosCount = filteredInscritos.filter((i) => {
     if (webinar === "video") return i.webinar === "video";
