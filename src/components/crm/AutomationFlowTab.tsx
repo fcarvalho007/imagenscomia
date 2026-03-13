@@ -934,6 +934,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#3b82f6",
       customTag: { label: "10 MAR · 13H", bg: "#dbeafe", color: "#1d4ed8" },
       audienceFilter: { planFilter: ["premium", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-qa-reminder",
       dayGroup: "post_qa",
     },
     {
