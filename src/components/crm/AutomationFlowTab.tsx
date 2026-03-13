@@ -408,6 +408,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
       note: "Confirmação Masterclass 12 Mar 10h00 · upsell Premium Pass (gravação + materiais)",
       audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     {
