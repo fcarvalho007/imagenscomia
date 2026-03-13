@@ -633,6 +633,7 @@ function getMasterclassNodes(): NodeDef[] {
       borderColorOverride: "#16a34a",
       customTag: { label: "12 MAR · AUTOMÁTICO", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-thankyou",
       dayGroup: "mc_thankyou",
     },
     {
