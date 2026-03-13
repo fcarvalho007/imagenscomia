@@ -394,6 +394,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
       note: "Acesso à gravação + workbook + guia GEMs + áudio · upsell Masterclass 12 Mar",
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     {
