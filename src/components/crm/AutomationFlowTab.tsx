@@ -346,6 +346,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       note: "Enviado a todos os inscritos gratuitos",
       audienceFilter: { planFilter: ["free"] },
+      edgeFunctionName: "send-video-postwebinar",
       dayGroup: "d0",
     },
     // ── DIA 1 ──
