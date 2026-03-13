@@ -1,17 +1,84 @@
 import {
   Clock, LogOut,
   Mail, MessageCircle, Play, Headphones, FileText, Layers,
+  PenTool, Image, BookOpen, Wrench,
 } from "lucide-react";
 
-// ─── Configuração de conteúdo — actualizar após a masterclass ──────────────────
+// ─── Configuração de conteúdo ──────────────────────────────────────────────────
 const MASTERCLASS_RECURSOS_CONFIG = {
-  vimeoEmbedUrl: "",
-  audioUrl: "",
-  workbookUrl: "",
+  vimeoEmbedUrl: "https://player.vimeo.com/video/1173341892?badge=0&autopause=0&player_id=0&app_id=58479",
+  audioUrl: "https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing",
+  workbookUrl: "https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing",
   chapters: [
-    { label: "Capítulo 1", description: "Descrição em breve." },
-    { label: "Capítulo 2", description: "Descrição em breve." },
-    { label: "Capítulo 3", description: "Descrição em breve." },
+    {
+      label: "A fórmula do prompt profissional",
+      description:
+        "Um vídeo gerado com IA não pode partir de instruções vagas como \"faz um vídeo sobre a nossa app\". A estrutura [Sujeito] + [Ação] + [Cenário] + [Estilo Visual] + [Movimento de Câmara] é o que separa resultados amadores de resultados cinematográficos — e o uso de Projetos no Gemini (Diretor Criativo, Roteirista, Diretor de Fotografia) automatiza essa estruturação sem ser preciso memorizar nada.",
+    },
+    {
+      label: "O workflow replicável",
+      description:
+        "O verdadeiro valor não está em criar um vídeo isolado, mas em construir um processo em 4 fases (roteiro → geração de ativos → edição → finalização) que qualquer pessoa pode repetir. Com ferramentas gratuitas como o Google Flow e agentes no N8N, é possível transformar um briefing simples num roteiro completo com cenas, prompts e direção visual em minutos.",
+    },
+    {
+      label: "Consistência visual com método",
+      description:
+        "Inserir uma pessoa real num cenário gerado por IA requer renomear ficheiros, usar imagens de referência (mínimo 3 para vídeo, até 14 para foto) e referenciar sempre pelo nome no prompt. Técnicas como InPaint, first frame/last frame e a construção de fichas de personagem garantem que a mesma pessoa aparece reconhecível ao longo de todo o projeto.",
+    },
+    {
+      label: "Demonstração prática — edição com IA",
+      description:
+        "Demonstração com Farmácia Barata Reis e Podcast Marketing por Idiotas. Ferramentas como o Riverside fazem cortes automáticos, legendagem, limpeza de áudio (Magic Audio) e inserção de B-roll — tudo com um clique ou via chat com o agente integrado. Um promo de 30 segundos que demorava 1 hora passou a demorar 5 minutos, mantendo qualidade profissional.",
+    },
+    {
+      label: "Fluxos visuais — o futuro da produção",
+      description:
+        "Quer no Kling (Canvas), no ElevenLabs (Flows) ou no Freepik (Spaces), a lógica é a mesma: ligar nós de geração de imagem, edição, áudio e vídeo num único espaço de trabalho visual. Uma vez montado o fluxo, ele torna-se replicável para qualquer projeto. Foi apresentada uma ferramenta beta (IA Studio) que leva este conceito mais longe com storyboards completos gerados a partir de linguagem natural.",
+    },
+  ],
+  recursos: [
+    {
+      name: "Workbook resumo Masterclass",
+      subtitle: "PDF · Google Drive",
+      url: "https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing",
+      icon: FileText,
+      color: "violet",
+    },
+    {
+      name: "Só áudio da Masterclass",
+      subtitle: "MP3 · Google Drive",
+      url: "https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing",
+      icon: Headphones,
+      color: "violet",
+    },
+    {
+      name: "Exercício Roteiro Vídeo (c/IA)",
+      subtitle: "podes.entrar.pt",
+      url: "https://podes.entrar.pt/pre-roteiro",
+      icon: PenTool,
+      color: "gray",
+    },
+    {
+      name: "Exercício 3 ativos visuais (c/IA)",
+      subtitle: "podes.entrar.pt",
+      url: "https://podes.entrar.pt/3ativos",
+      icon: Image,
+      color: "gray",
+    },
+    {
+      name: "Guia de Estudo — Prompts para Vídeo",
+      subtitle: "imagenscomia.com",
+      url: "https://imagenscomia.com/guia-prompts",
+      icon: BookOpen,
+      color: "gray",
+    },
+    {
+      name: "Ferramenta Storyboard (em desenvolvimento)",
+      subtitle: "podes.entrar.pt · Beta",
+      url: "https://podes.entrar.pt/storyboardbeta",
+      icon: Wrench,
+      color: "gray",
+    },
   ],
 };
 
@@ -75,7 +142,7 @@ export default function RecursosMasterclassConteudo({ userData, onLogout }: Prop
 
             {/* Player Vimeo */}
             {hasVideo ? (
-              <div className="rounded-2xl overflow-hidden shadow-lg mb-4" style={{ padding: "56.25% 0 0 0", position: "relative" }}>
+              <div className="rounded-2xl overflow-hidden shadow-lg mb-4" style={{ padding: "75% 0 0 0", position: "relative" }}>
                 <iframe
                   src={MASTERCLASS_RECURSOS_CONFIG.vimeoEmbedUrl}
                   frameBorder="0"
@@ -133,45 +200,33 @@ export default function RecursosMasterclassConteudo({ userData, onLogout }: Prop
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
                 <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Recursos</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-
-                  {MASTERCLASS_RECURSOS_CONFIG.audioUrl && (
-                    <a
-                      href={MASTERCLASS_RECURSOS_CONFIG.audioUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center shrink-0">
-                        <Headphones size={14} className="text-violet-600" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Áudio da Masterclass</span>
-                        <span className="text-[11px] text-gray-500">MP3 · Google Drive</span>
-                      </div>
-                    </a>
-                  )}
-
-                  {MASTERCLASS_RECURSOS_CONFIG.workbookUrl && (
-                    <a
-                      href={MASTERCLASS_RECURSOS_CONFIG.workbookUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 border border-gray-100 transition-colors"
-                    >
-                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                        <FileText size={14} className="text-gray-500" />
-                      </div>
-                      <div>
-                        <span className="text-sm font-medium text-gray-900 block">Workbook Masterclass</span>
-                        <span className="text-[11px] text-gray-500">PDF · Google Drive</span>
-                      </div>
-                    </a>
-                  )}
-
-                  {!MASTERCLASS_RECURSOS_CONFIG.audioUrl && !MASTERCLASS_RECURSOS_CONFIG.workbookUrl && (
-                    <p className="text-sm text-gray-400 italic p-3">Materiais disponíveis em breve.</p>
-                  )}
-
+                  {MASTERCLASS_RECURSOS_CONFIG.recursos.map((r, i) => {
+                    const Icon = r.icon;
+                    const isViolet = r.color === "violet";
+                    return (
+                      <a
+                        key={i}
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
+                          isViolet
+                            ? "bg-violet-50 hover:bg-violet-100 border-violet-100"
+                            : "bg-gray-50 hover:bg-gray-100 border-gray-100"
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          isViolet ? "bg-violet-100" : "bg-gray-100"
+                        }`}>
+                          <Icon size={14} className={isViolet ? "text-violet-600" : "text-gray-500"} />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-sm font-medium text-gray-900 block leading-tight">{r.name}</span>
+                          <span className="text-[11px] text-gray-500">{r.subtitle}</span>
+                        </div>
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
 

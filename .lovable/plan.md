@@ -1,38 +1,29 @@
 
 
-# Actualizar conteúdo da página /recursos-masterclass
+## Inserir SMS de follow-up após o email pós-webinar Dia 1
 
-Três alterações no ficheiro `src/components/recursos/RecursosMasterclassConteudo.tsx`:
+### Alteração
 
-## 1. Configuração (`MASTERCLASS_RECURSOS_CONFIG`)
+Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
 
-Actualizar o objecto de configuração com:
+- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
+- **channel**: `"sms"`
+- **title**: `"SMS follow-up — Dia 1"`
+- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
+- **templateKeyMatch**: `["sms_followup_day1"]`
+- **iconEmoji**: `"📱"`
+- **borderColorOverride**: `"#f59e0b"`
+- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
+- **smsSendConfig**:
+  - `planFilter: ["free"]`
+  - `webinarFilter: "current"`
+  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
+  - `requirePhone: true`
+- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
 
-- **vimeoEmbedUrl**: `"https://player.vimeo.com/video/1173341892?badge=0&autopause=0&player_id=0&app_id=58479"`
-- **audioUrl**: `"https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing"`
-- **workbookUrl**: `"https://drive.google.com/file/d/1zdZmZOSWGImU9vllvkzD_Jhc8x-DfFC8/view?usp=sharing"`
-- **chapters**: Substituir os 3 placeholders pelos 5 capítulos fornecidos (fórmula do prompt, workflow replicável, consistência visual, demonstração Farmácia/Podcast, fluxos visuais)
+Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
 
-Adicionar array de **recursos extra** com os 4 links adicionais (Exercício Roteiro, Exercício 3 Ativos, Guia Prompts, Storyboard Beta).
-
-## 2. Vídeo embed
-
-O `vimeoEmbedUrl` preenchido activa automaticamente o player existente (a lógica `hasVideo` já trata disto). Ajustar o padding do container de `56.25%` para `75%` conforme o embed fornecido.
-
-## 3. Sidebar — Recursos
-
-Expandir a secção de recursos na sidebar para incluir os 6 itens:
-1. Workbook resumo Masterclass (Google Drive)
-2. Só áudio da Masterclass (Google Drive)
-3. Exercício Roteiro Vídeo (podes.entrar.pt/pre-roteiro)
-4. Exercício 3 ativos visuais (podes.entrar.pt/3ativos)
-5. Guia de Estudo — Prompts para Vídeo (imagenscomia.com/guia-prompts)
-6. Ferramenta Storyboard — em desenvolvimento (podes.entrar.pt/storyboardbeta)
-
-Substituir a renderização condicional actual (que só mostra audio + workbook) por um array de recursos mapeado dinamicamente, cada um com ícone, nome e subtítulo apropriados.
-
-### Ficheiro alterado
-| Ficheiro | Alteração |
-|----------|-----------|
-| `src/components/recursos/RecursosMasterclassConteudo.tsx` | Config completa + 5 capítulos + 6 recursos + vídeo Vimeo |
+### Ficheiros alterados
+- `src/components/crm/AutomationFlowTab.tsx`
+- `src/components/crm/templateLabels.ts`
 
