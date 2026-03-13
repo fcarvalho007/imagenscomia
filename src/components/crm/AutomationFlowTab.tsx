@@ -1761,18 +1761,43 @@ function Timeline({
             </div>
           )}
           {node.type === "email" && node.channel !== "sms" && !node.isPostWebinar && (
-            <button
-              onClick={() => {
-                const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
-                const cleaned = emailKey.replace("stage_0", "confirmation");
-                const tplKey = cleaned.startsWith(`${webinar}_`) ? cleaned : `${webinar}_${cleaned}`;
-                onOpenEditor?.(tplKey);
-              }}
-              className="text-[11px] font-medium hover:underline"
-              style={{ color: "#6b7280" }}
-            >
-              Ver email →
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => {
+                  const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
+                  const cleaned = emailKey.replace("stage_0", "confirmation");
+                  const tplKey = cleaned.startsWith(`${webinar}_`) ? cleaned : `${webinar}_${cleaned}`;
+                  onOpenEditor?.(tplKey);
+                }}
+                className="text-[11px] font-medium hover:underline"
+                style={{ color: "#6b7280" }}
+              >
+                Ver email →
+              </button>
+              {node.edgeFunctionName && (
+                <button
+                  onClick={() => handleBulkEmail(node)}
+                  disabled={sendingEmailKey === node.templateKeyMatch[0]}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    background: sendingEmailKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a",
+                    color: "#fff",
+                  }}
+                >
+                  {sendingEmailKey === node.templateKeyMatch[0] ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Enviando…
+                    </>
+                  ) : (
+                    <>
+                      <Send size={12} />
+                      Enviar email agora →
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
           {node.isPostWebinar && (
             <div className="flex flex-col items-end gap-1">
