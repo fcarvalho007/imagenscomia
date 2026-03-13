@@ -1,29 +1,27 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Actualizar template `video_masterclass_day1` na base de dados
 
-### Alteração
+## Problema
+O preview no CRM mostra o texto antigo ("Obrigado por teres estado presente na Masterclass...") porque lê da tabela `email_templates`. A edge function tem o HTML correcto no fallback, mas o template na BD ainda tem a versão antiga.
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Solução
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+Executar uma migração SQL que faz `UPDATE` na tabela `email_templates` para a row com `template_key = 'video_masterclass_day1'`:
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+- **subject**: `{{fname}}, os teus recursos da Masterclass estão prontos`
+- **html_body**: O HTML refinado com tom neutro (sem assumir presença), incluindo:
+  - Header verde "Os teus recursos estão prontos"
+  - Corpo com "A Masterclass... já decorreu e a gravação... está disponível"
+  - Lista de 4 recursos (gravação, workbook, exercícios, ferramentas)
+  - CTA "Aceder aos meus recursos"
+  - Conselho prático
+  - Bloco amarelo avaliação Google (podes.entrar.pt/avaliar)
+  - Assinatura Frederico Carvalho
+  - Footer
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+### Ficheiro alterado
+| Tipo | Detalhe |
+|------|---------|
+| Migração SQL | `UPDATE email_templates SET subject, html_body WHERE template_key = 'video_masterclass_day1'` |
 
