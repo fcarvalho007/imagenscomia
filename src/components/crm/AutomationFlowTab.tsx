@@ -494,6 +494,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      edgeFunctionName: "send-video-postwebinar-day3",
       dayGroup: "d3",
     },
     {
