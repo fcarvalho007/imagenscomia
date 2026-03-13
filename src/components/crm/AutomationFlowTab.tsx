@@ -647,6 +647,7 @@ function getMasterclassNodes(): NodeDef[] {
       customTag: { label: "13 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui link para gravação da Masterclass e pedido de avaliação Google",
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-day1",
       dayGroup: "mc_d1",
     },
     {
