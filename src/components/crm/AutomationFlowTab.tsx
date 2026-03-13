@@ -527,6 +527,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      edgeFunctionName: "send-video-postwebinar-closing",
       dayGroup: "d5",
     },
     {
