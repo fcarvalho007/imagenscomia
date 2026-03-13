@@ -629,7 +629,7 @@ function getMasterclassNodes(): NodeDef[] {
     {
       type: "email",
       title: "Email MC+24h — Recursos + Avaliação",
-      subtitle: "13 de Março · 10h · gravação + link de review Google",
+      subtitle: "14 de Março · 10h · gravação + recursos + avaliação Google",
       templateKeyMatch: ["video_masterclass_day1"],
       sendOffsetHours: null,
       iconEmoji: "✉️",

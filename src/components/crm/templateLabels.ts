@@ -51,7 +51,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   sms_recursos_post: "SMS Recursos — Clientes pagos",
   // Masterclass pós-evento
   video_masterclass_thankyou: "Pós-Masterclass — Obrigado",
-  video_masterclass_day1: "Masterclass Day 1 — Recursos + Avaliação",
+  video_masterclass_day1: "Masterclass Day 1 — Recursos + Avaliação Google",
   sms_masterclass_day1: "SMS Masterclass Day 1 — Lembrete avaliação",
   video_qa_reminder: "Email lembrete Q&A — 10 Mar",
   video_masterclass_reminder: "Reminder Masterclass — Dia do evento",
