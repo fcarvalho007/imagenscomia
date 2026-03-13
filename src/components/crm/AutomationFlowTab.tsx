@@ -601,6 +601,7 @@ function getMasterclassNodes(): NodeDef[] {
       borderColorOverride: "#1d4ed8",
       customTag: { label: "12 MAR · 9H00", bg: "#dbeafe", color: "#1d4ed8" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-reminder",
       dayGroup: "mc_reminder",
     },
     {
