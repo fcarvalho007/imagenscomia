@@ -680,6 +680,7 @@ function getMasterclassNodes(): NodeDef[] {
       customTag: { label: "15 MAR · FECHO", bg: "#fee2e2", color: "#dc2626" },
       note: "Email de fechamento com recursos finais e próximos passos",
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-day3",
       dayGroup: "mc_d3",
     },
     {
