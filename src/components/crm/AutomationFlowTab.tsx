@@ -89,6 +89,7 @@ interface NodeDef {
   smsSendConfig?: SmsSendConfig;
   audienceFilter?: AudienceFilter;
   dayGroup?: string;
+  edgeFunctionName?: string;
 }
 
 /* ─── Day Group Configuration ─── */
@@ -345,6 +346,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       note: "Enviado a todos os inscritos gratuitos",
       audienceFilter: { planFilter: ["free"] },
+      edgeFunctionName: "send-video-postwebinar",
       dayGroup: "d0",
     },
     // ── DIA 1 ──
@@ -359,6 +361,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "6 MAR · 12H30", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui quem não assistiu ao vivo",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      edgeFunctionName: "send-video-postwebinar-day1",
       dayGroup: "d1",
     },
     {
@@ -391,6 +394,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES PREMIUM", bg: "#dcfce7", color: "#16a34a" },
       note: "Acesso à gravação + workbook + guia GEMs + áudio · upsell Masterclass 12 Mar",
       audienceFilter: { planFilter: ["premium"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     {
@@ -404,6 +408,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES MASTERCLASS", bg: "#ede9fe", color: "#7c3aed" },
       note: "Confirmação Masterclass 12 Mar 10h00 · upsell Premium Pass (gravação + materiais)",
       audienceFilter: { planFilter: ["masterclass"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     {
@@ -417,6 +422,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
       note: "Acesso completo: gravação + materiais + Masterclass 12 Mar · sem upsell",
       audienceFilter: { planFilter: ["bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     // ── SMS RECURSOS POR PLANO (still day 1) ──
@@ -488,6 +494,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       borderColorOverride: "#f59e0b",
       customTag: { label: "8 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      edgeFunctionName: "send-video-postwebinar-day3",
       dayGroup: "d3",
     },
     {
@@ -520,6 +527,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "10 MAR · MARCA COMO PERDIDO", bg: "#fee2e2", color: "#dc2626" },
       infoBox: "Após envio deste email, o lead é marcado como 'perdido' no CRM com a data de fecho registada.",
       audienceFilter: { planFilter: ["free"], excludePaid: true },
+      edgeFunctionName: "send-video-postwebinar-closing",
       dayGroup: "d5",
     },
     {
@@ -593,6 +601,7 @@ function getMasterclassNodes(): NodeDef[] {
       borderColorOverride: "#1d4ed8",
       customTag: { label: "12 MAR · 9H00", bg: "#dbeafe", color: "#1d4ed8" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-reminder",
       dayGroup: "mc_reminder",
     },
     {
@@ -624,6 +633,7 @@ function getMasterclassNodes(): NodeDef[] {
       borderColorOverride: "#16a34a",
       customTag: { label: "12 MAR · AUTOMÁTICO", bg: "#dcfce7", color: "#16a34a" },
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-thankyou",
       dayGroup: "mc_thankyou",
     },
     {
@@ -637,6 +647,7 @@ function getMasterclassNodes(): NodeDef[] {
       customTag: { label: "13 MAR · 10H", bg: "#fef3c7", color: "#d97706" },
       note: "Inclui link para gravação da Masterclass e pedido de avaliação Google",
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-day1",
       dayGroup: "mc_d1",
     },
     {
@@ -669,6 +680,7 @@ function getMasterclassNodes(): NodeDef[] {
       customTag: { label: "15 MAR · FECHO", bg: "#fee2e2", color: "#dc2626" },
       note: "Email de fechamento com recursos finais e próximos passos",
       audienceFilter: { planFilter: ["masterclass", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-masterclass-day3",
       dayGroup: "mc_d3",
     },
     {
@@ -922,6 +934,7 @@ function getPostEventNodes(): NodeDef[] {
       borderColorOverride: "#3b82f6",
       customTag: { label: "10 MAR · 13H", bg: "#dbeafe", color: "#1d4ed8" },
       audienceFilter: { planFilter: ["premium", "bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-qa-reminder",
       dayGroup: "post_qa",
     },
     {
@@ -1199,6 +1212,7 @@ function Timeline({
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
+  const [sendingEmailKey, setSendingEmailKey] = useState<string | null>(null);
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [smsDetailedResults, setSmsDetailedResults] = useState<Array<{ name: string; phone: string; success: boolean; error?: string }>>([]);
   const [showSmsReport, setShowSmsReport] = useState(false);
@@ -1324,6 +1338,34 @@ function Timeline({
       toast.error("Erro ao enviar: " + (e.message || "erro desconhecido"));
     } finally {
       setSendingPost(false);
+    }
+  };
+
+  const handleBulkEmail = async (node: NodeDef) => {
+    if (!node.edgeFunctionName) return;
+    if (!confirm(`Confirmar envio do email "${node.title}" agora?\n\nA edge function faz dedup automático.`)) return;
+    const tplKey = node.templateKeyMatch[0] || "";
+    setSendingEmailKey(tplKey);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
+      const { data, error } = await supabase.functions.invoke(node.edgeFunctionName, {
+        body: { manual: true },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+      if (error) throw error;
+      const sent = data?.sent ?? 0;
+      const errors = data?.errors ?? 0;
+      const skipped = data?.skipped ?? 0;
+      if (errors === 0) {
+        toast.success(`✅ ${sent} emails enviados · ${skipped} skipped`);
+      } else {
+        toast.warning(`📧 ${sent} enviados · ${errors} erros · ${skipped} skipped`);
+      }
+    } catch (e: any) {
+      toast.error("Erro ao enviar: " + (e.message || "erro desconhecido"));
+    } finally {
+      setSendingEmailKey(null);
     }
   };
 
@@ -1719,18 +1761,43 @@ function Timeline({
             </div>
           )}
           {node.type === "email" && node.channel !== "sms" && !node.isPostWebinar && (
-            <button
-              onClick={() => {
-                const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
-                const cleaned = emailKey.replace("stage_0", "confirmation");
-                const tplKey = cleaned.startsWith(`${webinar}_`) ? cleaned : `${webinar}_${cleaned}`;
-                onOpenEditor?.(tplKey);
-              }}
-              className="text-[11px] font-medium hover:underline"
-              style={{ color: "#6b7280" }}
-            >
-              Ver email →
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                onClick={() => {
+                  const emailKey = node.templateKeyMatch[0]?.replace(/-/g, "_") || "";
+                  const cleaned = emailKey.replace("stage_0", "confirmation");
+                  const tplKey = cleaned.startsWith(`${webinar}_`) ? cleaned : `${webinar}_${cleaned}`;
+                  onOpenEditor?.(tplKey);
+                }}
+                className="text-[11px] font-medium hover:underline"
+                style={{ color: "#6b7280" }}
+              >
+                Ver email →
+              </button>
+              {node.edgeFunctionName && (
+                <button
+                  onClick={() => handleBulkEmail(node)}
+                  disabled={sendingEmailKey === node.templateKeyMatch[0]}
+                  className="flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    background: sendingEmailKey === node.templateKeyMatch[0] ? "#94a3b8" : "#16a34a",
+                    color: "#fff",
+                  }}
+                >
+                  {sendingEmailKey === node.templateKeyMatch[0] ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" />
+                      Enviando…
+                    </>
+                  ) : (
+                    <>
+                      <Send size={12} />
+                      Enviar email agora →
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
           )}
           {node.isPostWebinar && (
             <div className="flex flex-col items-end gap-1">
