@@ -422,6 +422,7 @@ function getNodes(webinar: WebinarKey): NodeDef[] {
       customTag: { label: "MANUAL · CLIENTES BUNDLE", bg: "#e0f2fe", color: "#0ea5e9" },
       note: "Acesso completo: gravação + materiais + Masterclass 12 Mar · sem upsell",
       audienceFilter: { planFilter: ["bundle"], requirePaid: true },
+      edgeFunctionName: "send-video-recursos-access",
       dayGroup: "d1",
     },
     // ── SMS RECURSOS POR PLANO (still day 1) ──
