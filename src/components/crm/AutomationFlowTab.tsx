@@ -1212,6 +1212,7 @@ function Timeline({
 }) {
   const [sendingPost, setSendingPost] = useState(false);
   const [sendingSmsKey, setSendingSmsKey] = useState<string | null>(null);
+  const [sendingEmailKey, setSendingEmailKey] = useState<string | null>(null);
   const [smsResult, setSmsResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
   const [smsDetailedResults, setSmsDetailedResults] = useState<Array<{ name: string; phone: string; success: boolean; error?: string }>>([]);
   const [showSmsReport, setShowSmsReport] = useState(false);
