@@ -1341,6 +1341,34 @@ function Timeline({
     }
   };
 
+  const handleBulkEmail = async (node: NodeDef) => {
+    if (!node.edgeFunctionName) return;
+    if (!confirm(`Confirmar envio do email "${node.title}" agora?\n\nA edge function faz dedup automático.`)) return;
+    const tplKey = node.templateKeyMatch[0] || "";
+    setSendingEmailKey(tplKey);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const adminEmail = session?.user?.email || "";
+      const { data, error } = await supabase.functions.invoke(node.edgeFunctionName, {
+        body: { manual: true },
+        headers: { "x-crm-admin-email": adminEmail },
+      });
+      if (error) throw error;
+      const sent = data?.sent ?? 0;
+      const errors = data?.errors ?? 0;
+      const skipped = data?.skipped ?? 0;
+      if (errors === 0) {
+        toast.success(`✅ ${sent} emails enviados · ${skipped} skipped`);
+      } else {
+        toast.warning(`📧 ${sent} enviados · ${errors} erros · ${skipped} skipped`);
+      }
+    } catch (e: any) {
+      toast.error("Erro ao enviar: " + (e.message || "erro desconhecido"));
+    } finally {
+      setSendingEmailKey(null);
+    }
+  };
+
   const handleBulkSms = async (node: NodeDef, customText?: string) => {
     const config = node.smsSendConfig;
     if (!config) return;
