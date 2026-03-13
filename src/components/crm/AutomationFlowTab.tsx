@@ -89,6 +89,7 @@ interface NodeDef {
   smsSendConfig?: SmsSendConfig;
   audienceFilter?: AudienceFilter;
   dayGroup?: string;
+  edgeFunctionName?: string;
 }
 
 /* ─── Day Group Configuration ─── */
