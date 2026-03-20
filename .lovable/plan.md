@@ -1,29 +1,36 @@
 
 
-## Inserir SMS de follow-up após o email pós-webinar Dia 1
+# Adicionar email admin `comunicacao@fredericocarvalho.pt` às 3 páginas de recursos
 
-### Alteração
+## Problema
+O email `comunicacao@fredericocarvalho.pt` não tem registo na base de dados, logo não consegue fazer login nas páginas de recursos. É preciso permitir acesso directo como "admin bypass".
 
-Adicionar um novo node SMS no array `preWebinarNodes` em `src/components/crm/AutomationFlowTab.tsx`, imediatamente após o node `video_postwebinar_day1` (linha 311), com:
+## Solução
 
-- **type**: `"email"` (padrão usado para todos os nodes, incluindo SMS)
-- **channel**: `"sms"`
-- **title**: `"SMS follow-up — Dia 1"`
-- **subtitle**: `"Envio manual · inscritos gratuitos com telefone"`
-- **templateKeyMatch**: `["sms_followup_day1"]`
-- **iconEmoji**: `"📱"`
-- **borderColorOverride**: `"#f59e0b"`
-- **customTag**: `{ label: "MANUAL · SMS", bg: "#fef3c7", color: "#d97706" }`
-- **smsSendConfig**:
-  - `planFilter: ["free"]`
-  - `webinarFilter: "current"`
-  - `smsText`: `"Bom dia. O documento resumo do webinar Video com IA foi enviado agora por email. Acesso premium + Sessao completa video em: imagenscomia.com/comprar"`
-  - `requirePhone: true`
-- **audienceFilter**: `{ planFilter: ["free"], excludePaid: true }`
+Adicionar uma lista de emails admin que fazem bypass à validação de base de dados nos 3 componentes de login. Quando o email inserido está na lista, o login é concedido imediatamente com dados simulados (nome "Equipa", plan "bundle"), sem consultar a base de dados.
 
-Também adicionar `"sms_followup_day1"` ao `templateLabels.ts` com label `"SMS follow-up — Dia 1"`.
+## Ficheiros alterados
 
-### Ficheiros alterados
-- `src/components/crm/AutomationFlowTab.tsx`
-- `src/components/crm/templateLabels.ts`
+| Ficheiro | Alteração |
+|----------|-----------|
+| `src/components/recursos/RecursosLogin.tsx` | Adicionar bypass para `comunicacao@fredericocarvalho.pt` antes da query à BD |
+| `src/components/recursos/RecursosVideoLogin.tsx` | Idem |
+| `src/components/recursos/RecursosMasterclassLogin.tsx` | Idem |
+
+## Lógica do bypass (igual nos 3 ficheiros)
+
+Dentro de `handleSubmit`, antes da query à BD:
+
+```typescript
+const ADMIN_EMAILS = ["comunicacao@fredericocarvalho.pt"];
+const normalizedEmail = email.toLowerCase().trim();
+
+if (ADMIN_EMAILS.includes(normalizedEmail)) {
+  // Set sessionStorage + call onAuthed with simulated data
+  // name: "Equipa", plan: "bundle", token: "admin"
+  return;
+}
+```
+
+Isto permite partilhar o email com colegas de equipa sem criar registos fictícios na base de dados.
 
