@@ -30,6 +30,19 @@ export default function RecursosVideoLogin({ onAuthed }: Props) {
     setLoading(true);
     setError(null);
 
+    const ADMIN_EMAILS = ["comunicacao@fredericocarvalho.pt"];
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (ADMIN_EMAILS.includes(normalizedEmail)) {
+      sessionStorage.setItem("recursos_video_token", "admin");
+      sessionStorage.setItem("recursos_video_email", normalizedEmail);
+      sessionStorage.setItem("recursos_video_plan", "bundle");
+      sessionStorage.setItem("recursos_video_name", "Equipa");
+      onAuthed({ email: normalizedEmail, token: "admin", plan: "bundle", name: "Equipa" });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data: rows, error: dbError } = await supabase
         .from("registrations")
