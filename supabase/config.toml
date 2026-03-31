@@ -72,16 +72,10 @@ verify_jwt = false
 [functions.create-group-payment]
 verify_jwt = false
 
-[functions.backfill-video-confirmations]
-verify_jwt = false
-
 [functions.send-email]
 verify_jwt = false
 
 [functions.resend-failed-emails]
-verify_jwt = false
-
-[functions.test-send-email]
 verify_jwt = false
 
 [functions.send-invoice-request]
@@ -94,9 +88,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.bulk-create-invoices]
-verify_jwt = false
-
-[functions.backfill-sms-logs]
 verify_jwt = false
 
 [functions.bulk-finalize-invoices]
