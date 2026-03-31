@@ -72,9 +72,6 @@ verify_jwt = false
 [functions.create-group-payment]
 verify_jwt = false
 
-[functions.backfill-video-confirmations]
-verify_jwt = false
-
 [functions.send-email]
 verify_jwt = false
 
