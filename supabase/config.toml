@@ -90,9 +90,6 @@ verify_jwt = false
 [functions.bulk-create-invoices]
 verify_jwt = false
 
-[functions.backfill-sms-logs]
-verify_jwt = false
-
 [functions.bulk-finalize-invoices]
 verify_jwt = false
 
