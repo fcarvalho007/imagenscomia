@@ -78,9 +78,6 @@ verify_jwt = false
 [functions.resend-failed-emails]
 verify_jwt = false
 
-[functions.test-send-email]
-verify_jwt = false
-
 [functions.send-invoice-request]
 verify_jwt = false
 
