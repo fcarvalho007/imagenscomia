@@ -1,6 +1,8 @@
 -- ============================================================================
 -- 20260918190000_legacy_rls_lockdown.sql
--- DRAFT — NÃO APLICAR sem revisão do diff (auditoria de segurança do legado).
+-- DRAFT — NÃO APLICAR: os percursos públicos ainda precisam de adaptação a tokens.
+-- Nunca aplicar isoladamente: recuperação por email e checkout legado ainda estão
+-- por migrar. Testes SQL não substituem a validação dos percursos completos.
 --
 -- Fecha as políticas públicas (USING (true)) das tabelas do funil legado:
 -- acesso direto passa a exigir sessão autenticada com role admin + MFA aal2
@@ -183,8 +185,8 @@ begin
   );
 end $$;
 
--- Por email (recuperação sem link): dados de funil mínimos, sem edit_token
-create or replace function public.legacy_reg_session(p_email text, p_webinar text default null)
+-- Sessão própria por token existente; email/ID isolado não autoriza acesso.
+create or replace function public.legacy_reg_session(p_token text, p_webinar text default null)
 returns jsonb
 language plpgsql
 stable
@@ -193,9 +195,9 @@ set search_path = public, pg_temp
 as $$
 declare r registrations;
 begin
-  if p_email is null or p_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then return null; end if;
+  if p_token is null or length(btrim(p_token)) < 20 then return null; end if;
   select * into r from registrations
-    where email = lower(btrim(p_email))
+    where edit_token = btrim(p_token)
       and (p_webinar is null or webinar = p_webinar)
     order by paid_at desc nulls last, premium_granted_at desc nulls last, created_at desc
     limit 1;
@@ -215,17 +217,17 @@ begin
   );
 end $$;
 
--- Guarda de progresso do funil por email, com lista branca de campos.
+-- Progresso próprio por token existente, com lista branca de campos.
 -- Nunca altera paid_at, premium_*, faturação, estado ou permissões.
 create or replace function public.legacy_reg_save_step(
-  p_email text,
+  p_token text,
   p_webinar text default null,
   p_step integer default null,
   p_patch jsonb default '{}'::jsonb
 )
 returns boolean
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public, pg_temp
 as $$
@@ -237,7 +239,7 @@ declare r registrations; k text; v text;
     'premium','masterclass','bundle','gravacao','gravacao-masterclass',
     'video-premium','video-masterclass','video-bundle'];
 begin
-  if p_email is null or p_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then return false; end if;
+  if p_token is null or length(btrim(p_token)) < 20 then return false; end if;
   if jsonb_typeof(p_patch) is distinct from 'object' then raise exception 'Invalid patch'; end if;
   if p_step is not null and (p_step < 0 or p_step > 50) then raise exception 'Invalid step'; end if;
   for k in select jsonb_object_keys(p_patch) loop
@@ -256,19 +258,23 @@ begin
         raise exception 'Value too long: %', k;
       elsif k = 'role' and length(v) > 120 then
         raise exception 'Value too long: %', k;
-      elsif length(v) > 40 then
+      elsif k not in ('first_name','last_name','sources','duvida','whatsapp','role') and length(v) > 40 then
         raise exception 'Value too long: %', k;
       end if;
     end if;
     if k = 'plan_selected' and v is not null and not (v = any(plans)) then raise exception 'Invalid plan'; end if;
   end loop;
   select * into r from registrations
-    where email = lower(btrim(p_email))
+    where edit_token = btrim(p_token)
       and (p_webinar is null or webinar = p_webinar)
     order by paid_at desc nulls last, created_at desc
     limit 1
     for update;
   if not found then return false; end if;
+  if (r.paid_at is not null or r.premium_granted_at is not null)
+     and p_patch ? 'plan_selected' and (p_patch->>'plan_selected') is distinct from r.plan_selected then
+    raise exception 'Paid plan requires a new order';
+  end if;
   update registrations set
     step_reached = coalesce(p_step, step_reached),
     first_name = coalesce(btrim(p_patch ->> 'first_name'), first_name),
@@ -290,7 +296,7 @@ begin
 end $$;
 
 -- Acesso às áreas de recursos (validação no servidor, sem devolver token)
-create or replace function public.legacy_recursos_access(p_email text, p_webinar text default null)
+create or replace function public.legacy_recursos_access(p_token text, p_webinar text default null)
 returns jsonb
 language plpgsql
 stable
@@ -299,11 +305,11 @@ set search_path = public, pg_temp
 as $$
 declare r registrations;
 begin
-  if p_email is null or p_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+  if p_token is null or length(btrim(p_token)) < 20 then
     return jsonb_build_object('found', false, 'access', false, 'name', null, 'plan', null);
   end if;
   select * into r from registrations
-    where email = lower(btrim(p_email))
+    where edit_token = btrim(p_token)
       and (p_webinar is null or webinar = p_webinar)
     order by paid_at desc nulls last, premium_granted_at desc nulls last, created_at desc
     limit 1;
@@ -319,20 +325,20 @@ begin
 end $$;
 
 -- Registo de presença na sessão ao vivo (marca uma vez; devolve apenas flags)
-create or replace function public.legacy_reg_attendance(p_email text, p_webinar text)
+create or replace function public.legacy_reg_attendance(p_token text, p_webinar text)
 returns jsonb
 language plpgsql
-stable
+volatile
 security definer
 set search_path = public, pg_temp
 as $$
 declare r registrations; now_attended boolean;
 begin
-  if p_email is null or p_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+  if p_token is null or length(btrim(p_token)) < 20 then
     return jsonb_build_object('found', false, 'attended', false);
   end if;
   select * into r from registrations
-    where email = lower(btrim(p_email)) and webinar = p_webinar
+    where edit_token = btrim(p_token) and webinar = p_webinar
     order by created_at desc limit 1;
   if not found then
     return jsonb_build_object('found', false, 'attended', false);
@@ -354,28 +360,34 @@ stable
 security definer
 set search_path = public, pg_temp
 as $$
-declare i invoice_details;
+declare inv invoice_details;
 begin
   if p_token is null or length(btrim(p_token)) < 20 then return null; end if;
-  select i.* into i
+  select i.* into inv
     from invoice_details i
     join registrations r on r.id = i.registration_id
     where r.edit_token = btrim(p_token)
     limit 1;
   if not found then return null; end if;
   return jsonb_build_object(
-    'invoice_name', i.invoice_name,
-    'invoice_vat', i.invoice_vat,
-    'invoice_address', i.invoice_address,
-    'invoice_zip', i.invoice_zip,
-    'invoice_city', i.invoice_city,
-    'invoice_email', i.invoice_email
+    'invoice_name', inv.invoice_name,
+    'invoice_vat', inv.invoice_vat,
+    'invoice_address', inv.invoice_address,
+    'invoice_zip', inv.invoice_zip,
+    'invoice_city', inv.invoice_city,
+    'invoice_email', inv.invoice_email
   );
 end $$;
 
 -- ---------------------------------------------------------------------------
 -- 5. Execução das RPCs públicas
 -- ---------------------------------------------------------------------------
+revoke execute on function public.legacy_reg_lookup(text) from public;
+revoke execute on function public.legacy_reg_session(text, text) from public;
+revoke execute on function public.legacy_reg_save_step(text, text, integer, jsonb) from public;
+revoke execute on function public.legacy_recursos_access(text, text) from public;
+revoke execute on function public.legacy_reg_attendance(text, text) from public;
+revoke execute on function public.legacy_invoice_get(text) from public;
 grant execute on function public.legacy_reg_lookup(text) to anon, authenticated;
 grant execute on function public.legacy_reg_session(text, text) to anon, authenticated;
 grant execute on function public.legacy_reg_save_step(text, text, integer, jsonb) to anon, authenticated;

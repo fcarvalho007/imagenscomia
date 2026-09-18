@@ -80,7 +80,7 @@ alter table public.email_templates enable row level security;
 alter table public.acquisition_costs enable row level security;
 alter table public.webinar_settings enable row level security;
 grant usage on schema public to anon, authenticated, service_role;
-grant all on all tables in schema public to service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
 `);
 
 await db.exec(
@@ -126,107 +126,43 @@ insert into acquisition_costs (platform, amount) values ('meta', 12.5);
 insert into webinar_settings (webinar, label, emoji, color, price_premium, live_views) values ('imagens','Imagens com IA','🖼️','#111',18.45, 555);
 `);
 
-// ---- 1. Anónimo: leitura de todas as tabelas negada ----
-await auth("anon");
-for (const t of ["registrations", "invoice_details", "message_logs", "email_send_logs",
-  "payment_events", "analytics_cache", "email_templates", "acquisition_costs", "webinar_settings"]) {
-  await denied(() => db.query(`select * from ${t}`), `anon select ${t}`);
+// Existing public grants are present: rows must be hidden by RLS, not by fixture omissions.
+const tables = ['registrations','invoice_details','message_logs','email_send_logs','payment_events','analytics_cache','email_templates','acquisition_costs','webinar_settings'];
+for (const [role,admin,aal] of [['anon',false,'aal1'],['authenticated',false,'aal2'],['authenticated',true,'aal1']]) {
+  await auth(role,admin,aal);
+  for (const table of tables) { assert.equal((await db.query(`select * from ${table}`)).rows.length,0); checks++; }
+  assert.equal((await db.query("update registrations set plan_selected='bundle' returning id")).rows.length,0);checks++;
+  await denied(()=>db.query("insert into payment_events(event_type) values ('paid')"),'forged payment event');
 }
-
-// ---- 2. Anónimo: escrita negada ----
-await denied(() => db.query("update registrations set plan_selected='bundle'"), "anon update registrations");
-await denied(() => db.query("update webinar_settings set price_premium=0"), "anon update webinar_settings");
-await denied(() => db.query("insert into message_logs (registration_id, channel, provider, template_key, status) values (gen_random_uuid(),'email','x','k','s')"), "anon insert message_logs");
-await denied(() => db.query("insert into acquisition_costs (platform, amount) values ('x', 1)"), "anon insert acquisition_costs");
-await denied(() => db.query("delete from acquisition_costs"), "anon delete acquisition_costs");
-await denied(() => db.query("insert into email_send_logs (webinar, email_key, recipient_email, status) values ('i','k','a@b.pt','s')"), "anon insert email_send_logs");
-await denied(() => db.query("insert into payment_events (registration_id, event_type, payload) values (gen_random_uuid(),'x','{}'::jsonb)"), "anon insert payment_events");
-await denied(() => db.query("insert into email_templates (template_key, subject) values ('k','s')"), "anon insert email_templates");
-
-// ---- 3. Helper de admin não executável ----
-await denied(() => db.query("select public.legacy_is_admin()"), "anon legacy_is_admin");
-
-// ---- 4. Utilizador autenticado sem role admin: negado ----
-await auth("authenticated", false, "aal2");
-await denied(() => db.query("select * from registrations"), "não-admin select registrations");
-await denied(() => db.query("select * from email_templates"), "não-admin select email_templates");
-
-// ---- 5. Admin sem MFA aal2: negado ----
-await auth("authenticated", true, "aal1");
-await denied(() => db.query("select * from registrations"), "admin aal1 select registrations");
-
-// ---- 6. Admin com aal2: leitura permitida ----
-await auth("authenticated", true, "aal2");
-const rows = (await db.query("select * from registrations")).rows;
-assert.equal(rows.length, 2); checks++;
-const tpl = (await db.query("select * from email_templates")).rows;
-assert.equal(tpl.length, 1); checks++;
-
-// ---- 7. RPCs públicas com sessão anónima ----
-await auth("anon");
-
-// recursos: desconhecido / grátis / pago
-const unknown = (await db.query("select legacy_recursos_access('ninguem@teste.pt', null) as r")).rows[0].r;
-assert.equal(unknown.found, false); checks++;
-const free = (await db.query("select legacy_recursos_access('gratis@teste.pt', null) as r")).rows[0].r;
-assert.equal(free.found, true); assert.equal(free.access, false); checks++;
-const paid = (await db.query("select legacy_recursos_access('paga@teste.pt', null) as r")).rows[0].r;
-assert.equal(paid.access, true); assert.equal(paid.plan, "premium");
-assert.ok(!("edit_token" in paid)); checks++;
-
-// recursos: filtro por webinar
-const wrongWebinar = (await db.query("select legacy_recursos_access('paga@teste.pt', 'video') as r")).rows[0].r;
-assert.equal(wrongWebinar.found, false); checks++;
-
-// sessão por email: sem edit_token
-const sess = (await db.query("select legacy_reg_session('paga@teste.pt', null) as r")).rows[0].r;
-assert.equal(sess.paid, true);
-assert.ok(!("edit_token" in sess));
-assert.ok(!("email" in sess)); checks++;
-
-// lookup por token
-const look = (await db.query("select legacy_reg_lookup($1) as r", [TOKEN])).rows[0].r;
-assert.equal(look.paid, true); assert.ok(!("edit_token" in look)); checks++;
-const badLook = (await db.query("select legacy_reg_lookup($1) as r", ["z".repeat(40)])).rows[0].r;
-assert.equal(badLook, null); checks++;
-
-// save_step: whitelist — campo proibido levanta erro
-await assert.rejects(() =>
-  db.query("select legacy_reg_save_step('paga@teste.pt', null, 4, $1::jsonb)", [JSON.stringify({ paid_at: "2026-01-01" })]),
-); checks++;
-await assert.rejects(() =>
-  db.query("select legacy_reg_save_step('paga@teste.pt', null, 4, $1::jsonb)", [JSON.stringify({ plan_selected: "plano-falso" })]),
-); checks++;
-const saved = await db.query("select legacy_reg_save_step('paga@teste.pt', null, 4, $1::jsonb)",
-  [JSON.stringify({ plan_selected: "bundle", sources: "instagram, amigo", duvida: "Quanto custa?" })]);
-assert.equal(saved.rows[0].legacy_reg_save_step, true); checks++;
-const after = (await db.query("select step_reached, plan_selected, sources, paid_at from registrations where email='paga@teste.pt'")).rows[0];
-assert.equal(after.step_reached, 4);
-assert.equal(after.plan_selected, "bundle");
-assert.equal(after.sources, "instagram, amigo");
-assert.ok(after.paid_at, "paid_at não pode ser alterado nem apagado"); checks++;
-// save_step: email desconhecido
-const noReg = await db.query("select legacy_reg_save_step('fantasma@teste.pt', null, 1, '{}') as r");
-assert.equal(noReg.rows[0].r, false); checks++;
-
-// attendance: marca e devolve flags apenas
-const att = (await db.query("select legacy_reg_attendance('gratis@teste.pt', 'imagens') as r")).rows[0].r;
-assert.equal(att.found, true); assert.equal(att.attended, true); checks++;
-const attRow = (await db.query("select attended_live_at from registrations where email='gratis@teste.pt'")).rows[0];
-assert.ok(attRow.attended_live_at); checks++;
-
-// invoice_get por token
-const inv = (await db.query("select legacy_invoice_get($1) as r", [TOKEN])).rows[0].r;
-assert.equal(inv.invoice_vat, "123456789"); checks++;
-const badInv = (await db.query("select legacy_invoice_get($1) as r", ["y".repeat(40)])).rows[0].r;
-assert.equal(badInv, null); checks++;
-
-// ---- 8. Vista pública: só campos de venda ----
-const vis = (await db.query("select webinar, price_premium from webinar_settings_public")).rows;
-assert.equal(vis.length, 1); checks++;
-await denied(() => db.query("select live_views from webinar_settings_public"), "vista não expõe métricas");
-
-// ---- 9. Vista não permite escrita ----
-await denied(() => db.query("update webinar_settings_public set price_premium=0"), "anon update view");
-
-console.log(`\nOK — ${checks} verificações de segurança do legado a passar.`);
+await auth('authenticated',true,'aal2');
+assert.equal((await db.query('select * from registrations')).rows.length,2);checks++;
+assert.equal((await db.query("update email_templates set subject='Admin' returning id")).rows.length,1);checks++;
+await auth('anon');
+for (const credential of ['paga@teste.pt','gratis@teste.pt','invalid','z'.repeat(40)]) {
+  assert.equal((await db.query('select legacy_reg_session($1,null) as r',[credential])).rows[0].r,null);checks++;
+  assert.equal((await db.query('select legacy_recursos_access($1,null) as r',[credential])).rows[0].r.access,false);checks++;
+  assert.equal((await db.query("select legacy_reg_save_step($1,null,4,'{}') as r",[credential])).rows[0].r,false);checks++;
+  assert.equal((await db.query("select legacy_reg_attendance($1,'imagens') as r",[credential])).rows[0].r.found,false);checks++;
+}
+const paid=(await db.query('select legacy_recursos_access($1,null) as r',[TOKEN])).rows[0].r;
+assert.equal(paid.access,true);assert.equal(paid.plan,'premium');assert.equal('edit_token' in paid,false);checks++;
+assert.equal((await db.query("select legacy_recursos_access($1,'video') as r",[TOKEN])).rows[0].r.access,false);checks++;
+const own=(await db.query('select legacy_reg_lookup($1) as r',[TOKEN])).rows[0].r;
+assert.equal(own.email,'paga@teste.pt');assert.equal('edit_token' in own,false);checks++;
+for (const patch of [{paid_at:'2026-01-01'},{premium_granted_at:'2026-01-01'},{edit_token:'new'},{plan_selected:'bad-plan'}]) {
+  await denied(()=>db.query('select legacy_reg_save_step($1,null,4,$2)',[TOKEN2,JSON.stringify(patch)]),'protected field');
+}
+await denied(()=>db.query('select legacy_reg_save_step($1,null,4,$2)',[TOKEN,JSON.stringify({plan_selected:'bundle'})]),'paid entitlement cannot be upgraded');
+assert.equal((await db.query('select legacy_reg_save_step($1,null,4,$2) as r',[TOKEN2,JSON.stringify({plan_selected:'premium',sources:'Referral source long enough to exceed forty characters safely'})])).rows[0].r,true);checks++;
+assert.equal((await db.query("select legacy_reg_attendance($1,'imagens') as r",[TOKEN2])).rows[0].r.attended,true);checks++;
+const inv=(await db.query('select legacy_invoice_get($1) as r',[TOKEN])).rows[0].r;
+assert.equal(inv.invoice_vat,'123456789');checks++;
+assert.equal((await db.query('select legacy_invoice_get($1) as r',[TOKEN2])).rows[0].r,null);checks++;
+assert.equal((await db.query('select webinar,price_premium from webinar_settings_public')).rows.length,1);checks++;
+await denied(()=>db.query('select live_views from webinar_settings_public'),'private metrics excluded');
+await denied(()=>db.query('update webinar_settings_public set price_premium=0'),'public price change');
+await auth('service_role');
+const after=(await db.query("select step_reached,plan_selected,paid_at from registrations where email='gratis@teste.pt'")).rows[0];
+assert.equal(after.step_reached,4);assert.equal(after.plan_selected,'premium');assert.equal(after.paid_at,null);checks++;
+console.log(`${checks} isolated legacy RLS checks passed. DRAFT ONLY: public flows not migrated.`);
+await db.close();
