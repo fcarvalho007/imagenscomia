@@ -8,7 +8,7 @@ Código desenvolvido em `codex/curso-ia-wordpress`, projeto Lovable `bacfa751-bc
 
 ## Ordem de instalação
 
-1. Aplicar as cinco migrations `20260918140000` a `20260918151500`, pela ordem dos ficheiros. Não reaplicar nem apagar migrations históricas. As novas tabelas não migram nem alteram participantes dos webinars.
+1. Aplicar as seis migrations `20260918140000` a `20260918153532`, pela ordem dos ficheiros. Estes são os únicos ficheiros canónicos do Curso IA: cópias com outro carimbo temporal para as mesmas tabelas devem ser eliminadas antes de instalar. Não reaplicar nem apagar migrations históricas. As novas tabelas não migram nem alteram participantes dos webinars.
 2. Publicar `course-wordpress-ingest`, `course-eupago-webhook`, `course-operations`, `course-resources`; publicar também as correções de autenticação de `create-invoice` e `followup-abandoned`, incluindo `_shared/admin-auth.ts`.
 3. Confirmar admin com MFA aal2 e testar acesso a `/crm/curso-ia`.
 4. Configurar segredos e testar no sandbox Eupago antes de permitir vendas. O modo sandbox é o default; a variável de ativação não basta para passar a produção.
