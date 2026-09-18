@@ -24,7 +24,11 @@ as $$
      and coalesce(auth.jwt() ->> 'aal', '') = 'aal2'
 $$;
 
-revoke execute on function public.legacy_is_admin() from public, anon, authenticated;
+-- Executável por authenticated (as políticas RLS são avaliadas com os privilégios
+-- de quem consulta; revogar a authenticated quebraria as políticas). Direto devolve
+-- apenas um booleano — chamado por não-admin devolve false.
+revoke execute on function public.legacy_is_admin() from public, anon;
+grant execute on function public.legacy_is_admin() to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 2. Políticas por tabela: só administradores autenticados com aal2
