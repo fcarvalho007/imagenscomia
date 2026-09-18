@@ -239,15 +239,22 @@ begin
   for k in select jsonb_object_keys(p_patch) loop
     if not (k = any(allowed)) then raise exception 'Field not allowed: %', k; end if;
     v := p_patch ->> k;
-    if v is not null and length(v) > case
-      when k in ('first_name','last_name') then 120
-      when k = 'sources' then 400
-      when k = 'duvida' then 2000
-      when k = 'whatsapp' then 30
-      when k = 'role' then 120
-      when k = 'team_size' then 40
-      when k = 'gender_override' then 20
-      else 40 end then raise exception 'Value too long: %', k;
+    -- Nota: evita `case` dentro da condição do `if` (o validador plpgsql do PGlite
+    -- não o aceita; equivalente em if/elsif mantém o teste isolado a passar).
+    if v is not null then
+      if k in ('first_name','last_name') and length(v) > 120 then
+        raise exception 'Value too long: %', k;
+      elsif k = 'sources' and length(v) > 400 then
+        raise exception 'Value too long: %', k;
+      elsif k = 'duvida' and length(v) > 2000 then
+        raise exception 'Value too long: %', k;
+      elsif k = 'whatsapp' and length(v) > 30 then
+        raise exception 'Value too long: %', k;
+      elsif k = 'role' and length(v) > 120 then
+        raise exception 'Value too long: %', k;
+      elsif length(v) > 40 then
+        raise exception 'Value too long: %', k;
+      end if;
     end if;
     if k = 'plan_selected' and v is not null and not (v = any(plans)) then raise exception 'Invalid plan'; end if;
   end loop;
