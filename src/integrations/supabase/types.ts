@@ -71,6 +71,128 @@ export type Database = {
         }
         Relationships: []
       }
+      course_activity: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: number
+          previous_status: string | null
+          registration_id: string
+          status: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          previous_status?: string | null
+          registration_id: string
+          status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          previous_status?: string | null
+          registration_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_activity_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_events: {
+        Row: {
+          course_id: string
+          created_at: string
+          edition: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Insert: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id?: string
+          name?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      course_registrations: {
+        Row: {
+          analytics_session: string | null
+          attribution: Json
+          course_id: string
+          created_at: string
+          edition: string
+          email: string
+          id: string
+          marketing_consent: boolean
+          name: string
+          next_followup_at: string | null
+          notes: string
+          phone: string
+          privacy_version: string
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analytics_session?: string | null
+          attribution?: Json
+          course_id?: string
+          created_at?: string
+          edition: string
+          email: string
+          id?: string
+          marketing_consent?: boolean
+          name: string
+          next_followup_at?: string | null
+          notes?: string
+          phone?: string
+          privacy_version: string
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analytics_session?: string | null
+          attribution?: Json
+          course_id?: string
+          created_at?: string
+          edition?: string
+          email?: string
+          id?: string
+          marketing_consent?: boolean
+          name?: string
+          next_followup_at?: string | null
+          notes?: string
+          phone?: string
+          privacy_version?: string
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_send_logs: {
         Row: {
           email_key: string
@@ -559,6 +681,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      course_metrics: { Args: never; Returns: Json }
       ensure_admin_role: { Args: never; Returns: undefined }
       has_role: {
         Args: {
@@ -566,6 +689,16 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      update_course_request: {
+        Args: {
+          followup: string
+          new_notes: string
+          new_status: string
+          request_uuid: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
