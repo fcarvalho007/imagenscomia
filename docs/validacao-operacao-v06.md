@@ -28,3 +28,7 @@ Configuração necessária: segredo de ligação comum WordPress/backend; chave 
 - Aceitação de um email ou SMS pelo fornecedor **não equivale a entrega**. A receção de eventos de entrega/rejeição ainda requer integração de webhook do fornecedor.
 - Os testes usam mocks e PostgreSQL isolado, sem cobrar nem emitir faturas; não certificam contas bancárias ou entrega em produção.
 - O complemento de 67 € + IVA continua exclusivamente demonstrativo, fora da oferta comercial e fora do pagamento real.
+
+## Plugin 0.6.1 — configuração sem editar o alojamento
+
+O administrador pode criar a chave pelo botão **Criar chave de ligação** no WordPress. Este ato deve ser feito pelo titular; a chave é apresentada só nessa resposta para copiar para `COURSE_WP_BRIDGE_SECRET` no formulário de segredos do Lovable, nunca no chat. É guardada encriptada (AES-256-GCM, chave derivada do salt de autenticação WordPress), sem autoload. A constante `FCIA_BRIDGE_SECRET`, se existir no alojamento, mantém prioridade. A criação exige capacidade `manage_options` e nonce; não substitui uma chave existente. Nenhuma chave foi criada pela atualização.

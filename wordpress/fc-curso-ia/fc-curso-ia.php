@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Frederico Carvalho — Curso IA e CRM
  * Description: Landing page nativa, pedidos de inscrição e acesso ao CRM existente. Integração desativada por defeito.
- * Version: 0.6.0
+ * Version: 0.6.1
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: Frederico Carvalho
@@ -13,7 +13,27 @@ final class FCIA_Course {
  const OPTION = 'fcia_course_settings';
  static function settings() { return wp_parse_args(get_option(self::OPTION, array()), array('page_id'=>0,'crm_url'=>'https://imagenscomia.com/crm','endpoint'=>'https://gwphpsehcnhwjiypyolg.supabase.co/functions/v1/course-wordpress-ingest','privacy_url'=>get_privacy_policy_url(),'terms_url'=>'','registration'=>0,'tracking'=>0,'indexable'=>0,'embed'=>0)); }
  static function ready() { $s=self::settings();return $s['registration'] && $s['privacy_url'] && $s['terms_url'] && self::bridge_ready(); }
- static function bridge_ready() { $s=self::settings();return defined('FCIA_BRIDGE_SECRET') && strlen(FCIA_BRIDGE_SECRET)>=32 && preg_match('~^https://[a-z0-9]+\.supabase\.co/functions/v1/course-wordpress-ingest$~',$s['endpoint']); }
+ static function bridge_ready() { $s=self::settings();return strlen(self::bridge_secret())>=32 && preg_match('~^https://[a-z0-9]+\.supabase\.co/functions/v1/course-wordpress-ingest$~',$s['endpoint']); }
+ static function bridge_secret() {
+  if(defined('FCIA_BRIDGE_SECRET'))return is_string(FCIA_BRIDGE_SECRET)?FCIA_BRIDGE_SECRET:'';
+  if(!function_exists('openssl_decrypt'))return '';
+  $stored=get_option('fcia_bridge_encrypted','');if(!is_string($stored))return '';
+  $raw=base64_decode($stored,true);if($raw===false||strlen($raw)<29)return '';
+  $value=openssl_decrypt(substr($raw,28),'aes-256-gcm',hash('sha256',wp_salt('auth'),true),OPENSSL_RAW_DATA,substr($raw,0,12),substr($raw,12,16));
+  return is_string($value)&&strlen($value)>=32?$value:'';
+ }
+ static function setup_bridge() {
+  if(!current_user_can('manage_options')||!isset($_POST['fcia_create_bridge']))return;
+  check_admin_referer('fcia_create_bridge');
+  if(self::bridge_secret()!==''||defined('FCIA_BRIDGE_SECRET')){echo '<div class="notice notice-error"><p>A chave já existe. A configuração atual não foi alterada.</p></div>';return;}
+  if(!function_exists('openssl_encrypt')){echo '<div class="notice notice-error"><p>O alojamento não disponibiliza encriptação. Configure a chave no wp-config.php com o apoio do alojamento.</p></div>';return;}
+  try {
+   $secret=bin2hex(random_bytes(32));$iv=random_bytes(12);$tag='';
+   $cipher=openssl_encrypt($secret,'aes-256-gcm',hash('sha256',wp_salt('auth'),true),OPENSSL_RAW_DATA,$iv,$tag);
+   if($cipher===false||!update_option('fcia_bridge_encrypted',base64_encode($iv.$tag.$cipher),false))throw new Exception('Unable to store');
+   echo '<div class="card" style="max-width:960px"><h2>Chave criada — copie antes de sair</h2><p>Esta chave só é apresentada agora. No Lovable, guarde-a no campo de segredo <strong>COURSE_WP_BRIDGE_SECRET</strong>. Não a coloque no chat nem no GitHub.</p><input type="password" id="fcia-created-secret" class="large-text" readonly autocomplete="off" value="'.esc_attr($secret).'" aria-label="Chave de ligação criada"><p><button type="button" class="button" onclick="navigator.clipboard.writeText(document.getElementById(&quot;fcia-created-secret&quot;).value).then(()=>this.textContent=&quot;Copiada&quot;).catch(()=>this.textContent=&quot;Selecione e copie a chave&quot;)">Copiar chave</button></p><p>Depois de guardar no Lovable, use “Verificar ligação e totais”. As vendas continuam desligadas.</p></div>';
+  } catch(Throwable $e){echo '<div class="notice notice-error"><p>Não foi possível guardar a chave. Não foi ativada nenhuma integração.</p></div>';}
+ }
  static function sanitize($v) {
   $out=array('page_id'=>absint($v['page_id']??0));
   foreach(array('crm_url','privacy_url','terms_url') as $k){$url=esc_url_raw($v[$k]??'',array('https'));$out[$k]=$url;}
@@ -26,7 +46,8 @@ final class FCIA_Course {
   $s=self::settings();$public=$s['page_id']?get_permalink($s['page_id']):'';
   $preview=add_query_arg(array('fc_ia_preview'=>'1','preview'=>'primeira-visita'),home_url('/'));
   echo '<div class="wrap"><h1>Curso IA — landing page e inscrições</h1><p>A LP1 apresenta o curso. Após as três perguntas, a LP2 mostra a edição escolhida e o programa completo.</p>';
-  settings_errors();
+  settings_errors();self::setup_bridge();
+  if(self::bridge_secret()===''&&!defined('FCIA_BRIDGE_SECRET')){echo '<div class="card" style="max-width:960px"><h2>Ligação segura — configurar uma vez</h2><p>Crie a chave aqui e copie-a para o segredo COURSE_WP_BRIDGE_SECRET do Lovable. Este passo não ativa pagamentos nem mensagens.</p><form method="post">';wp_nonce_field('fcia_create_bridge');echo '<button class="button" name="fcia_create_bridge" value="1">Criar chave de ligação</button></form></div>';}
   if(isset($_POST['fcia_diagnostics'])){
    check_admin_referer('fcia_diagnostics');
    $diagnostic=self::bridge_ready()?self::relay('diagnostics',array()):new WP_Error('missing_key','Falta a chave de ligação segura entre WordPress e backend.');
@@ -48,7 +69,7 @@ final class FCIA_Course {
   echo '<table class="form-table"><tr><th><label for="fcia-page">Página do curso</label></th><td>';wp_dropdown_pages(array('name'=>self::OPTION.'[page_id]','id'=>'fcia-page','selected'=>$s['page_id'],'show_option_none'=>'Selecionar uma página WordPress'));echo '<p class="description">Endereço previsto: /curso-de-inteligencia-artificial/. O tema das restantes páginas mantém-se.</p></td></tr>';
   foreach(array('crm_url'=>'URL do CRM publicado','endpoint'=>'Endpoint da integração Supabase','privacy_url'=>'Política de privacidade','terms_url'=>'Condições de inscrição, alteração e cancelamento') as $k=>$label){echo '<tr><th><label for="fcia-'.$k.'">'.esc_html($label).'</label></th><td><input type="url" class="large-text" id="fcia-'.$k.'" name="'.self::OPTION.'['.$k.']" value="'.esc_attr($s[$k]).'" /></td></tr>';}
   foreach(array('registration'=>'Ativar inscrições e pagamento online (após homologação)','tracking'=>'Ativar métricas opcionais, mediante consentimento','indexable'=>'Permitir indexação apenas no endereço da página pública','embed'=>'Mostrar o CRM dentro do painel, por iframe') as $k=>$label){echo '<tr><th><label for="fcia-'.$k.'">'.esc_html($label).'</label></th><td><input id="fcia-'.$k.'" type="checkbox" name="'.self::OPTION.'['.$k.']" value="1" '.checked($s[$k],1,false).' /></td></tr>';}
-  echo '</table><p class="description">Configuração técnica: FCIA_BRIDGE_SECRET no WordPress deve coincidir com COURSE_WP_BRIDGE_SECRET no backend. Não introduza chaves de pagamentos nem a service_role do Supabase nestes campos.</p><p>Chave e endereço configurados: <strong>'.(self::bridge_ready()?'sim':'não').'</strong>. Esta indicação não confirma que o backend está publicado ou operacional.</p>';submit_button('Guardar definições');echo '</details></form>';
+  echo '</table><p class="description">Configuração técnica: use a chave criada neste painel, ou a constante FCIA_BRIDGE_SECRET do alojamento. A mesma chave deve existir em COURSE_WP_BRIDGE_SECRET no backend. Não introduza chaves de pagamentos nem a service_role do Supabase nestes campos.</p><p>Chave e endereço configurados: <strong>'.(self::bridge_ready()?'sim':'não').'</strong>. Esta indicação não confirma que o backend está publicado ou operacional.</p>';submit_button('Guardar definições');echo '</details></form>';
   if($s['embed']&&$s['crm_url'])echo '<h2>CRM</h2><p>Se o alojamento impedir a incorporação, use “Abrir CRM”.</p><iframe src="'.esc_url($s['crm_url']).'" title="CRM do curso de inteligência artificial" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:80vh;border:1px solid #ccd0d4;background:white"></iframe>';
   echo '</div>';
  }
@@ -59,7 +80,7 @@ final class FCIA_Course {
  }
  static function relay($kind,$data) {
   $s=self::settings();$stamp=(string)time();$body=wp_json_encode(array('kind'=>$kind,'data'=>$data));
-  $response=wp_safe_remote_post($s['endpoint'],array('timeout'=>15,'redirection'=>0,'headers'=>array('Content-Type'=>'application/json','X-Course-Timestamp'=>$stamp,'X-Course-Signature'=>hash_hmac('sha256',$stamp.'.'.$body,FCIA_BRIDGE_SECRET)),'body'=>$body));
+  $response=wp_safe_remote_post($s['endpoint'],array('timeout'=>15,'redirection'=>0,'headers'=>array('Content-Type'=>'application/json','X-Course-Timestamp'=>$stamp,'X-Course-Signature'=>hash_hmac('sha256',$stamp.'.'.$body,self::bridge_secret())),'body'=>$body));
   if(is_wp_error($response)||wp_remote_retrieve_response_code($response)!==200)return new WP_Error('integration_unavailable','Não foi possível guardar. Tente novamente ou contacte o suporte.',array('status'=>503));
   $result=json_decode(wp_remote_retrieve_body($response),true);if(empty($result['accepted']))return new WP_Error('integration_unavailable','Não foi possível confirmar a receção.',array('status'=>503));
   return rest_ensure_response($result);
@@ -99,9 +120,9 @@ final class FCIA_Course {
   $canonical=$s['page_id']?get_permalink($s['page_id']):'';
   if($indexable)$html=str_replace('content="noindex, nofollow"','content="index, follow, max-image-preview:large"',$html);
   if($canonical)$html=str_replace('</head>','<link rel="canonical" href="'.esc_url($canonical).'"><meta property="og:url" content="'.esc_url($canonical).'">'.'</head>',$html);
-  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.6.0',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
+  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.6.1',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
   $config=array('enabled'=>!$preview&&self::ready(),'tracking'=>!$preview&&$s['tracking']&&$s['privacy_url']&&self::bridge_ready(),'registrationUrl'=>rest_url('fcia/v1/checkout'),'quoteUrl'=>rest_url('fcia/v1/quote'),'statusUrl'=>rest_url('fcia/v1/status'),'billingUrl'=>rest_url('fcia/v1/billing'),'eventUrl'=>rest_url('fcia/v1/event'),'nonce'=>wp_create_nonce('wp_rest'),'privacyUrl'=>$s['privacy_url'],'termsUrl'=>$s['terms_url']);
-  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.6.0',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
+  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.6.1',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
   echo $html;exit;
  }
 }
