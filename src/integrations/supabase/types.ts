@@ -358,6 +358,7 @@ export type Database = {
           phone: string
           privacy_version: string
           request_id: string
+          resource_token: string
           status: string
           terms_version: string
           updated_at: string
@@ -378,6 +379,7 @@ export type Database = {
           phone?: string
           privacy_version: string
           request_id: string
+          resource_token?: string
           status?: string
           terms_version?: string
           updated_at?: string
@@ -398,6 +400,7 @@ export type Database = {
           phone?: string
           privacy_version?: string
           request_id?: string
+          resource_token?: string
           status?: string
           terms_version?: string
           updated_at?: string
@@ -405,6 +408,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "course_registrations_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_resources: {
+        Row: {
+          available_at: string
+          description: string
+          edition: string
+          enabled: boolean
+          id: string
+          kind: string
+          title: string
+          url: string
+        }
+        Insert: {
+          available_at?: string
+          description?: string
+          edition: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          title: string
+          url: string
+        }
+        Update: {
+          available_at?: string
+          description?: string
+          edition?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_edition_fkey"
             columns: ["edition"]
             isOneToOne: false
             referencedRelation: "course_editions"
@@ -999,6 +1043,7 @@ export type Database = {
         Args: { frozen_payload: Json; job_id: string; job_lease: string }
         Returns: boolean
       }
+      read_course_resources: { Args: { access_token: string }; Returns: Json }
       record_course_invoice: {
         Args: { external_document_id: string; request_uuid: string }
         Returns: undefined
@@ -1006,6 +1051,19 @@ export type Database = {
       save_course_billing: {
         Args: { details: Json; request_token: string }
         Returns: undefined
+      }
+      save_course_resource: {
+        Args: {
+          active: boolean
+          available: string
+          edition_id: string
+          resource_description: string
+          resource_id: string
+          resource_kind: string
+          resource_title: string
+          resource_url: string
+        }
+        Returns: string
       }
       update_course_request: {
         Args: {
