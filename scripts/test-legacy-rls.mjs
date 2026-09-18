@@ -80,6 +80,7 @@ alter table public.email_templates enable row level security;
 alter table public.acquisition_costs enable row level security;
 alter table public.webinar_settings enable row level security;
 grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to service_role;
 `);
 
 await db.exec(
