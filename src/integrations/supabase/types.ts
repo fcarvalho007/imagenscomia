@@ -76,30 +76,40 @@ export type Database = {
           action: string
           actor_id: string | null
           created_at: string
+          edition: string | null
           id: number
           previous_status: string | null
-          registration_id: string
+          registration_id: string | null
           status: string | null
         }
         Insert: {
           action: string
           actor_id?: string | null
           created_at?: string
+          edition?: string | null
           id?: never
           previous_status?: string | null
-          registration_id: string
+          registration_id?: string | null
           status?: string | null
         }
         Update: {
           action?: string
           actor_id?: string | null
           created_at?: string
+          edition?: string | null
           id?: never
           previous_status?: string | null
-          registration_id?: string
+          registration_id?: string | null
           status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "course_activity_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "course_activity_registration_id_fkey"
             columns: ["registration_id"]
@@ -111,6 +121,7 @@ export type Database = {
       }
       course_editions: {
         Row: {
+          automation_enabled: boolean
           capacity: number
           early_net_cents: number
           early_until: string | null
@@ -118,11 +129,13 @@ export type Database = {
           id: string
           label: string
           net_cents: number
+          operations: Json
           sales_enabled: boolean
           starts_at: string
           vat_percent: number
         }
         Insert: {
+          automation_enabled?: boolean
           capacity?: number
           early_net_cents: number
           early_until?: string | null
@@ -130,11 +143,13 @@ export type Database = {
           id: string
           label: string
           net_cents: number
+          operations?: Json
           sales_enabled?: boolean
           starts_at: string
           vat_percent?: number
         }
         Update: {
+          automation_enabled?: boolean
           capacity?: number
           early_net_cents?: number
           early_until?: string | null
@@ -142,6 +157,7 @@ export type Database = {
           id?: string
           label?: string
           net_cents?: number
+          operations?: Json
           sales_enabled?: boolean
           starts_at?: string
           vat_percent?: number
@@ -179,6 +195,8 @@ export type Database = {
         Row: {
           billing: Json
           document_id: string | null
+          emailed_at: string | null
+          finalized_at: string | null
           registration_id: string
           state: string
           updated_at: string
@@ -186,6 +204,8 @@ export type Database = {
         Insert: {
           billing?: Json
           document_id?: string | null
+          emailed_at?: string | null
+          finalized_at?: string | null
           registration_id: string
           state?: string
           updated_at?: string
@@ -193,6 +213,8 @@ export type Database = {
         Update: {
           billing?: Json
           document_id?: string | null
+          emailed_at?: string | null
+          finalized_at?: string | null
           registration_id?: string
           state?: string
           updated_at?: string
@@ -202,6 +224,68 @@ export type Database = {
             foreignKeyName: "course_invoices_registration_id_fkey"
             columns: ["registration_id"]
             isOneToOne: true
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          due_at: string
+          error_code: string | null
+          first_attempt_at: string | null
+          id: string
+          kind: string
+          lease: string | null
+          locked_at: string | null
+          payload: Json | null
+          provider_id: string | null
+          registration_id: string
+          state: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          due_at: string
+          error_code?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          kind: string
+          lease?: string | null
+          locked_at?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          registration_id: string
+          state?: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string
+          error_code?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          kind?: string
+          lease?: string | null
+          locked_at?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          registration_id?: string
+          state?: string
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_jobs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
             referencedRelation: "course_registrations"
             referencedColumns: ["id"]
           },
@@ -274,6 +358,7 @@ export type Database = {
           phone: string
           privacy_version: string
           request_id: string
+          resource_token: string
           status: string
           terms_version: string
           updated_at: string
@@ -294,6 +379,7 @@ export type Database = {
           phone?: string
           privacy_version: string
           request_id: string
+          resource_token?: string
           status?: string
           terms_version?: string
           updated_at?: string
@@ -314,6 +400,7 @@ export type Database = {
           phone?: string
           privacy_version?: string
           request_id?: string
+          resource_token?: string
           status?: string
           terms_version?: string
           updated_at?: string
@@ -321,6 +408,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "course_registrations_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_resources: {
+        Row: {
+          available_at: string
+          description: string
+          edition: string
+          enabled: boolean
+          id: string
+          kind: string
+          title: string
+          url: string
+        }
+        Insert: {
+          available_at?: string
+          description?: string
+          edition: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          title: string
+          url: string
+        }
+        Update: {
+          available_at?: string
+          description?: string
+          edition?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_edition_fkey"
             columns: ["edition"]
             isOneToOne: false
             referencedRelation: "course_editions"
@@ -362,6 +490,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      course_worker_health: {
+        Row: {
+          last_run_at: string
+          result: string
+          worker: string
+        }
+        Insert: {
+          last_run_at: string
+          result: string
+          worker: string
+        }
+        Update: {
+          last_run_at?: string
+          result?: string
+          worker?: string
+        }
+        Relationships: []
       }
       email_send_logs: {
         Row: {
@@ -851,9 +997,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_course_job: { Args: { job_kind: string }; Returns: Json }
       claim_course_payment: {
         Args: { expected_amount: number; payload: Json }
         Returns: Json
+      }
+      configure_course_edition: {
+        Args: { edition_id: string; enabled: boolean; settings: Json }
+        Returns: undefined
       }
       confirm_course_payment: {
         Args: {
@@ -869,6 +1020,16 @@ export type Database = {
       course_metrics: { Args: never; Returns: Json }
       course_quote: { Args: { edition_id: string }; Returns: Json }
       ensure_admin_role: { Args: never; Returns: undefined }
+      finish_course_job: {
+        Args: {
+          external_id?: string
+          job_id: string
+          job_lease: string
+          outcome: string
+          reason?: string
+        }
+        Returns: undefined
+      }
       finish_course_task: { Args: { task_uuid: string }; Returns: undefined }
       has_role: {
         Args: {
@@ -878,9 +1039,31 @@ export type Database = {
         Returns: boolean
       }
       ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      prepare_course_job: {
+        Args: { frozen_payload: Json; job_id: string; job_lease: string }
+        Returns: boolean
+      }
+      read_course_resources: { Args: { access_token: string }; Returns: Json }
       record_course_invoice: {
         Args: { external_document_id: string; request_uuid: string }
         Returns: undefined
+      }
+      save_course_billing: {
+        Args: { details: Json; request_token: string }
+        Returns: undefined
+      }
+      save_course_resource: {
+        Args: {
+          active: boolean
+          available: string
+          edition_id: string
+          resource_description: string
+          resource_id: string
+          resource_kind: string
+          resource_title: string
+          resource_url: string
+        }
+        Returns: string
       }
       update_course_request: {
         Args: {

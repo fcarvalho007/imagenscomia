@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
-import { normalizeRequest, uuid } from "./contract.ts";
+import { normalizeRequest, uuid } from "../_shared/course/contract.ts";
 export function safePaymentUrl(value: unknown): value is string {
   if (typeof value !== "string") return false;
   try {
