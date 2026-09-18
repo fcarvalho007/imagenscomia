@@ -104,8 +104,9 @@ describe("Course CRM access and edition scope", () => {
       target: { value: "porto-2026" },
     });
     await waitFor(() => expect(mocks.queries).toContain("edition:porto-2026"));
-    expect(mocks.rpc).toHaveBeenCalledWith("course_edition_metrics", {
+    expect(mocks.rpc).toHaveBeenCalledWith("course_period_metrics", {
       edition_id: "porto-2026",
+      since: null,
     });
   });
   it("shows a backend error instead of invented statistics", async () => {

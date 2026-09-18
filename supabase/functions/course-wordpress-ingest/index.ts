@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { saveBilling } from "./billing.ts";
 import { normalizeEvent } from "../_shared/course/contract.ts";
 import { checkout, paymentStatus } from "./payment.ts";
+import { courseDiagnostics } from "./diagnostics.ts";
 const encoder = new TextEncoder();
 const reply = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -57,7 +58,9 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
   try {
-    if (body.kind === "checkout") {
+    if (body.kind === "diagnostics") {
+      return reply(200, await courseDiagnostics(db, (key) => Deno.env.get(key)));
+    } else if (body.kind === "checkout") {
       return reply(200, await checkout(db, body.data || {}));
     } else if (body.kind === "billing") {
       return reply(200,await saveBilling(db,body.data || {}));

@@ -23,7 +23,7 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const srvKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const hasServiceRole = srvKey && authHeader.includes(srvKey);
+    const hasServiceRole = srvKey && authHeader === `Bearer ${srvKey}`;
     if (!isCron && !hasServiceRole) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,

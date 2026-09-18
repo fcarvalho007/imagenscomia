@@ -49,6 +49,7 @@ export function normalizeRequest(body: Record<string, unknown>) {
     name,
     email,
     phone,
+    sms_consent: body.sms_consent === true && /^(?:\+351|00351)?9[1236]\d{7}$/.test(phone.replace(/\s/g, "")),
     marketing_consent: body.marketing_consent === true,
     privacy_version: "curso-ia-v1",
     session_id: uuid(body.session_id) ? body.session_id : null,

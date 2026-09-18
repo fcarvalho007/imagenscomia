@@ -46,6 +46,8 @@ type Row = {
   next_followup_at: string | null;
   created_at: string;
   marketing_consent: boolean;
+  before_session: string;
+  after_session: string;
   attribution: Record<string, string>;
   course_payments: {
     state: string;
@@ -85,6 +87,8 @@ export default function CourseCRM() {
     [saving, setSaving] = useState(false),
     [hasMore, setHasMore] = useState(false),
     [invoiceRef, setInvoiceRef] = useState("");
+  const [period, setPeriod] = useState("all");
+  const [operationRefresh, setOperationRefresh] = useState(0);
   const sequence = useRef(0);
   const checkAuth = useCallback(async () => {
     try {
@@ -128,13 +132,14 @@ export default function CourseCRM() {
     async (offset = 0) => {
       if (!auth) return;
       const request = ++sequence.current;
+      if (!offset) setOperationRefresh(v=>v+1);
       setLoading(true);
       setError("");
       try {
         let query = db
           .from("course_registrations")
           .select(
-            "id,name,email,phone,edition,status,notes,next_followup_at,created_at,marketing_consent,attribution,course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)",
+            "id,name,email,phone,edition,status,notes,next_followup_at,created_at,marketing_consent,before_session,after_session,attribution,course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)",
           )
           .order("created_at", { ascending: false })
           .order("id")
@@ -143,7 +148,7 @@ export default function CourseCRM() {
         if (status) query = query.eq("status", status);
         const [items, kpis] = await Promise.all([
           query,
-          db.rpc("course_edition_metrics", { edition_id: edition || null }),
+          db.rpc("course_period_metrics", { edition_id: edition || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
         ]);
         if (request !== sequence.current) return;
         if (items.error || kpis.error) throw new Error("Backend unavailable");
@@ -171,7 +176,7 @@ export default function CourseCRM() {
         if (request === sequence.current) setLoading(false);
       }
     },
-    [auth, edition, status],
+    [auth, edition, status, period],
   );
   useEffect(() => {
     setRows([]);
@@ -214,6 +219,17 @@ export default function CourseCRM() {
       await load();
     }
     setSaving(false);
+  }
+  async function setSession(phase: string, state: string) {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      const { error }=await db.rpc("set_course_session",{request_uuid:selected.id,phase,session_state:state});
+      if(error)throw error;
+      setSelected(row=>row?{...row,[phase+"_session"]:state}:row);
+      setOperationRefresh(v=>v+1);
+    } catch { setError("Não foi possível atualizar a sessão. Verifique se a inscrição está confirmada."); }
+    finally { setSaving(false); }
   }
   async function finish(id: string) {
     const { error } = await db.rpc("finish_course_task", { task_uuid: id });
@@ -309,6 +325,7 @@ export default function CourseCRM() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        <div className="flex flex-wrap items-center gap-4"><label className="text-sm font-medium">Período dos indicadores <select className={selectClass + " ml-3"} value={period} onChange={ev=>setPeriod(ev.target.value)}><option value="all">Desde o início</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></label><p className="text-sm text-muted-foreground">Pedidos pela data de entrada; pagamentos pela data de confirmação. Tarefas vencidas: situação atual.</p></div>
         <section
           aria-label="Indicadores da edição"
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"
@@ -354,7 +371,7 @@ export default function CourseCRM() {
                   <CardTitle>Da visita à inscrição</CardTitle>
                   <CardDescription>
                     Navegação global da landing page, apenas com consentimento.
-                    Os pedidos e pagamentos acima seguem a edição escolhida.
+                    Os pedidos e pagamentos acima seguem a edição escolhida. As tabelas mostram todas as inscrições; o período filtra apenas os indicadores.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -570,7 +587,7 @@ export default function CourseCRM() {
           </TabsContent>
           <TabsContent value="recursos"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes">
-            <CourseOperations edition={edition} />
+            <CourseOperations edition={edition} refresh={operationRefresh} />
             <div className="mt-10">
               <div className="flex flex-col gap-5">
                 <div>
@@ -701,6 +718,7 @@ export default function CourseCRM() {
                     ))}
                 </select>
               </Label>
+              {selected.status === "confirmed" && <div className="grid gap-4 sm:grid-cols-2">{["before", "after"].map(phase=><label key={phase} className="flex flex-col gap-2 text-sm font-medium">Sessão individual {phase === "before" ? "antes" : "depois"}<select className={selectClass} disabled={saving} value={phase === "before" ? selected.before_session : selected.after_session} onChange={ev=>void setSession(phase,ev.target.value)}><option value="pending">Por agendar</option><option value="booked">Agendada</option><option value="completed">Concluída</option></select></label>)}<p className="text-sm text-muted-foreground sm:col-span-2">Agendada ou concluída: cancela os lembretes ainda por enviar. Voltar a “Por agendar” não reenvia mensagens automaticamente.</p></div>}
               <Label className="flex flex-col gap-2">
                 Notas internas
                 <Textarea

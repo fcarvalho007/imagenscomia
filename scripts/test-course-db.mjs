@@ -15,6 +15,7 @@ for (const file of [
   "20260918150000_course_operations.sql",
   "20260918151500_course_resources.sql",
   "20260918153532_course_queue_revoke.sql",
+  "20260918180000_course_operation_hardening.sql",
 ])
   await db.exec(
     await readFile(
@@ -404,6 +405,43 @@ await db.query("select confirm_course_payment($1,'901',48831,'EUR','Refund')", [
   onlineOrder.id,
 ]);
 await denied(readResources);
+
+// Regression: payment 30 minutes before start must not postpone practical information until after start.
+await auth('service_role');
+await db.exec("update course_editions set starts_at=now()+interval '30 minutes',ends_at=now()+interval '1 day',early_until=now()+interval '1 day',sales_enabled=true,automation_enabled=true where id='lisboa-2026'");
+const late=await claim({...payload,request_id:'ee000000-0000-4000-8000-000000000001',email:'late@example.invalid',phone:'912345678',sms_consent:true});
+await db.query("select confirm_course_payment($1,'late',61131,'EUR','Paid')",[late.id]);
+const lateRid=(await rpc('select registration_id from course_payments where id=$1',[late.id])).registration_id;
+assert.equal((await rpc("select count(*)::int n from course_jobs where registration_id=$1 and template='practical_information' and due_at<=now()",[lateRid])).n,1);checks++;
+assert.equal((await rpc("select count(*)::int n from course_jobs where registration_id=$1 and kind='sms'",[lateRid])).n,2);checks++;
+assert.equal((await rpc("select claim_course_job('sms') as j")).j,null);checks++;
+await auth('authenticated',false,'aal2');
+await denied(()=>db.query("select set_course_session($1,'before','booked')",[lateRid]));
+await auth('authenticated',true,'aal2');
+await db.query("select set_course_session($1,'before','booked')",[lateRid]);
+assert.equal((await rpc("select state from course_jobs where registration_id=$1 and template='individual_before'",[lateRid])).state,'cancelled');checks++;
+await db.query("select configure_course_operation('lisboa-2026',$1,false,false,true)",[JSON.stringify(ops)]);
+await auth('service_role');
+assert.equal((await rpc("select claim_course_job('email') as j")).j,null);checks++;
+const independentInvoice=(await rpc("select claim_course_job('invoice') as j")).j;
+assert.equal(independentInvoice.registration.id,lateRid);checks++;
+assert.equal((await rpc("select prepare_course_job($1,$2,'{}') as ready",[independentInvoice.job.id,independentInvoice.job.lease])).ready,true);checks++;
+await db.query("select finish_course_job($1,$2,'blocked',null,'billing_data_missing')",[independentInvoice.job.id,independentInvoice.job.lease]);
+await db.exec("update course_editions set automation_enabled=true,starts_at=now()-interval '40 days',ends_at=now()-interval '31 days' where id='lisboa-2026'");
+await db.query("select claim_course_job('email')");
+assert.equal((await rpc("select state from course_jobs where registration_id=$1 and template='individual_after'",[lateRid])).state,'cancelled');checks++;
+await auth('authenticated',true,'aal1');
+await denied(()=>db.query("select course_period_metrics('lisboa-2026',now()-interval '7 days')"));
+await auth('authenticated',true,'aal2');
+assert.equal((await rpc("select course_period_metrics('lisboa-2026',now()+interval '1 day') as m")).m.revenue_cents,0);checks++;
+assert.equal((await rpc("select course_period_metrics('lisboa-2026',now()-interval '7 days') as m")).m.revenue_cents,61131);checks++;
+// An edition disabled between claim and prepare must never contact a provider.
+await auth('service_role');
+await db.exec("update course_editions set starts_at=now()+interval '1 day',ends_at=now()+interval '2 days' where id='lisboa-2026'");
+await db.query("update course_jobs set state='queued',due_at=now() where registration_id=$1 and template='practical_information'",[lateRid]);
+const race=(await rpc("select claim_course_job('email') as j")).j;
+await db.exec("update course_editions set automation_enabled=false where id='lisboa-2026'");
+assert.equal((await rpc("select prepare_course_job($1,$2,'{}') as ready",[race.job.id,race.job.lease])).ready,false);checks++;
 
 await db.close();
 console.log(

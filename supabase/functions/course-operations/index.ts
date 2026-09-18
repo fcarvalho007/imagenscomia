@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { sendCourseEmail } from "./email.ts";
 import { issueCourseInvoice } from "./invoice.ts";
+import { sendCourseSMS } from "./sms.ts";
 const env = (k: string) => Deno.env.get(k);
 serve(async (req) => {
   const reply = (status: number, body: unknown) =>
@@ -20,17 +21,22 @@ serve(async (req) => {
     req.headers.get("x-course-cron-secret") !== secret
   )
     return reply(401, { error: "Unauthorized" });
-  if (env("COURSE_AUTOMATIONS_ENABLED") !== "true")
-    return reply(200, { state: "paused" });
   const db = createClient(
     env("SUPABASE_URL")!,
     env("SUPABASE_SERVICE_ROLE_KEY")!,
   );
+  const channels = [
+    ...(env("COURSE_AUTOMATIONS_ENABLED") === "true" ? ["email"] : []),
+    ...(env("COURSE_AUTOMATIONS_ENABLED") === "true" && env("COURSE_SMS_ENABLED") === "true" ? ["sms"] : []),
+    ...(env("COURSE_INVOICING_ENABLED") === "true" ? ["invoice"] : []),
+  ];
+  if (!channels.length) {
+    await db.from("course_worker_health").upsert({ worker: "course-operations", last_run_at: new Date().toISOString(), result: "paused" });
+    return reply(200, { state: "paused", processed: 0 });
+  }
   let processed = 0;
   try {
-    for (const kind of ["email", "invoice"]) {
-      if (kind === "invoice" && env("COURSE_INVOICING_ENABLED") !== "true")
-        continue;
+    for (const kind of channels) {
       for (let n = 0; n < (kind === "email" ? 3 : 1); n++) {
         const { data, error } = await db.rpc("claim_course_job", {
           job_kind: kind,
@@ -38,6 +44,7 @@ serve(async (req) => {
         if (error) throw new Error("claim_failed");
         if (!data) break;
         if (kind === "email") await sendCourseEmail(db, data, env);
+        else if (kind === "sms") await sendCourseSMS(db, data, env);
         else await issueCourseInvoice(db, data, env);
         processed++;
       }
