@@ -14,6 +14,7 @@ for (const file of [
   "20260918144500_course_billing_tracking.sql",
   "20260918150000_course_operations.sql",
   "20260918151500_course_resources.sql",
+  "20260918153532_course_queue_revoke.sql",
 ])
   await db.exec(
     await readFile(
