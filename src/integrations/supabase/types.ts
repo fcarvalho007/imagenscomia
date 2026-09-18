@@ -127,10 +127,12 @@ export type Database = {
           early_until: string | null
           ends_at: string
           id: string
+          invoicing_enabled: boolean
           label: string
           net_cents: number
           operations: Json
           sales_enabled: boolean
+          sms_enabled: boolean
           starts_at: string
           vat_percent: number
         }
@@ -141,10 +143,12 @@ export type Database = {
           early_until?: string | null
           ends_at: string
           id: string
+          invoicing_enabled?: boolean
           label: string
           net_cents: number
           operations?: Json
           sales_enabled?: boolean
+          sms_enabled?: boolean
           starts_at: string
           vat_percent?: number
         }
@@ -155,10 +159,12 @@ export type Database = {
           early_until?: string | null
           ends_at?: string
           id?: string
+          invoicing_enabled?: boolean
           label?: string
           net_cents?: number
           operations?: Json
           sales_enabled?: boolean
+          sms_enabled?: boolean
           starts_at?: string
           vat_percent?: number
         }
@@ -343,8 +349,10 @@ export type Database = {
       }
       course_registrations: {
         Row: {
+          after_session: string
           analytics_session: string | null
           attribution: Json
+          before_session: string
           course_id: string
           created_at: string
           edition: string
@@ -359,13 +367,16 @@ export type Database = {
           privacy_version: string
           request_id: string
           resource_token: string
+          sms_consent: boolean
           status: string
           terms_version: string
           updated_at: string
         }
         Insert: {
+          after_session?: string
           analytics_session?: string | null
           attribution?: Json
+          before_session?: string
           course_id?: string
           created_at?: string
           edition: string
@@ -380,13 +391,16 @@ export type Database = {
           privacy_version: string
           request_id: string
           resource_token?: string
+          sms_consent?: boolean
           status?: string
           terms_version?: string
           updated_at?: string
         }
         Update: {
+          after_session?: string
           analytics_session?: string | null
           attribution?: Json
+          before_session?: string
           course_id?: string
           created_at?: string
           edition?: string
@@ -401,6 +415,7 @@ export type Database = {
           privacy_version?: string
           request_id?: string
           resource_token?: string
+          sms_consent?: boolean
           status?: string
           terms_version?: string
           updated_at?: string
@@ -1002,8 +1017,22 @@ export type Database = {
         Args: { expected_amount: number; payload: Json }
         Returns: Json
       }
+      configure_course_channels: {
+        Args: { edition_id: string; invoicing: boolean; sms: boolean }
+        Returns: undefined
+      }
       configure_course_edition: {
         Args: { edition_id: string; enabled: boolean; settings: Json }
+        Returns: undefined
+      }
+      configure_course_operation: {
+        Args: {
+          edition_id: string
+          enabled: boolean
+          invoicing: boolean
+          settings: Json
+          sms: boolean
+        }
         Returns: undefined
       }
       confirm_course_payment: {
@@ -1017,7 +1046,15 @@ export type Database = {
         Returns: undefined
       }
       course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
+      course_job_eligible: {
+        Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
+        Returns: boolean
+      }
       course_metrics: { Args: never; Returns: Json }
+      course_period_metrics: {
+        Args: { edition_id?: string; since?: string }
+        Returns: Json
+      }
       course_quote: { Args: { edition_id: string }; Returns: Json }
       ensure_admin_role: { Args: never; Returns: undefined }
       finish_course_job: {
@@ -1064,6 +1101,10 @@ export type Database = {
           resource_url: string
         }
         Returns: string
+      }
+      set_course_session: {
+        Args: { phase: string; request_uuid: string; session_state: string }
+        Returns: undefined
       }
       update_course_request: {
         Args: {

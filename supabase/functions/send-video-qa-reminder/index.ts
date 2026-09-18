@@ -45,7 +45,6 @@ async function callSendSms(supabaseUrl: string, serviceRoleKey: string, to: stri
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${serviceRoleKey}`,
-      "x-crm-admin-email": ALLOWED_ADMIN,
     },
     body: JSON.stringify({ to, text, provider: "egoi", registrationId }),
   });
