@@ -878,6 +878,10 @@ export type Database = {
         Returns: boolean
       }
       ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      record_course_invoice: {
+        Args: { external_document_id: string; request_uuid: string }
+        Returns: undefined
+      }
       update_course_request: {
         Args: {
           followup: string
