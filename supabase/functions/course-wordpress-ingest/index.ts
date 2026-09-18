@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { saveBilling } from "./billing.ts";
-import { normalizeEvent } from "./contract.ts";
+import { normalizeEvent } from "../_shared/course/contract.ts";
 import { checkout, paymentStatus } from "./payment.ts";
 const encoder = new TextEncoder();
 const reply = (status: number, body: unknown) =>

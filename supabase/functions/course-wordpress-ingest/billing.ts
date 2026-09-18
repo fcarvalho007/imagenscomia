@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
-import { uuid } from "./contract.ts";
+import { uuid } from "../_shared/course/contract.ts";
 export function normalizeBilling(input: Record<string, unknown>) {
   const result: Record<string, string> = {};
   for (const k of ["name", "tax_id", "address", "postal_code", "city"]) {
