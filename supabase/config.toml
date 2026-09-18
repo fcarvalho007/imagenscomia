@@ -110,3 +110,16 @@ verify_jwt = false
 
 [functions.send-video-masterclass-reminder]
 verify_jwt = false
+# Authenticated by a dedicated HMAC secret, server-to-server only.
+[functions.course-wordpress-ingest]
+verify_jwt = false
+
+# Authenticated by Eupago HMAC signature, not a Supabase user JWT.
+[functions.course-eupago-webhook]
+verify_jwt = false
+
+[functions.course-operations]
+verify_jwt = false
+
+[functions.course-resources]
+verify_jwt = false

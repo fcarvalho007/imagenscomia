@@ -53,18 +53,19 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
       {/* Webinar selector */}
       <div className="px-1 py-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-2" style={{ color: "rgba(255,255,255,0.30)" }}>
-          Webinar
+          Formação
         </p>
         <div className="relative">
           <select
             value={webinarContext}
-            onChange={(e) => setWebinarContext(e.target.value as WebinarCtxType)}
+            onChange={(e) => { if (e.target.value === "curso-ia") window.location.assign("/crm/curso-ia"); else setWebinarContext(e.target.value as WebinarCtxType); }}
             className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400"
             style={{
               background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.10)",
             }}
           >
+            <option value="curso-ia">Curso de IA aplicada ao negócio</option>
             {WEBINAR_OPTIONS.map((opt) => (
               <option key={opt.key} value={opt.key}>
                 {opt.emoji} {opt.label}
