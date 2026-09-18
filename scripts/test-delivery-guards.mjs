@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { transform } from 'esbuild';
 let checks = 0;
-for (const name of ['send-invoice-request', 'send-video-confirmation', 'send-video-recursos-access', 'send-video-recursos-single']) {
+for (const name of ['send-invoice-request', 'send-video-confirmation', 'send-video-recursos-access', 'send-video-recursos-single', 'eupago-webhook']) {
   let handler, writes = 0, network = 0;
   const database = {
     auth: { getUser: async () => ({ error: new Error('Invalid test JWT') }) },
@@ -14,9 +14,9 @@ for (const name of ['send-invoice-request', 'send-video-confirmation', 'send-vid
     rpc: () => { writes++; throw new Error('Unexpected RPC'); },
   };
   const context = vm.createContext({
-    Request, Response, URL, console, atob, setTimeout, clearTimeout,
+    Request, Response, URL, console, atob, crypto, TextEncoder, Uint8Array, setTimeout, clearTimeout,
     fetch: () => { network++; throw new Error('Network forbidden in this test'); },
-    Deno: { env: { get: key => ({ SUPABASE_URL: 'https://test.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service', CRON_SECRET: 'test-cron' })[key] } },
+    Deno: { env: { get: key => ({ SUPABASE_URL: 'https://test.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service', CRON_SECRET: 'test-cron', EUPAGO_API_KEY: 'test-api', EUPAGO_WEBHOOK_KEY: 'test-hook' })[key] } },
   });
   const cache = new Map();
   async function load(url) {
