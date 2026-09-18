@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -70,6 +70,298 @@ export type Database = {
           value?: number
         }
         Relationships: []
+      }
+      course_activity: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: number
+          previous_status: string | null
+          registration_id: string
+          status: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          previous_status?: string | null
+          registration_id: string
+          status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: never
+          previous_status?: string | null
+          registration_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_activity_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_editions: {
+        Row: {
+          capacity: number
+          early_net_cents: number
+          early_until: string | null
+          ends_at: string
+          id: string
+          label: string
+          net_cents: number
+          sales_enabled: boolean
+          starts_at: string
+          vat_percent: number
+        }
+        Insert: {
+          capacity?: number
+          early_net_cents: number
+          early_until?: string | null
+          ends_at: string
+          id: string
+          label: string
+          net_cents: number
+          sales_enabled?: boolean
+          starts_at: string
+          vat_percent?: number
+        }
+        Update: {
+          capacity?: number
+          early_net_cents?: number
+          early_until?: string | null
+          ends_at?: string
+          id?: string
+          label?: string
+          net_cents?: number
+          sales_enabled?: boolean
+          starts_at?: string
+          vat_percent?: number
+        }
+        Relationships: []
+      }
+      course_events: {
+        Row: {
+          course_id: string
+          created_at: string
+          edition: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Insert: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id?: string
+          name?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      course_invoices: {
+        Row: {
+          billing: Json
+          document_id: string | null
+          registration_id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          billing?: Json
+          document_id?: string | null
+          registration_id: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          billing?: Json
+          document_id?: string | null
+          registration_id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_invoices_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          net_cents: number
+          paid_at: string | null
+          paid_transaction: string | null
+          payment_url: string | null
+          provider_transaction: string | null
+          registration_id: string
+          state: string
+          vat_percent: number
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          net_cents: number
+          paid_at?: string | null
+          paid_transaction?: string | null
+          payment_url?: string | null
+          provider_transaction?: string | null
+          registration_id: string
+          state?: string
+          vat_percent: number
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          net_cents?: number
+          paid_at?: string | null
+          paid_transaction?: string | null
+          payment_url?: string | null
+          provider_transaction?: string | null
+          registration_id?: string
+          state?: string
+          vat_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_registrations: {
+        Row: {
+          analytics_session: string | null
+          attribution: Json
+          course_id: string
+          created_at: string
+          edition: string
+          email: string
+          id: string
+          marketing_consent: boolean
+          name: string
+          next_followup_at: string | null
+          notes: string
+          paid_at: string | null
+          phone: string
+          privacy_version: string
+          request_id: string
+          status: string
+          terms_version: string
+          updated_at: string
+        }
+        Insert: {
+          analytics_session?: string | null
+          attribution?: Json
+          course_id?: string
+          created_at?: string
+          edition: string
+          email: string
+          id?: string
+          marketing_consent?: boolean
+          name: string
+          next_followup_at?: string | null
+          notes?: string
+          paid_at?: string | null
+          phone?: string
+          privacy_version: string
+          request_id: string
+          status?: string
+          terms_version?: string
+          updated_at?: string
+        }
+        Update: {
+          analytics_session?: string | null
+          attribution?: Json
+          course_id?: string
+          created_at?: string
+          edition?: string
+          email?: string
+          id?: string
+          marketing_consent?: boolean
+          name?: string
+          next_followup_at?: string | null
+          notes?: string
+          paid_at?: string | null
+          phone?: string
+          privacy_version?: string
+          request_id?: string
+          status?: string
+          terms_version?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_registrations_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_tasks: {
+        Row: {
+          due_at: string
+          id: string
+          registration_id: string
+          stage: string
+          state: string
+          task_key: string
+        }
+        Insert: {
+          due_at: string
+          id?: string
+          registration_id: string
+          stage: string
+          state?: string
+          task_key: string
+        }
+        Update: {
+          due_at?: string
+          id?: string
+          registration_id?: string
+          stage?: string
+          state?: string
+          task_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tasks_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_logs: {
         Row: {
@@ -559,13 +851,45 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_course_payment: {
+        Args: { expected_amount: number; payload: Json }
+        Returns: Json
+      }
+      confirm_course_payment: {
+        Args: {
+          paid_cents: number
+          payment_currency: string
+          payment_state: string
+          payment_uuid: string
+          transaction_id: string
+        }
+        Returns: undefined
+      }
+      course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
+      course_metrics: { Args: never; Returns: Json }
+      course_quote: { Args: { edition_id: string }; Returns: Json }
       ensure_admin_role: { Args: never; Returns: undefined }
+      finish_course_task: { Args: { task_uuid: string }; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      record_course_invoice: {
+        Args: { external_document_id: string; request_uuid: string }
+        Returns: undefined
+      }
+      update_course_request: {
+        Args: {
+          followup: string
+          new_notes: string
+          new_status: string
+          request_uuid: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
@@ -585,12 +909,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -614,11 +938,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -639,11 +963,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -664,11 +988,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -681,11 +1005,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
