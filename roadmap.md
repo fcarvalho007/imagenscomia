@@ -16,7 +16,11 @@
 - [x] Callback Eupago clássico exige chave_api válida; POST 2.0 exige assinatura. EUPAGO_API_KEY existente; EUPAGO_WEBHOOK_KEY ainda ausente. Nenhuma transação real foi testada.
 - [x] Rascunho SQL de RLS revisto: não autoriza por email, exige token existente para dados próprios, protege planos já pagos e separa administrador com MFA.
 - [x] 67 testes SQL isolados do rascunho, com grants equivalentes aos públicos e verificação de RLS real.
-- [ ] Migrar consultas públicas diretas e implementar recuperação segura de acesso nas páginas antigas. Rever também create-payment/register-free/group checkout antes da ativação desta migração.
+- [x] Consultas públicas diretas migradas para funções estreitas com token: recursos (3 áreas), confirmação, sessão ao vivo, faturação, upgrade, upgrade-vídeo e upgrade-gravação. Bypass por email de administrador removido.
+- [x] Recuperação de acesso por email envia apenas ligação (legacy-access-link), com destino em lista fixa e limite 10 min / 3 por dia; nunca devolve dados nem token.
+- [x] register-free devolve token ao próprio, create-payment exige token e webinar correto sem alterar plano pago, group checkout não sobrescreve registos alheios, generate-reminder exige administrador com MFA.
+- [x] Analytics: InitiateCheckout no arranque do checkout; Purchase só com pagamento confirmado e deduplicado por transação.
+- [x] CRM exige MFA efetivamente verificada; páginas públicas leem apenas a vista pública de definições.
 - [ ] Aplicar a migração apenas com os percursos públicos adaptados e testados. Ficheiro permanece em supabase/migrations-draft, fora da instalação automática.
 
 A segurança das tabelas antigas NÃO está resolvida em produção por este rascunho. Não publicar como se a integração estivesse encerrada nem executar o SQL isoladamente. Os pedidos anteriores em fila no Lovable estão pausados e são substituídos por este estado consolidado.
