@@ -20,6 +20,7 @@ export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewPr
         </p>
       </div>
 
+      {course && <div className="mb-5 rounded-lg border bg-white p-4 text-sm text-slate-700"><strong>Destinatários disponíveis nesta edição</strong><p className="mt-1">Email: {inscritos.length} · SMS com consentimento: {course.smsRecipients.length}</p><p className="mt-2">{inscritos.length ? "Selecione os participantes, reveja a mensagem e escolha quando colocar em fila. Consulte o resultado em Histórico." : "Selecione uma edição na barra lateral. Só aparecem participantes com pagamento confirmado e contacto autorizado."}</p></div>}
       <Tabs defaultValue="email" className="w-full">
         <TabsList className="bg-white border border-slate-200 mb-6">
           <TabsTrigger value="email" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-slate-500 gap-1.5">

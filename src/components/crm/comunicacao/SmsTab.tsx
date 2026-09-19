@@ -300,7 +300,7 @@ export default function SmsTab({ inscritos, courseQueue }: SmsTabProps) {
         </div>
 
         {/* RIGHT — Phone Preview */}
-        <div className="hidden lg:flex flex-col items-center justify-start pt-8">
+        <div className={courseQueue ? "flex min-w-0 flex-col items-center justify-start pt-8" : "hidden lg:flex flex-col items-center justify-start pt-8"}>
           <PhonePreview sender={senderLabel} message={text} />
           <p className="text-[10px] text-slate-400 mt-4 text-center">Pré-visualização em tempo real</p>
         </div>

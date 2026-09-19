@@ -1,3 +1,4 @@
+import CourseAutomationFlow, {type FlowCount} from "./CourseAutomationFlow";
 import EmailEditorPanel,{type EmailTemplate} from "@/components/crm/EmailEditorPanel";
 import {AutomationTabs} from "@/components/crm/FollowUpView";
 import { useEffect, useState } from "react";
@@ -32,6 +33,8 @@ const states: Record<string, string> = {
 };
 type Edition = {
   id: string;
+  starts_at: string;
+  ends_at: string;
   label: string;
   automation_enabled: boolean;
   sms_enabled: boolean;
@@ -49,6 +52,8 @@ type Job = {
   course_registrations: { name: string; edition: string };
 };
 export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
+  const [smsTemplates,setSmsTemplates]=useState<Record<string,{body:string;updated_at:string}>>({}),[smsEditing,setSmsEditing]=useState(""),[smsBody,setSmsBody]=useState(""),[smsError,setSmsError]=useState(""),[smsReady,setSmsReady]=useState(false);
+  const [flowCounts,setFlowCounts]=useState<FlowCount[]|null>(null),[registrationCount,setRegistrationCount]=useState<number|null>(null),[templateFilter,setTemplateFilter]=useState(""),[stateFilter,setStateFilter]=useState("");
   const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string}>>({});
   const [tab,setTab]=useState("fluxo"),[page,setPage]=useState(0),[counts,setCounts]=useState<Record<string,number>|null>(null),[channel,setChannel]=useState("all");
   const [view, setView] = useState("pending"), [revision, setRevision] = useState(0), [now, setNow] = useState(Date.now());
@@ -78,12 +83,14 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           .order("due_at", { ascending: view === "pending" })
           .order("id").range(page*50,page*50+49);
         q = view === "pending" ? q.in("state", ["queued", "blocked", "review", "processing"]) : q.in("state", ["sent", "cancelled"]);
+        if(templateFilter)q=q.eq("template",templateFilter);
+        if(stateFilter)q=q.eq("state",stateFilter);
         if(channel!=="all")q=q.eq("kind",channel);
         if (edition) q = q.eq("course_registrations.edition", edition);
         const [es, js, hs, totals, templates] = await Promise.all([
           db
             .from("course_editions")
-            .select("id,label,automation_enabled,sms_enabled,invoicing_enabled,operations")
+            .select("id,label,starts_at,ends_at,automation_enabled,sms_enabled,invoicing_enabled,operations")
             .order("starts_at"),
           q,
           db
@@ -119,9 +126,40 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
     return () => {
       active = false;
     };
-  }, [edition, refresh, revision, view, page,channel]);
-  useEffect(()=>{setPage(0);},[edition,view,channel]);
-  useEffect(()=>{setEditing(null);},[edition]);
+  }, [edition, refresh, revision, view, page,channel,templateFilter,stateFilter]);
+  useEffect(()=>{setPage(0);},[edition,view,channel,templateFilter,stateFilter]);
+  useEffect(()=>{setEditing(null);setSmsEditing("");},[edition]);
+  useEffect(()=>{
+    let active=true;setFlowCounts(null);setRegistrationCount(null);
+    if(!edition)return;
+    (async()=>{
+      const result=await db.from("course_registrations").select("id",{count:"exact",head:true}).eq("edition",edition);
+      if(active&&!result.error)setRegistrationCount(result.count);
+      const totals=new Map<string,FlowCount>();
+      for(let offset=0;;offset+=1000){
+        const result=await db.from("course_jobs").select("id,template,state,course_registrations!inner(edition)").eq("course_registrations.edition",edition).order("id").range(offset,offset+999);
+        if(!active||result.error)return;
+        for(const row of result.data||[]){const key=row.template+":"+row.state;const count=totals.get(key)||{template:row.template,state:row.state,count:0};count.count++;totals.set(key,count);}
+        if((result.data||[]).length<1000)break;
+      }
+      if(active)setFlowCounts([...totals.values()]);
+    })().catch(()=>{ /* An unavailable count stays unknown, never zero. */ });
+    return()=>{active=false;};
+  },[edition,refresh,revision]);
+  useEffect(()=>{
+    let active=true;setSmsReady(false);setSmsTemplates({});
+    db.from("course_sms_templates").select("template,body,updated_at").eq("edition",edition).then(({data,error})=>{if(active&&!error){setSmsTemplates(Object.fromEntries((data||[]).map(t=>[t.template,t])));setSmsReady(true);}});
+    return()=>{active=false;};
+  },[edition,revision]);
+  async function saveSMS(){
+    setBusy(true);setSmsError("");
+    try{
+      const {error}=await db.rpc("save_course_sms_template",{edition_id:edition,template_key:smsEditing,sms_body:smsBody,expected_updated_at:smsTemplates[smsEditing]?.updated_at||null});
+      if(error)throw error;
+      setSmsEditing("");setRevision(v=>v+1);setNotice("Template SMS guardado. Nenhuma mensagem foi enviada.");
+    }catch{setSmsError("Não foi possível guardar. Atualize os templates e tente novamente; outro administrador pode ter alterado este texto.");}
+    finally{setBusy(false);}
+  }
   async function manage(id:string,action:string) {
     setBusy(true);setError("");
     try {const {error}=await db.rpc("manage_course_job",{job_uuid:id,action});if(error)throw error;setRevision(v=>v+1);}
@@ -210,8 +248,10 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         </p>
       )}
       {!loaded && !error && <p role="status">A carregar a configuração…</p>}
+      {loaded && counts && <div className="flex flex-wrap gap-3 text-sm" aria-label="Estado das operações">{[["queued","Agendadas"],["sent","Aceites pelo fornecedor"],["blocked","Bloqueadas"],["review","A verificar"]].map(([key,label])=><button key={key} className="rounded-lg border bg-white px-4 py-3 text-left hover:bg-slate-50" onClick={()=>{setStateFilter(key);setTemplateFilter("");setChannel("all");setView(key==="sent"?"history":"pending");setTab("pessoas");}}><strong className="mr-2">{counts[key]||0}</strong>{label}</button>)}</div>}
+      {loaded && counts && ((counts.blocked||0)+(counts.review||0)>0) && <Alert variant="destructive"><AlertDescription>Há operações que precisam de atenção. Abra «Bloqueadas» para completar a configuração ou «A verificar» para confirmar o resultado no fornecedor antes de repetir um envio.</AlertDescription></Alert>}
       {!communicationOnly && <AutomationTabs value={tab} onChange={setTab} configuration />}
-      {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}
+      {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setStateFilter(state);setTemplateFilter("");setChannel("all");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}
       {!communicationOnly && !edition && loaded && (
         <div className="grid sm:grid-cols-3 gap-5">
           {editions.map((e) => (
@@ -229,11 +269,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           ))}
         </div>
       )}
-      {!communicationOnly && tab==="fluxo" && selected && <div className="grid gap-3 sm:grid-cols-3" aria-label="Sequência de acompanhamento">
-        <div className="rounded-xl border p-4"><h3 className="font-semibold">Antes</h3><p className="text-sm mt-2">Confirmação → sessão individual → informação prática → SMS opcional.</p></div>
-        <div className="rounded-xl border p-4"><h3 className="font-semibold">Durante</h3><p className="text-sm mt-2">Sem mensagens automáticas. A formação é o foco.</p></div>
-        <div className="rounded-xl border p-4"><h3 className="font-semibold">Depois</h3><p className="text-sm mt-2">Recursos → sessão individual → lembrete SMS, se ainda não estiver agendada.</p></div>
-      </div>}
+      {!communicationOnly && tab==="fluxo" && selected && <CourseAutomationFlow counts={flowCounts} registrations={registrationCount} enabled={selected.automation_enabled} startsAt={selected.starts_at} endsAt={selected.ends_at} onPreview={key=>{if(key in emailLabels)setPreview(key);setTab("templates");if(key in smsLabels)requestAnimationFrame(()=>document.getElementById("course-sms-templates")?.scrollIntoView({block:"start"}));}} onPeople={(key,state)=>{setTemplateFilter(key);setStateFilter(state);setChannel("all");setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}} />}
       {!communicationOnly && selected && ["templates","config"].includes(tab) && (
         <div className="grid lg:grid-cols-2 gap-8">
           {tab==="config" && <form
@@ -321,7 +357,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
                 </p>
               </div>
             )}
-            <div className="rounded-xl border p-4 space-y-4"><h3 className="font-semibold">SMS opcionais · pré-visualização</h3>{Object.entries(smsLabels).map(([key,label])=><div key={key}><p className="text-sm font-medium">{label}</p><p className="text-sm text-muted-foreground mt-1">{renderCourseSMS(key,selected.id)}</p></div>)}</div>
+            <div className="rounded-xl border p-4 space-y-5" id="course-sms-templates"><h3 className="font-semibold">SMS opcionais</h3>{!smsReady&&<p role="status" className="text-sm">Templates SMS indisponíveis. A edição fica disponível após carregar a configuração do backend.</p>}{Object.entries(smsLabels).map(([key,label])=><div key={key} className="border-t pt-4"><h4 className="text-sm font-semibold">{label}</h4><p className="text-sm text-slate-600 mt-2 break-words">{smsReady?(smsTemplates[key]?.body||renderCourseSMS(key,selected.id)):"A aguardar o template guardado."}</p>{smsEditing===key?<div className="mt-3 space-y-3"><label className="block text-sm">Texto do SMS<textarea className="mt-2 w-full rounded-md border p-3 text-sm" rows={4} maxLength={160} value={smsBody} onChange={e=>setSmsBody(e.target.value)}/></label><p className="text-xs text-slate-600">{smsBody.length}/160 caracteres · um SMS. Utilize texto sem acentos nem caracteres especiais.</p>{smsError&&<p role="alert" className="text-sm text-red-700">{smsError}</p>}<div className="flex gap-2"><Button disabled={busy||smsBody.trim().length<10||/[^ -~]|[\[\]{}^~|\\]/.test(smsBody)} onClick={()=>void saveSMS()}>Guardar SMS</Button><Button variant="ghost" onClick={()=>setSmsEditing("")}>Cancelar</Button></div></div>:<Button variant="outline" size="sm" className="mt-3" disabled={!smsReady} onClick={()=>{setSmsEditing(key);setSmsBody(smsTemplates[key]?.body||renderCourseSMS(key,selected.id));setSmsError("");}}>Editar SMS</Button>}</div>)}</div>
             <p className="text-sm text-muted-foreground">
               Pré-visualização apenas. Nenhum email é enviado ao guardar ou ao
               abrir esta vista.
@@ -329,11 +365,12 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           </div>}
         </div>
       )}
-      {(communicationOnly || tab==="pessoas" || tab==="fluxo") && <div>
+      {(communicationOnly || tab==="pessoas") && <div>
         <h3 className="text-lg font-semibold mb-4">
           Histórico e próximos envios
         </h3>
-        <div className="flex flex-wrap gap-3 mb-4"><label className="text-sm">Mostrar<select aria-label="Filtrar operações" className="mt-2 block w-full min-w-0 max-w-full rounded border bg-background p-2 sm:ml-3 sm:mt-0 sm:inline-block sm:w-auto" value={view} onChange={e=>setView(e.target.value)}><option value="pending">Pendentes e problemas</option><option value="history">Histórico: concluídos e cancelados</option></select></label><label className="text-sm">Canal<select aria-label="Canal das operações" className="ml-2 rounded border bg-background p-2" value={channel} onChange={e=>setChannel(e.target.value)}><option value="all">Todos</option><option value="email">Email</option><option value="sms">SMS</option><option value="invoice">Faturação</option></select></label><Button variant="outline" onClick={()=>setRevision(v=>v+1)}>Atualizar operações</Button></div>
+        {(templateFilter||stateFilter)&&<div className="mb-4 flex flex-wrap items-center gap-3 text-sm"><span>{emailLabels[templateFilter]||smsLabels[templateFilter]||"Todas as mensagens"} · {states[stateFilter]||"Todos os estados"}</span><Button variant="ghost" onClick={()=>{setTemplateFilter("");setStateFilter("");}}>Limpar filtros</Button></div>}
+        <div className="flex flex-wrap gap-3 mb-4"><label className="text-sm">Mostrar<select aria-label="Filtrar operações" className="mt-2 block w-full min-w-0 max-w-full rounded border bg-background p-2 sm:ml-3 sm:mt-0 sm:inline-block sm:w-auto" value={view} onChange={e=>{setView(e.target.value);setStateFilter("");}}><option value="pending">Pendentes e problemas</option><option value="history">Histórico: concluídos e cancelados</option></select></label><label className="text-sm">Canal<select aria-label="Canal das operações" className="ml-2 rounded border bg-background p-2" value={channel} onChange={e=>setChannel(e.target.value)}><option value="all">Todos</option><option value="email">Email</option><option value="sms">SMS</option><option value="invoice">Faturação</option></select></label><Button variant="outline" onClick={()=>setRevision(v=>v+1)}>Atualizar operações</Button></div>
         <p className="text-sm text-muted-foreground mb-4">
           50 operações por página, filtradas no servidor. “Aceite pelo
           fornecedor” não confirma a entrega na caixa de entrada.
@@ -371,6 +408,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
                     <td className="p-3 border-b whitespace-nowrap">
                       {new Date(j.due_at).toLocaleString("pt-PT", {
                         dateStyle: "short",
+                        timeZone: "Europe/Lisbon",
                         timeStyle: "short",
                       })}
                     </td>

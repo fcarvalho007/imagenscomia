@@ -422,7 +422,7 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
         </div>
 
         {/* RIGHT — Email Preview */}
-        <div className="hidden lg:flex flex-col items-center justify-start pt-8">
+        <div className={courseQueue ? "flex min-w-0 flex-col items-center justify-start pt-8" : "hidden lg:flex flex-col items-center justify-start pt-8"}>
           <EmailPreview subject={subject} html={currentHtml} />
         </div>
       </div>

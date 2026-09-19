@@ -17,6 +17,7 @@ for (const file of [
   "20260918153532_course_queue_revoke.sql",
   "20260918180000_course_operation_hardening.sql",
   "20260919090040_9988a0ca-e1eb-4a1b-9ad9-2acc888a72ce.sql",
+  "20260919110000_course_sms_templates.sql",
 ])
   await db.exec(
     await readFile(
@@ -498,6 +499,17 @@ await auth('authenticated',false,'aal2');
 assert.equal((await db.query("select * from course_email_templates")).rows.length,0);checks++;
 await denied(()=>db.query("select save_course_email_template('porto-2026','confirmation','Assunto','Texto para participantes',null)"));
 
+
+await auth('authenticated',true,'aal2');
+const smsVersion=(await rpc("select save_course_sms_template('lisboa-2026','practical_sms','Texto revisto para o curso.',null) v")).v;
+await denied(()=>db.query("select save_course_sms_template('lisboa-2026','practical_sms','Outra mensagem de teste.',null)"));
+await db.query("select save_course_sms_template('lisboa-2026','practical_sms','Texto atualizado para o curso.',$1)",[smsVersion]);
+for(const body of ['Olá participantes','x'.repeat(161),'Mensagem com [extensao]','Mensagem com ~ extensao'])await denied(()=>db.query("select save_course_sms_template('porto-2026','practical_sms',$1,null)",[body]));
+await auth('authenticated',false,'aal2');
+assert.equal((await db.query("select * from course_sms_templates")).rows.length,0);checks++;
+await denied(()=>db.query("select save_course_sms_template('porto-2026','practical_sms','Texto para participantes.',null)"));
+await auth('anon');
+await denied(()=>db.query("select * from course_sms_templates"));
 await db.close();
 console.log(
   `PASS: ${checks} database checks; migrations, RLS, prices, idempotency, signed-payment reconciliation, refunds, edition isolation and capacity.`,

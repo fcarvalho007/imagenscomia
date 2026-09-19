@@ -45,12 +45,21 @@ describe('delivery authorization',()=>{
 describe('SMS: single segment and no blind retry',()=>{
  const env=k=>({SMSONLINE_API_KEY:'qa:qa',COURSE_SMS_FROM:'CURSOIA'})[k];
  const ctx=()=>({job:{id:'j',lease:'l',attempts:0,template:'practical_sms'},registration:{edition:'porto-2026',phone:'912345678',sms_consent:true}});
- const db=()=>({rpc:vi.fn(async name=>({data:name==='prepare_course_job',error:null}))});
+ const db=(body=null)=>({rpc:vi.fn(async name=>({data:name==='prepare_course_job',error:null})),from:vi.fn(()=>{const q={select:()=>q,eq:()=>q,maybeSingle:async()=>({data:body?{body}:null,error:null})};return q;})});
  it.each(['lisboa-2026','porto-2026','online-2026'])('keeps both SMS templates within one segment for %s',edition=>{
   for(const t of ['practical_sms','after_sms'])expect(renderCourseSMS(t,edition).length).toBeLessThanOrEqual(160);
  });
  it('blocks missing consent without contacting the provider',async()=>{
   const c=ctx();c.registration.sms_consent=false;const send=vi.fn();await sendCourseSMS(db(),c,env,send);expect(send).not.toHaveBeenCalled();
+ });
+ it('uses the saved SMS body and freezes it before delivery',async()=>{
+  const body='Texto revisto para os participantes do curso.';const d=db(body),send=vi.fn(async(_url: RequestInfo | URL,_init?:RequestInit)=>new Response(JSON.stringify({id:'provider-id'}),{status:200}));
+  await sendCourseSMS(d,ctx(),env,send);
+  expect(d.rpc).toHaveBeenCalledWith('prepare_course_job',expect.objectContaining({frozen_payload:expect.objectContaining({text:body})}));
+  expect(JSON.parse(send.mock.calls[0][1]!.body as string).text).toBe(body);
+ });
+ it('blocks an invalid saved SMS before contacting the provider',async()=>{
+  const d=db('x'.repeat(161)),send=vi.fn();await sendCourseSMS(d,ctx(),env,send);expect(send).not.toHaveBeenCalled();
  });
  it('sends uncertain delivery to manual review without retry',async()=>{
   const d=db(),send=vi.fn(async()=>{throw new Error('timeout')});await sendCourseSMS(d,ctx(),env,send);

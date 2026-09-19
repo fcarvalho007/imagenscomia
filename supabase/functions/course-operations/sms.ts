@@ -17,7 +17,11 @@ export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => strin
       const {data:campaign,error}=await db.from("course_campaigns").select("body,edition,channel").eq("id",job.campaign_id).single();
       if(error || !campaign || campaign.edition!==r.edition || campaign.channel!=="sms") throw new Error("campaign_missing");
       text=campaign.body;
-    } else text = renderCourseSMS(job.template, r.edition);
+    } else {
+      const {data:template,error}=await db.from("course_sms_templates").select("body").eq("edition",r.edition).eq("template",job.template).maybeSingle();
+      if(error)throw new Error("sms_template_unavailable");
+      text = template?.body || renderCourseSMS(job.template, r.edition);
+    }
     // ASCII only, maximum one segment. Never silently spend on concatenated SMS.
     if (text.length > 160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(text)) throw new Error("segment_limit");
     payload = { to: [mobilePhone(r.phone)], text, from, coding: "gsm" };
