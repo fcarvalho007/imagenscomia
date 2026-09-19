@@ -3,10 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { resolveCourseAdmin } from "../_shared/course/admin.ts";
 import { normalizeFormat, personalize, renderCourseBody, wrapCourseEmail } from "../_shared/course/richtext.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders, trace } from "../_shared/course/cors.ts";
 // The SMS test target is fixed in code. No caller can choose a destination.
 const OWNER_TEST_MOBILE = Deno.env.get("COURSE_TEST_MOBILE") || "";
 const env = (key: string) => Deno.env.get(key);
