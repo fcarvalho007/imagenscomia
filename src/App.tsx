@@ -31,9 +31,7 @@ import MasterclassVideo from "./pages/MasterclassVideo";
 import GuiaPrompts from "./pages/GuiaPrompts";
 import RecursosMasterclass from "./pages/RecursosMasterclass";
 
-const CourseCheckoutDemo = import.meta.env.DEV
-  ? lazy(() => import("./pages/CourseCheckoutDemo"))
-  : null;
+const CourseCheckoutDemo = lazy(() => import("./pages/CourseCheckoutDemo"));
 
 const queryClient = new QueryClient();
 
@@ -45,7 +43,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/curso-ia/checkout" element={<CourseCheckout />} />
-          {CourseCheckoutDemo && (
             <Route
               path="/curso-ia/checkout-demonstracao"
               element={
@@ -54,7 +51,6 @@ const App = () => (
                 </Suspense>
               }
             />
-          )}
           <Route path="/" element={<Index />} />
           <Route path="/confirmacao" element={<Confirmacao />} />
           <Route path="/upgrade" element={<Upsell />} />
