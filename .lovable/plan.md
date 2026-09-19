@@ -4,11 +4,11 @@ A autenticação mantém-se exatamente como está: email + password e, a seguir,
 
 Objetivo único: definir uma nova password para a conta fredericodigital@gmail.com.
 
-## Qual das três
+## Sobre as três passwords
 
-Das opções que indicou, recomendo a terceira (a que tem letra maiúscula, números e símbolo). As outras duas são demasiado simples e constam de listas públicas de passwords comprometidas, pelo que podem ser recusadas se ativar a proteção de passwords comprometidas.
+Uma conta só pode ter uma password ativa de cada vez — não é possível manter as três a funcionar em simultâneo. Indicou três variantes da mesma palavra, por isso vou usar a terceira, a mais completa (maiúscula, números e símbolo), que também abrange as outras duas em memória: se escrever qualquer uma das variantes mais simples, basta acrescentar o resto.
 
-Se preferir outra, diga qual e uso essa.
+Se preferir uma das outras duas, diga qual e defino essa em vez desta. Nota: as duas versões mais simples constam de listas públicas de passwords comprometidas e podem ser recusadas caso ative essa proteção nas definições de contas.
 
 ## Como vai ser feito
 
