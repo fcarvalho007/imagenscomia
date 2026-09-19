@@ -123,3 +123,7 @@ verify_jwt = false
 
 [functions.course-resources]
 verify_jwt = false
+
+# Public recovery endpoint: always answers generically and is rate limited server-side.
+[functions.legacy-access-link]
+verify_jwt = false
