@@ -195,7 +195,7 @@ serve(async (req) => {
     const orderId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
     // Insert new registration
-    const { error: insertError } = await supabase.from("registrations").insert({
+    const { data: inserted, error: insertError } = await supabase.from("registrations").insert({
       name,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
