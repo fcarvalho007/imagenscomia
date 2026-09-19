@@ -204,6 +204,7 @@ const UpgradeGravacao = () => {
               {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
+          )}
         </motion.div>
         <WhatsAppSupportButton />
       </div>
