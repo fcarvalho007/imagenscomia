@@ -188,8 +188,13 @@ const Upsell = () => {
             Retomar o teu upgrade
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduz o email que usaste para te inscreveres.
+            Introduz o email que usaste para te inscreveres e enviamos-te a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
@@ -214,9 +219,10 @@ const Upsell = () => {
               ) : (
                 <ArrowRight className="w-5 h-5" />
               )}
-              {recoveryLoading ? "A verificar..." : "Continuar"}
+              {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
+          )}
         </motion.div>
         <WhatsAppSupportButton />
       </div>
