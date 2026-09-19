@@ -271,6 +271,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         </div>
       )}
       {!communicationOnly && tab==="fluxo" && selected && <CourseAutomationFlow counts={flowCounts} registrations={registrationCount} enabled={selected.automation_enabled} startsAt={selected.starts_at} endsAt={selected.ends_at} onPreview={key=>{if(key in emailLabels)setPreview(key);setTab("templates");if(key in smsLabels)requestAnimationFrame(()=>document.getElementById("course-sms-templates")?.scrollIntoView({block:"start"}));}} onPeople={(key,state)=>{setTemplateFilter(key);setStateFilter(state);setChannel("all");setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}} />}
+      {!communicationOnly && tab==="config" && <div className="mb-6"><CourseDiagnostics /></div>}
       {!communicationOnly && selected && ["templates","config"].includes(tab) && (
         <div className="grid lg:grid-cols-2 gap-8">
           {tab==="config" && <form
