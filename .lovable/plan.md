@@ -1,48 +1,31 @@
-# Entrada no CRM apenas com email
+# Alterar a password de entrada no CRM
 
-Objetivo: remover a password da entrada em `/crm`. Só dois endereços podem entrar:
+A autenticação mantém-se exatamente como está: email + password e, a seguir, o código de 6 dígitos da app de autenticação. Nada muda no ecrã nem nas regras de acesso.
 
-- comunicacao@fredericocarvalho.pt
-- fredericodigital@gmail.com
+Objetivo único: definir uma nova password para a conta fredericodigital@gmail.com.
 
-Sem password e sem link mágico clicável.
+## Qual das três
 
-## Como fica o ecrã de entrada
+Das opções que indicou, recomendo a terceira (a que tem letra maiúscula, números e símbolo). As outras duas são demasiado simples e constam de listas públicas de passwords comprometidas, pelo que podem ser recusadas se ativar a proteção de passwords comprometidas.
 
-1. Um único campo: email.
-2. Se o email não estiver na lista permitida, mensagem genérica de acesso restrito.
-3. Se estiver, o sistema envia um código de 6 dígitos para esse email e mostra os mesmos quadrados de código que já existem hoje.
-4. Código correto, entra. Nada de password, nada de link para clicar.
+Se preferir outra, diga qual e uso essa.
 
-O visual atual (caixa escura, logótipo WebinarCRM, botão azul, campos de código) mantém-se tal como está.
+## Como vai ser feito
 
-## Ponto importante antes de avançar
+1. Crio uma ação interna temporária no servidor que define a nova password da sua conta.
+2. Executo-a uma única vez para o seu endereço.
+3. Removo essa ação imediatamente a seguir, para não ficar nenhuma porta aberta.
+4. Confirmo por leitura que a conta continua com permissão de administrador e com a verificação em dois passos ativa.
 
-Há duas formas de fazer isto e mudam o nível de proteção:
+Depois disto entra em `/crm` com o seu email e a nova password, seguido do código de 6 dígitos habitual.
 
-- **Opção A — email + código de 6 dígitos (recomendada).** Continua a ser "só o email" do ponto de vista de quem entra: escreve o endereço e recebe o código nessa caixa de correio. Quem não tiver acesso à caixa não entra. É a única forma de manter os dados de inscritos, pagamentos e faturação protegidos.
-- **Opção B — só escrever o email, sem qualquer verificação.** Qualquer pessoa que conheça um dos dois endereços entra no CRM a partir de qualquer computador. Além disso, as regras atuais da base de dados exigem verificação em dois passos para ler inscritos, faturação e comunicação; para esta opção funcionar seria preciso baixar essas regras, o que expõe os dados internos e reabre exatamente os problemas críticos identificados na revisão de segurança.
+## Extra opcional
 
-O plano abaixo assume a Opção A. Diga se prefere a B e ajusto, assumindo o risco descrito.
-
-## O que muda em concreto
-
-- Ecrã de entrada: sai o campo de password e o olho de mostrar/esconder; fica só o email e o passo do código.
-- Os dois endereços ficam definidos como lista permitida no ecrã e validados também do lado do servidor, para a lista não poder ser contornada pelo navegador.
-- A conta do endereço comunicacao@ passa a ter permissão de administrador, tal como a existente, para poder consultar o CRM.
-- O passo do autenticador (app de códigos) deixa de ser pedido; o código enviado por email passa a ser a segunda prova.
-- O botão de sair continua igual.
+Posso acrescentar ao ecrã de entrada uma ligação "Esqueci-me da password", que envia um email de reposição. Assim, numa próxima vez, altera a password sozinho sem precisar de mim. Diga se quer.
 
 ## Detalhes técnicos
 
-- Ativar o início de sessão por código de email (OTP de 6 dígitos, `shouldCreateUser: false`), sem `emailRedirectTo`, para não gerar ligação clicável.
-- `src/components/crm/CRMLogin.tsx`: remover `signInWithPassword` e os ecrãs de TOTP; passar a `signInWithOtp` + `verifyOtp` reutilizando o componente `InputOTP` já existente.
-- `src/pages/CRM.tsx`: substituir a verificação `aal2` por sessão válida + `has_role(admin)`.
-- Base de dados: substituir a condição `auth.jwt()->>'aal'='aal2'` nas funções e políticas internas por uma verificação de administrador na lista permitida, mantendo tudo fechado a anónimos. Migração preparada e revista antes de aplicar.
-- A migração `legacy_rls_lockdown` continua parada em `migrations-draft`, sem ser aplicada.
-- Nada de envios comerciais, pagamentos, faturas ou alterações às opções do curso.
-
-## Fora deste plano
-
-- Páginas de recursos (`/recursos`, `/recursos-video`, `/recursos-masterclass`) mantêm-se como estão. Diga se também quer a mesma entrada por email nessas três páginas.
-- Componentes originais do WebinarCRM, LP1/LP2 no WordPress e o módulo do Curso IA não são tocados.
+- Edge function temporária com service role a chamar `auth.admin.updateUserById`, protegida por um segredo de execução e apagada logo após a utilização. A password não é escrita em ficheiros do projeto nem em registos.
+- Sem alterações a `CRMLogin.tsx`, `CRM.tsx`, políticas RLS ou requisito `aal2`.
+- Nada é publicado no frontend; nenhuma mensagem comercial, pagamento ou fatura é gerada.
+- A migração `legacy_rls_lockdown` continua parada em `migrations-draft`.
