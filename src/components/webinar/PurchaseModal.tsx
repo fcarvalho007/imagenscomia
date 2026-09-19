@@ -259,8 +259,52 @@ export const PurchaseModal = ({
             </div>
           </div>
 
-          {/* Invoice form — shown when buyer fields are valid */}
-          {buyerFieldsValid && (
+          {/* Explicit confirmation step — creates the registration once */}
+          {buyerFieldsValid && !registrationReady && !needsVerification && !groupMode && (
+            <button
+              type="button"
+              onClick={handleStartCheckout}
+              disabled={loading}
+              className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 mt-4"
+              style={{ background: ctaBg(plan), borderRadius: 10, height: 48, fontSize: 15 }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A confirmar…
+                </span>
+              ) : (
+                "Continuar"
+              )}
+            </button>
+          )}
+
+          {/* Existing registration: nothing is revealed, only an emailed link */}
+          {needsVerification && !groupMode && (
+            <div className="mt-4 rounded-xl border p-4" style={{ borderColor: "#e5e7eb", background: "#fafafa" }}>
+              {linkSent ? (
+                <p style={{ fontSize: 13, color: "#374151" }}>{ACCESS_LINK_GENERIC_MESSAGE}</p>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: "#374151" }}>
+                    Já existe uma inscrição com este email. Enviamos-te a ligação de acesso para continuares em segurança.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestLink}
+                    disabled={loading}
+                    className="mt-3 w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{ background: ctaBg(plan), borderRadius: 10, height: 44, fontSize: 14 }}
+                  >
+                    {loading ? "A enviar…" : "Receber ligação de acesso"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Invoice form — only after the registration is confirmed */}
+          {registrationReady && (
             <div className="mt-4">
               <InvoiceForm
                 userEmail={email.trim()}
