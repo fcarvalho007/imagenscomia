@@ -66,7 +66,10 @@ serve(async (req) => {
       throw new Error("EUPAGO_API_KEY is not configured");
     }
 
-    const { plan, email, nome } = await req.json();
+    const body = await req.json();
+    const plan = typeof body?.plan === "string" ? body.plan : "";
+    const nome = typeof body?.nome === "string" ? body.nome : "";
+    const providedToken = typeof body?.editToken === "string" ? body.editToken.trim() : "";
 
     const product = PRODUCTS[plan];
     if (!product) {
@@ -77,80 +80,57 @@ serve(async (req) => {
     }
 
     // Derive webinar from plan prefix
-    const webinar = plan.startsWith("video-") ? "video" : "imagens";
+    const webinar = webinarForPlan(plan);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // --- Idempotency check: reuse recent transaction if within 1 hour ---
-    if (email) {
-      const { data: reg } = await supabase
-        .from("registrations")
-        .select("eupago_ref, upgrade_clicked_at, paid_at, last_payment_link")
-        .eq("email", email)
-        .eq("webinar", webinar)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+    // Proof of possession is mandatory: an email never authorises a checkout.
+    if (providedToken.length < 20) {
+      return new Response(
+        JSON.stringify({ error: "Acesso inválido. Recomeça a inscrição ou pede a ligação de acesso." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-      if (reg && reg.eupago_ref && !reg.paid_at && reg.upgrade_clicked_at) {
-        const clickedAt = new Date(reg.upgrade_clicked_at).getTime();
-        const oneHourAgo = Date.now() - 60 * 60 * 1000;
-        if (clickedAt > oneHourAgo) {
-          console.log(`⏳ Idempotent: reusing existing transaction for ${email}, ref=${reg.eupago_ref}`);
-          return new Response(
-            JSON.stringify({
-              paymentLink: reg.last_payment_link || null,
-              reference: reg.eupago_ref,
-              idempotent: true,
-              message: "Pagamento já em processamento. Verifica o teu email ou aguarda.",
-            }),
-            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-      }
+    // The registration must belong to the webinar implied by the plan.
+    // There is deliberately no cross-webinar fallback.
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("id, email, order_id, eupago_ref, paid_at, plan_selected, last_payment_link, payment_link_created_at")
+      .eq("edit_token", providedToken)
+      .eq("webinar", webinar)
+      .maybeSingle();
+
+    if (!reg) {
+      return new Response(
+        JSON.stringify({ error: "Inscrição não encontrada para este produto." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const regId: string = reg.id;
+    const editToken = providedToken;
+    const orderId: string = reg.order_id || "";
+    const email: string = (reg.email || "").toLowerCase().trim();
+
+    // Idempotency: only reuse a recent link for the exact same plan and amount.
+    if (canReusePaymentLink(reg, plan, Date.now())) {
+      console.log(`⏳ Idempotent: reusing existing transaction for registration ${regId}`);
+      return new Response(
+        JSON.stringify({
+          paymentLink: reg.last_payment_link,
+          reference: reg.eupago_ref,
+          idempotent: true,
+          message: "Pagamento já em processamento. Verifica o teu email ou aguarda.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const origin = Deno.env.get("PUBLIC_SITE_URL") || "https://imagenscomia.com";
 
-    // Lookup registration for rid+token+order_id in successUrl
-    let regId = "";
-    let editToken = "";
-    let orderId = "";
-    if (email) {
-      const { data: regLookup } = await supabase
-        .from("registrations")
-        .select("id, edit_token, order_id")
-        .eq("email", email)
-        .eq("webinar", webinar)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (regLookup) {
-        regId = regLookup.id;
-        editToken = regLookup.edit_token || "";
-        orderId = regLookup.order_id || "";
-      }
-    }
-
-    // Fallback: try lookup without webinar filter if first lookup failed
-    if (!regId && email) {
-      const { data: regFallback } = await supabase
-        .from("registrations")
-        .select("id, edit_token, order_id")
-        .eq("email", email.toLowerCase().trim())
-        .is("paid_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (regFallback) {
-        regId = regFallback.id;
-        editToken = regFallback.edit_token || "";
-        orderId = regFallback.order_id || "";
-        console.log(`📎 Fallback lookup (no webinar filter): found regId=${regId}, orderId=${orderId}`);
-      }
-    }
 
     const PLAN_ABBREV: Record<string, string> = {
       premium: "SP", "video-premium": "SP", gravacao: "SP",
