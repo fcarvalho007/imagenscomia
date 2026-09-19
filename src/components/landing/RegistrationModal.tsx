@@ -85,16 +85,33 @@ export const RegistrationModal = () => {
     setError(null);
     try {
       const data = await registerFree();
+
+      // Existing registration without proof of possession: nothing is shown,
+      // the access link is emailed to the address on the registration.
+      if (data?.needsVerification) {
+        try {
+          await requestAccessLink(email.trim(), destination);
+        } catch {
+          /* generic message either way */
+        }
+        setError(ACCESS_LINK_GENERIC_MESSAGE);
+        setLoading(false);
+        return;
+      }
+
+      storeToken(scope, data?.editToken);
+      const tokenParam = data?.editToken ? `&t=${encodeURIComponent(data.editToken)}` : "";
+
       if (data?.alreadyRegistered) {
         close();
-        const existingName = (data as any).name || `${firstName.trim()} ${lastName.trim()}`;
-        navigate(`${redirectPath}?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+        const existingName = data.name || `${firstName.trim()} ${lastName.trim()}`;
+        navigate(`${redirectPath}?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}${tokenParam}`);
         setLoading(false);
         return;
       }
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+      navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}${tokenParam}`);
       // Fire tracking after navigation — never block the flow
       setTimeout(() => {
         try {
