@@ -184,6 +184,7 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
           pipelinePendente={pipelinePendente}
           totalCosts={totalCosts}
           inscritos={tabInscritos}
+          groupByEdition={!!course}
           costs={costs}
           showIVA={showIVA}
           costsKnown={!course}

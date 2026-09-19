@@ -7,6 +7,8 @@ O curso está em `/crm?project=curso-ia`; `/crm/curso-ia` redireciona para essa 
 
 A seleção carrega todas as páginas de inscrições antes de apresentar os totais nas vistas; pesquisa, ordenação e exportação usam esse conjunto. Os KPIs de período continuam a vir de `course_period_metrics`. Custos do curso ainda não estão ligados: margem/ROAS aparecem indisponíveis, sem reutilizar despesas de webinars. Campos e ações não aplicáveis (planos de webinars, emissão fiscal em lote do legado, marcação manual de pagamento) não são apresentados no curso.
 
+Pré-visualização Lovable verificada após sincronização: o seletor Projeto abre Curso de IA e a pipeline partilhada apresenta os cinco estados operacionais. A base real está sem inscrições do curso; os exemplos visuais locais são fictícios. Os três prompts antigos permanecem pausados e não foram retomados.
+
 ## Checkout
 Rota `/curso-ia/checkout`, edição recebida da landing page. Preços consultados no backend por intermédio da ponte WordPress assinada. O navegador nunca recebe a chave de ligação. Contactos enviados apenas ao submeter; consentimentos opcionais desmarcados. O complemento de 67 € existe só na demonstração.
 

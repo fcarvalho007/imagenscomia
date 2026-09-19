@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
   costsKnown?: boolean;
+  groupByEdition?: boolean;
   receitaConfirmada: number;
   pipelinePendente: number;
   totalCosts: number;
@@ -29,7 +30,7 @@ const TOOLTIP_STYLE = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
-export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs, showIVA, costsKnown = true }: Props) {
+export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs, showIVA, costsKnown = true, groupByEdition = false }: Props) {
   const isMobile = useIsMobile();
   const chartHeight = isMobile ? 200 : 280;
   const smallChartHeight = isMobile ? 180 : 230;
@@ -100,7 +101,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
 
         {/* Donut chart */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por {inscritos.some(i=>i.course) ? "Edição" : "Plano"} <span className="text-slate-400">({ivaLabel})</span></p>
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por {groupByEdition ? "Edição" : "Plano"} <span className="text-slate-400">({ivaLabel})</span></p>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>

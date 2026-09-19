@@ -1504,6 +1504,6 @@ function ProjectDashboard({inscritos, onRefresh, course}: DashboardViewProps) {
     </>}
     {m && <><h2 className="font-heading font-bold text-[15px] text-ink-900 mb-4">Pagamentos da edição · total acumulado</h2>
     <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={0} paidMediaCosts={0} showIVA={false} costsKnown={false}/>
-    <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={0} inscritos={inscritos} costs={[]} showIVA={false} costsKnown={false}/></div></>}
+    <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={0} inscritos={inscritos} groupByEdition costs={[]} showIVA={false} costsKnown={false}/></div></>}
   </div>;
 }
