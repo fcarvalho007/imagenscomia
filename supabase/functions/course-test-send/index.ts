@@ -66,10 +66,17 @@ serve(async (req) => {
     test_channel: channel,
     target_hint: channel === "email" ? admin.email : OWNER_TEST_MOBILE,
   });
-  if (claimError) return json(503, { error: "Serviço indisponível" });
-  if (claim?.state !== "claimed") return json(claim?.state === "throttled" ? 429 : 200, claim);
+  if (claimError) {
+    trace("course-test-send", { outcome: "rejected", channel, reason: "claim_failed", code: claimError.code || null });
+    return json(503, { state: "rejected", error: "Serviço indisponível", reason: "claim_failed" });
+  }
+  if (claim?.state !== "claimed") {
+    trace("course-test-send", { outcome: String(claim?.state || "unknown"), channel, reason: claim?.reason || null });
+    return json(claim?.state === "throttled" ? 429 : 200, claim);
+  }
 
   const finish = async (outcome: string, reason?: string, externalId?: string) => {
+    trace("course-test-send", { outcome, channel, reason: reason || null });
     const { error } = await db.rpc("finish_course_test_send", {
       test_uuid: claim.id,
       outcome,
@@ -140,10 +147,12 @@ serve(async (req) => {
     }
     await finish("sent", undefined, String(id));
     return json(200, { state: "sent", target: OWNER_TEST_MOBILE });
-  } catch {
-    // Ambiguous outcome: never retried automatically, never resent with a new key.
-    try { await finish("review", "delivery_uncertain"); } catch { /* Preserve uncertain outcome; never resend automatically. */ }
-    return json(200, { state: "review", reason: "delivery_uncertain" });
+  } catch (err) {
+    // Transport failure before any provider answer versus an ambiguous timeout.
+    const aborted = (err as Error)?.name === "AbortError";
+    const reason = aborted ? "provider_timeout" : "provider_unreachable";
+    try { await finish("review", reason); } catch { /* Preserve uncertain outcome; never resend automatically. */ }
+    return json(200, { state: "review", reason });
   } finally {
     clearTimeout(timer);
   }
