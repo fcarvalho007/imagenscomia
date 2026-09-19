@@ -33,3 +33,9 @@ A segurança das tabelas antigas NÃO está resolvida em produção por este ras
 - [x] Testes: 112 aplicação + 90 BD + tipos + build, tudo a passar
 - [x] Nenhuma migração em falta; nenhuma função nova publicada (course-operations já estava atualizada)
 - PENDENTE (reservado ao titular): pedidos de password/autenticação
+
+## Comunicação do Curso IA (revisão) — concluída em código, sem ativações
+- [x] Painel "Enviar teste para mim" (email para a sessão, SMS para 915015508), limite atómico, registo separado, idempotência.
+- [x] Editor visual com sanitização partilhada cliente/servidor e indicador de formato (texto simples / texto formatado).
+- [x] Diagnóstico de configuração e worker; guião de cron idempotente (não instalado).
+- [ ] Ativar canais e agendamento — decisão do titular.
