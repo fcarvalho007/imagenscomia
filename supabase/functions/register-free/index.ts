@@ -298,6 +298,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        id: inserted?.id ?? null,
         referralCode,
         referralLink: `${origin}/?ref=${referralCode}`,
         alreadyRegistered: false,
