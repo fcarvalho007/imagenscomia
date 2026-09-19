@@ -25,6 +25,12 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  storeToken,
+  readToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+} from "@/lib/legacyAccess";
 import googleLogo from "@/assets/logos/google.png";
 import chatgptLogo from "@/assets/logos/chatgpt.webp";
 import claudeLogo from "@/assets/logos/claude.png";
