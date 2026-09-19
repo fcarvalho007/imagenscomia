@@ -1,11 +1,13 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
+import { legacyRegLookup } from "@/lib/legacyAccess";
+import { planGrossPrice, trackPurchaseOnce } from "@/lib/legacyPricing";
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
