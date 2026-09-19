@@ -27,7 +27,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { firstName, lastName, email, whatsapp, referredBy, registrationSource, webinar } = await req.json();
+    const { firstName, lastName, email, whatsapp, referredBy, registrationSource, webinar, editToken: providedToken } = await req.json();
 
     if (!firstName || !email) {
       return new Response(
