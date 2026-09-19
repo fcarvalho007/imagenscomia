@@ -1,31 +1,35 @@
-# Alterar a password de entrada no CRM
+# Instalação das mensagens de SMS do curso
 
-A autenticação mantém-se exatamente como está: email + password e, a seguir, o código de 6 dígitos da app de autenticação. Nada muda no ecrã nem nas regras de acesso.
+Pedido independente. A alteração de password fica pendente e não é tocada nesta ronda.
 
-Objetivo único: definir uma nova password para a conta fredericodigital@gmail.com.
+## Situação encontrada
 
-## Sobre as três passwords
+O ficheiro `20260919110000_course_sms_templates.sql` não existe no projeto: o commit b4cbdc0 ainda não chegou à área de trabalho sincronizada. A revisão anterior está aplicada e o ficheiro da paridade foi registado com o nome `20260919090040_...`.
 
-Uma conta só pode ter uma password ativa de cada vez — não é possível manter as três a funcionar em simultâneo. Indicou três variantes da mesma palavra, por isso vou usar a terceira, a mais completa (maiúscula, números e símbolo), que também abrange as outras duas em memória: se escrever qualquer uma das variantes mais simples, basta acrescentar o resto.
+Também não existe qualquer tabela ou operação de textos de SMS no código atual: as duas mensagens (véspera e acompanhamento aos 14 dias) continuam fixas no código partilhado.
 
-Se preferir uma das outras duas, diga qual e defino essa em vez desta. Nota: as duas versões mais simples constam de listas públicas de passwords comprometidas e podem ser recusadas caso ative essa proteção nas definições de contas.
+Há dois caminhos.
 
-## Como vai ser feito
+## Opção A — sincronizar primeiro (preferível)
 
-1. Crio uma ação interna temporária no servidor que define a nova password da sua conta.
-2. Executo-a uma única vez para o seu endereço.
-3. Removo essa ação imediatamente a seguir, para não ficar nenhuma porta aberta.
-4. Confirmo por leitura que a conta continua com permissão de administrador e com a verificação em dois passos ativa.
+Envie o commit b4cbdc0 para a branch ligada. Assim que o ficheiro aparecer, aplico-o exatamente como está, sem reescrever nada, e sigo para a publicação e verificação.
 
-Depois disto entra em `/crm` com o seu email e a nova password, seguido do código de 6 dígitos habitual.
+## Opção B — gerar a instalação equivalente agora
 
-## Extra opcional
+Se preferir não esperar, escrevo eu a instalação equivalente, seguindo o mesmo padrão dos textos de email já instalados, e fica apenas essa versão registada:
 
-Posso acrescentar ao ecrã de entrada uma ligação "Esqueci-me da password", que envia um email de reposição. Assim, numa próxima vez, altera a password sozinho sem precisar de mim. Diga se quer.
+- Nova tabela de textos de SMS por edição, com as duas mensagens permitidas (véspera e acompanhamento), limite de um segmento e sem caracteres especiais.
+- Nova operação interna para guardar cada texto, com proteção contra gravações simultâneas.
+- Leitura e gravação restritas a administrador com verificação em dois passos; visitantes anónimos sem qualquer acesso.
+- Nenhum texto de exemplo é criado: sem registo gravado, mantém-se a mensagem atual.
 
-## Detalhes técnicos
+## A seguir, em qualquer dos casos
 
-- Edge function temporária com service role a chamar `auth.admin.updateUserById`, protegida por um segredo de execução e apagada logo após a utilização. A password não é escrita em ficheiros do projeto nem em registos.
-- Sem alterações a `CRMLogin.tsx`, `CRM.tsx`, políticas RLS ou requisito `aal2`.
-- Nada é publicado no frontend; nenhuma mensagem comercial, pagamento ou fatura é gerada.
-- A migração `legacy_rls_lockdown` continua parada em `migrations-draft`.
+1. Ligar o envio de SMS ao texto gravado, quando existir, mantendo os limites atuais (um segmento, sem acentos, consentimento obrigatório).
+2. Publicar apenas a função `course-operations`, com os módulos partilhados atuais.
+3. Verificar por leitura: existência da tabela e da operação, políticas de administrador com dois passos, negação a anónimos, e zero registos criados.
+4. Atualizar `scripts/test-course-db.mjs` com as verificações correspondentes.
+
+## Fora desta instalação
+
+Nada é publicado no frontend; vendas, email, SMS, faturação e agendamento automático continuam desligados; nenhuma mensagem é enviada; nenhuma fatura é emitida; nenhum participante ou campanha de teste é criado; nenhuma password é alterada; a migração de bloqueio do legado continua parada na pasta de rascunho; os ecrãs já sincronizados mantêm-se intactos.
