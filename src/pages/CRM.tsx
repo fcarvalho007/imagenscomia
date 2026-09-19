@@ -33,10 +33,10 @@ function CRMInner() {
         return;
       }
 
-      // Check AAL level (MFA verified?)
+      // MFA must be actually verified in this session (aal2), which is also
+      // what the database policies require for the internal tables.
       const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (aal?.currentLevel !== aal?.nextLevel) {
-        // MFA required but not verified
+      if (aal?.currentLevel !== "aal2") {
         setAuthenticated(false);
         return;
       }
