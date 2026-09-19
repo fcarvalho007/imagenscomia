@@ -177,8 +177,13 @@ const UpgradeGravacao = () => {
             Retomar a sua compra
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduza o email que usou para se inscrever.
+            Introduza o email que usou para se inscrever e enviamos a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
@@ -196,7 +201,7 @@ const UpgradeGravacao = () => {
               className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-3.5 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {recoveryLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              {recoveryLoading ? "A verificar..." : "Continuar"}
+              {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
         </motion.div>
