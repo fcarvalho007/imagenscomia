@@ -71,6 +71,7 @@ export default function CourseTestSend() {
     if (disabled) return;
     setSending(true);
     setLast(null);
+    setLastReason("");
     try {
       const signature=JSON.stringify([channel,subject,emailBody,smsBody]);
       if(attempt.current?.signature!==signature)attempt.current={signature,id:crypto.randomUUID()};
@@ -83,14 +84,36 @@ export default function CourseTestSend() {
           format: channel === "email" ? "html" : "text",
         },
       });
-      if (error) throw error;
+      if (error) {
+        // Distinguish a transport failure (blocked before the server answered)
+        // from a server refusal, which carries a reason code in the body.
+        const response = (error as { context?: Response })?.context;
+        if (response && typeof response.json === "function") {
+          let payload: { reason?: string; error?: string } = {};
+          try {
+            payload = await response.clone().json();
+          } catch {
+            payload = {};
+          }
+          setLast("rejected");
+          setLastReason(describeReason(payload.reason) || `Servidor respondeu ${response.status}.`);
+          toast.error(`${stateMessages.rejected} ${describeReason(payload.reason)}`.trim());
+        } else {
+          setLast("unreachable");
+          setLastReason("O pedido foi bloqueado antes de chegar ao servidor (rede ou permissões do navegador).");
+          toast.error(stateMessages.unreachable);
+        }
+        return;
+      }
       const state = String(data?.state || "review");
       setLast(state);
+      setLastReason(describeReason(data?.reason));
       if (state === "sent") toast.success(`${stateMessages.sent} ${data?.target ? `Destino: ${data.target}` : ""}`);
-      else toast.error(stateMessages[state] || "Não foi possível concluir o teste.");
+      else toast.error(`${stateMessages[state] || "Não foi possível concluir o teste."} ${describeReason(data?.reason)}`.trim());
     } catch (err) {
-      setLast("review");
-      toast.error(err instanceof Error ? err.message : "Não foi possível concluir o teste.");
+      setLast("unreachable");
+      setLastReason(err instanceof Error ? err.message : "Erro inesperado.");
+      toast.error(stateMessages.unreachable);
     } finally {
       setSending(false);
     }
