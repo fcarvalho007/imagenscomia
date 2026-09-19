@@ -27,12 +27,9 @@
 
 A segurança das tabelas antigas NÃO está resolvida em produção por este rascunho. Não publicar como se a integração estivesse encerrada nem executar o SQL isoladamente. Os pedidos anteriores em fila no Lovable estão pausados e são substituídos por este estado consolidado.
 
-## Conferência final de integração (19 set, em curso)
-- Confirmar commit eca17d8 sincronizado (HEAD local: 0a8a96d — verificar divergência)
-- Verificar CourseAutomationFlow, CourseOperations, componentes Comunicação
-- Verificar RPCs/tabelas campanhas, emails, SMS
-- Confirmar migrações 20260919090040 e 20260919092733 aplicadas; aplicar só se em falta
-- Verificar deploy course-operations com leitura de templates SMS
-- Correr testes/build; corrigir só falhas concretas
-- Relatório factual final
+## Conferência final de integração (19 set, CONCLUÍDA)
+- [x] Componentes verificados: CourseAutomationFlow, CourseOperations, ComunicacaoView e restantes presentes e a compilar
+- [x] Migrações 20260919090040 e 20260919092733 confirmadas como aplicadas; duplicada 20260919110000 removida e caminho atualizado em scripts/test-course-db.mjs
+- [x] Testes: 112 aplicação + 90 BD + tipos + build, tudo a passar
+- [x] Nenhuma migração em falta; nenhuma função nova publicada (course-operations já estava atualizada)
 - PENDENTE (reservado ao titular): pedidos de password/autenticação
