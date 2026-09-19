@@ -35,6 +35,10 @@ export const RegistrationModal = () => {
   const firstName = fullName.trim().split(" ")[0] || "";
   const lastName = fullName.trim().split(" ").slice(1).join(" ");
 
+  // Token scope and recovery destination for this webinar area.
+  const scope: LegacyScope = webinar === "video" ? "upgrade-video" : "upgrade";
+  const destination: LegacyDestination = webinar === "video" ? "upgrade-video" : "upgrade";
+
   const registerFree = async (): Promise<{
     referralCode?: string;
     referralLink?: string;
