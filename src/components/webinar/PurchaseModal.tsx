@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Lock, Zap, Mail, Users } from "lucide-react";
 import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
 import { InvoiceForm } from "@/components/upgrade/InvoiceForm";
+import {
+  storeToken,
+  readToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyScope,
+  type LegacyDestination,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 interface PurchaseModalProps {
   open: boolean;
