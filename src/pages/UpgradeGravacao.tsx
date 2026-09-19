@@ -61,9 +61,42 @@ const UpgradeGravacao = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [editToken, setEditToken] = useState<string | null>(initialToken);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
+  // Hydrate from the token only; the lookup never returns the token itself.
+  useEffect(() => {
+    if (!editToken) return;
+    let active = true;
+    (async () => {
+      try {
+        const reg = await legacyRegLookup(editToken);
+        if (!active) return;
+        if (!reg) {
+          clearToken("upgrade-gravacao");
+          setEditToken(null);
+          setNeedsRecovery(true);
+          return;
+        }
+        setRegistrationId(reg.id);
+        setUserData({
+          nome: reg.name || `${reg.first_name || ""} ${reg.last_name || ""}`.trim(),
+          email: reg.email,
+          whatsapp: reg.whatsapp || "",
+          referralCode: reg.referral_code || "",
+        });
+        setNeedsRecovery(false);
+      } catch {
+        if (!active) return;
+        clearToken("upgrade-gravacao");
+        setEditToken(null);
+        setNeedsRecovery(true);
+      }
+    })();
+    return () => { active = false; };
+  }, [editToken]);
+
+  /** Recovery never reveals data: the link is emailed to the registration. */
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -73,47 +106,23 @@ const UpgradeGravacao = () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("id, name, first_name, last_name, edit_token")
-        .eq("email", trimmed)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página do pack.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      setRegistrationId(data.id);
-      setEditToken((data as any).edit_token || null);
-      setUserData({
-        nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-        email: trimmed,
-        whatsapp: "",
-        referralCode: "",
-      });
-      setNeedsRecovery(false);
-    } catch (err) {
-      console.error("Recovery error:", err);
-      setRecoveryError("Erro ao recuperar dados. Tente novamente.");
+      await requestAccessLink(trimmed, "upgrade-gravacao");
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError("Erro de ligação. Tente novamente daqui a pouco.");
     } finally {
       setRecoveryLoading(false);
     }
   }, [recoveryEmail]);
 
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
-    if (!userData.email) return;
+    if (!editToken) return;
     try {
-      await supabase
-        .from("registrations")
-        .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email);
+      await legacyRegSaveStep(editToken, "imagens", stepNum, extraData);
     } catch (err) {
       console.error("Error saving step data:", err);
     }
-  }, [userData.email]);
+  }, [editToken]);
 
   const advanceStep = useCallback((next: number) => {
     setStep(next);
