@@ -56,8 +56,14 @@ export default function CourseTestSend() {
   const [smsBody, setSmsBody] = useState("Teste do CRM do curso.");
   const [sending, setSending] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
-  const [last, setLast] = useState<string | null>(null);
-  const [lastReason, setLastReason] = useState<string>("");
+  // Results are kept per channel so an email outcome never shows on the SMS tab.
+  type Outcome = { state: string; reason: string };
+  const [results, setResults] = useState<Record<"email" | "sms", Outcome | null>>({ email: null, sms: null });
+  const current = results[channel];
+  const setLast = (state: string | null) =>
+    setResults((prev) => ({ ...prev, [channel]: state ? { state, reason: prev[channel]?.reason ?? "" } : null }));
+  const setLastReason = (reason: string) =>
+    setResults((prev) => ({ ...prev, [channel]: { state: prev[channel]?.state ?? "review", reason } }));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAdminEmail(data.session?.user?.email || ""));
