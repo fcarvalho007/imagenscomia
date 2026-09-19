@@ -31,7 +31,7 @@ O webinar tinha fluxos de venda de planos/upsells e ações manuais específicas
 
 ## Instalação coordenada
 
-Aplicar `20260919100000_course_crm_parity.sql` e atualizar a função `course-operations` com os helpers partilhados antes de utilizar estas funções no frontend. Não ativa vendas, fornecedores, cron ou mensagens. Nenhuma migração desta revisão insere participantes, campanhas, custos, templates ou recursos de exemplo.
+Migração aplicada no Lovable (verificação por leitura, sem dados de exemplo): `20260919090040_9988a0ca-e1eb-4a1b-9ad9-2acc888a72ce.sql`; função `course-operations` publicada com os helpers partilhados. O duplicado original foi removido, mantendo o identificador efetivamente aplicado pelo Lovable. Não ativa vendas, fornecedores, cron ou mensagens. Nenhuma migração desta revisão insere participantes, campanhas, custos, templates ou recursos de exemplo.
 
 A publicação pública permanece dependente da resolução/verificação dos bloqueios de segurança legados já identificados e da homologação dos fornecedores. Também faltam links reais de agendamento, conteúdos finais e confirmação do cron. Não confundir uma interface visível com serviço de entrega ativo.
 
@@ -41,3 +41,9 @@ A publicação pública permanece dependente da resolução/verificação dos bl
 - Suite de aplicação: autenticação/2FA, componentes originais, checkout e integração; novos testes de atribuição, calendário de Lisboa, coorte, templates e campanhas com fornecedor simulado.
 - PGlite: migrações, RLS, preços, pagamento, isolamento, duplicados, custos, edição concorrente, pausa, templates e alterações seguras da fila.
 - Navegador isolado: sete secções, desktop e 390 px, com pedidos externos bloqueados. Fixtures usadas exclusivamente nos testes, nunca inseridas no CRM.
+
+Validação desta ronda: 108 testes de aplicação, 82 verificações SQL, TypeScript e build aprovados. O endereço local usa o backend e autenticação reais; as fixtures ficaram restritas aos ficheiros de teste.
+
+No preview autenticado do Lovable, Dashboard, Pipeline, Tabela, Faturação, Automações, Comunicação e Recursos abriram com o backend real. Lisboa mostrou o template de confirmação com datas e local reais; não havia inscrições do curso. O serviço de envio continua identificado como “por verificar”, não como ativo.
+
+A importação SMS do webinar chama `backfill-sms-logs`, cuja implementação não está neste repositório. Não foi assumido que esse botão demonstra um circuito de reconciliação funcional nem copiado um endpoint ausente para o curso.

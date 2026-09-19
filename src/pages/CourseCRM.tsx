@@ -4,7 +4,7 @@ import {toast} from "sonner";
 import DashboardView from "@/components/crm/DashboardView";
 import PipelineView from "@/components/crm/PipelineView";
 import TableView from "@/components/crm/TableView";
-import FaturacaoView from "@/components/crm/FaturacaoView";
+import FaturacaoView,{type AcquisitionCost} from "@/components/crm/FaturacaoView";
 import InscritoModal from "@/components/crm/InscritoModal";
 import {courseToInscrito, type CourseRow as Row, type CourseMetrics as Metrics} from "@/lib/course/crmAdapter";
 import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
@@ -62,6 +62,7 @@ function CourseCRMContent() {
   const [selected, setSelected] = useState<Row | null>(null),
     [saving, setSaving] = useState(false),
     [invoiceRef, setInvoiceRef] = useState("");
+  const [costs,setCosts]=useState<AcquisitionCost[]>([]),[costsKnown,setCostsKnown]=useState(false);
   const [period, setPeriod] = useState("all");
   const [operationRefresh, setOperationRefresh] = useState(0);
   const sequence = useRef(0);
@@ -123,9 +124,12 @@ function CourseCRMContent() {
             if ((batch.data || []).length<500) return {data,error:null};
           }
         };
-        const [items, kpis] = await Promise.all([
+        let costQuery=db.from("course_costs").select("id,edition,platform,description,amount,cost_date,category");
+        if(edition)costQuery=costQuery.eq("edition",edition);
+        const [items, kpis, loadedCosts] = await Promise.all([
           fetchRows(),
           db.rpc("course_period_metrics", { edition_id: edition || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
+          costQuery,
         ]);
         if (request !== sequence.current) return;
         if (items.error) throw new Error("Backend unavailable");
@@ -141,6 +145,7 @@ function CourseCRMContent() {
         })) as Row[];
         setRows(received);
         setMetrics(kpis.error ? null : kpis.data);
+        setCostsKnown(!loadedCosts.error);setCosts((loadedCosts.data||[]).map(c=>({...c,webinar:c.edition})));
       } catch {
         if (request === sequence.current) {
           setRows([]);
@@ -249,7 +254,7 @@ function CourseCRMContent() {
 
   if (auth === null)
     return <main className="p-8">A verificar o acesso ao CRM…</main>;
-  if (!auth) return <CRMLogin onLogin={() => void checkAuth()} />;
+  if (!auth) return <CRMLogin course onLogin={() => void checkAuth()} />;
   return (
     <div className="flex min-h-screen bg-off-white">
       <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);}} onLogout={()=>void supabase.auth.signOut()} course={{edition,onEditionChange:e=>{setEdition(e);setStatus("");}}} />
@@ -261,7 +266,7 @@ function CourseCRMContent() {
           </Alert>
         )}
         <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="w-full">
-          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading}} /></TabsContent>
+          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown}} /></TabsContent>
           <TabsContent value="pipeline"><PipelineView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course={{onMove:moveParticipant}} /></TabsContent>
           <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
           <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>

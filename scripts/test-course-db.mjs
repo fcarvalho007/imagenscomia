@@ -16,7 +16,7 @@ for (const file of [
   "20260918151500_course_resources.sql",
   "20260918153532_course_queue_revoke.sql",
   "20260918180000_course_operation_hardening.sql",
-  "20260919100000_course_crm_parity.sql",
+  "20260919090040_9988a0ca-e1eb-4a1b-9ad9-2acc888a72ce.sql",
 ])
   await db.exec(
     await readFile(

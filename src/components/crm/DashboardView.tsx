@@ -1,4 +1,5 @@
 import CourseInsights from "@/components/course/CourseInsights";
+import type {AcquisitionCost} from "./FaturacaoView";
 import type { CourseMetrics } from "@/lib/course/crmAdapter";
 import FaturacaoKPIs from "./faturacao/FaturacaoKPIs";
 import FaturacaoCharts from "./faturacao/FaturacaoCharts";
@@ -103,7 +104,7 @@ function parseDuvidaParts(duvida: string, ctx: WebinarCtxType): string[] {
 }
 
 interface DashboardViewProps {
-  course?: {metrics:CourseMetrics|null; period:string; onPeriodChange:(p:string)=>void; loading:boolean};
+  course?: {costs?:AcquisitionCost[];costsKnown?:boolean;metrics:CourseMetrics|null; period:string; onPeriodChange:(p:string)=>void; loading:boolean};
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
   onRefresh?: () => Promise<void>;
@@ -1483,6 +1484,7 @@ export default function DashboardView(props: DashboardViewProps) {
 function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: DashboardViewProps) {
   const m=course!.metrics;
   const period=course!.period;
+  const costs=course!.costs || [],totalCosts=costs.reduce((n,c)=>n+Number(c.amount),0),paidMediaCosts=costs.filter(c=>c.category==='paid_media').reduce((n,c)=>n+Number(c.amount),0);
   const paid=inscritos.filter(i=>i.payment_status==='paid');
   return <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
     <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
@@ -1505,7 +1507,7 @@ function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: Dash
     </>}
     {!course!.loading && <CourseInsights items={inscritos} period={period} onSelect={onSelectInscrito} />}
     {m && <><h2 className="font-heading font-bold text-[15px] text-ink-900 mb-4">Pagamentos da edição · total acumulado</h2>
-    <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={0} paidMediaCosts={0} showIVA={false} costsKnown={false}/>
-    <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={0} inscritos={inscritos} groupByEdition costs={[]} showIVA={false} costsKnown={false}/></div></>}
+    <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={totalCosts} paidMediaCosts={paidMediaCosts} showIVA={false} costsKnown={course!.costsKnown && costs.length>0}/>
+    <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={totalCosts} inscritos={inscritos} groupByEdition costs={costs} showIVA={false} costsKnown={course!.costsKnown && costs.length>0}/></div></>}
   </div>;
 }

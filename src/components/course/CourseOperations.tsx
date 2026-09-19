@@ -67,7 +67,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
     setLoaded(false);
     setError("");
     setNotice("");
-    setJobs([]);
+    setJobs([]);setCounts(null);setOverrides({});
     (async () => {
       try {
         let q = db
@@ -94,7 +94,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           db.rpc("course_operation_counts",{edition_id:edition||null}),
           db.from("course_email_templates").select("template,subject,body,updated_at").eq("edition",edition),
         ]);
-        if (es.error || js.error || hs.error) throw new Error("load");
+        if (es.error || js.error || hs.error || templates.error) throw new Error("load");
         if (!active) return;
         setEditions(es.data || []);
         setJobs(
@@ -121,6 +121,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
     };
   }, [edition, refresh, revision, view, page,channel]);
   useEffect(()=>{setPage(0);},[edition,view,channel]);
+  useEffect(()=>{setEditing(null);},[edition]);
   async function manage(id:string,action:string) {
     setBusy(true);setError("");
     try {const {error}=await db.rpc("manage_course_job",{job_uuid:id,action});if(error)throw error;setRevision(v=>v+1);}

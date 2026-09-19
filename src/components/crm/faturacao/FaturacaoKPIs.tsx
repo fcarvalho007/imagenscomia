@@ -112,7 +112,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
             {costsKnown ? `${margemPositiva ? "" : "-"}€${fmt(animMargem.value)}` : "—"}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2 text-slate-400">
-            {costsKnown ? `Receita (${ivaLabel}) − Custos totais` : "Custos da edição ainda não ligados"}
+            {costsKnown ? `Receita (${ivaLabel}) − Custos totais` : "Margem não apurada · verificar custos"}
           </p>
         </div>
 
