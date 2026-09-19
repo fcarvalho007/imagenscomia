@@ -63,7 +63,7 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
           <select
             aria-label="Projeto"
             value={course ? "curso-ia" : webinarContext}
-            onChange={(e) => { if (e.target.value === "curso-ia") window.location.assign("/crm/curso-ia"); else if(course) window.location.assign("/crm?webinar="+e.target.value); else setWebinarContext(e.target.value as WebinarCtxType); }}
+            onChange={(e) => { if (e.target.value === "curso-ia") window.location.assign("/crm?project=curso-ia"); else if(course) window.location.assign("/crm?webinar="+e.target.value); else setWebinarContext(e.target.value as WebinarCtxType); }}
             className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400"
             style={{
               background: "rgba(255,255,255,0.08)",

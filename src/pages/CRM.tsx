@@ -1,3 +1,4 @@
+import CourseCRM from "./CourseCRM";
 import { useState, useCallback, useEffect } from "react";
 
 import CRMLogin from "@/components/crm/CRMLogin";
@@ -196,6 +197,7 @@ function CRMInner() {
 }
 
 export default function CRM() {
+  if (new URLSearchParams(window.location.search).get("project") === "curso-ia") return <CourseCRM />;
   return (
     <WebinarProvider>
       <CRMInner />

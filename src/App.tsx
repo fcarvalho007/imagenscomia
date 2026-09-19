@@ -4,14 +4,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Confirmacao from "./pages/Confirmacao";
 import Upsell from "./pages/Upsell";
 import Convites from "./pages/Convites";
 import NotFound from "./pages/NotFound";
 import CRM from "./pages/CRM";
-import CourseCRM from "./pages/CourseCRM";
 import WebinarLive from "./pages/WebinarLive";
 import WebinarLiveVideo from "./pages/WebinarLiveVideo";
 import Termos from "./pages/Termos";
@@ -61,7 +60,7 @@ const App = () => (
           <Route path="/upgrade" element={<Upsell />} />
           <Route path="/convites" element={<Convites />} />
           <Route path="/crm" element={<CRM />} />
-          <Route path="/crm/curso-ia" element={<CourseCRM />} />
+          <Route path="/crm/curso-ia" element={<Navigate to="/crm?project=curso-ia" replace />} />
           <Route path="/live" element={<WebinarLive />} />
           <Route path="/live-video" element={<WebinarLiveVideo />} />
           <Route path="/termos" element={<Termos />} />

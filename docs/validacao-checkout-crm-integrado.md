@@ -1,7 +1,7 @@
 # Checkout e CRM do curso — revisão de 19 de setembro de 2026
 
 ## Integração visual
-O módulo Curso IA reutiliza `CRMSidebar` do WebinarCRM. Projeto e Edição ficam na barra lateral; Dashboard, Pipeline, Tabela, Faturação, Automações, Comunicação e Recursos usam a mesma navegação. Os webinars anteriores mantêm os seus componentes e dados. O curso conserva tabelas próprias para não confundir pagamentos e participantes entre produtos.
+O curso está no mesmo endereço-base `/crm?project=curso-ia`; `/crm/curso-ia` redireciona para essa vista. O módulo Curso IA reutiliza `CRMSidebar` do WebinarCRM. Projeto e Edição ficam na barra lateral; Dashboard, Pipeline, Tabela, Faturação, Automações, Comunicação e Recursos usam a mesma navegação. Os webinars anteriores mantêm os seus componentes e dados. O curso conserva tabelas próprias para não confundir pagamentos e participantes entre produtos.
 
 Pipeline e Tabela mostram os registos carregados, com pesquisa local explicitamente identificada. Carregar mais preserva a paginação existente. Não se apresentam contagens parciais como totais globais. A exportação CSV respeita edição/estado/pesquisa dos registos carregados e neutraliza fórmulas.
 
@@ -18,6 +18,9 @@ O novo endpoint WordPress de configuração não devolve segredos. CORS limita-s
 - Navegador local: sidebar partilhada, pipeline, tabela, pesquisa, mudança de edição, automações, comunicação e menu móvel; sem erros de execução nem overflow horizontal da página.
 
 ## Estado e limitações
-Diagnóstico WordPress confirmou autenticação da ponte e acesso à base de dados. Isto não equivale a homologação de fornecedores. O frontend não deve ser publicado enquanto os problemas críticos de acesso do legado não estiverem corrigidos e verificados.
+WordPress atualizado para 0.7.0. O endpoint de configuração devolve 200 e CORS apenas para a origem autorizada; uma origem desconhecida recebe 403. As inscrições continuam desativadas. Diagnóstico WordPress confirmou autenticação da ponte e acesso à base de dados. Isto não equivale a homologação de fornecedores. O frontend não deve ser publicado enquanto os problemas críticos de acesso do legado não estiverem corrigidos e verificados.
 
 Pagamentos do curso, envios e emissão fiscal permanecem desativados. Faltam a configuração final do pagamento assinado/worker, os agendamentos individuais, acessos às sessões e condições finais. Não ativar fornecedores com dados fictícios. Não aplicar isoladamente o rascunho RLS antes de coordenar os percursos públicos, funções e frontend compatíveis.
+
+### Revisão adicional antes de publicar o legado
+O checkout de grupos existente ainda necessita de reconciliação de participantes já inscritos: não pode cobrar novamente um participante já pago nem associar um registo de outra pessoa só por conhecer o email. O checkout individual também precisa de uma ordem própria para compras adicionais de registos pagos; preservar apenas `plan_selected` não basta se a referência de pagamento for substituída. Não aplicar a migração/publicar o conjunto antes de resolver e testar estes percursos.
