@@ -5,14 +5,7 @@ import { Check, ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
-
-const PLAN_PRICES: Record<string, number> = {
-  premium: 18.45,
-  masterclass: 57.81,
-  bundle: 76.26,
-};
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
