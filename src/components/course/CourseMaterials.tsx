@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const labels: Record<string, string> = {
   video: "Videoaula",
   recording: "Gravação",
 };
+type Material={id:string;title:string;description:string;url:string;kind:string;available_at:string;enabled:boolean};
 const empty = {
   id: null as string | null,
   title: "",
@@ -21,15 +22,16 @@ const empty = {
   enabled: false,
 };
 export default function CourseMaterials({ edition }: { edition: string }) {
-  const [items, setItems] = useState<any[]>([]),
+  const [items, setItems] = useState<Material[]>([]),
     [item, setItem] = useState(empty),
     [status, setStatus] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),[loading,setLoading]=useState(false),[failed,setFailed]=useState(false),[search,setSearch]=useState(""),[filter,setFilter]=useState("all");
+  const currentEdition=useRef(edition);currentEdition.current=edition;
   useEffect(() => {
     let active = true;
     setItems([]);
     setItem(empty);
-    setStatus("");
+    setStatus("");setFailed(false);setLoading(!!edition);setSearch("");setFilter("all");
     if (!edition) return;
     db.from("course_resources")
       .select("*")
@@ -37,7 +39,8 @@ export default function CourseMaterials({ edition }: { edition: string }) {
       .order("available_at")
       .then(({ data, error }) => {
         if (active) {
-          if (error) setStatus("Não foi possível carregar os recursos.");
+          setLoading(false);
+          if (error) {setFailed(true);setStatus("Não foi possível carregar os recursos. Volte a selecionar a edição para tentar novamente.");}
           else setItems(data || []);
         }
       });
@@ -48,6 +51,8 @@ export default function CourseMaterials({ edition }: { edition: string }) {
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (!edition) return;
+    try {const url=new URL(item.url);if(url.protocol!=="https:" || url.username || url.password)throw new Error();}catch {setStatus("Use um link HTTPS sem utilizador ou palavra-passe.");return;}
+    const savingEdition=edition;
     setBusy(true);
     setStatus("");
     const { data, error } = await db.rpc("save_course_resource", {
@@ -62,6 +67,7 @@ export default function CourseMaterials({ edition }: { edition: string }) {
         : new Date().toISOString(),
       active: item.enabled,
     });
+    if(currentEdition.current!==savingEdition){setBusy(false);return;}
     if (error)
       setStatus(
         "Não foi possível guardar o recurso. Verifique os campos e tente novamente.",
@@ -69,7 +75,7 @@ export default function CourseMaterials({ edition }: { edition: string }) {
     else {
       setItems((list) => [
         ...list.filter((x) => x.id !== item.id),
-        { ...item, id: data },
+        { ...item, id: data, available_at:item.available_at ? new Date(item.available_at).toISOString() : new Date().toISOString() },
       ]);
       setItem(empty);
       setStatus(
@@ -182,21 +188,23 @@ export default function CourseMaterials({ edition }: { edition: string }) {
         </form>
         <div>
           <h3 className="font-semibold mb-4">Materiais da turma</h3>
-          {items.length === 0 ? (
+          <div className="flex gap-2 mb-4"><Input aria-label="Pesquisar recursos" placeholder="Pesquisar recursos" value={search} onChange={e=>setSearch(e.target.value)}/><select aria-label="Estado dos recursos" className="rounded border bg-background p-2" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">Todos</option><option value="draft">Rascunhos</option><option value="scheduled">Agendados</option><option value="published">Disponíveis</option></select></div>
+          {loading ? <p role="status">A carregar recursos…</p> : failed ? <p role="alert">Recursos indisponíveis. Nenhum dado foi substituído.</p> : items.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Ainda não foram adicionados materiais.
             </p>
           ) : (
             <ul className="divide-y">
-              {items.map((x) => (
+              {items.filter(x=>x.title.toLowerCase().includes(search.toLowerCase()) && (filter==="all" || (filter==="draft" ? !x.enabled : filter==="scheduled" ? x.enabled && Date.parse(x.available_at)>Date.now() : x.enabled && Date.parse(x.available_at)<=Date.now()))).sort((a,b)=>Date.parse(a.available_at)-Date.parse(b.available_at)).map((x) => (
                 <li key={x.id} className="py-4 flex justify-between gap-4">
                   <div>
                     <strong>{x.title}</strong>
                     <p className="text-sm text-muted-foreground">
                       {labels[x.kind]} ·{" "}
-                      {x.enabled ? "Publicado na data definida" : "Rascunho"}
+                      {!x.enabled ? "Rascunho" : Date.parse(x.available_at)>Date.now() ? "Agendado" : "Disponível"} · {new Date(x.available_at).toLocaleString("pt-PT")}
                     </p>
                   </div>
+                  <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>setItem({...x,id:null,title:x.title+" (cópia)",enabled:false,available_at:""})}>Duplicar como rascunho</Button>
                   <Button
                     variant="ghost"
                     onClick={() =>
@@ -215,7 +223,7 @@ export default function CourseMaterials({ edition }: { edition: string }) {
                     }
                   >
                     Editar<span className="sr-only"> {x.title}</span>
-                  </Button>
+                  </Button></div>
                 </li>
               ))}
             </ul>

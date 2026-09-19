@@ -7,15 +7,16 @@ import HistoricoTab from "./comunicacao/HistoricoTab";
 
 interface ComunicacaoViewProps {
   inscritos: Inscrito[];
+  course?: {queue:(channel:"email"|"sms",ids:string[],subject:string,body:string,date:Date|null)=>Promise<void>; smsRecipients:Inscrito[]; history:React.ReactNode};
 }
 
-export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
+export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewProps) {
   return (
     <div className="min-h-screen p-4 md:p-8" style={{ background: "#F8FAFC" }}>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-slate-900">Comunicação</h1>
         <p className="text-sm mt-1 text-slate-500">
-          Envio manual de email ou SMS
+          {course ? "Comunicações de acompanhamento para participantes pagos. A fila respeita a pausa de contactos, os canais autorizados e o calendário da edição. Não use esta sequência para campanhas promocionais." : "Envio manual de email ou SMS"}
         </p>
       </div>
 
@@ -33,13 +34,13 @@ export default function ComunicacaoView({ inscritos }: ComunicacaoViewProps) {
         </TabsList>
 
         <TabsContent value="email">
-          <EmailTab inscritos={inscritos} />
+          <EmailTab inscritos={inscritos} courseQueue={course ? (...args)=>course.queue("email",...args) : undefined} />
         </TabsContent>
         <TabsContent value="sms">
-          <SmsTab inscritos={inscritos} />
+          <SmsTab inscritos={course?.smsRecipients || inscritos} courseQueue={course ? (...args)=>course.queue("sms",...args) : undefined} />
         </TabsContent>
         <TabsContent value="historico">
-          <HistoricoTab />
+          {course?.history || <HistoricoTab />}
         </TabsContent>
       </Tabs>
     </div>

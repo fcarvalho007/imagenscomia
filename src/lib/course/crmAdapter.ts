@@ -4,6 +4,7 @@ export type CourseTask = { id: string; task_key: string; stage: string; due_at: 
 export type CourseRow = {
   id: string; name: string; email: string; phone: string; edition: string; status: string; notes: string;
   next_followup_at: string | null; created_at: string; marketing_consent: boolean;
+  do_not_contact?: boolean; sms_consent?: boolean;
   before_session: string; after_session: string; attribution: Record<string,string>;
   course_editions?: {starts_at: string; ends_at: string} | null;
   course_payments: {state: string; amount_cents: number; paid_at: string | null} | null;
@@ -29,7 +30,7 @@ export function courseToInscrito(r: CourseRow, now = Date.now()): Inscrito {
     gender:'U',plan_selected:terminal?null:'course',sources_text:r.attribution?.utm_source || null,duvida_text:null,
     upgrade_clicked_at:null,primeiro_nome:r.name.split(' ')[0],resto_nome:r.name.split(' ').slice(1).join(' '),
     last_payment_link:null,payment_link_created_at:null,followup_stage:0,last_followup_at:null,next_followup_at:r.next_followup_at,
-    do_not_contact:false,last_payment_link_sent_at:null,registration_source:'webinar',invoice_sent:r.course_invoices?.state === 'issued',
+    do_not_contact:!!r.do_not_contact,last_payment_link_sent_at:null,registration_source:'webinar',invoice_sent:r.course_invoices?.state === 'issued',
     premium_granted_at:null,premium_granted_by:null,role:null,team_size:null,lost_at:r.status==='cancelled'?r.created_at:null,lost_reason:null,
     group_payment_ref:null,invoice_document_id:r.course_invoices?.document_id || null,paid_amount:paid ? payment.amount_cents/100 : null,
   };

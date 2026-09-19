@@ -67,17 +67,18 @@ beforeEach(() => {
           },
         },
   );
-  mocks.from.mockImplementation(() => {
+  mocks.from.mockImplementation((table) => {
     const q = {
       select: () => q,
       order: () => q,
       range: () => q,
+      limit: () => q,
       eq: (name: string, value: string) => {
         mocks.queries.push(name + ":" + value);
         return q;
       },
       then: (resolve: (v: unknown) => unknown) =>
-        Promise.resolve({ data: mocks.rows, error: null }).then(resolve),
+        Promise.resolve({ data: ['course_registrations','course_activity','course_costs'].includes(table)?mocks.rows:[], error: null }).then(resolve),
     };
     return q;
   });
@@ -133,7 +134,7 @@ describe("Course CRM access and edition scope", () => {
     );
     render(<CourseCRM />);
     expect(
-      await screen.findByText(/Não foi possível carregar o curso/),
+      await screen.findByText(/Indicadores indisponíveis/),
     ).toBeInTheDocument();
   });
 });
@@ -151,7 +152,7 @@ it("opens the original contact modal and financial table without touching webina
  fireEvent.click(screen.getByRole('button',{name:'Faturação'}));
  expect(await screen.findByText('Faturação · InvoiceExpress')).toBeInTheDocument();
  expect(screen.queryByRole('button',{name:'Emitir e Enviar'})).not.toBeInTheDocument();
- expect(mocks.from.mock.calls.every(([table])=>table==='course_registrations')).toBe(true);
+ expect(mocks.from.mock.calls.every(([table])=>['course_registrations','course_activity','course_costs'].includes(table))).toBe(true);
  expect(mocks.rpc.mock.calls.every(([name])=>['has_role','course_period_metrics'].includes(name))).toBe(true);
 });
 

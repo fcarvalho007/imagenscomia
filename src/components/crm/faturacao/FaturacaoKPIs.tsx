@@ -22,6 +22,7 @@ function useAnimatedValue(target: number, duration = 1800) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches){setValue(target);return;}
     let frame = 0;
     triggered.current = false;
     const obs = new IntersectionObserver(([e]) => {
@@ -47,9 +48,9 @@ function useAnimatedValue(target: number, duration = 1800) {
 export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, numPagamentos, totalCosts, paidMediaCosts, showIVA, costsKnown = true }: Props) {
   const receita = applyIVA(receitaConfirmada, showIVA);
   const pipeline = applyIVA(pipelinePendente, showIVA);
-  const margem = receita - totalCosts;
+  const margem = applyIVA(receitaConfirmada,false) - totalCosts;
   const margemPositiva = margem >= 0;
-  const roas = paidMediaCosts > 0 ? receita / paidMediaCosts : 0;
+  const roas = paidMediaCosts > 0 ? applyIVA(receitaConfirmada,false) / paidMediaCosts : 0;
   const cac = numPagamentos > 0 ? totalCosts / numPagamentos : 0;
   const ticketMedio = numPagamentos > 0 ? receita / numPagamentos : 0;
 
@@ -104,7 +105,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             {margemPositiva ? <TrendingUp size={16} style={{ color: "#22c55e" }} /> : <TrendingDown size={16} style={{ color: "#ef4444" }} />}
             <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Margem Operacional
+              Margem sobre custos registados · s/ IVA
             </span>
           </div>
           <p className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums tracking-tight truncate" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>

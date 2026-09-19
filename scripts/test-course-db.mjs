@@ -16,6 +16,7 @@ for (const file of [
   "20260918151500_course_resources.sql",
   "20260918153532_course_queue_revoke.sql",
   "20260918180000_course_operation_hardening.sql",
+  "20260919100000_course_crm_parity.sql",
 ])
   await db.exec(
     await readFile(
@@ -442,6 +443,60 @@ await db.query("update course_jobs set state='queued',due_at=now() where registr
 const race=(await rpc("select claim_course_job('email') as j")).j;
 await db.exec("update course_editions set automation_enabled=false where id='lisboa-2026'");
 assert.equal((await rpc("select prepare_course_job($1,$2,'{}') as ready",[race.job.id,race.job.lease])).ready,false);checks++;
+
+// Course parity: mutations remain server-authorized, scoped, auditable and idempotent.
+await auth('authenticated',false,'aal2');
+await denied(()=>db.query("select set_course_contact_pause($1,true)",[lateRid]));
+await denied(()=>db.query("select course_operation_counts(null)"));
+await denied(()=>db.query("select save_course_cost(null,'lisboa-2026','Meta','','100','2026-09-19','paid_media')"));
+await auth('authenticated',true,'aal2');
+const cost=(await rpc("select save_course_cost(null,'lisboa-2026','Meta','Campanha',100,'2026-09-19','paid_media') id")).id;
+await denied(()=>db.query("select save_course_cost($1,'porto-2026','Meta','',100,'2026-09-19','paid_media')",[cost]));
+await denied(()=>db.query("select save_course_cost(null,'lisboa-2026','Meta','',-1,'2026-09-19','paid_media')"));
+assert.equal((await rpc("select sum(amount)::int n from course_costs where edition='lisboa-2026'")).n,100);checks++;
+await db.query("select delete_course_cost($1)",[cost]);
+assert.equal((await rpc("select count(*)::int n from course_costs")).n,0);checks++;
+const fresh=(await rpc("select status,notes,next_followup_at from course_registrations where id=$1",[lateRid]));
+await db.query("select update_course_request_checked($1,$2,'Uma nota',null,$2,$3,$4)",[lateRid,fresh.status,fresh.notes,fresh.next_followup_at]);
+await denied(()=>db.query("select update_course_request_checked($1,$2,'Nota obsoleta',null,$2,$3,$4)",[lateRid,fresh.status,fresh.notes,fresh.next_followup_at]));
+await db.query("select set_course_contact_pause($1,true)",[lateRid]);
+await auth('service_role');
+await db.exec("update course_editions set automation_enabled=true where id='lisboa-2026'");
+assert.equal((await rpc("select course_job_eligible(j) yes from course_jobs j where registration_id=$1 and template='practical_information'",[lateRid])).yes,false);checks++;
+await auth('authenticated',true,'aal2');
+const campaign='fa000000-0000-4000-8000-000000000001';
+const scheduled=new Date().toISOString();
+const queue=(edition='lisboa-2026',body='Mensagem de acompanhamento',id=campaign)=>db.query("select queue_course_campaign($1,$2,'email','Acompanhamento',$3,$4::uuid[],$5) n",[id,edition,body,[lateRid],scheduled]);
+await denied(()=>queue());
+await db.query("select set_course_contact_pause($1,false)",[lateRid]);
+assert.equal((await queue()).rows[0].n,1);checks++;
+assert.equal((await queue()).rows[0].n,1);checks++;
+assert.equal((await rpc("select count(*)::int n from course_jobs where campaign_id=$1",[campaign])).n,1);checks++;
+await denied(()=>queue('porto-2026'));
+await denied(()=>queue('lisboa-2026','Conteúdo alterado'));
+await denied(()=>db.query("select queue_course_campaign(gen_random_uuid(),'lisboa-2026','sms','','Olá',$1::uuid[],now())",[[lateRid]]));
+const job=(await rpc("select id from course_jobs where campaign_id=$1",[campaign])).id;
+await db.query("select manage_course_job($1,'cancel')",[job]);
+assert.equal((await rpc("select state from course_jobs where id=$1",[job])).state,'cancelled');checks++;
+await denied(()=>db.query("select manage_course_job($1,'retry')",[job]));
+await denied(()=>db.query("select manage_course_job($1,'cancel')",[independentInvoice.job.id]));
+assert.ok((await rpc("select course_operation_counts('lisboa-2026') counts")).counts.cancelled>0);checks++;
+assert.equal(Object.values((await rpc("select course_operation_counts('porto-2026') counts")).counts).reduce((n,v)=>n+v,0),(await rpc("select count(*)::int n from course_jobs j join course_registrations r on r.id=j.registration_id where r.edition='porto-2026'")).n);checks++;
+await auth('authenticated',true,'aal1');
+await denied(()=>queue('lisboa-2026','Teste','fa000000-0000-4000-8000-000000000002'));
+await auth('anon');
+await denied(()=>db.query("select * from course_campaigns"));
+await denied(()=>db.query("select * from course_costs"));
+
+await auth('authenticated',true,'aal2');
+const version=(await rpc("select save_course_email_template('lisboa-2026','confirmation','Assunto','Texto para participantes',null) v")).v;
+await denied(()=>db.query("select save_course_email_template('lisboa-2026','confirmation','Outro assunto','Texto para participantes',null)"));
+await db.query("select save_course_email_template('lisboa-2026','confirmation','Outro assunto','Texto para participantes',$1)",[version]);
+await denied(()=>db.query("select save_course_email_template('lisboa-2026','arbitrary','Assunto','Texto para participantes',null)"));
+await denied(()=>db.query("select save_course_resource(null,'lisboa-2026','Guia','guide','https://user:password@example.com/file','',now(),false)"));
+await auth('authenticated',false,'aal2');
+assert.equal((await db.query("select * from course_email_templates")).rows.length,0);checks++;
+await denied(()=>db.query("select save_course_email_template('porto-2026','confirmation','Assunto','Texto para participantes',null)"));
 
 await db.close();
 console.log(

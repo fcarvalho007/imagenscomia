@@ -175,7 +175,7 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
 
 export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan, onMarkAsPaid, onMarkAsLost, onToggleFollowUp, onUpdateStepReached, course }: PipelineViewProps) {
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao">("all");
+  const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao" | "during">("all");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([course ? states.new : COLUMNS[0].title]));
   const [dragOverCol, setDragOverCol] = useState<ColumnKey | null>(null);
   const isMobile = useIsMobile();
@@ -195,6 +195,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
     if (sourceFilter !== "all") {
       active = active.filter((i) => {
         const wKey = (i.webinar === "video" ? "video" : "imagens") as WebinarKey;
+        if (i.course && sourceFilter === "during") return i.course.phase === "during";
         if (i.course) return sourceFilter === "gravacao" ? i.course.phase === "after" : i.course.phase === "before";
         const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
         const isPost = new Date(i.timestamp) >= cutoff;
@@ -270,13 +271,13 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
       {/* Row 2: Phase filter + Search */}
       <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
         <div className="flex bg-white border border-border rounded-lg overflow-hidden text-[13px]">
-          {(["all", "webinar", "gravacao"] as const).map((f) => (
+          {((course ? ["all", "webinar", "during", "gravacao"] : ["all", "webinar", "gravacao"]) as ("all"|"webinar"|"during"|"gravacao")[]).map((f) => (
             <button
               key={f}
               onClick={() => setSourceFilter(f)}
               className={`px-3 py-2 font-medium transition-colors ${sourceFilter === f ? "bg-blue-600 text-white" : "text-ink-600 hover:bg-off-white"}`}
             >
-              {f === "all" ? "Todos" : f === "webinar" ? (course ? "Pré-evento" : "Pré-webinar") : (course ? "Pós-evento" : "Pós-webinar")}
+              {f === "during" ? "Durante" : f === "all" ? "Todos" : f === "webinar" ? (course ? "Pré-evento" : "Pré-webinar") : (course ? "Pós-evento" : "Pós-webinar")}
             </button>
           ))}
         </div>

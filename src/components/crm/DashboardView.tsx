@@ -1,3 +1,4 @@
+import CourseInsights from "@/components/course/CourseInsights";
 import type { CourseMetrics } from "@/lib/course/crmAdapter";
 import FaturacaoKPIs from "./faturacao/FaturacaoKPIs";
 import FaturacaoCharts from "./faturacao/FaturacaoCharts";
@@ -1479,7 +1480,7 @@ export default function DashboardView(props: DashboardViewProps) {
   if (!props.course) return <WebinarDashboard {...props} />;
   return <ProjectDashboard {...props} />;
 }
-function ProjectDashboard({inscritos, onRefresh, course}: DashboardViewProps) {
+function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: DashboardViewProps) {
   const m=course!.metrics;
   const period=course!.period;
   const paid=inscritos.filter(i=>i.payment_status==='paid');
@@ -1499,9 +1500,10 @@ function ProjectDashboard({inscritos, onRefresh, course}: DashboardViewProps) {
       {label:'Abriram inscrição',value:m.registration_sessions,color:'#D97706'},
       {label:'Pedidos recebidos',value:m.requests,color:'#06B6D4'},
       {label:'Inscrições confirmadas',value:m.confirmed,color:'#16A34A'},
-    ],note:'Atividade do período e edição selecionados. Visitas dependem do consentimento; pedidos e pagamentos são contados no backend. As etapas não representam uma coorte individual.'}}/>
+    ],note:'As três primeiras etapas agregam a landing page inteira, antes da escolha da edição. As restantes respeitam a edição e o período. Visitas dependem do consentimento; pedidos e pagamentos são contados no backend. As etapas não representam uma coorte individual.'}}/>
     <div className="grid grid-cols-2 gap-4 mb-5">{[['Contactos em atraso',m.followups_due],['Tarefas por concluir',m.tasks_due]].map(([label,value])=><div key={label} className="bg-white border border-border rounded-xl p-5"><p className="text-sm text-ink-500">{label}</p><strong className="font-heading text-2xl text-ink-900">{value}</strong></div>)}</div>
     </>}
+    {!course!.loading && <CourseInsights items={inscritos} period={period} onSelect={onSelectInscrito} />}
     {m && <><h2 className="font-heading font-bold text-[15px] text-ink-900 mb-4">Pagamentos da edição · total acumulado</h2>
     <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={0} paidMediaCosts={0} showIVA={false} costsKnown={false}/>
     <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={0} inscritos={inscritos} groupByEdition costs={[]} showIVA={false} costsKnown={false}/></div></>}

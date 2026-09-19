@@ -166,7 +166,15 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
     list = [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "nome" || sortKey === "email" || sortKey === "plan") {
+      if(course && sortKey === "plan") {
+        cmp=(a.course?.editionLabel||"").localeCompare(b.course?.editionLabel||"");
+      } else if(course && sortKey === "step_reached") {
+        if(!a.next_followup_at)return b.next_followup_at?1:0;
+        if(!b.next_followup_at)return -1;
+        cmp=Date.parse(a.next_followup_at)-Date.parse(b.next_followup_at);
+      } else if(sortKey === "whatsapp") {
+        cmp=(a.whatsapp||"").localeCompare(b.whatsapp||"");
+      } else if (sortKey === "nome" || sortKey === "email" || sortKey === "plan") {
         cmp = (a[sortKey] as string).localeCompare(b[sortKey] as string);
       } else if (sortKey === "valor" || sortKey === "step_reached") {
         cmp = (a[sortKey] as number) - (b[sortKey] as number);
@@ -223,10 +231,10 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
   const exportCSV = (ids?: Set<string>) => {
     const BOM = "\uFEFF";
-    const header = course ? ["Nome","Email","Telemóvel","Edição","Estado","Pagamento","Valor com IVA","Inscrição","Notas"] : ["Primeiro Nome","Resto do Nome","Email","WhatsApp","Plano","Valor","Passo","Função","Equipa","Dúvida","Inscrição","Notas"];
+    const header = course ? ["Nome","Email","Telemóvel","Edição","Estado","Pagamento","Valor com IVA","Inscrição","Notas","Sessão antes","Sessão depois","Próximo contacto","Comunicações pausadas","Fatura"] : ["Primeiro Nome","Resto do Nome","Email","WhatsApp","Plano","Valor","Passo","Função","Equipa","Dúvida","Inscrição","Notas","Sessão antes","Sessão depois","Próximo contacto","Comunicações pausadas","Fatura"];
     const source = ids ? filtered.filter((i) => ids.has(i.id)) : filtered;
     const cell = (v: unknown) => '"' + String(v ?? '').replace(/^[=+@-]/, " '$&").replace(/"/g, '""') + '"';
-    const rows = source.map(i => course ? [i.nome,i.email,i.whatsapp,i.course?.editionLabel,i.course?.statusLabel,coursePaymentLabel(i.course?.paymentState || 'none'),i.valor,i.timestamp,i.notas.map(n=>n.texto).join(' · ')] : [i.primeiro_nome,i.resto_nome,i.email,i.whatsapp,i.plan,i.valor,i.step_reached,i.role,i.team_size,i.duvida,i.timestamp,i.notas.length]);
+    const rows = source.map(i => course ? [i.nome,i.email,i.whatsapp,i.course?.editionLabel,i.course?.statusLabel,coursePaymentLabel(i.course?.paymentState || 'none'),i.valor,i.timestamp,i.notas.map(n=>n.texto).join(' · '),i.course?.beforeSession,i.course?.afterSession,i.next_followup_at,i.do_not_contact?'Sim':'Não',courseInvoiceLabel(i.course?.invoiceState||'none')] : [i.primeiro_nome,i.resto_nome,i.email,i.whatsapp,i.plan,i.valor,i.step_reached,i.role,i.team_size,i.duvida,i.timestamp,i.notas.length]);
     const csv = BOM + [header,...rows].map(row=>row.map(cell).join(';')).join('\r\n');
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -290,12 +298,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <span className="text-[10px] opacity-70">({counts.failed_email})</span>
         </button>
         </>}
-        {!course && <>
+        <>
         <button className={chipClass("do_not_contact")} onClick={() => toggleQuickFilter("do_not_contact")}>
           <Filter size={12} /> Não contactar
           <span className="text-[10px] opacity-70">({counts.do_not_contact})</span>
         </button>
-        </>}
+        </>
         {!course && <>
         <button className={chipClass("backlog_36h")} onClick={() => toggleQuickFilter("backlog_36h")}>
           <Filter size={12} /> Backlog 36h+
@@ -416,7 +424,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">{course ? "Sessão antes" : "Função"}</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">{course ? "Sessão depois" : "Equipa"}</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[80px] max-lg:hidden">Origem</th>
-                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">Dúvida</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">{course ? "Contacto" : "Dúvida"}</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[110px] cursor-pointer select-none" onClick={() => toggleSort("timestamp")}>
                   Inscrição<SortIcon col="timestamp" />
                 </th>
@@ -584,7 +592,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       })()}
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
-                      {i.duvida ? (
+                      {course ? <span className="text-xs">{i.do_not_contact?"Comunicações pausadas":"Disponível para acompanhamento"}</span> : i.duvida ? (
                         <span className="text-xs text-ink-700 block truncate max-w-[200px]" title={i.duvida}>
                           {i.duvida.length > 60 ? i.duvida.slice(0, 60) + "…" : i.duvida}
                         </span>

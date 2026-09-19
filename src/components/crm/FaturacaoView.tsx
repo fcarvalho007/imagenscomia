@@ -1,5 +1,5 @@
 import { editionNames } from "@/lib/course/editions";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,8 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
     return webinarContext as FaturacaoTab;
   });
   const [costs, setCosts] = useState<AcquisitionCost[]>([]);
+  const costsSequence=useRef(0);
+  const [costsError,setCostsError]=useState(false);
   const [loadingCosts, setLoadingCosts] = useState(true);
   const [showIVA, setShowIVA] = useState(false);
 
@@ -66,14 +68,18 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
   }, [inscritos, activeTab, course]);
 
   const fetchCosts = useCallback(async () => {
-    if (course) { setCosts([]); setLoadingCosts(false); return; }
+    const request=++costsSequence.current;
+    setCostsError(false);
+    setCosts([]);
     setLoadingCosts(true);
-    let query = supabase.from("acquisition_costs" as any).select("*").order("cost_date", { ascending: false });
+    let query = supabase.from((course ? "course_costs" : "acquisition_costs") as any).select("*").order("cost_date", { ascending: false });
     if (activeTab !== "todos") {
-      query = query.eq("webinar", activeTab);
+      query = query.eq(course ? "edition" : "webinar", activeTab);
     }
-    const { data } = await query;
-    setCosts((data as any as AcquisitionCost[]) || []);
+    const { data, error } = await query;
+    if(request!==costsSequence.current)return;
+    setCostsError(!!error);
+    setCosts(((data || []) as any[]).map(c=>({...c,webinar:course?c.edition:c.webinar})));
     setLoadingCosts(false);
   }, [activeTab, !!course]);
 
@@ -101,7 +107,7 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
       ["Receita Confirmada", receitaConfirmada.toFixed(2)],
       ["Pipeline Pendente", pipelinePendente.toFixed(2)],
       ["Total Custos", totalCosts.toFixed(2)],
-      ["Margem", (receitaConfirmada - totalCosts).toFixed(2)],
+      ["Margem sem IVA (custos registados)", costsError || !costs.length ? "Não apurada" : (removeIVA(receitaConfirmada) - totalCosts).toFixed(2)],
       [],
       ["Custos de Aquisição"],
       ["Plataforma", "Descrição", "Valor", "Data", "Categoria"],
@@ -176,7 +182,7 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
           totalCosts={totalCosts}
           paidMediaCosts={paidMediaCosts}
           showIVA={showIVA}
-          costsKnown={!course}
+          costsKnown={!loadingCosts && !costsError && (!course || costs.length>0)}
         />
 
         <FaturacaoCharts
@@ -187,13 +193,15 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
           groupByEdition={!!course}
           costs={costs}
           showIVA={showIVA}
-          costsKnown={!course}
+          costsKnown={!loadingCosts && !costsError && (!course || costs.length>0)}
         />
 
         {!course && <PlanBreakdown inscritos={tabInscritos} receitaConfirmada={receitaConfirmada} showIVA={showIVA} />}
 
-{!course && <>
+{costsError && <p role="alert" className="text-sm text-red-700">Não foi possível carregar os custos. Atualize antes de interpretar a margem.</p>}
+{course && <p className="text-sm text-slate-500">Margem calculada apenas sobre os custos registados, sem IVA. Sem custos registados, a margem e o ROAS ficam indisponíveis. Confirme que todos os custos foram incluídos.</p>}
         <CostsSection
+          courseEdition={course ? course.edition || "" : undefined}
           costs={costs}
           loading={loadingCosts}
           numPagamentos={paid.length}
@@ -203,7 +211,6 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
           showWebinarColumn={activeTab === "todos"}
           showIVA={showIVA}
         />
-</>}
         <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} showIVA={showIVA} course={course ? {onSelect:course.onSelectInscrito} : undefined} />
 
         {!course && <PLSummary

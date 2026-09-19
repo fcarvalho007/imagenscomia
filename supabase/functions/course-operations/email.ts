@@ -61,14 +61,24 @@ export async function sendCourseEmail(
         if (r.edition === "online-2026")
           operations.recordings_url = resources.href;
       }
-      const mail = renderCourseEmail(job.template, {
+      let mail;
+      if (job.campaign_id) {
+        const {data:campaign,error}=await db.from("course_campaigns").select("subject,body,edition,channel").eq("id",job.campaign_id).single();
+        if(error || !campaign || campaign.edition!==r.edition || campaign.channel!=="email") throw new Error("campaign_missing");
+        const escape=(v:string)=>v.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        mail={subject:campaign.subject,text:campaign.body,html:`<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;max-width:600px;margin:auto;white-space:pre-wrap">${escape(campaign.body)}</div>`};
+      } else {
+      const {data:template,error:templateError}=await db.from("course_email_templates").select("subject,body").eq("edition",r.edition).eq("template",job.template).maybeSingle();
+      if(templateError)throw new Error("template_unavailable");
+      mail = renderCourseEmail(job.template, {
         ...operations,
         name: r.name,
         edition: r.edition,
         label: e.label,
         portal_url: portal.href,
-      });
-      payload = { from, reply_to: reply, to: [r.email], ...mail };
+      },template?.body ? template : undefined);
+      }
+      payload = { from, reply_to: reply, to: [r.email], subject:mail.subject,html:mail.html,text:mail.text };
     }
   } catch {
     await finish("blocked", "edition_content_missing");

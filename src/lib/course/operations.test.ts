@@ -64,9 +64,9 @@ function db() {
     })),
     from: vi.fn(() => ({
       update,
-      select: () => ({
-        eq: () => ({ single: async () => ({ data: { state: "paid" } }) }),
-      }),
+      select: () => {
+        const query={eq:()=>query,single:async()=>({data:{state:"paid"}}),maybeSingle:async()=>({data:null,error:null})};return query;
+      },
     })),
     update,
   };
@@ -235,4 +235,33 @@ describe("course operations", () => {
     ).toBe(false);
     expect(d.rpc).not.toHaveBeenCalled();
   });
+});
+
+it('template edits preserve safe links, greeting and escaped body in actual renderer',()=>{
+ const mail=renderCourseEmail('individual_before',c,{subject:'A sua sessão',body:'Texto <script>alert(1)</script> com duas linhas.\n\nEscolha o horário.'});
+ expect(mail.html).not.toContain('<script>');
+ expect(mail.html).toContain('https://example.com/before');
+ expect(mail.text).toContain('Olá, Ana.');
+ expect(()=>renderCourseEmail('confirmation',c,{subject:'Injected\r\nHeader',body:'Conteúdo válido'})).toThrow();
+});
+
+it('manual campaign delivery resolves recipients from registration and escapes content',async()=>{
+ const database=db();const context={...ctx(),job:{...ctx().job,campaign_id:'campaign1'}};
+ database.from.mockImplementation(()=>({select:()=>({eq:()=>({single:async()=>({data:{edition:'online-2026',channel:'email',subject:'Nota do curso',body:'<script>test</script>'}})})})}) as any);
+ const send=vi.fn<typeof fetch>(async()=>new Response(JSON.stringify({id:'provider-test-id'}),{status:200}));
+ await sendCourseEmail(database,context,env,send as any);
+ expect(send).toHaveBeenCalledTimes(1);
+ const body=JSON.parse(send.mock.calls[0][1].body as string);
+ expect(body.to).toEqual(['ana@example.invalid']);
+ expect(body.html).not.toContain('<script>');
+ expect(body).not.toHaveProperty('body');
+ expect(database.rpc).toHaveBeenCalledWith('prepare_course_job',expect.objectContaining({job_id:'job1'}));
+});
+
+it('never delivers a campaign belonging to another edition',async()=>{
+ const database=db();const context={...ctx(),job:{...ctx().job,campaign_id:'campaign1'}};
+ database.from.mockImplementation(()=>({select:()=>({eq:()=>({single:async()=>({data:{edition:'porto-2026',channel:'email',subject:'Nota',body:'Texto'}})})})}) as any);
+ const send=vi.fn();await sendCourseEmail(database,context,env,send);
+ expect(send).not.toHaveBeenCalled();
+ expect(database.rpc).toHaveBeenCalledWith('finish_course_job',expect.objectContaining({outcome:'blocked'}));
 });

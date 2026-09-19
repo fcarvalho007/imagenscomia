@@ -12,9 +12,14 @@ export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => strin
   if (job.attempts > 0) return finish("review", "sms_verify_provider_before_retry");
   let payload;
   try {
-    const text = renderCourseSMS(job.template, r.edition);
+    let text;
+    if(job.campaign_id) {
+      const {data:campaign,error}=await db.from("course_campaigns").select("body,edition,channel").eq("id",job.campaign_id).single();
+      if(error || !campaign || campaign.edition!==r.edition || campaign.channel!=="sms") throw new Error("campaign_missing");
+      text=campaign.body;
+    } else text = renderCourseSMS(job.template, r.edition);
     // ASCII only, maximum one segment. Never silently spend on concatenated SMS.
-    if (text.length > 160 || /[^\x20-\x7e]/.test(text)) throw new Error("segment_limit");
+    if (text.length > 160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(text)) throw new Error("segment_limit");
     payload = { to: [mobilePhone(r.phone)], text, from, coding: "gsm" };
   } catch { return finish("blocked", "sms_content_or_phone_invalid"); }
   const { data: ready, error } = await db.rpc("prepare_course_job", { job_id: job.id, job_lease: job.lease, frozen_payload: payload });

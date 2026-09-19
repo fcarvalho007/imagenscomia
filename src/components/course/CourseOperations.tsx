@@ -1,3 +1,5 @@
+import EmailEditorPanel,{type EmailTemplate} from "@/components/crm/EmailEditorPanel";
+import {AutomationTabs} from "@/components/crm/FollowUpView";
 import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +40,7 @@ type Edition = {
 };
 type Job = {
   id: string;
+  attempts:number;
   kind: string;
   template: string;
   state: string;
@@ -46,6 +49,8 @@ type Job = {
   course_registrations: { name: string; edition: string };
 };
 export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
+  const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string}>>({});
+  const [tab,setTab]=useState("fluxo"),[page,setPage]=useState(0),[counts,setCounts]=useState<Record<string,number>|null>(null),[channel,setChannel]=useState("all");
   const [view, setView] = useState("pending"), [revision, setRevision] = useState(0), [now, setNow] = useState(Date.now());
   useEffect(() => { const id=setInterval(()=>setNow(Date.now()),60000);return ()=>clearInterval(id); }, []);
   const [editions, setEditions] = useState<Edition[]>([]),
@@ -68,13 +73,14 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         let q = db
           .from("course_jobs")
           .select(
-            "id,kind,template,state,due_at,error_code,course_registrations!inner(name,edition)",
+            "id,kind,template,state,due_at,error_code,attempts,course_registrations!inner(name,edition)",
           )
           .order("due_at", { ascending: view === "pending" })
-          .limit(100);
+          .order("id").range(page*50,page*50+49);
         q = view === "pending" ? q.in("state", ["queued", "blocked", "review", "processing"]) : q.in("state", ["sent", "cancelled"]);
+        if(channel!=="all")q=q.eq("kind",channel);
         if (edition) q = q.eq("course_registrations.edition", edition);
-        const [es, js, hs] = await Promise.all([
+        const [es, js, hs, totals, templates] = await Promise.all([
           db
             .from("course_editions")
             .select("id,label,automation_enabled,sms_enabled,invoicing_enabled,operations")
@@ -85,6 +91,8 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             .select("last_run_at,result")
             .eq("worker", "course-operations")
             .maybeSingle(),
+          db.rpc("course_operation_counts",{edition_id:edition||null}),
+          db.from("course_email_templates").select("template,subject,body,updated_at").eq("edition",edition),
         ]);
         if (es.error || js.error || hs.error) throw new Error("load");
         if (!active) return;
@@ -97,6 +105,8 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
               : j.course_registrations,
           })) as Job[],
         );
+        setCounts(totals.error ? null : totals.data);
+        setOverrides(Object.fromEntries((templates.data||[]).map(x=>[x.template,x])));
         setHeartbeat(hs.data?.result === "ok" ? hs.data.last_run_at : null);
         setLoaded(true);
       } catch {
@@ -109,7 +119,14 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
     return () => {
       active = false;
     };
-  }, [edition, refresh, revision, view]);
+  }, [edition, refresh, revision, view, page,channel]);
+  useEffect(()=>{setPage(0);},[edition,view,channel]);
+  async function manage(id:string,action:string) {
+    setBusy(true);setError("");
+    try {const {error}=await db.rpc("manage_course_job",{job_uuid:id,action});if(error)throw error;setRevision(v=>v+1);}
+    catch {setError("A operação não foi alterada. Pode já ter sido processada; atualize para confirmar.");}
+    finally {setBusy(false);}
+  }
   async function save() {
     if (!selected) return;
     setBusy(true);
@@ -141,10 +158,10 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
       ),
     );
   }
-  let emailHTML = "";
+  let emailHTML = "",defaultBody="",defaultSubject="";
   try {
-    if (selected)
-      emailHTML = renderCourseEmail(preview, {
+    if (selected) {
+      const rendered = renderCourseEmail(preview, {
         ...selected.operations,
         name: "Participante",
         edition: selected.id,
@@ -158,7 +175,9 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           "https://imagenscomia.com/curso-ia/recursos",
         portal_url:
           "https://fredericocarvalho.pt/curso-de-inteligencia-artificial/",
-      }).html;
+      },overrides[preview]);
+      emailHTML=rendered.html;defaultBody=rendered.body;defaultSubject=rendered.subject;
+    }
   } catch {
     /* Missing actual links are shown as a configuration state, never sent as placeholders. */
   }
@@ -190,6 +209,8 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         </p>
       )}
       {!loaded && !error && <p role="status">A carregar a configuração…</p>}
+      {!communicationOnly && <AutomationTabs value={tab} onChange={setTab} configuration />}
+      {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}
       {!communicationOnly && !edition && loaded && (
         <div className="grid sm:grid-cols-3 gap-5">
           {editions.map((e) => (
@@ -207,14 +228,14 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
           ))}
         </div>
       )}
-      {!communicationOnly && selected && <div className="grid gap-3 sm:grid-cols-3" aria-label="Sequência de acompanhamento">
+      {!communicationOnly && tab==="fluxo" && selected && <div className="grid gap-3 sm:grid-cols-3" aria-label="Sequência de acompanhamento">
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Antes</h3><p className="text-sm mt-2">Confirmação → sessão individual → informação prática → SMS opcional.</p></div>
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Durante</h3><p className="text-sm mt-2">Sem mensagens automáticas. A formação é o foco.</p></div>
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Depois</h3><p className="text-sm mt-2">Recursos → sessão individual → lembrete SMS, se ainda não estiver agendada.</p></div>
       </div>}
-      {!communicationOnly && selected && (
+      {!communicationOnly && selected && ["templates","config"].includes(tab) && (
         <div className="grid lg:grid-cols-2 gap-8">
-          <form
+          {tab==="config" && <form
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
@@ -266,8 +287,8 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             <Button disabled={busy} type="submit">
               {busy ? "A guardar…" : "Guardar configuração"}
             </Button>
-          </form>
-          <div className="space-y-4">
+          </form>}
+          {tab==="templates" && <div className="space-y-4 lg:col-span-2">
             <label className="block text-sm font-medium">
               Pré-visualizar email
               <select
@@ -283,6 +304,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
                 ))}
               </select>
             </label>
+            <Button variant="outline" disabled={!emailHTML} onClick={()=>setEditing({template_key:preview,name:emailLabels[preview],subject:defaultSubject,html_body:defaultBody,updated_at:overrides[preview]?.updated_at||"",updated_by:null})}>Editar este template</Button>
             {emailHTML ? (
               <iframe
                 title="Pré-visualização do email"
@@ -303,16 +325,16 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
               Pré-visualização apenas. Nenhum email é enviado ao guardar ou ao
               abrir esta vista.
             </p>
-          </div>
+          </div>}
         </div>
       )}
-      <div>
+      {(communicationOnly || tab==="pessoas" || tab==="fluxo") && <div>
         <h3 className="text-lg font-semibold mb-4">
           Histórico e próximos envios
         </h3>
-        <div className="flex flex-wrap gap-3 mb-4"><label className="text-sm">Mostrar<select aria-label="Filtrar operações" className="mt-2 block w-full min-w-0 max-w-full rounded border bg-background p-2 sm:ml-3 sm:mt-0 sm:inline-block sm:w-auto" value={view} onChange={e=>setView(e.target.value)}><option value="pending">Pendentes e problemas</option><option value="history">Histórico: concluídos e cancelados</option></select></label><Button variant="outline" onClick={()=>setRevision(v=>v+1)}>Atualizar operações</Button></div>
+        <div className="flex flex-wrap gap-3 mb-4"><label className="text-sm">Mostrar<select aria-label="Filtrar operações" className="mt-2 block w-full min-w-0 max-w-full rounded border bg-background p-2 sm:ml-3 sm:mt-0 sm:inline-block sm:w-auto" value={view} onChange={e=>setView(e.target.value)}><option value="pending">Pendentes e problemas</option><option value="history">Histórico: concluídos e cancelados</option></select></label><label className="text-sm">Canal<select aria-label="Canal das operações" className="ml-2 rounded border bg-background p-2" value={channel} onChange={e=>setChannel(e.target.value)}><option value="all">Todos</option><option value="email">Email</option><option value="sms">SMS</option><option value="invoice">Faturação</option></select></label><Button variant="outline" onClick={()=>setRevision(v=>v+1)}>Atualizar operações</Button></div>
         <p className="text-sm text-muted-foreground mb-4">
-          Até 100 operações desta seleção. “Aceite pelo
+          50 operações por página, filtradas no servidor. “Aceite pelo
           fornecedor” não confirma a entrega na caixa de entrada.
         </p>
         {loaded && jobs.length === 0 ? (
@@ -325,7 +347,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  {["Participante", "Operação", "Previsto", "Estado"].map(
+                  {["Participante", "Operação", "Previsto", "Estado", "Ações"].map(
                     (x) => (
                       <th key={x} className="text-left border-b p-3">
                         {x}
@@ -343,7 +365,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
                     <td className="p-3 border-b">
                       {j.kind === "invoice"
                         ? "Fatura-recibo"
-                        : (j.kind === "sms" ? smsLabels[j.template] : emailLabels[j.template]) || j.template}
+                        : (j.kind === "sms" ? smsLabels[j.template] : emailLabels[j.template]) || (j.template.startsWith("manual_") ? "Comunicação manual" : j.template)}
                     </td>
                     <td className="p-3 border-b whitespace-nowrap">
                       {new Date(j.due_at).toLocaleString("pt-PT", {
@@ -367,13 +389,16 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
                         </span>
                       )}
                     </td>
+                    <td className="p-3 border-b">{j.attempts===0 && ["queued","blocked"].includes(j.state) && <div className="flex flex-wrap gap-2">{j.state==="blocked" && <Button variant="outline" size="sm" disabled={busy} onClick={()=>void manage(j.id,"retry")}>Voltar à fila</Button>}<Button variant="ghost" size="sm" disabled={busy} onClick={()=>{if(window.confirm("Cancelar esta operação ainda não tentada?"))void manage(j.id,"cancel");}}>Cancelar</Button></div>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </div>
+      <div className="flex items-center gap-3 mt-4"><Button variant="outline" disabled={page===0 || !loaded} onClick={()=>setPage(p=>p-1)}>Anterior</Button><span className="text-sm">Página {page+1}</span><Button variant="outline" disabled={jobs.length<50 || !loaded} onClick={()=>setPage(p=>p+1)}>Seguinte</Button></div>
+      </div>}
+      {selected && <EmailEditorPanel template={editing} onClose={()=>setEditing(null)} onSaved={()=>{setEditing(null);setRevision(v=>v+1);}} course={{label:selected.label,save:async(subject,body)=>{const {data,error}=await db.rpc("save_course_email_template",{edition_id:selected.id,template_key:editing!.template_key,email_subject:subject,email_body:body,expected_updated_at:editing!.updated_at||null});if(error)throw error;return data;},render:(subject,body)=>{try{return renderCourseEmail(editing!.template_key,{...selected.operations,name:"Participante",edition:selected.id,label:selected.label,schedule:selected.operations.schedule||"",portal_url:"https://fredericocarvalho.pt/curso-de-inteligencia-artificial/",resources_url:selected.operations.resources_url||"https://imagenscomia.com/curso-ia/recursos",recordings_url:selected.operations.recordings_url||"https://imagenscomia.com/curso-ia/recursos"},{subject,body}).html;}catch{return "Pré-visualização indisponível: verifique os campos e a configuração da edição.";}}}} />}
     </section>
   );
 }
