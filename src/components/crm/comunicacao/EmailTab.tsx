@@ -423,7 +423,7 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
 
         {/* RIGHT — Email Preview */}
         <div className={courseQueue ? "flex min-w-0 flex-col items-center justify-start pt-8" : "hidden lg:flex flex-col items-center justify-start pt-8"}>
-          <EmailPreview subject={subject} html={currentHtml} />
+          <EmailPreview subject={subject} html={currentHtml} sender={courseQueue ? "Remetente configurado para o curso" : undefined} />
         </div>
       </div>
 
