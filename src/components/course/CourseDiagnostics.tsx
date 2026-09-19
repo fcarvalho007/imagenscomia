@@ -28,6 +28,8 @@ export default function CourseDiagnostics() {
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cronBusy, setCronBusy] = useState(false);
+  const [cronState, setCronState] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,6 +39,20 @@ export default function CourseDiagnostics() {
     else setReport(data as Report);
     setLoading(false);
   }, []);
+
+  const runCron = useCallback(
+    async (action: "install" | "uninstall") => {
+      setCronBusy(true);
+      setCronState(null);
+      const { data, error: invokeError } = await supabase.functions.invoke("course-cron-setup", { body: { action } });
+      const result = data as { state?: string; error?: string } | null;
+      if (invokeError || result?.error) setCronState("não foi possível concluir");
+      else setCronState(result?.state || "concluído");
+      setCronBusy(false);
+      await load();
+    },
+    [load],
+  );
 
   useEffect(() => {
     load();
@@ -99,8 +115,25 @@ export default function CourseDiagnostics() {
               {report.worker.result ? ` · ${report.worker.result}` : ""}
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              A instalação do agendamento está preparada em scripts/install-course-cron.sql e só corre quando decidir ativar.
+              A instalação usa a chave já guardada. Nenhuma chave é criada, mostrada ou registada.
             </p>
+            {cronState && <p className="mt-1 text-xs text-slate-600">Resultado: {cronState}</p>}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => runCron("install")}
+                disabled={cronBusy}
+                className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                {cronBusy ? "A processar…" : "Instalar agendamento"}
+              </button>
+              <button
+                onClick={() => runCron("uninstall")}
+                disabled={cronBusy}
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 disabled:opacity-50"
+              >
+                Remover agendamento
+              </button>
+            </div>
           </div>
         </div>
       )}
