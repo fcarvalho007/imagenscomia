@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Frederico Carvalho — Curso IA e CRM
  * Description: Landing page nativa, pedidos de inscrição e acesso ao CRM existente. Integração desativada por defeito.
- * Version: 0.6.1
+ * Version: 0.6.2
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: Frederico Carvalho
@@ -112,6 +112,15 @@ final class FCIA_Course {
   status_header(200);nocache_headers();header('Content-Type: text/html; charset=UTF-8');
   $indexable=!$preview&&$s['indexable']&&get_option('blog_public');header('X-Robots-Tag: '.($indexable?'index, follow':'noindex, nofollow'),true);
   $html=file_get_contents($file);$base=plugins_url('page/',__FILE__);
+  // LP1 uses the brand headline; LP2 retains the course headline. Also supports
+  // installations carrying the previous bundled HTML, without replacing assets.
+  $html=str_replace('<h1 id="hero-title">Curso de inteligência artificial. ', '<h1 id="hero-title">Inteligência artificial. ', $html);
+  $html=str_replace('<h2 id="public-summary-title">Formação prática em IA para o seu negócio</h2>', '<h2 id="public-summary-title">Curso de inteligência artificial aplicada ao negócio</h2>', $html);
+  $headline_script = <<<'JS'
+<script>(()=>{const title=document.getElementById('hero-title');if(!title)return;const sync=()=>{const text=document.body.classList.contains('is-intro')?'Inteligência artificial. ':'Curso de inteligência artificial. ';if(title.firstChild.nodeValue!==text)title.firstChild.nodeValue=text;};new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});})();</script>
+JS;
+  $html=str_replace('</body>',$headline_script.'</body>',$html);
+
   $html=preg_replace_callback('/\b(src|href)="([^"#][^"]*)"/i',function($m)use($base){if(preg_match('~^(?:[a-z][a-z0-9+.-]*:|//|/)~i',$m[2]))return $m[0];return $m[1].'="'.esc_url($base.$m[2]).'"';},$html);
   if(!$preview&&self::ready()){
    $html=str_replace('Ao escolher a edição, fale com o suporte para confirmar a disponibilidade e receber os passos para se inscrever.','Escolha a edição, preencha os seus dados e continue para o pagamento seguro. A inscrição é confirmada após validação do pagamento.',$html);
@@ -120,9 +129,9 @@ final class FCIA_Course {
   $canonical=$s['page_id']?get_permalink($s['page_id']):'';
   if($indexable)$html=str_replace('content="noindex, nofollow"','content="index, follow, max-image-preview:large"',$html);
   if($canonical)$html=str_replace('</head>','<link rel="canonical" href="'.esc_url($canonical).'"><meta property="og:url" content="'.esc_url($canonical).'">'.'</head>',$html);
-  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.6.1',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
+  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.6.2',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
   $config=array('enabled'=>!$preview&&self::ready(),'tracking'=>!$preview&&$s['tracking']&&$s['privacy_url']&&self::bridge_ready(),'registrationUrl'=>rest_url('fcia/v1/checkout'),'quoteUrl'=>rest_url('fcia/v1/quote'),'statusUrl'=>rest_url('fcia/v1/status'),'billingUrl'=>rest_url('fcia/v1/billing'),'eventUrl'=>rest_url('fcia/v1/event'),'nonce'=>wp_create_nonce('wp_rest'),'privacyUrl'=>$s['privacy_url'],'termsUrl'=>$s['terms_url']);
-  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.6.1',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
+  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.6.2',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
   echo $html;exit;
  }
 }
