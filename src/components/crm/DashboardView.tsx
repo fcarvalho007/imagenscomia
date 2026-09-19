@@ -1,3 +1,6 @@
+import type { CourseMetrics } from "@/lib/course/crmAdapter";
+import FaturacaoKPIs from "./faturacao/FaturacaoKPIs";
+import FaturacaoCharts from "./faturacao/FaturacaoCharts";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { Users, Euro, TrendingUp, BarChart2, CheckCircle, MessageCircle, RefreshCw, Trophy, BookOpen, Check, ArrowDown, AlertTriangle, Mail, AlertCircle, RefreshCcw, Youtube, Eye, Clock, TrendingUp as Peak, ThumbsUp, UserPlus, Send } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
@@ -99,6 +102,7 @@ function parseDuvidaParts(duvida: string, ctx: WebinarCtxType): string[] {
 }
 
 interface DashboardViewProps {
+  course?: {metrics:CourseMetrics|null; period:string; onPeriodChange:(p:string)=>void; loading:boolean};
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
   onRefresh?: () => Promise<void>;
@@ -213,7 +217,7 @@ function MasterclassKPIs({ inscritos }: { inscritos: Inscrito[] }) {
 }
 
 
-export default function DashboardView({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
+function WebinarDashboard({ inscritos, onSelectInscrito, onRefresh }: DashboardViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>("all");
   const { webinarContext } = useWebinarContext();
@@ -1467,4 +1471,39 @@ function ParaFazerHoje({ inscritos, onSelectInscrito }: { inscritos: Inscrito[];
       )}
     </div>
   );
+}
+
+
+/** The course uses the CRM's existing funnel, financial KPI and chart components. */
+export default function DashboardView(props: DashboardViewProps) {
+  if (!props.course) return <WebinarDashboard {...props} />;
+  return <ProjectDashboard {...props} />;
+}
+function ProjectDashboard({inscritos, onRefresh, course}: DashboardViewProps) {
+  const m=course!.metrics;
+  const period=course!.period;
+  const paid=inscritos.filter(i=>i.payment_status==='paid');
+  return <div className="p-7 max-sm:p-4 bg-off-white min-h-screen">
+    <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
+      <div><h1 className="font-heading font-bold text-[22px] text-ink-900">Dashboard</h1><p className="text-sm text-ink-500">Visão geral do curso · edição selecionada</p></div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-0.5 bg-surface rounded-lg p-0.5">{['7','14','30','all'].map(p=><button key={p} onClick={()=>course!.onPeriodChange(p)} className={`px-2.5 py-1 rounded-md text-[12px] font-medium ${p===period?'bg-white text-ink-900 shadow-sm':'text-ink-500'}`}>{p==='all'?'Tudo':p+'d'}</button>)}</div>
+        <button disabled={course!.loading} onClick={onRefresh} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium bg-surface text-ink-600"><RefreshCw size={14} className={course!.loading?'animate-spin':''}/>Atualizar</button>
+      </div>
+    </div>
+    {!m ? <p role="status" className="text-sm text-ink-500">{course!.loading?'A carregar indicadores…':'Indicadores indisponíveis. Atualize para voltar a tentar.'}</p> : <>
+    <ConversionFunnelBlock inscritos={[]} summary={{title:'Funil de inscrição',description:'Da landing page ao pagamento',revenue:m.revenue_cents/100,steps:[
+      {label:'Visitaram a página',value:m.sessions,color:'#64748B'},
+      {label:'Concluíram questionário',value:m.quiz_completed,color:'#2563EB'},
+      {label:'Consultaram preços',value:m.pricing_sessions,color:'#7C3AED'},
+      {label:'Abriram inscrição',value:m.registration_sessions,color:'#D97706'},
+      {label:'Pedidos recebidos',value:m.requests,color:'#06B6D4'},
+      {label:'Inscrições confirmadas',value:m.confirmed,color:'#16A34A'},
+    ],note:'Atividade do período e edição selecionados. Visitas dependem do consentimento; pedidos e pagamentos são contados no backend. As etapas não representam uma coorte individual.'}}/>
+    <div className="grid grid-cols-2 gap-4 mb-5">{[['Contactos em atraso',m.followups_due],['Tarefas por concluir',m.tasks_due]].map(([label,value])=><div key={label} className="bg-white border border-border rounded-xl p-5"><p className="text-sm text-ink-500">{label}</p><strong className="font-heading text-2xl text-ink-900">{value}</strong></div>)}</div>
+    </>}
+    {m && <><h2 className="font-heading font-bold text-[15px] text-ink-900 mb-4">Pagamentos da edição · total acumulado</h2>
+    <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={0} paidMediaCosts={0} showIVA={false} costsKnown={false}/>
+    <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={0} inscritos={inscritos} costs={[]} showIVA={false} costsKnown={false}/></div></>}
+  </div>;
 }

@@ -1,3 +1,5 @@
+import {coursePaymentLabel} from "@/lib/course/crmAdapter";
+import { states } from "@/lib/course/editions";
 import { useMemo, useState } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,6 +13,7 @@ import WebinarBadge from "./WebinarBadge";
 import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface PipelineViewProps {
+  course?: { onMove: (id: string, state: string) => Promise<void> };
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
   onUpdatePlan?: (id: string, plan: string, markAsPaid?: boolean) => Promise<void>;
@@ -35,9 +38,9 @@ const UNIT_PRICES: Record<string, Record<string, string>> = {
   gravacao: { premium: "€27+IVA", masterclass: "€67+IVA", bundle: "€115,62 c/IVA" },
 };
 
-function ColumnFinancials({ items, sourceFilter, colKey }: { items: Inscrito[]; sourceFilter: string; colKey: ColumnKey }) {
+function ColumnFinancials({ items, sourceFilter, colKey, course }: { items: Inscrito[]; sourceFilter: string; colKey: ColumnKey; course?: boolean }) {
   const hasPaidPlans = ["premium", "masterclass", "bundle"].includes(colKey);
-  if (!hasPaidPlans) return null;
+  if (!hasPaidPlans && !course) return null;
 
   const paidItems = items.filter(i => i.payment_status === "paid");
   const pendingItems = items.filter(i => i.payment_status === "awaiting_payment" || i.payment_status === "selected");
@@ -53,7 +56,7 @@ function ColumnFinancials({ items, sourceFilter, colKey }: { items: Inscrito[]; 
       )}
       {paidItems.length > 0 && (
         <p className="text-[10px] font-semibold" style={{ color: "#16A34A" }}>
-          Faturado: €{paidTotal.toFixed(2)} ({paidItems.length})
+          {course ? "Recebido" : "Faturado"}: €{paidTotal.toFixed(2)} ({paidItems.length})
         </p>
       )}
       {pendingItems.length > 0 && (
@@ -84,7 +87,7 @@ function pendingTimeLabel(upgradeClickedAt: string | null, timestamp: string): {
   return { text: `Há ${days}d+`, color: "#DC2626" };
 }
 
-type ColumnKey = "inscrito" | "flow_completo" | "premium" | "masterclass" | "bundle" | "followup" | "lost";
+type ColumnKey = "new" | "contacted" | "awaiting_payment" | "confirmed" | "cancelled" | "inscrito" | "flow_completo" | "premium" | "masterclass" | "bundle" | "followup" | "lost";
 
 type Column = {
   key: ColumnKey;
@@ -107,7 +110,8 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
   const badge = PLAN_BADGE[inscrito.plan] || DEFAULT_PLAN_BADGE;
   return (
     <div
-      draggable
+      role="button" tabIndex={0} onKeyDown={e=>{if(e.key === "Enter" || e.key === " "){e.preventDefault();onSelectInscrito(inscrito);}}}
+      draggable={!inscrito.course || !["confirmed", "cancelled"].includes(inscrito.course.status)}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", inscrito.id);
         e.dataTransfer.effectAllowed = "move";
@@ -121,7 +125,7 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
         </div>
       )}
       <span className="font-heading font-semibold text-[14px] text-ink-900 truncate block pr-8">
-        {genderEmoji(inscrito.gender)} {inscrito.nome}
+        {!inscrito.course && genderEmoji(inscrito.gender)} {inscrito.nome}
       </span>
       {inscrito.group_payment_ref && (
         <span className="absolute top-2 right-2 text-[9px] font-bold uppercase tracking-wider text-ink-400 bg-ink-100 px-1.5 py-0.5 rounded">
@@ -130,7 +134,7 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
       )}
       <p className="text-[11px] text-ink-400 mt-1 truncate">{inscrito.email}</p>
       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        {(() => {
+        {inscrito.course ? <span className="text-[10px] font-semibold text-blue-600">{inscrito.course.editionLabel}</span> : (() => {
           const wKey = (inscrito.webinar === "video" ? "video" : "imagens") as WebinarKey;
           const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
           return new Date(inscrito.timestamp) >= cutoff ? (
@@ -139,6 +143,7 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
             </span>
           ) : null;
         })()}
+{inscrito.course ? <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${inscrito.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-amber-50 text-amber-700"}`}>{coursePaymentLabel(inscrito.course.paymentState)}</span> : <>
         {inscrito.payment_status === "selected" && (
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200">
             Seleccionou e saiu
@@ -161,34 +166,36 @@ function PipelineCard({ inscrito, onSelectInscrito, showWebinarBadge }: { inscri
           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
             Pago
           </span>
-        )}
+        )}</>}
       </div>
       <p className="text-[11px] text-ink-400 mt-1">Inscrição a: {formatDate(inscrito.timestamp)}</p>
     </div>
   );
 }
 
-export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan, onMarkAsPaid, onMarkAsLost, onToggleFollowUp, onUpdateStepReached }: PipelineViewProps) {
+export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan, onMarkAsPaid, onMarkAsLost, onToggleFollowUp, onUpdateStepReached, course }: PipelineViewProps) {
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | "webinar" | "gravacao">("all");
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([COLUMNS[0].title]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set([course ? states.new : COLUMNS[0].title]));
   const [dragOverCol, setDragOverCol] = useState<ColumnKey | null>(null);
   const isMobile = useIsMobile();
   const { webinarContext } = useWebinarContext();
-  const isConsolidado = webinarContext === "consolidado";
+  const isConsolidado = !course && webinarContext === "consolidado";
+  const columns: Column[] = course ? Object.entries(states).map(([key,title], idx)=>({key:key as ColumnKey,title,color:["#64748B","#7C3AED","#D97706","#16A34A","#ef4444"][idx],filter:i=>i.course?.status===key})) : COLUMNS;
 
   const visibleColumns = useMemo(() => {
-    if (sourceFilter === "gravacao") {
-      return COLUMNS.filter((c) => c.key !== "inscrito" && c.key !== "flow_completo");
+    if (!course && sourceFilter === "gravacao") {
+      return columns.filter((c) => c.key !== "inscrito" && c.key !== "flow_completo");
     }
-    return COLUMNS;
-  }, [sourceFilter]);
+    return columns;
+  }, [sourceFilter, course]);
 
   const filtered = useMemo(() => {
     let active = inscritos.filter((i) => i.status === "activo");
     if (sourceFilter !== "all") {
       active = active.filter((i) => {
         const wKey = (i.webinar === "video" ? "video" : "imagens") as WebinarKey;
+        if (i.course) return sourceFilter === "gravacao" ? i.course.phase === "after" : i.course.phase === "before";
         const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
         const isPost = new Date(i.timestamp) >= cutoff;
         return sourceFilter === "gravacao" ? isPost : !isPost;
@@ -213,11 +220,13 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
     const inscrito = inscritos.find((i) => i.id === inscritoId);
     if (!inscrito) return;
 
+    if (course) { if (targetCol === "confirmed" || inscrito.course?.status === "confirmed") { onSelectInscrito(inscrito); return; } await course.onMove(inscritoId, targetCol); return; }
+
     // Find which column the inscrito is currently in
-    const currentCol = COLUMNS.find((c) => c.filter(inscrito));
+    const currentCol = columns.find((c) => c.filter(inscrito));
     if (currentCol?.key === targetCol) return;
 
-    const colLabel = COLUMNS.find((c) => c.key === targetCol)?.title || targetCol;
+    const colLabel = columns.find((c) => c.key === targetCol)?.title || targetCol;
     if (!confirm(`Mover "${inscrito.nome}" para "${colLabel}"?`)) return;
 
     switch (targetCol) {
@@ -256,7 +265,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
         
       </div>
 
-      <BulkInvoiceButton />
+      {!course && <BulkInvoiceButton />}
 
       {/* Row 2: Phase filter + Search */}
       <div className="flex items-center justify-between flex-wrap gap-2 mb-5">
@@ -267,7 +276,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
               onClick={() => setSourceFilter(f)}
               className={`px-3 py-2 font-medium transition-colors ${sourceFilter === f ? "bg-blue-600 text-white" : "text-ink-600 hover:bg-off-white"}`}
             >
-              {f === "all" ? "Todos" : f === "webinar" ? "Pré-webinar" : "Pós-webinar"}
+              {f === "all" ? "Todos" : f === "webinar" ? (course ? "Pré-evento" : "Pré-webinar") : (course ? "Pós-evento" : "Pós-webinar")}
             </button>
           ))}
         </div>
@@ -303,7 +312,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                     >
                       {items.length}
                     </span>
-                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} course={!!course} />
                   </div>
                   <ChevronDown
                     size={16}
@@ -356,7 +365,7 @@ export default function PipelineView({ inscritos, onSelectInscrito, onUpdatePlan
                         {items.filter(i => !i.webinar || i.webinar === "imagens").length} IMG + {items.filter(i => i.webinar === "video").length} VID
                       </p>
                     )}
-                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} />
+                    <ColumnFinancials items={items} sourceFilter={sourceFilter} colKey={col.key} course={!!course} />
                   </div>
                 </div>
                 <div className={`border-x border-b border-border rounded-b-lg p-2 min-h-[200px] space-y-2 transition-colors ${dragOverCol === col.key ? "bg-blue-50/50" : "bg-surface/50"}`}>

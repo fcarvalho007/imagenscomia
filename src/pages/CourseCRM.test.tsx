@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   rpc: vi.fn(),
   queries: [] as string[],
+  rows: [] as any[],
 }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -40,12 +41,15 @@ vi.mock("@/components/crm/CRMLogin", () => ({
 import CourseCRM from "./CourseCRM";
 beforeEach(() => {
   cleanup();
+  vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   mocks.admin = true;
   mocks.aal = "aal2";
   mocks.session = true;
   mocks.from.mockReset();
   mocks.rpc.mockReset();
   mocks.queries = [];
+  mocks.rows = [];
   mocks.rpc.mockImplementation(async (name) =>
     name === "has_role"
       ? { data: mocks.admin }
@@ -73,7 +77,7 @@ beforeEach(() => {
         return q;
       },
       then: (resolve: (v: unknown) => unknown) =>
-        Promise.resolve({ data: [], error: null }).then(resolve),
+        Promise.resolve({ data: mocks.rows, error: null }).then(resolve),
     };
     return q;
   });
@@ -132,4 +136,37 @@ describe("Course CRM access and edition scope", () => {
       await screen.findByText(/Não foi possível carregar o curso/),
     ).toBeInTheDocument();
   });
+});
+
+it("opens the original contact modal and financial table without touching webinar endpoints",async()=>{
+ mocks.rows=[{id:'course-only',name:'Participante de teste',email:'teste@example.invalid',phone:'',edition:'lisboa-2026',status:'confirmed',notes:'',next_followup_at:null,created_at:'2026-09-01T10:00:00Z',marketing_consent:false,before_session:'pending',after_session:'pending',attribution:{},course_payments:{state:'paid',amount_cents:61131,paid_at:'2026-09-01T10:00:00Z'},course_invoices:null,course_tasks:[]}];
+ render(<CourseCRM/>);
+ await screen.findByRole('heading',{name:'Dashboard'});
+ await waitFor(()=>expect(mocks.from).toHaveBeenCalled());
+ fireEvent.click(screen.getByRole('button',{name:'Tabela'}));
+ fireEvent.click(await screen.findByText('Participante de teste',{exact:true}));
+ expect(screen.getByRole('dialog',{name:'Ficha de Participante de teste'})).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Enviar link de pagamento'})).not.toBeInTheDocument();
+ fireEvent.click(screen.getByRole('button',{name:'Fechar ficha'}));
+ fireEvent.click(screen.getByRole('button',{name:'Faturação'}));
+ expect(await screen.findByText('Faturação · InvoiceExpress')).toBeInTheDocument();
+ expect(screen.queryByRole('button',{name:'Emitir e Enviar'})).not.toBeInTheDocument();
+ expect(mocks.from.mock.calls.every(([table])=>table==='course_registrations')).toBe(true);
+ expect(mocks.rpc.mock.calls.every(([name])=>['has_role','course_period_metrics'].includes(name))).toBe(true);
+});
+
+it('retains original webinar columns and table controls without the course extension',async()=>{
+ const {default:PipelineView}=await import('@/components/crm/PipelineView');
+ const {default:TableView}=await import('@/components/crm/TableView');
+ const {WebinarProvider}=await import('@/contexts/WebinarContext');
+ const renderView=render(<WebinarProvider><PipelineView inscritos={[]} onSelectInscrito={()=>{}}/></WebinarProvider>);
+ expect(screen.getByText('Masterclass Vídeo')).toBeInTheDocument();
+ expect(screen.getByText('Pack IA Completo (SP + MC)')).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Pré-webinar'})).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Faturas em lote'})).toBeInTheDocument();
+ renderView.unmount();
+ render(<WebinarProvider><TableView inscritos={[]} onSelectInscrito={()=>{}}/></WebinarProvider>);
+ expect(screen.getByRole('option',{name:'Todos os planos'})).toBeInTheDocument();
+ expect(screen.getByRole('option',{name:'Masterclass'})).toBeInTheDocument();
+ expect(screen.getByRole('button',{name:'Faturas em lote'})).toBeInTheDocument();
 });

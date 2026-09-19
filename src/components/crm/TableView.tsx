@@ -1,3 +1,5 @@
+import { editionNames, states } from "@/lib/course/editions";
+import { coursePaymentLabel, courseInvoiceLabel } from "@/lib/course/crmAdapter";
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { Search, Download, ChevronsUpDown, ChevronUp, ChevronDown, ExternalLink, Star, Archive, Trash2, X, Filter, CheckCircle2, AlertTriangle, Clock, Send, FileCheck, Mail } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +15,7 @@ import WebinarBadge from "./WebinarBadge";
 import BulkInvoiceButton from "./BulkInvoiceButton";
 
 interface TableViewProps {
+  course?: boolean;
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
   onToggleFollowUp?: (id: string) => void;
@@ -70,9 +73,9 @@ function fmtRelativeShort(iso: string): string | null {
 type SortKey = "nome" | "email" | "whatsapp" | "plan" | "valor" | "step_reached" | "timestamp";
 type QuickFilter = null | "awaiting" | "expired_link" | "failed_email" | "do_not_contact" | "backlog_36h" | "no_resend" | "em_atraso";
 
-export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached, missingNifIds }: TableViewProps) {
+export default function TableView({ inscritos, onSelectInscrito, onToggleFollowUp, onArchive, onDelete, fetchFailedEmailIds, lastEmailMap, onUpdateStepReached, missingNifIds, course }: TableViewProps) {
   const { webinarContext } = useWebinarContext();
-  const isConsolidado = webinarContext === "consolidado";
+  const isConsolidado = !course && webinarContext === "consolidado";
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -103,7 +106,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
     const h48 = 48 * 60 * 60 * 1000;
     const h36 = 36 * 60 * 60 * 1000;
     const nowISO = new Date().toISOString();
-    const unpaidIntent = active.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free");
+    const unpaidIntent = active.filter((i) => course ? i.payment_status === "awaiting_payment" : !i.paid_at && i.plan_selected && i.plan_selected !== "free");
     return {
       awaiting: unpaidIntent.length,
       expired_link: active.filter((i) => !i.paid_at && i.payment_link_created_at && (now - new Date(i.payment_link_created_at).getTime()) > h48).length,
@@ -126,7 +129,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
     // Quick filters
     if (quickFilter === "awaiting") {
-      list = list.filter((i) => !i.paid_at && i.plan_selected && i.plan_selected !== "free");
+      list = list.filter((i) => course ? i.payment_status === "awaiting_payment" : !i.paid_at && i.plan_selected && i.plan_selected !== "free");
     } else if (quickFilter === "expired_link") {
       const h48 = 48 * 60 * 60 * 1000;
       list = list.filter((i) => !i.paid_at && i.payment_link_created_at && (Date.now() - new Date(i.payment_link_created_at).getTime()) > h48);
@@ -157,8 +160,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       const q = search.toLowerCase();
       list = list.filter((i) => i.nome.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || (i.whatsapp && i.whatsapp.includes(q)));
     }
-    if (planFilter !== "all") list = list.filter((i) => i.plan === planFilter);
-    if (paymentFilter !== "all") list = list.filter((i) => i.payment_status === paymentFilter);
+    if (planFilter !== "all") list = list.filter((i) => (course ? i.course?.edition : i.plan) === planFilter);
+    if (paymentFilter !== "all") list = list.filter((i) => (course ? i.course?.status : i.payment_status) === paymentFilter);
     if (stepFilter !== "all") list = list.filter((i) => i.step_reached === Number(stepFilter));
 
     list = [...list].sort((a, b) => {
@@ -173,7 +176,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       return sortDir === "asc" ? cmp : -cmp;
     });
     return list;
-  }, [active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir, quickFilter, failedIds, lastEmailMap]);
+  }, [course, active, search, planFilter, paymentFilter, stepFilter, sortKey, sortDir, quickFilter, failedIds, lastEmailMap]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
@@ -220,12 +223,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
 
   const exportCSV = (ids?: Set<string>) => {
     const BOM = "\uFEFF";
-    const header = "Primeiro Nome;Resto do Nome;Email;WhatsApp;Plano;Valor;Passo;Função;Equipa;Dúvida;Inscrição;Notas";
+    const header = course ? ["Nome","Email","Telemóvel","Edição","Estado","Pagamento","Valor com IVA","Inscrição","Notas"] : ["Primeiro Nome","Resto do Nome","Email","WhatsApp","Plano","Valor","Passo","Função","Equipa","Dúvida","Inscrição","Notas"];
     const source = ids ? filtered.filter((i) => ids.has(i.id)) : filtered;
-    const rows = source.map((i) =>
-      [i.primeiro_nome, i.resto_nome, i.email, i.whatsapp, i.plan, `€${i.valor}`, `${i.step_reached}/5`, `"${i.role || ""}"`, `"${i.team_size || ""}"`, `"${i.duvida}"`, i.timestamp, i.notas.length].join(";")
-    );
-    const csv = BOM + header + "\n" + rows.join("\n");
+    const cell = (v: unknown) => '"' + String(v ?? '').replace(/^[=+@-]/, " '$&").replace(/"/g, '""') + '"';
+    const rows = source.map(i => course ? [i.nome,i.email,i.whatsapp,i.course?.editionLabel,i.course?.statusLabel,coursePaymentLabel(i.course?.paymentState || 'none'),i.valor,i.timestamp,i.notas.map(n=>n.texto).join(' · ')] : [i.primeiro_nome,i.resto_nome,i.email,i.whatsapp,i.plan,i.valor,i.step_reached,i.role,i.team_size,i.duvida,i.timestamp,i.notas.length]);
+    const csv = BOM + [header,...rows].map(row=>row.map(cell).join(';')).join('\r\n');
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -268,7 +270,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
         
       </div>
 
-      <BulkInvoiceButton />
+      {!course && <BulkInvoiceButton />}
 
       {/* Quick Filter Chips */}
       <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 overflow-x-auto max-sm:pb-1">
@@ -276,22 +278,30 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <Filter size={12} /> Aguardam pagamento
           <span className="text-[10px] opacity-70">({counts.awaiting})</span>
         </button>
+        {!course && <>
         <button className={chipClass("expired_link")} onClick={() => toggleQuickFilter("expired_link")}>
           <Filter size={12} /> Link expirado
           <span className="text-[10px] opacity-70">({counts.expired_link})</span>
         </button>
+        </>}
+        {!course && <>
         <button className={chipClass("failed_email")} onClick={() => toggleQuickFilter("failed_email")}>
           <Filter size={12} /> Falhas de email
           <span className="text-[10px] opacity-70">({counts.failed_email})</span>
         </button>
+        </>}
+        {!course && <>
         <button className={chipClass("do_not_contact")} onClick={() => toggleQuickFilter("do_not_contact")}>
           <Filter size={12} /> Não contactar
           <span className="text-[10px] opacity-70">({counts.do_not_contact})</span>
         </button>
+        </>}
+        {!course && <>
         <button className={chipClass("backlog_36h")} onClick={() => toggleQuickFilter("backlog_36h")}>
           <Filter size={12} /> Backlog 36h+
           <span className="text-[10px] opacity-70">({counts.backlog_36h})</span>
         </button>
+        </>}
         {lastEmailMap && (
           <button className={chipClass("no_resend")} onClick={() => toggleQuickFilter("no_resend")}>
             <Filter size={12} /> Sem Resend confirmado
@@ -320,11 +330,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           onChange={(e) => { setPlanFilter(e.target.value); setPage(0); }}
           className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none max-sm:flex-1 max-sm:min-w-[calc(50%-4px)]"
         >
-          <option value="all">Todos os planos</option>
+          <option value="all">{course ? "Todas as edições" : "Todos os planos"}</option>
+          {course ? Object.entries(editionNames).map(([id,label])=><option key={id} value={id}>{label}</option>) : <>
           <option value="free">Gratuito</option>
           <option value="premium">Premium</option>
           <option value="masterclass">Masterclass</option>
-          <option value="bundle">Bundle</option>
+          <option value="bundle">Bundle</option></>}
         </select>
         <select
           value={paymentFilter}
@@ -332,11 +343,12 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           className="bg-white border border-border rounded-lg py-2 px-3 text-sm outline-none max-sm:flex-1 max-sm:min-w-[calc(50%-4px)]"
         >
           <option value="all">Todos os estados</option>
-          <option value="selected">Seleccionou e saiu</option>
+          {course ? Object.entries(states).map(([id,label])=><option key={id} value={id}>{label}</option>) : <><option value="selected">Seleccionou e saiu</option>
           <option value="awaiting_payment">Aguarda pagamento</option>
           <option value="paid">Pago</option>
-          <option value="free">Gratuito</option>
+          <option value="free">Gratuito</option></>}
         </select>
+{!course && <>
         <select
           value={stepFilter}
           onChange={(e) => { setStepFilter(e.target.value); setPage(0); }}
@@ -345,7 +357,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <option value="all">Todos os passos</option>
           {[1,2,3,4,5].map((s) => <option key={s} value={s}>Passo {s}</option>)}
         </select>
-        <button onClick={() => exportCSV()} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white max-sm:w-full max-sm:justify-center">
+</>}
+        <button disabled={!filtered.length} onClick={() => exportCSV()} className="flex items-center gap-1.5 bg-white border border-border rounded-lg py-2 px-3 text-sm font-medium text-ink-700 hover:bg-off-white max-sm:w-full max-sm:justify-center">
           <Download size={14} /> Exportar CSV
         </button>
       </div>
@@ -354,6 +367,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       <div className="bg-white border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
+            <caption className="sr-only">{course ? "Inscrições da edição selecionada" : "Inscritos do webinar"}</caption>
             <thead>
               <tr className="bg-off-white border-b-2 border-border">
                 <th className="px-3 py-3 w-10">
@@ -373,7 +387,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                   { key: "nome" as SortKey, label: "Nome", cls: "min-w-[180px]" },
                   { key: "email" as SortKey, label: "Email", cls: "min-w-[200px] max-md:hidden" },
                   { key: "whatsapp" as SortKey, label: "WhatsApp", cls: "min-w-[140px] max-md:hidden" },
-                  { key: "plan" as SortKey, label: "Plano", cls: "min-w-[80px]" },
+                  { key: "plan" as SortKey, label: course ? "Edição" : "Plano", cls: "min-w-[80px]" },
                 ] as const).map((col) => (
                   <th
                     key={col.key}
@@ -388,8 +402,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                   <Mail size={13} className="inline text-ink-400" />
                 </th>
                 {([
-                  { key: "valor" as SortKey, label: "Valor", cls: "min-w-[80px]" },
-                  { key: "step_reached" as SortKey, label: "Passo", cls: "min-w-[80px]" },
+                  { key: "valor" as SortKey, label: course ? "Valor c/ IVA" : "Valor", cls: "min-w-[80px]" },
+                  { key: "step_reached" as SortKey, label: course ? "Próximo contacto" : "Passo", cls: "min-w-[80px]" },
                 ] as const).map((col) => (
                   <th
                     key={col.key}
@@ -399,8 +413,8 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     {col.label}<SortIcon col={col.key} />
                   </th>
                 ))}
-                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">Função</th>
-                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">Equipa</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">{course ? "Sessão antes" : "Função"}</th>
+                <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[100px] max-lg:hidden">{course ? "Sessão depois" : "Equipa"}</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[80px] max-lg:hidden">Origem</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[200px] max-lg:hidden">Dúvida</th>
                 <th className="px-4 py-3 text-left font-heading font-semibold text-xs text-ink-500 uppercase tracking-wider min-w-[110px] cursor-pointer select-none" onClick={() => toggleSort("timestamp")}>
@@ -412,10 +426,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
               </tr>
             </thead>
             <tbody>
+              {paged.length === 0 && <tr><td colSpan={18} className="p-8 text-center text-ink-400">Sem inscrições para estes filtros.</td></tr>}
               {paged.map((i) => {
-                const badge = PLAN_BADGE[i.plan] || DEFAULT_PLAN_BADGE;
+                const badge = i.course ? {bg:"hsl(var(--blue-50))",color:"hsl(var(--blue-600))",label:i.course.editionLabel} : PLAN_BADGE[i.plan] || DEFAULT_PLAN_BADGE;
                 const isSelected = selected.has(i.id);
-                const showFollowupBadges = !i.paid_at && i.plan !== "free" && i.plan_selected && i.plan_selected !== "free";
+                const showFollowupBadges = !course && !i.paid_at && i.plan !== "free" && i.plan_selected && i.plan_selected !== "free";
                 const nextRel = i.next_followup_at ? fmtRelativeShort(i.next_followup_at) : null;
                 return (
                   <tr
@@ -432,7 +447,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       </td>
                     )}
                     <td className="px-4 py-3">
-                      <span className="font-semibold text-[15px] text-ink-900">{genderEmoji(i.gender)} {i.nome}</span>
+                      <span className="font-semibold text-[15px] text-ink-900">{!course && genderEmoji(i.gender)} {i.nome}</span>
                     </td>
                     <td className="px-4 py-3 text-ink-700 max-md:hidden">{i.email}</td>
                     <td className="px-4 py-3 text-ink-600 max-md:hidden">{i.whatsapp}</td>
@@ -445,6 +460,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     {/* ESTADO — payment status + pending time + follow-up inline */}
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-1.5 flex-nowrap">
+{course ? <span className="text-[11px] font-medium text-ink-600">{i.course?.statusLabel}<small className="block text-ink-400">{coursePaymentLabel(i.course?.paymentState || "none")}</small></span> : <>
                         {i.payment_status === "selected" && (
                           <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 whitespace-nowrap">
                             Seleccionou
@@ -469,6 +485,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                         {i.payment_status === "free" && (
                           <span className="text-[10px] text-ink-400 whitespace-nowrap">—</span>
                         )}
+</>}
                         {showFollowupBadges && (
                           <span className="text-[10px] text-ink-400 whitespace-nowrap">· F{Math.min(i.followup_stage, 3)}/3{nextRel ? ` ${nextRel}` : ""}</span>
                         )}
@@ -502,10 +519,11 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-heading font-bold text-[13px]" style={{ color: VALOR_COLORS[i.valor] || "hsl(var(--ink-400))" }}>
-                        €{i.valor}
+                        {i.course && !i.valor ? "—" : i.valor.toLocaleString("pt-PT",{style:"currency",currency:"EUR"})}
                       </span>
                     </td>
                     <td className="px-4 py-3">
+{course ? <span className="text-xs text-ink-500">{i.next_followup_at ? formatDate(i.next_followup_at) : "Por agendar"}</span> : <>
                       <div className="relative" ref={stepDropdownId === i.id ? stepDropdownRef : undefined}>
                         <button
                           onClick={(e) => {
@@ -544,16 +562,17 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                             ))}
                           </div>
                         )}
-                      </div>
+                      </div></>}
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
-                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.role || "—"}>{i.role || "—"}</span>
+                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.role || "—"}>{i.course ? ({pending:"Por agendar",booked:"Agendada",completed:"Concluída"}[i.course.beforeSession] || "—") : i.role || "—"}</span>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
-                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.team_size || "—"}>{i.team_size || "—"}</span>
+                      <span className="text-[12px] text-ink-600 truncate block max-w-[120px]" title={i.team_size || "—"}>{i.course ? ({pending:"Por agendar",booked:"Agendada",completed:"Concluída"}[i.course.afterSession] || "—") : i.team_size || "—"}</span>
                     </td>
                     <td className="px-4 py-3 max-lg:hidden">
                       {(() => {
+                        if (i.course) return <span className="text-xs text-ink-500">{i.sources_text || "Não atribuída"}</span>;
                         const wKey: "video" | "imagens" = i.webinar === "video" ? "video" : "imagens";
                         const cutoff = WEBINAR_CONFIG[wKey].postEventCutoff;
                         const isPost = new Date(i.timestamp).getTime() >= cutoff.getTime();
@@ -584,7 +603,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                       )}
                     </td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      {i.invoice_sent ? (
+                      {course ? <span className="text-xs text-ink-500">{courseInvoiceLabel(i.course?.invoiceState || "none")}</span> : i.invoice_sent ? (
                         <span title="Fatura enviada" className="inline-flex">
                           <FileCheck size={16} className="text-green-600" />
                         </span>
@@ -605,7 +624,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        {!i.paid_at && (
+                        {!course && !i.paid_at && (
                           <button
                             onClick={(e) => { e.stopPropagation(); setSendPaymentInscrito(i); }}
                             className="text-ink-400 hover:text-blue-600 transition-colors"
@@ -669,12 +688,14 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
           <button onClick={() => exportCSV(selected)} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
             <Download size={14} /> Exportar
           </button>
+{onToggleFollowUp && <>
           <button onClick={handleBulkFollowUp} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
             <Star size={14} /> Follow-up
-          </button>
+          </button></>}
+{onArchive && <>
           <button onClick={handleBulkArchive} className="flex items-center gap-1.5 text-[13px] font-medium" style={{ color: "rgba(255,255,255,0.80)" }}>
             <Archive size={14} /> Arquivar
-          </button>
+          </button></>}
           {onDelete && (
             <button
               onClick={() => {
@@ -694,7 +715,7 @@ export default function TableView({ inscritos, onSelectInscrito, onToggleFollowU
       )}
 
       {/* SendPaymentModal */}
-      {sendPaymentInscrito && (
+      {!course && sendPaymentInscrito && (
         <SendPaymentModal
           inscrito={sendPaymentInscrito}
           onClose={() => setSendPaymentInscrito(null)}

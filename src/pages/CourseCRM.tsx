@@ -1,20 +1,25 @@
+import DashboardView from "@/components/crm/DashboardView";
+import PipelineView from "@/components/crm/PipelineView";
+import TableView from "@/components/crm/TableView";
+import FaturacaoView from "@/components/crm/FaturacaoView";
+import InscritoModal from "@/components/crm/InscritoModal";
+import {courseToInscrito, type CourseRow as Row, type CourseMetrics as Metrics} from "@/lib/course/crmAdapter";
 import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import { WebinarProvider } from "@/contexts/WebinarContext";
-import { Search, RefreshCw, Download } from "lucide-react";
-import "./course-crm.css";
+
+
 import CourseMaterials from "@/components/course/CourseMaterials";
 import CourseOperations from "@/components/course/CourseOperations";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import CRMLogin from "@/components/crm/CRMLogin";
-import { EDITIONS } from "@/lib/course/contract";
+
 import {
   editionNames,
   states,
   taskNames,
   automationSteps,
-  money,
 } from "@/lib/course/editions";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,46 +37,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 const db = supabase as unknown as SupabaseClient;
-type Task = {
-  id: string;
-  task_key: string;
-  stage: string;
-  due_at: string;
-  state: string;
-};
-type Row = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  edition: string;
-  status: string;
-  notes: string;
-  next_followup_at: string | null;
-  created_at: string;
-  marketing_consent: boolean;
-  before_session: string;
-  after_session: string;
-  attribution: Record<string, string>;
-  course_payments: {
-    state: string;
-    amount_cents: number;
-    paid_at: string | null;
-  } | null;
-  course_invoices: { state: string; document_id: string | null } | null;
-  course_tasks: Task[];
-};
-type Metrics = {
-  sessions: number;
-  quiz_completed: number;
-  pricing_sessions: number;
-  registration_sessions: number;
-  requests: number;
-  confirmed: number;
-  followups_due: number;
-  revenue_cents: number;
-  tasks_due: number;
-};
 const date = (value: string) =>
   new Date(value).toLocaleString("pt-PT", {
     dateStyle: "short",
@@ -82,8 +47,7 @@ const selectClass =
 export default function CourseCRM() { return <WebinarProvider><CourseCRMContent /></WebinarProvider>; }
 function CourseCRMContent() {
   const [activeView, setActiveView] = useState<CRMView>("dashboard");
-  const [search, setSearch] = useState("");
-  const viewNames: Partial<Record<CRMView,string>> = {dashboard:"Dashboard",pipeline:"Pipeline",tabela:"Tabela",faturacao:"Faturação",templates:"Automações",comunicacao:"Comunicação",recursos:"Recursos"};
+
 
   const [auth, setAuth] = useState<boolean | null>(null),
     [rows, setRows] = useState<Row[]>([]),
@@ -94,7 +58,6 @@ function CourseCRMContent() {
     [status, setStatus] = useState("");
   const [selected, setSelected] = useState<Row | null>(null),
     [saving, setSaving] = useState(false),
-    [hasMore, setHasMore] = useState(false),
     [invoiceRef, setInvoiceRef] = useState("");
   const [period, setPeriod] = useState("all");
   const [operationRefresh, setOperationRefresh] = useState(0);
@@ -138,31 +101,33 @@ function CourseCRMContent() {
     };
   }, [checkAuth]);
   const load = useCallback(
-    async (offset = 0) => {
+    async () => {
       if (!auth) return;
       const request = ++sequence.current;
-      if (!offset) setOperationRefresh(v=>v+1);
+      setOperationRefresh(v=>v+1);
       setLoading(true);
       setError("");
       try {
-        let query = db
-          .from("course_registrations")
-          .select(
-            "id,name,email,phone,edition,status,notes,next_followup_at,created_at,marketing_consent,before_session,after_session,attribution,course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)",
-          )
-          .order("created_at", { ascending: false })
-          .order("id")
-          .range(offset, offset + 49);
-        if (edition) query = query.eq("edition", edition);
-        if (status) query = query.eq("status", status);
+        const fetchRows = async () => {
+          const data: any[] = [];
+          for (let start = 0; ; start += 500) {
+            let query = db.from("course_registrations").select("id,name,email,phone,edition,status,notes,next_followup_at,created_at,marketing_consent,before_session,after_session,attribution,course_editions(starts_at,ends_at),course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)").order("created_at",{ascending:false}).order("id").range(start,start+499);
+            if (edition) query=query.eq("edition",edition);
+            const batch=await query;
+            if (request !== sequence.current || batch.error) return batch;
+            data.push(...(batch.data || []));
+            if ((batch.data || []).length<500) return {data,error:null};
+          }
+        };
         const [items, kpis] = await Promise.all([
-          query,
+          fetchRows(),
           db.rpc("course_period_metrics", { edition_id: edition || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
         ]);
         if (request !== sequence.current) return;
         if (items.error || kpis.error) throw new Error("Backend unavailable");
         const received = items.data.map((item) => ({
           ...item,
+          course_editions: Array.isArray(item.course_editions) ? item.course_editions[0] || null : item.course_editions,
           course_payments: Array.isArray(item.course_payments)
             ? item.course_payments[0] || null
             : item.course_payments,
@@ -170,8 +135,7 @@ function CourseCRMContent() {
             ? item.course_invoices[0] || null
             : item.course_invoices,
         })) as Row[];
-        setRows((prev) => (offset ? [...prev, ...received] : received));
-        setHasMore(items.data.length === 50);
+        setRows(received);
         setMetrics(kpis.data);
       } catch {
         if (request === sequence.current) {
@@ -248,292 +212,38 @@ function CourseCRMContent() {
   function open(row: Row) {
     setSelected({ ...row });
     setInvoiceRef(row.course_invoices?.document_id || "");
-    setTimeout(
-      () =>
-        document
-          .getElementById("course-detail")
-          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      30,
-    );
   }
-  const visibleRows = rows.filter(row=>!search || `${row.name} ${row.email} ${row.phone}`.toLocaleLowerCase('pt-PT').includes(search.toLocaleLowerCase('pt-PT')));
-  const pipelineColors: Record<string,string> = {new:"#94a3b8",contacted:"#8b5cf6",awaiting_payment:"#f59e0b",confirmed:"#22c55e",cancelled:"#64748b"};
-  function exportRows() {
-    const safe=(value:unknown)=>'"'+String(value??'').replace(/^[=+@-]/," '$&").replace(/"/g,'""')+'"';
-    const csv=[['Nome','Email','Telemóvel','Edição','Estado'],...visibleRows.map(r=>[r.name,r.email,r.phone,editionNames[r.edition],states[r.status]])].map(row=>row.map(safe).join(';')).join('\r\n');
-    const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='inscricoes-curso-ia.csv';a.click();URL.revokeObjectURL(url);
-  }
-  const searchControl=<label className="course-crm-search"><Search aria-hidden="true" size={17}/><Input aria-label="Pesquisar registos carregados" placeholder="Pesquisar nome, email ou telemóvel…" value={search} onChange={e=>setSearch(e.target.value)} /></label>;
+  const participants = rows.map(row=>courseToInscrito(row));
+  const selectParticipant = (item: {id:string}) => {const row=rows.find(r=>r.id===item.id);if(row)open(row);};
+  const moveParticipant = async (id:string, state:string) => {
+    const row=rows.find(r=>r.id===id);
+    if(!row || state==='confirmed' || row.course_payments?.state==='paid') { if(row)open(row); return; }
+    const {error}=await db.rpc("update_course_request",{request_uuid:id,new_status:state,new_notes:row.notes,followup:row.next_followup_at});
+    if(error)setError("Não foi possível atualizar o estado. Abra a ficha para verificar.");
+    else await load();
+  };
+
   if (auth === null)
     return <main className="p-8">A verificar o acesso ao CRM…</main>;
   if (!auth) return <CRMLogin onLogin={() => void checkAuth()} />;
   return (
-    <div className="course-crm-shell">
-      <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);setSearch("");}} onLogout={()=>void supabase.auth.signOut()} course={{edition,onEditionChange:e=>{setEdition(e);setStatus("");setSearch("");}}} />
-      <main className="course-crm-main">
+    <div className="flex min-h-screen bg-off-white">
+      <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);}} onLogout={()=>void supabase.auth.signOut()} course={{edition,onEditionChange:e=>{setEdition(e);setStatus("");}}} />
+      <main className="flex-1 min-w-0 md:ml-[240px] overflow-x-hidden">
       <div className="flex flex-col gap-6">
-        <header className="course-crm-heading">
-          <div><h1>{viewNames[activeView]}</h1><p>{edition ? editionNames[edition] : "Curso de IA aplicada ao negócio · Todas as edições"}</p></div>
-          <div className="flex flex-wrap items-center gap-2">
-            {(activeView==="dashboard"||activeView==="faturacao")&&<select aria-label="Período dos indicadores" className={selectClass} value={period} onChange={e=>setPeriod(e.target.value)}><option value="7">7 dias</option><option value="14">14 dias</option><option value="30">30 dias</option><option value="all">Tudo</option></select>}
-            <Button variant="outline" size="sm" onClick={()=>void load()} disabled={loading}><RefreshCw aria-hidden="true" />{loading?"A atualizar…":"Atualizar"}</Button>
-          </div>
-        </header>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {(activeView==="dashboard"||activeView==="faturacao")&&<section
-          aria-label="Indicadores da edição"
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          {[
-            ["Inscrições iniciadas", metrics?.requests],
-            ["Pagamentos confirmados", metrics?.confirmed],
-            [
-              "Recebido, com IVA",
-              metrics ? money(metrics.revenue_cents) : undefined,
-            ],
-            ["Tarefas vencidas", metrics?.tasks_due],
-          ].map(([label, value]) => (
-            <Card key={String(label)}>
-              <CardHeader>
-                <CardDescription>{label}</CardDescription>
-                <CardTitle>{value ?? "—"}</CardTitle>
-              </CardHeader>
-            </Card>
-          ))}
-        </section>}
-        <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="flex flex-col gap-5">
-          <TabsContent value="dashboard">
-            <div className="grid md:grid-cols-2 gap-5">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Da visita à inscrição</CardTitle>
-                  <CardDescription>
-                    Navegação global da landing page, apenas com consentimento.
-                    Os pedidos e pagamentos acima seguem a edição escolhida. As tabelas mostram todas as inscrições; o período filtra apenas os indicadores.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ol className="flex flex-col gap-4">
-                    {[
-                      ["Visitaram a página", metrics?.sessions],
-                      ["Concluíram o questionário", metrics?.quiz_completed],
-                      ["Consultaram os preços", metrics?.pricing_sessions],
-                      [
-                        "Abriram a inscrição desta seleção",
-                        metrics?.registration_sessions,
-                      ],
-                    ].map(([label, value]) => (
-                      <li
-                        className="flex flex-col gap-2 pb-3"
-                        key={String(label)}
-                      >
-                        <div className="flex justify-between gap-4"><span>{label}</span><strong>{value ?? "—"}</strong></div>
-                        <div className="course-crm-funnel" aria-hidden="true"><span style={{width:`${metrics?.sessions && typeof value==='number' ? Math.min(100,value/metrics.sessions*100):0}%`}} /></div>
-                      </li>
-                    ))}
-                  </ol>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Próximos passos</CardTitle>
-                  <CardDescription>
-                    Depois do pagamento, cada participante tem tarefas de pré e
-                    pós-evento.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="mb-4">
-                    {metrics?.followups_due ?? "—"} contactos agendados estão
-                    por realizar. Consulte Automações para as tarefas da turma.
-                  </p>
-                  <Alert>
-                    <AlertDescription>
-                      Consulte Automações para configurar os emails de cada
-                      edição e acompanhar os envios. Pagamentos, mensagens e
-                      faturas têm estados separados para identificar o que falta
-                      fazer.
-                    </AlertDescription>
-                  </Alert>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          <TabsContent value="pipeline">
-            <p className="text-sm text-muted-foreground mb-4">
-              Percurso comercial. Apresenta os {rows.length} registos
-              carregados; use “Carregar mais” para consultar os restantes.
-            </p>
-            {searchControl}
-            <div className="course-crm-board">
-              {Object.entries(states).map(([state, label]) => (
-                <Card key={state} className="course-crm-column" style={{borderTopColor:pipelineColors[state]}}>
-                  <CardHeader>
-                    <CardTitle className="text-base">{label}</CardTitle>
-                    <CardDescription>
-                      {visibleRows.filter((r) => r.status === state).length} registos
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    {visibleRows
-                      .filter((r) => r.status === state)
-                      .map((r) => (
-                        <Button
-                          key={r.id}
-                          variant="outline"
-                          className="course-crm-person"
-                          onClick={() => open(r)}
-                        >
-                          <strong>{r.name}</strong><span className="course-crm-person-email">{r.email}</span><small>{editionNames[r.edition]}</small><Badge variant={r.status==="confirmed"?"default":"secondary"}>{states[r.status]}</Badge><small>Inscrição · {date(r.created_at)}</small>
-                        </Button>
-                      ))}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-          <TabsContent value="inscricoes">
-            <div className="course-crm-table-tools">{searchControl}<Button variant="outline" onClick={exportRows} disabled={!visibleRows.length}><Download aria-hidden="true"/>Exportar CSV</Button></div>
-            <label className="flex flex-col gap-2 mb-5 max-w-xs">
-              Estado
-              <select
-                className={selectClass}
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="">Todos os estados</option>
-                {Object.entries(states).map(([v, l]) => (
-                  <option value={v} key={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <caption className="sr-only">
-                  Inscrições da edição selecionada
-                </caption>
-                <thead>
-                  <tr>
-                    {[
-                      "Participante",
-                      "Telemóvel",
-                      "Edição",
-                      "Estado",
-                      "Próximo contacto",
-                      "",
-                    ].map((l, i) => (
-                      <th key={i} className="text-left p-4 border-b">
-                        {l}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleRows.map((r) => (
-                    <tr key={r.id}>
-                      <td className="p-4 border-b">
-                        <strong>{r.name}</strong>
-                        <span className="block text-muted-foreground">
-                          {r.email}
-                        </span>
-                      </td>
-                      <td className="p-4 border-b">{r.phone||"—"}</td>
-                      <td className="p-4 border-b">
-                        {editionNames[r.edition]}
-                      </td>
-                      <td className="p-4 border-b"><Badge variant={r.status==="confirmed"?"default":"secondary"}>{states[r.status]}</Badge></td>
-                      <td className="p-4 border-b">
-                        {r.next_followup_at
-                          ? date(r.next_followup_at)
-                          : "Por agendar"}
-                      </td>
-                      <td className="p-4 border-b">
-                        <Button variant="ghost" onClick={() => open(r)}>
-                          Acompanhar<span className="sr-only"> {r.name}</span>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-          <TabsContent value="faturacao">
-            <Alert className="mb-5">
-              <AlertDescription>
-                Pagamentos e documentos separados por edição. A emissão no
-                InvoiceXpress depende dos dados de faturação e da ativação do
-                serviço. Operações incertas ficam para verificação, sem repetir
-                documentos automaticamente.
-              </AlertDescription>
-            </Alert>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <caption className="sr-only">Faturação da edição</caption>
-                <thead>
-                  <tr>
-                    {[
-                      "Participante",
-                      "Edição",
-                      "Pagamento",
-                      "Valor com IVA",
-                      "Documento fiscal",
-                      "",
-                    ].map((l, i) => (
-                      <th key={i} className="text-left p-4 border-b">
-                        {l}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows
-                    .filter((r) => r.course_payments)
-                    .map((r) => (
-                      <tr key={r.id}>
-                        <td className="p-4 border-b">{r.name}</td>
-                        <td className="p-4 border-b">
-                          {editionNames[r.edition]}
-                        </td>
-                        <td className="p-4 border-b">
-                          {r.course_payments?.state === "paid"
-                            ? "Pago"
-                            : r.course_payments?.state === "refunded"
-                              ? "Reembolsado"
-                              : r.course_payments?.state === "review"
-                                ? "Verificação necessária"
-                                : r.course_payments?.state === "expired"
-                                  ? "Expirado"
-                                  : r.course_payments?.state === "cancelled"
-                                    ? "Cancelado"
-                                    : "Pendente"}
-                        </td>
-                        <td className="p-4 border-b">
-                          {money(r.course_payments!.amount_cents)}
-                        </td>
-                        <td className="p-4 border-b">
-                          {r.course_invoices?.document_id || "Por emitir"}
-                        </td>
-                        <td className="p-4 border-b">
-                          <Button variant="ghost" onClick={() => open(r)}>
-                            Ver detalhe
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-          <TabsContent value="comunicacao"><CourseOperations edition={edition} refresh={operationRefresh} communicationOnly /></TabsContent>
-          <TabsContent value="recursos"><CourseMaterials edition={edition} /></TabsContent>
-          <TabsContent value="automacoes">
+        <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="w-full">
+          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading}} /></TabsContent>
+          <TabsContent value="pipeline"><PipelineView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course={{onMove:moveParticipant}} /></TabsContent>
+          <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
+          <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
+          <TabsContent value="comunicacao" className="p-7 max-sm:p-4"><CourseOperations edition={edition} refresh={operationRefresh} communicationOnly /></TabsContent>
+          <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
+          <TabsContent value="automacoes" className="p-7 max-sm:p-4">
             <CourseOperations edition={edition} refresh={operationRefresh} />
             <div className="mt-10">
               <div className="flex flex-col gap-5">
@@ -618,24 +328,8 @@ function CourseCRMContent() {
             Ainda não existem inscrições para esta seleção.
           </p>
         )}
-        {hasMore && (
-          <Button
-            variant="outline"
-            disabled={loading}
-            onClick={() => void load(rows.length)}
-          >
-            Carregar mais inscrições
-          </Button>
-        )}
         {selected && (
-          <Card id="course-detail" className="scroll-mt-6">
-            <CardHeader>
-              <CardTitle>{selected.name}</CardTitle>
-              <CardDescription>
-                {selected.email} · {selected.phone || "Telefone não indicado"} ·{" "}
-                {editionNames[selected.edition]}
-              </CardDescription>
-            </CardHeader>
+          <InscritoModal inscrito={courseToInscrito(selected)} todos={participants} onClose={()=>setSelected(null)} onSelectInscrito={selectParticipant} courseContent={<div id="course-detail" className="space-y-5">
             <CardContent className="flex flex-col gap-5">
               <p className="text-sm text-muted-foreground">
                 Origem: {selected.attribution.utm_source || "Não atribuída"} ·
@@ -737,7 +431,7 @@ function CourseCRMContent() {
                 Fechar
               </Button>
             </CardFooter>
-          </Card>
+          </div>} />
         )}
       </div>
     </main></div>

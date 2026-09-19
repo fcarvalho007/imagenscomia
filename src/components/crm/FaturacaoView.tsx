@@ -1,3 +1,4 @@
+import { editionNames } from "@/lib/course/editions";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -27,9 +28,10 @@ export const removeIVA = (v: number) => v / 1.23;
 /** Conditionally apply IVA conversion */
 export const applyIVA = (v: number, showIVA: boolean) => showIVA ? v : removeIVA(v);
 
-type FaturacaoTab = "todos" | "imagens" | "video";
+type FaturacaoTab = string;
 
 interface FaturacaoViewProps {
+  course?: { edition: string; onEditionChange: (id:string)=>void; onSelectInscrito: (i:Inscrito)=>void };
   inscritos: Inscrito[];
   onRefresh: () => void;
 }
@@ -40,9 +42,10 @@ const TAB_BASE: { value: FaturacaoTab; label: string }[] = [
   { value: "video", label: "Vídeo" },
 ];
 
-export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewProps) {
+export default function FaturacaoView({ inscritos, onRefresh, course }: FaturacaoViewProps) {
   const { webinarContext } = useWebinarContext();
   const [activeTab, setActiveTab] = useState<FaturacaoTab>(() => {
+    if (course) return course.edition || "todos";
     if (webinarContext === "consolidado") return "todos";
     return webinarContext as FaturacaoTab;
   });
@@ -51,17 +54,19 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
   const [showIVA, setShowIVA] = useState(false);
 
   useEffect(() => {
+    if (course) { setActiveTab(course.edition || "todos"); return; }
     if (webinarContext === "imagens") setActiveTab("imagens");
     else if (webinarContext === "video") setActiveTab("video");
     else if (webinarContext === "consolidado") setActiveTab("todos");
-  }, [webinarContext]);
+  }, [webinarContext, course?.edition]);
 
   const tabInscritos = useMemo(() => {
     if (activeTab === "todos") return inscritos;
-    return inscritos.filter(i => i.webinar === activeTab);
-  }, [inscritos, activeTab]);
+    return inscritos.filter(i => (course ? i.course?.edition : i.webinar) === activeTab);
+  }, [inscritos, activeTab, course]);
 
   const fetchCosts = useCallback(async () => {
+    if (course) { setCosts([]); setLoadingCosts(false); return; }
     setLoadingCosts(true);
     let query = supabase.from("acquisition_costs" as any).select("*").order("cost_date", { ascending: false });
     if (activeTab !== "todos") {
@@ -70,7 +75,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
     const { data } = await query;
     setCosts((data as any as AcquisitionCost[]) || []);
     setLoadingCosts(false);
-  }, [activeTab]);
+  }, [activeTab, !!course]);
 
   useEffect(() => { fetchCosts(); }, [fetchCosts]);
 
@@ -83,10 +88,10 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
 
   const paidCountImagens = useMemo(() => inscritos.filter(i => i.webinar === "imagens" && i.payment_status === "paid").length, [inscritos]);
   const paidCountVideo = useMemo(() => inscritos.filter(i => i.webinar === "video" && i.payment_status === "paid").length, [inscritos]);
-  const tabOptions = useMemo(() => TAB_BASE.map(t => ({
+  const tabOptions = useMemo(() => course ? [{value:"todos",label:"Todas as edições"},...Object.entries(editionNames).map(([value,label])=>({value,label}))] : TAB_BASE.map(t => ({
     ...t,
     label: t.value === "todos" ? `Todos (${paidCountImagens + paidCountVideo})` : t.value === "imagens" ? `Imagens (${paidCountImagens})` : `Vídeo (${paidCountVideo})`,
-  })), [paidCountImagens, paidCountVideo]);
+  })), [paidCountImagens, paidCountVideo, !!course]);
 
   const webinarForEdgeFunction = activeTab === "todos" ? "all" : activeTab;
 
@@ -103,10 +108,10 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
       ...costs.map(c => [c.platform, c.description, String(c.amount), c.cost_date, c.category]),
       [],
       ["Pagantes"],
-      ["Nome", "Email", "Plano", "Valor", "Fatura"],
-      ...paid.map(i => [i.nome, i.email, i.plan, String(i.valor), i.invoice_document_id || "—"]),
+      ["Nome", "Email", course ? "Edição" : "Plano", "Valor com IVA", "Fatura"],
+      ...paid.map(i => [i.nome, i.email, i.course?.editionLabel || i.plan, String(i.valor), i.invoice_document_id || "—"]),
     ];
-    const csv = rows.map(r => r.join(",")).join("\n");
+    const csv = '\uFEFF' + rows.map(r=>r.map(v=>'"'+String(v??'').replace(/^[=+@-]/," '$&").replace(/"/g,'""')+'"').join(';')).join('\r\n');
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -148,11 +153,11 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 rounded-lg p-1 bg-white border border-slate-200">
+        <div className="flex flex-wrap gap-1 rounded-lg p-1 bg-white border border-slate-200">
           {tabOptions.map(tab => (
             <button
               key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
+              onClick={() => course ? course.onEditionChange(tab.value === "todos" ? "" : tab.value) : setActiveTab(tab.value)}
               className={`px-3 sm:px-4 py-1.5 rounded-md text-[12px] sm:text-[13px] font-medium transition-all ${
                 activeTab === tab.value
                   ? "bg-slate-900 text-white shadow-sm"
@@ -171,6 +176,7 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           totalCosts={totalCosts}
           paidMediaCosts={paidMediaCosts}
           showIVA={showIVA}
+          costsKnown={!course}
         />
 
         <FaturacaoCharts
@@ -180,10 +186,12 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           inscritos={tabInscritos}
           costs={costs}
           showIVA={showIVA}
+          costsKnown={!course}
         />
 
-        <PlanBreakdown inscritos={tabInscritos} receitaConfirmada={receitaConfirmada} showIVA={showIVA} />
+        {!course && <PlanBreakdown inscritos={tabInscritos} receitaConfirmada={receitaConfirmada} showIVA={showIVA} />}
 
+{!course && <>
         <CostsSection
           costs={costs}
           loading={loadingCosts}
@@ -194,17 +202,17 @@ export default function FaturacaoView({ inscritos, onRefresh }: FaturacaoViewPro
           showWebinarColumn={activeTab === "todos"}
           showIVA={showIVA}
         />
+</>}
+        <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} showIVA={showIVA} course={course ? {onSelect:course.onSelectInscrito} : undefined} />
 
-        <InvoiceTable inscritos={paid} onRefresh={onRefresh} webinarFilter={webinarForEdgeFunction} showIVA={showIVA} />
-
-        <PLSummary
+        {!course && <PLSummary
           receitaConfirmada={receitaConfirmada}
           pipelinePendente={pipelinePendente}
           costs={costs}
           totalCosts={totalCosts}
           inscritos={tabInscritos}
           showIVA={showIVA}
-        />
+        />}
       </div>
     </div>
   );

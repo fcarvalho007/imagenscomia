@@ -70,7 +70,7 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
               border: "1px solid rgba(255,255,255,0.10)",
             }}
           >
-            <option value="curso-ia">Curso de IA aplicada ao negócio</option>
+            <option value="curso-ia">Curso de IA</option>
             {WEBINAR_OPTIONS.map((opt) => (
               <option key={opt.key} value={opt.key}>
                 {opt.emoji} {opt.label}
@@ -104,23 +104,8 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
               key={item.view}
               aria-current={active ? "page" : undefined}
               onClick={() => onChangeView(item.view)}
-              className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                background: active ? "rgba(37,99,235,0.20)" : "transparent",
-                color: active ? "#60A5FA" : "rgba(255,255,255,0.55)",
-              }}
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.80)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "transparent";
-                  e.currentTarget.style.color = "rgba(255,255,255,0.55)";
-                }
-              }}
+              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-blue-600/20 text-blue-300' : 'text-white/55 hover:bg-white/5 hover:text-white/80'}`}
+
             >
               <item.icon size={18} style={{ color: active ? "#60A5FA" : "rgba(255,255,255,0.35)" }} />
               {item.label}
