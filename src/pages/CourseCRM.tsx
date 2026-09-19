@@ -11,6 +11,7 @@ import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
 import { WebinarProvider } from "@/contexts/WebinarContext";
 
 
+import CourseLinks from "@/components/course/CourseLinks";
 import CourseMaterials from "@/components/course/CourseMaterials";
 import CourseOperations from "@/components/course/CourseOperations";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -49,7 +50,7 @@ const selectClass =
   "h-11 rounded-md border border-input bg-background px-3 text-sm";
 export default function CourseCRM() { return <WebinarProvider><CourseCRMContent /></WebinarProvider>; }
 function CourseCRMContent() {
-  const [activeView, setActiveView] = useState<CRMView>("dashboard");
+  const [activeView, setActiveView] = useState<CRMView>(() => new URLSearchParams(window.location.search).get("view") === "links" ? "links" : "dashboard");
 
 
   const [auth, setAuth] = useState<boolean | null>(null),
@@ -272,6 +273,7 @@ function CourseCRMContent() {
           <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
           <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
           <TabsContent value="comunicacao"><ComunicacaoView key={edition} inscritos={participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition)} course={{queue:queueCampaign,smsRecipients:participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition && rows.find(r=>r.id===i.id)?.sms_consent),history:<CourseOperations edition={edition} refresh={operationRefresh} communicationOnly />}} /></TabsContent>
+          <TabsContent value="links"><CourseLinks edition={edition} onNavigate={setActiveView} /></TabsContent>
           <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes" className="p-7 max-sm:p-4">
             <CourseOperations edition={edition} refresh={operationRefresh} />

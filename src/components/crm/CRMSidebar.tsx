@@ -1,4 +1,4 @@
-import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt, ChevronDown, BookOpen } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt, ChevronDown, BookOpen, Link2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
@@ -7,7 +7,7 @@ import { WEBINAR_CONFIG, CONSOLIDADO_COLOR, type WebinarContext as WebinarCtxTyp
 import { EDITIONS } from "@/lib/course/contract";
 import { editionNames } from "@/lib/course/editions";
 
-export type CRMView = "dashboard" | "pipeline" | "tabela" | "faturacao" | "templates" | "comunicacao" | "lixo" | "recursos";
+export type CRMView = "dashboard" | "pipeline" | "tabela" | "faturacao" | "templates" | "comunicacao" | "lixo" | "recursos" | "links";
 interface CRMSidebarProps {
   activeView: CRMView;
   onChangeView: (v: CRMView) => void;
@@ -97,7 +97,7 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
       </div>}
       {/* Nav */}
       <nav className="flex flex-col gap-1 mt-3">
-        {(course ? [...NAV_ITEMS.filter(item=>item.view!=="lixo"), {icon:BookOpen,label:"Recursos",view:"recursos" as CRMView}] : NAV_ITEMS).map((item) => {
+        {(course ? [...NAV_ITEMS.filter(item=>item.view!=="lixo"), {icon:BookOpen,label:"Recursos",view:"recursos" as CRMView}, {icon:Link2,label:"Links e testes",view:"links" as CRMView}] : NAV_ITEMS).map((item) => {
           const active = activeView === item.view;
           return (
             <button

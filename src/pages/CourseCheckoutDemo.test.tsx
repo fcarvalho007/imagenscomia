@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import CourseCheckoutDemo from "./CourseCheckoutDemo";
 afterEach(() => {
   cleanup();
+  history.replaceState(null, "", "/");
   vi.unstubAllGlobals();
 });
 describe("isolated checkout demonstration", () => {
@@ -42,6 +43,17 @@ describe("isolated checkout demonstration", () => {
       expect(fetch).not.toHaveBeenCalled();
     },
   );
+  it.each(["lisboa-2026", "porto-2026", "online-2026"])("opens the requested edition from a CRM link: %s", (edition) => {
+    history.replaceState(null, "", "/curso-ia/checkout-demonstracao?edition=" + edition);
+    render(<CourseCheckoutDemo />);
+    expect(screen.getByRole("combobox", { name: "Edição" })).toHaveValue(edition);
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+  it("ignores an unsupported edition in the URL", () => {
+    history.replaceState(null, "", "/curso-ia/checkout-demonstracao?edition=constructor");
+    render(<CourseCheckoutDemo />);
+    expect(screen.getByRole("combobox", { name: "Edição" })).toHaveValue("lisboa-2026");
+  });
   it("recalculates a selected pack when the edition changes and preserves the base inclusions", () => {
     render(<CourseCheckoutDemo />);
     fireEvent.click(screen.getByRole("checkbox"));

@@ -10,7 +10,10 @@ import { money } from "@/lib/course/editions";
 import "./course-checkout-demo.css";
 
 export default function CourseCheckoutDemo() {
-  const [edition, setEdition] = useState<DemoEdition>("lisboa-2026");
+  const [edition, setEdition] = useState<DemoEdition>(() => {
+    const requested = new URLSearchParams(window.location.search).get("edition");
+    return requested && Object.prototype.hasOwnProperty.call(demoEditions, requested) ? requested as DemoEdition : "lisboa-2026";
+  });
   const [complement, setComplement] = useState(false);
   const [complete, setComplete] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
