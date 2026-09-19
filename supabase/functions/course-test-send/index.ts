@@ -22,31 +22,42 @@ serve(async (req) => {
 
   const db = createClient(env("SUPABASE_URL")!, env("SUPABASE_SERVICE_ROLE_KEY")!);
   const admin = await resolveCourseAdmin(req, db);
-  if (!admin) return json(401, { error: "Unauthorized" });
+  if (!admin) {
+    trace("course-test-send", { outcome: "rejected", reason: "unauthorized" });
+    return json(401, { state: "rejected", error: "Unauthorized", reason: "unauthorized" });
+  }
 
   let payload: any;
   try {
     payload = await req.json();
   } catch {
-    return json(400, { error: "Invalid body" });
+    trace("course-test-send", { outcome: "rejected", reason: "invalid_body" });
+    return json(400, { state: "rejected", error: "Invalid body", reason: "invalid_body" });
   }
   const channel = payload?.channel === "sms" ? "sms" : payload?.channel === "email" ? "email" : null;
   const requestId = String(payload?.request_id || "");
-  if (!channel || !UUID.test(requestId)) return json(400, { error: "Invalid request" });
+  const refuse = (reason: string, error: string, status = 400) => {
+    trace("course-test-send", { outcome: "rejected", channel, reason });
+    return json(status, { state: "rejected", error, reason });
+  };
+  if (!channel || !UUID.test(requestId)) return refuse("invalid_request", "Invalid request");
 
   const format = normalizeFormat(payload?.format);
   const body = String(payload?.body ?? "");
   const subject = String(payload?.subject ?? "").trim();
   if (channel === "email") {
-    if (subject.length < 2 || subject.length > 160 || /[\r\n]/.test(subject)) return json(400, { error: "Assunto inválido" });
-    if (body.trim().length < 2 || body.length > 20000) return json(400, { error: "Mensagem inválida" });
-    if (!admin.emailVerified) return json(400, { error: "email_not_verified" });
+    if (subject.length < 2 || subject.length > 160 || /[\r\n]/.test(subject)) return refuse("invalid_subject", "Assunto inválido");
+    if (body.trim().length < 2 || body.length > 20000) return refuse("invalid_message", "Mensagem inválida");
+    if (!admin.emailVerified) return refuse("email_not_verified", "Email da sessão não verificado");
   } else {
     if (body.length < 1 || body.length > 160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(body))
-      return json(400, { error: "SMS: até 160 caracteres básicos, sem acentos nem emojis" });
+      return refuse("invalid_sms_body", "SMS: até 160 caracteres básicos, sem acentos nem emojis");
   }
 
-  if (channel === "sms" && !/^351[29][0-9]{8}$/.test(OWNER_TEST_MOBILE)) return json(200, { state: "blocked", reason: "test_mobile_missing" });
+  if (channel === "sms" && !/^351[29][0-9]{8}$/.test(OWNER_TEST_MOBILE)) {
+    trace("course-test-send", { outcome: "blocked", channel, reason: "test_mobile_missing" });
+    return json(200, { state: "blocked", reason: "test_mobile_missing" });
+  }
 
   // Atomic claim: throttle, idempotency and the separate test log all live in one statement.
   const { data: claim, error: claimError } = await db.rpc("claim_course_test_send", {
