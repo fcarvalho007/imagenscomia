@@ -1,5 +1,6 @@
 // Shared rich-text pipeline. The same module runs in the browser editor, in the
 // preview and in the delivery worker, so what is previewed is exactly what is sent.
+// @ts-ignore Deno resolves npm: specifiers natively; the bundler maps this to the installed package.
 import { Parser } from "npm:htmlparser2@10.0.0";
 
 export type BodyFormat = "text" | "html";

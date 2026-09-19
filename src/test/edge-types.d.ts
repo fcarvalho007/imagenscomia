@@ -6,6 +6,3 @@ declare module "https://esm.sh/@supabase/supabase-js@2.95.3" {
 declare namespace Deno {
   const env: { get(name: string): string | undefined };
 }
-declare module "npm:htmlparser2@10.0.0" {
-  export * from "htmlparser2";
-}
