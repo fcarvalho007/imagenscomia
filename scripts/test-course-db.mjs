@@ -525,7 +525,7 @@ await denied(()=>db.query("select claim_course_test_send(gen_random_uuid(),gen_r
 await auth('anon');
 await denied(()=>db.query("select * from course_test_sends"));
 await denied(()=>db.query("select claim_course_test_send(gen_random_uuid(),gen_random_uuid(),'email','a@b.pt')"));
-await db.exec("reset role");
+await auth('service_role');
 const actor='fa000000-0000-4000-8000-000000000001';
 const first=(await rpc("select claim_course_test_send($1,'aa000000-0000-4000-8000-000000000001','email','admin@example.pt') r",[actor])).r;
 assert.equal(first.state,'claimed');checks++;
