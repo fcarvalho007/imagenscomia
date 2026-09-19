@@ -50,10 +50,13 @@ const Upsell = () => {
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
-  const [needsRecovery, setNeedsRecovery] = useState(!searchParams.get("email"));
+  // Access requires the existing token (URL ?t= or the one kept for this area).
+  const initialToken = resolveToken("upgrade", searchParams.get("t"));
+  const [needsRecovery, setNeedsRecovery] = useState(!initialToken);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySent, setRecoverySent] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
   const [duvida, setDuvida] = useState("");
