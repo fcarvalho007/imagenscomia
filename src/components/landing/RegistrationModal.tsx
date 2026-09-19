@@ -7,6 +7,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  readToken,
+  storeToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyScope,
+  type LegacyDestination,
+} from "@/lib/legacyAccess";
 
 type Step = "capture" | "upsell" | "confirmation";
 type ConfirmationMode = "referral" | "simple";
