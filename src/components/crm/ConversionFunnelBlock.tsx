@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import { TrendingUp, ArrowRight } from "lucide-react";
 import type { Inscrito } from "@/pages/crm/mockData";
 
+export type FunnelSummary = {title:string; description:string; steps:{label:string;value:number;color:string}[]; revenue:number; note?:string};
 interface ConversionFunnelBlockProps {
+  summary?: FunnelSummary;
   inscritos: Inscrito[];
 }
 
@@ -11,7 +13,7 @@ function pct(num: number, den: number): string {
   return `${((num / den) * 100).toFixed(1)}%`;
 }
 
-export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlockProps) {
+export default function ConversionFunnelBlock({ inscritos, summary }: ConversionFunnelBlockProps) {
   const data = useMemo(() => {
     const active = inscritos.filter((i) => i.status === "activo");
     const total = active.length;
@@ -31,7 +33,7 @@ export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlo
     return { total, clickedUpgrade, selectedPlan, awaitingPayment, paid, receita, planBreakdown };
   }, [inscritos]);
 
-  const steps = [
+  const steps = summary?.steps || [
     { label: "Inscritos", value: data.total, color: "hsl(var(--blue-600))" },
     { label: "Clicaram upgrade", value: data.clickedUpgrade, color: "#7C3AED" },
     { label: "Selecionaram plano", value: data.selectedPlan, color: "hsl(var(--amber-500))" },
@@ -51,12 +53,12 @@ export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlo
       <div className="flex items-center gap-2.5 mb-4">
         <TrendingUp size={18} className="text-ink-400" />
         <div>
-          <h3 className="font-heading font-bold text-[14px] text-ink-800">Funil de Conversão Pós-Evento</h3>
-          <p className="text-[12px] text-ink-400">Inscritos → Upgrade → Pagamento</p>
+          <h3 className="font-heading font-bold text-[14px] text-ink-800">{summary?.title || "Funil de Conversão Pós-Evento"}</h3>
+          <p className="text-[12px] text-ink-400">{summary?.description || "Inscritos → Upgrade → Pagamento"}</p>
         </div>
         <div className="ml-auto text-right">
-          <p className="font-heading font-extrabold text-[20px] text-ink-900">€{data.receita.toFixed(0)}</p>
-          <p className="text-[11px] text-ink-400">receita total</p>
+          <p className="font-heading font-extrabold text-[20px] text-ink-900">€{(summary?.revenue ?? data.receita).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}</p>
+          <p className="text-[11px] text-ink-400">receita total com IVA</p>
         </div>
       </div>
 
@@ -72,18 +74,18 @@ export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlo
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${Math.max((step.value / maxVal) * 100, 2)}%`,
+                    width: `${Math.max((step.value / maxVal) * 100, 0)}%`,
                     background: step.color,
                   }}
                 />
               </div>
               <div className="flex items-center gap-1.5 w-24 justify-end shrink-0">
                 <span className="text-[13px] font-heading font-bold text-ink-700">{step.value}</span>
-                <span className="text-ink-400 text-[11px]">({pct(step.value, data.total)})</span>
+                <span className="text-ink-400 text-[11px]">({pct(step.value, summary ? steps[0].value : data.total)})</span>
               </div>
             </div>
             {/* Drop-off between steps */}
-            {idx < steps.length - 1 && (
+            {!summary && idx < steps.length - 1 && (
               <div className="flex items-center gap-2 ml-[160px] max-sm:ml-[120px] pl-2 mt-0.5">
                 <ArrowRight size={10} className="text-ink-300" />
                 <span className="text-[10px] font-medium text-ink-400">
@@ -98,6 +100,7 @@ export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlo
         ))}
       </div>
 
+{summary ? <p className="text-xs text-ink-400">{summary.note}</p> : <>
       {/* Plan breakdown */}
       <div className="border-t border-border pt-3">
         <p className="text-[11px] font-bold uppercase tracking-wider text-ink-400 mb-2.5">Conversão por plano</p>
@@ -116,7 +119,7 @@ export default function ConversionFunnelBlock({ inscritos }: ConversionFunnelBlo
             );
           })}
         </div>
-      </div>
+      </div></>}
     </div>
   );
 }

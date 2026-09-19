@@ -1,0 +1,22 @@
+/* Course views use the existing WebinarCRM navigation and visual language. */
+.course-crm-shell{--background:210 40% 98%;--foreground:222 47% 11%;--card:0 0% 100%;--card-foreground:222 47% 11%;--muted:214 32% 94%;--muted-foreground:215 19% 42%;--border:214 26% 88%;--input:214 26% 88%;--primary:221 83% 53%;--primary-foreground:0 0% 100%;min-height:100vh;background:hsl(var(--background));color:hsl(var(--foreground))}
+.course-crm-main{min-width:0;padding:28px;margin-left:240px}
+.course-crm-heading{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.course-crm-heading h1{font-size:26px;font-weight:800;line-height:1.25;letter-spacing:-.5px}
+.course-crm-heading p{margin-top:5px;font-size:14px;color:hsl(var(--muted-foreground))}
+.course-crm-board{display:flex;gap:16px;overflow-x:auto;padding:4px 0 18px;align-items:flex-start}
+.course-crm-shell .course-crm-column{flex:1 0 225px;min-width:225px;max-width:320px;border-top:4px solid;background:hsl(var(--muted));box-shadow:none}
+.course-crm-column>div:first-child{padding:16px;gap:4px}
+.course-crm-column>div:last-child{padding:0 12px 14px}
+.course-crm-shell .course-crm-person{height:auto!important;width:100%;min-height:132px;align-items:flex-start!important;justify-content:flex-start!important;flex-direction:column;gap:7px!important;padding:14px!important;white-space:normal!important;text-align:left;background:hsl(var(--card));box-shadow:0 2px 3px #0f172a09}
+.course-crm-person strong{font-size:14px}.course-crm-person-email{font-size:12px;color:hsl(var(--muted-foreground));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}.course-crm-person small{font-size:11px;color:hsl(var(--muted-foreground))}
+.course-crm-search{display:flex;align-items:center;gap:8px;max-width:380px;flex:1;margin-bottom:14px}.course-crm-search input{background:hsl(var(--card))}
+.course-crm-table-tools{display:flex;justify-content:space-between;align-items:start;gap:16px;margin-bottom:12px}
+.course-crm-main table{background:hsl(var(--card));border-radius:12px;overflow:hidden;min-width:750px}
+.course-crm-main th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:hsl(var(--muted-foreground));background:hsl(var(--muted));font-weight:600}
+.course-crm-main tbody tr:hover{background:hsl(var(--muted)/.5)}
+.course-crm-shell aside select option{background:#0f172a;color:#fff}
+.course-crm-funnel{height:9px;border-radius:6px;background:hsl(var(--muted));overflow:hidden}.course-crm-funnel span{display:block;height:100%;border-radius:inherit;background:hsl(var(--primary))}
+@media(max-width:767px){.course-crm-main{margin-left:0;padding:68px 16px 24px}.course-crm-heading{align-items:flex-start;flex-direction:column;gap:16px}.course-crm-heading h1{font-size:24px}.course-crm-table-tools{flex-wrap:wrap}.course-crm-search{min-width:0;width:100%;max-width:100%}.course-crm-shell .course-crm-column{flex-basis:250px}}
+
+@media(min-width:768px){.course-demo-notice{padding-left:268px!important}}

@@ -3,6 +3,7 @@ import { Send, AlertTriangle, Mail, MessageSquare, Clock, Users } from "lucide-r
 import { motion } from "framer-motion";
 
 interface SendConfirmDialogProps {
+  queued?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
@@ -14,7 +15,7 @@ interface SendConfirmDialogProps {
 }
 
 export default function SendConfirmDialog({
-  open, onOpenChange, onConfirm, channel, recipientCount, subject, messagePreview, scheduledAt,
+  open, onOpenChange, onConfirm, channel, recipientCount, subject, messagePreview, scheduledAt, queued,
 }: SendConfirmDialogProps) {
   const isEmail = channel === "email";
   const Icon = isEmail ? Mail : MessageSquare;
@@ -25,7 +26,7 @@ export default function SendConfirmDialog({
         <DialogHeader>
           <DialogTitle className="text-slate-900 flex items-center gap-2">
             <AlertTriangle size={18} className="text-amber-500" />
-            Confirmar envio
+            {queued ? "Confirmar agendamento na fila" : "Confirmar envio"}
           </DialogTitle>
           <DialogDescription className="text-slate-500">
             Revise os detalhes antes de enviar
@@ -65,7 +66,7 @@ export default function SendConfirmDialog({
             <span className="text-[12px] font-medium" style={{ color: scheduledAt ? "#92400e" : "#64748B" }}>
               {scheduledAt
                 ? `Agendado: ${scheduledAt.toLocaleDateString("pt-PT")} às ${scheduledAt.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}`
-                : "Envio imediato"}
+                : queued ? "Próxima execução elegível do serviço" : "Envio imediato"}
             </span>
           </div>
         </div>
@@ -81,7 +82,7 @@ export default function SendConfirmDialog({
             className="flex-1 flex items-center justify-center gap-2 text-[12px] font-bold py-2.5 rounded-lg text-white"
             style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", boxShadow: "0 4px 15px -3px rgba(37,99,235,0.3)" }}
           >
-            <Send size={13} /> Confirmar envio
+            <Send size={13} /> {queued ? "Confirmar agendamento na fila" : "Confirmar envio"}
           </motion.button>
         </div>
       </DialogContent>

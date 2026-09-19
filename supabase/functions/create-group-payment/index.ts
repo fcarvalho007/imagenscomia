@@ -82,7 +82,7 @@ serve(async (req) => {
       // Check if this attendee already has a video registration
       const { data: existing } = await supabase
         .from("registrations")
-        .select("id")
+        .select("id, paid_at, plan_selected")
         .eq("email", email)
         .eq("webinar", "video")
         .maybeSingle();
@@ -90,15 +90,26 @@ serve(async (req) => {
       let regId: string;
 
       if (existing) {
-        // Update existing registration with group info
+        // Knowing someone's email must never let a buyer rewrite that person's
+        // registration. A paid record is left completely untouched; an unpaid
+        // one only gains the group reference, never a new plan.
+        if (existing.paid_at) {
+          console.log("Skipping already paid registration in group checkout");
+          registeredIds.push(existing.id);
+          if (!buyerRegId && email === buyer.email.toLowerCase().trim()) {
+            buyerRegId = existing.id;
+          }
+          continue;
+        }
+
         const { data: updated, error: upErr } = await supabase
           .from("registrations")
           .update({
-            plan_selected: "masterclass-group-pending",
             group_payment_ref: groupPaymentRef,
             upgrade_clicked_at: new Date().toISOString(),
           })
           .eq("id", existing.id)
+          .is("paid_at", null)
           .select("id")
           .single();
 

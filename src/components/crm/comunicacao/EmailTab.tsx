@@ -7,6 +7,8 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import EmailPreview from "./EmailPreview";
 import SendConfirmDialog from "./SendConfirmDialog";
+import RichTextEditor from "./RichTextEditor";
+import { renderCourseBody } from "@shared/course/richtext";
 import SchedulePicker from "./SchedulePicker";
 
 type WebinarFilter = "imagens" | "video" | "todos";
@@ -14,6 +16,7 @@ type PlanoFilter = "todos" | "pagos" | "premium" | "masterclass" | "free";
 
 interface EmailTabProps {
   inscritos: Inscrito[];
+  courseQueue?: (ids:string[],subject:string,body:string,date:Date|null,format:"text"|"html")=>Promise<void>;
 }
 
 /* ── Shared filtering logic ── */
@@ -101,7 +104,7 @@ function execCmd(cmd: string, val?: string) {
 /* ── Send result type ── */
 type SendResult = { email: string; nome: string; ok: boolean; error?: string };
 
-export default function EmailTab({ inscritos }: EmailTabProps) {
+export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
   const [webinar, setWebinar] = useState<WebinarFilter | null>("todos");
   const [plano, setPlano] = useState<PlanoFilter | null>("todos");
   const [recipients, setRecipients] = useState<Inscrito[]>([]);
@@ -117,6 +120,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
   const [results, setResults] = useState<SendResult[] | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
+  const [bodyFormat, setBodyFormat] = useState<"text" | "html">("html");
 
   const filteredPool = useMemo(() => filterInscritos(inscritos, webinar, plano), [inscritos, webinar, plano]);
 
@@ -150,22 +154,18 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
     return rawHtml || editorRef.current?.innerHTML || "";
   }, [rawMode, rawHtml]);
 
-  /* ── Send test to admin ── */
+  /* ── Send test to the signed-in administrator (destination resolved server-side) ── */
   const handleSendTest = async () => {
-    const html = getHtml();
+    const html = courseQueue ? renderCourseBody(rawHtml, bodyFormat).html : getHtml();
     if (!subject || !html.trim() || sendingTest) return;
     setSendingTest(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const adminEmail = session?.user?.email;
-      if (!adminEmail) { toast.error("Sessão não encontrada"); return; }
-
-      const { data, error } = await supabase.functions.invoke("test-send-email", {
-        body: { to: adminEmail, subject: `[TESTE] ${subject}`, html },
+      const { data, error } = await supabase.functions.invoke("course-test-send", {
+        body: { channel: "email", request_id: crypto.randomUUID(), subject, body: html, format: "html" },
       });
       if (error) throw error;
-      if (data?.success) toast.success(`Email de teste enviado para ${adminEmail}`);
-      else toast.error(data?.error || "Falha no envio de teste");
+      if (data?.state === "sent") toast.success(`Email de teste enviado para ${data.target}`);
+      else toast.error(data?.reason || data?.state || "Falha no envio de teste");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar teste");
     } finally {
@@ -178,6 +178,13 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
     const html = getHtml();
     if (recipients.length === 0 || !subject || !html.trim() || sending) return;
 
+    if (courseQueue) {
+      setSending(true);
+      try { await courseQueue(recipients.map(r=>r.id),subject,rawHtml,scheduledAt,bodyFormat); resetForm(); }
+      catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível agendar."); }
+      finally { setSending(false); }
+      return;
+    }
     // If scheduled, save to DB and return
     if (scheduledAt) {
       try {
@@ -236,7 +243,8 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
   const successCount = results?.filter(r => r.ok).length ?? 0;
   const failCount = results?.filter(r => !r.ok).length ?? 0;
 
-  const currentHtml = getHtml();
+  // Preview uses the same sanitiser as the delivery worker.
+  const currentHtml = courseQueue ? renderCourseBody(rawHtml, bodyFormat).html : getHtml();
 
   return (
     <div>
@@ -252,7 +260,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
       </div>
 
       {/* Filters */}
-      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />
+      {!courseQueue && <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-6 lg:gap-8">
         {/* LEFT — Form */}
@@ -325,8 +333,23 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
             <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Assunto do email…" className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 bg-white" style={{ border: "1.5px solid #E2E8F0" }} />
           </div>
 
-          {/* Body — Rich editor or raw HTML */}
-          <div>
+          {/* Course messages are escaped server-side, with the same composer and recipient picker. */}
+          {courseQueue ? <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Mensagem</label>
+              <div className="flex items-center gap-1">
+                {(["html", "text"] as const).map(f => (
+                  <button key={f} type="button" onClick={() => setBodyFormat(f)} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${bodyFormat === f ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-100"}`}>
+                    {f === "html" ? "Texto formatado" : "Texto simples"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {bodyFormat === "html"
+              ? <RichTextEditor value={rawHtml} onChange={setRawHtml} placeholder="Escreva a mensagem. Use {{nome}} para o primeiro nome." />
+              : <textarea aria-label="Mensagem de email" className="w-full rounded-xl border bg-white p-4 min-h-[220px]" maxLength={20000} value={rawHtml} onChange={e=>setRawHtml(e.target.value)} />}
+            <span className="text-xs text-slate-500">{bodyFormat === "html" ? "Negrito, itálico, listas e links seguros. {{nome}} é substituído pelo primeiro nome." : "Texto simples: o conteúdo nunca é interpretado como formatação."}</span>
+          </div> : <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Corpo</label>
               <button onClick={() => {
@@ -366,7 +389,7 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
                 <div ref={editorRef} contentEditable suppressContentEditableWarning onInput={() => setRawHtml(editorRef.current?.innerHTML || "")} className="min-h-[200px] px-4 py-3 text-sm text-slate-900 outline-none prose prose-sm max-w-none [&_ul]:list-disc [&_ul]:ml-4 [&_ol]:list-decimal [&_ol]:ml-4 [&_a]:text-blue-600 [&_a]:underline" style={{ lineHeight: 1.7 }} />
               </div>
             )}
-          </div>
+          </div>}
 
           {/* Schedule picker */}
           <div>
@@ -384,9 +407,9 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
             <div className="flex-1" />
             <div className="flex items-center gap-2">
               {/* Test send button */}
-              <motion.button
+              {!courseQueue && <motion.button
                 onClick={handleSendTest}
-                disabled={!subject || sendingTest}
+                disabled={!!courseQueue || !subject || sendingTest}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className="flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[12px] font-semibold transition-all disabled:opacity-30 disabled:pointer-events-none"
@@ -394,32 +417,33 @@ export default function EmailTab({ inscritos }: EmailTabProps) {
               >
                 {sendingTest ? <Loader2 size={13} className="animate-spin" /> : <TestTube size={13} />}
                 Enviar teste
-              </motion.button>
+              </motion.button>}
 
               {/* Main send button */}
               <motion.button
                 onClick={() => setShowConfirm(true)}
-                disabled={recipients.length === 0 || !subject || sending}
+                disabled={recipients.length === 0 || !subject || !getHtml().trim() || sending}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 className="relative flex items-center gap-2.5 rounded-xl px-6 py-3 text-sm font-bold text-white transition-all disabled:opacity-30 disabled:pointer-events-none overflow-hidden"
                 style={{ background: "linear-gradient(135deg, #2563eb, #3b82f6)", boxShadow: recipients.length === 0 || !subject ? "none" : "0 8px 25px -5px rgba(37,99,235,0.4)" }}
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                {scheduledAt ? "Agendar" : "Enviar"} Email {recipients.length > 1 ? `(${recipients.length})` : ""}
+                {courseQueue ? "Colocar em fila" : scheduledAt ? "Agendar" : "Enviar"} Email {recipients.length > 1 ? `(${recipients.length})` : ""}
               </motion.button>
             </div>
           </div>
         </div>
 
         {/* RIGHT — Email Preview */}
-        <div className="hidden lg:flex flex-col items-center justify-start pt-8">
-          <EmailPreview subject={subject} html={currentHtml} />
+        <div className={courseQueue ? "flex min-w-0 flex-col items-center justify-start pt-8" : "hidden lg:flex flex-col items-center justify-start pt-8"}>
+          <EmailPreview subject={subject} html={currentHtml} sender={courseQueue ? "Remetente configurado para o curso" : undefined} />
         </div>
       </div>
 
       {/* Confirm dialog */}
       <SendConfirmDialog
+        queued={!!courseQueue}
         open={showConfirm}
         onOpenChange={setShowConfirm}
         onConfirm={handleSend}

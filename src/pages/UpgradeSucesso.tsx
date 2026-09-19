@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2, XCircle, ArrowLeft, Mail, Calendar, MessageCircle } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { supabase } from "@/integrations/supabase/client";
+import { legacyRegLookup, storeToken } from "@/lib/legacyAccess";
+import { planGrossPrice, trackPurchaseOnce } from "@/lib/legacyPricing";
 import { Button } from "@/components/ui/button";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
@@ -29,30 +30,33 @@ const UpgradeSucesso = () => {
   const [email, setEmail] = useState("");
   const [pollCount, setPollCount] = useState(0);
 
+  // The order id alone never authorises: the token from the payment return URL
+  // must belong to that exact registration.
   const fetchRegistration = useCallback(async () => {
     if (!rid || !token) {
       setState("invalid");
       return;
     }
 
-    const { data, error } = await supabase
-      .from("registrations")
-      .select("paid_at, email")
-      .eq("id", rid)
-      .eq("edit_token", token)
-      .maybeSingle();
+    try {
+      const reg = await legacyRegLookup(token);
+      if (!reg || reg.id !== rid) {
+        setState("invalid");
+        return;
+      }
 
-    if (error || !data) {
+      storeToken("upgrade", token);
+      setEmail(reg.email);
+
+      if (reg.paid) {
+        setState("confirmed");
+        // Purchase is only reported once the server confirms the payment.
+        trackPurchaseOnce(reg.id, reg.plan_selected ?? "", planGrossPrice(reg.plan_selected));
+      } else {
+        setState("pending");
+      }
+    } catch {
       setState("invalid");
-      return;
-    }
-
-    setEmail(data.email);
-
-    if (data.paid_at) {
-      setState("confirmed");
-    } else {
-      setState("pending");
     }
   }, [rid, token]);
 
@@ -65,18 +69,17 @@ const UpgradeSucesso = () => {
     if (state !== "pending" || pollCount >= 12) return;
 
     const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("registrations")
-        .select("paid_at")
-        .eq("id", rid!)
-        .eq("edit_token", token!)
-        .maybeSingle();
-
-      if (data?.paid_at) {
-        setState("confirmed");
-      } else {
-        setPollCount((c) => c + 1);
+      try {
+        const reg = await legacyRegLookup(token!);
+        if (reg && reg.id === rid && reg.paid) {
+          setState("confirmed");
+          trackPurchaseOnce(reg.id, reg.plan_selected ?? "", planGrossPrice(reg.plan_selected));
+          return;
+        }
+      } catch {
+        /* keep polling */
       }
+      setPollCount((c) => c + 1);
     }, 5000);
 
     return () => clearTimeout(timer);

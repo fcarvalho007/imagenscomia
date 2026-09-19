@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,15 @@ import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { GravacaoConfirmation } from "@/components/upgrade/GravacaoConfirmation";
 import { toast } from "sonner";
 import { Mail, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import {
+  resolveToken,
+  clearToken,
+  legacyRegLookup,
+  legacyRegSaveStep,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 /* ── OrderState for gravacao funnel ── */
 export interface GravacaoOrderState {
@@ -39,19 +48,55 @@ const UpgradeGravacao = () => {
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
-  const [needsRecovery, setNeedsRecovery] = useState(!searchParams.get("email"));
+  // Access requires the existing token (URL ?t= or the one kept for this area).
+  const initialToken = resolveToken("upgrade-gravacao", searchParams.get("t"));
+  const [needsRecovery, setNeedsRecovery] = useState(!initialToken);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySent, setRecoverySent] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [editToken, setEditToken] = useState<string | null>(initialToken);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
+  // Hydrate from the token only; the lookup never returns the token itself.
+  useEffect(() => {
+    if (!editToken) return;
+    let active = true;
+    (async () => {
+      try {
+        const reg = await legacyRegLookup(editToken);
+        if (!active) return;
+        if (!reg) {
+          clearToken("upgrade-gravacao");
+          setEditToken(null);
+          setNeedsRecovery(true);
+          return;
+        }
+        setRegistrationId(reg.id);
+        setUserData({
+          nome: reg.name || `${reg.first_name || ""} ${reg.last_name || ""}`.trim(),
+          email: reg.email,
+          whatsapp: reg.whatsapp || "",
+          referralCode: reg.referral_code || "",
+        });
+        setNeedsRecovery(false);
+      } catch {
+        if (!active) return;
+        clearToken("upgrade-gravacao");
+        setEditToken(null);
+        setNeedsRecovery(true);
+      }
+    })();
+    return () => { active = false; };
+  }, [editToken]);
+
+  /** Recovery never reveals data: the link is emailed to the registration. */
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -61,47 +106,23 @@ const UpgradeGravacao = () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("id, name, first_name, last_name, edit_token")
-        .eq("email", trimmed)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página do pack.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      setRegistrationId(data.id);
-      setEditToken((data as any).edit_token || null);
-      setUserData({
-        nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-        email: trimmed,
-        whatsapp: "",
-        referralCode: "",
-      });
-      setNeedsRecovery(false);
-    } catch (err) {
-      console.error("Recovery error:", err);
-      setRecoveryError("Erro ao recuperar dados. Tente novamente.");
+      await requestAccessLink(trimmed, "upgrade-gravacao");
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError("Erro de ligação. Tente novamente daqui a pouco.");
     } finally {
       setRecoveryLoading(false);
     }
   }, [recoveryEmail]);
 
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
-    if (!userData.email) return;
+    if (!editToken) return;
     try {
-      await supabase
-        .from("registrations")
-        .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email);
+      await legacyRegSaveStep(editToken, "imagens", stepNum, extraData);
     } catch (err) {
       console.error("Error saving step data:", err);
     }
-  }, [userData.email]);
+  }, [editToken]);
 
   const advanceStep = useCallback((next: number) => {
     setStep(next);
@@ -110,39 +131,33 @@ const UpgradeGravacao = () => {
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarregue a página.");
+    if (!editToken) {
+      toast.error("Sessão expirada. Peça uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      // Determine the actual plan to send
       const actualPlan = orderState.masterclass ? "gravacao-masterclass" : "gravacao";
-      const planLabel = actualPlan;
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: planLabel,
-          sources: sources.join(", "),
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
+      await legacyRegSaveStep(editToken, "imagens", null, {
+        sources: sources.join(", "),
+      });
 
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan: actualPlan, email: userData.email, nome: userData.nome },
+        body: { plan: actualPlan, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(actualPlan, planGrossPrice(actualPlan));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tente novamente.");
       setLoading(false);
     }
-  }, [userData, sources, orderState]);
+  }, [editToken, userData.nome, sources, orderState]);
 
   const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
@@ -162,8 +177,13 @@ const UpgradeGravacao = () => {
             Retomar a sua compra
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduza o email que usou para se inscrever.
+            Introduza o email que usou para se inscrever e enviamos a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
@@ -181,9 +201,10 @@ const UpgradeGravacao = () => {
               className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-3.5 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {recoveryLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              {recoveryLoading ? "A verificar..." : "Continuar"}
+              {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
+          )}
         </motion.div>
         <WhatsAppSupportButton />
       </div>

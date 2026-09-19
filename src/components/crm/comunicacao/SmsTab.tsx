@@ -13,6 +13,7 @@ type Provider = "smseasy" | "egoi";
 
 interface SmsTabProps {
   inscritos: Inscrito[];
+  courseQueue?: (ids:string[],subject:string,body:string,date:Date|null)=>Promise<void>;
 }
 
 /* GSM 7-bit basic character set (plus extension) */
@@ -22,7 +23,7 @@ function detectUnicode(text: string): boolean {
   return GSM_REGEX.test(text);
 }
 
-export default function SmsTab({ inscritos }: SmsTabProps) {
+export default function SmsTab({ inscritos, courseQueue }: SmsTabProps) {
   const [provider, setProvider] = useState<Provider>("smseasy");
   const [recipients, setRecipients] = useState<Inscrito[]>([]);
   const [text, setText] = useState("");
@@ -45,7 +46,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
   const progressColor =
     charPct < 70 ? "#22c55e" : charPct < 90 ? "#eab308" : "#ef4444";
 
-  const senderLabel = provider === "smseasy" ? "IMAGENSIA" : "915 015 508";
+  const senderLabel = courseQueue ? "Remetente configurado" : provider === "smseasy" ? "IMAGENSIA" : "915 015 508";
 
   const searchResults = useMemo(() => {
     if (!search) return [];
@@ -75,6 +76,13 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
   const handleSend = async () => {
     if (recipients.length === 0 || !text.trim() || sending) return;
 
+    if (courseQueue) {
+      if (text.length>160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(text)) {toast.error("Use até 160 caracteres básicos, sem acentos, emojis ou caracteres de extensão GSM.");return;}
+      setSending(true);
+      try {await courseQueue(recipients.map(r=>r.id),"",text,scheduledAt);setText("");setRecipients([]);setScheduledAt(null);}
+      catch(error){toast.error(error instanceof Error?error.message:"Não foi possível agendar.");}
+      finally {setSending(false);} return;
+    }
     // If scheduled, save to DB and return
     if (scheduledAt) {
       try {
@@ -144,13 +152,13 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
       </div>
 
       {/* Filters */}
-      <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />
+      {!courseQueue && <FilterBar webinar={webinar} setWebinar={setWebinar} plano={plano} setPlano={setPlano} inscritos={inscritos} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-8">
         {/* LEFT — Form */}
         <div className="space-y-5">
           {/* Provider cards */}
-          <div>
+          {courseQueue ? <p className="text-sm text-slate-500">SMSOnline · remetente configurado no serviço. Máximo de 160 caracteres básicos, um SMS por destinatário. Envios entre as 08h e as 20h de Lisboa.</p> : <div>
             <label className="block text-[10px] font-bold uppercase tracking-widest mb-2.5 text-slate-400">Remetente</label>
             <div className="grid grid-cols-2 gap-3">
               {([
@@ -184,7 +192,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           {/* Recipients — multi-select */}
           <div>
@@ -285,14 +293,14 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
               {sending && <div className="absolute inset-0 animate-pulse" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.1) 50%, transparent 100%)" }} />}
               <span className="relative flex items-center gap-2">
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                {scheduledAt ? "Agendar" : "Enviar"} SMS {recipients.length > 1 ? `(${recipients.length})` : ""}
+                {courseQueue ? "Colocar em fila" : scheduledAt ? "Agendar" : "Enviar"} SMS {recipients.length > 1 ? `(${recipients.length})` : ""}
               </span>
             </motion.button>
           </div>
         </div>
 
         {/* RIGHT — Phone Preview */}
-        <div className="hidden lg:flex flex-col items-center justify-start pt-8">
+        <div className={courseQueue ? "flex min-w-0 flex-col items-center justify-start pt-8" : "hidden lg:flex flex-col items-center justify-start pt-8"}>
           <PhonePreview sender={senderLabel} message={text} />
           <p className="text-[10px] text-slate-400 mt-4 text-center">Pré-visualização em tempo real</p>
         </div>
@@ -300,6 +308,7 @@ export default function SmsTab({ inscritos }: SmsTabProps) {
 
       {/* Confirm dialog */}
       <SendConfirmDialog
+        queued={!!courseQueue}
         open={showConfirm}
         onOpenChange={setShowConfirm}
         onConfirm={handleSend}

@@ -5,6 +5,7 @@ export type Nota = {
 };
 
 export type Inscrito = {
+  course?: { edition: string; editionLabel: string; status: string; statusLabel: string; paymentState: string; invoiceState: string; phase: "before" | "during" | "after"; beforeSession: string; afterSession: string };
   id: string;
   nome: string;
   email: string;
@@ -14,7 +15,7 @@ export type Inscrito = {
   source: string[];
   source_outro: string;
   duvida: string;
-  plan: "free" | "premium" | "masterclass" | "bundle";
+  plan: "free" | "premium" | "masterclass" | "bundle" | "course";
   valor: number;
   paid_at: string | null;
   eupago_ref: string | null;
@@ -28,7 +29,7 @@ export type Inscrito = {
   upgrade_clicked_at: string | null;
   primeiro_nome: string;
   resto_nome: string;
-  payment_status: "paid" | "awaiting_payment" | "selected" | "free";
+  payment_status: "paid" | "awaiting_payment" | "selected" | "free" | "unavailable";
   last_payment_link: string | null;
   payment_link_created_at: string | null;
   followup_stage: number;
@@ -40,7 +41,7 @@ export type Inscrito = {
   invoice_sent: boolean;
   premium_granted_at: string | null;
   premium_granted_by: string | null;
-  webinar: "imagens" | "video";
+  webinar: "imagens" | "video" | "curso-ia";
   role: string | null;
   team_size: string | null;
   lost_at: string | null;

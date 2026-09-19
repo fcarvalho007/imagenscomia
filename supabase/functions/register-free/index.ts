@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { ownsRegistration } from "../_shared/legacy/access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { firstName, lastName, email, whatsapp, referredBy, registrationSource, webinar } = await req.json();
+    const { firstName, lastName, email, whatsapp, referredBy, registrationSource, webinar, editToken: providedToken } = await req.json();
 
     if (!firstName || !email) {
       return new Response(
@@ -43,10 +44,25 @@ serve(async (req) => {
     const targetWebinar = webinar || "imagens";
     const { data: existing } = await supabase
       .from("registrations")
-      .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
+      .select("id, edit_token, referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
       .eq("email", email.toLowerCase().trim())
       .eq("webinar", targetWebinar)
       .maybeSingle();
+
+    // An existing registration is only disclosed to whoever proves possession of
+    // its token. Otherwise the answer is generic: no data, no sync, no PII.
+    const ownsExisting = ownsRegistration(providedToken, existing?.edit_token);
+
+    if (existing && !ownsExisting) {
+      return new Response(
+        JSON.stringify({
+          alreadyRegistered: true,
+          needsVerification: true,
+          message: "Já existe uma inscrição com este email. Pede a ligação de acesso para continuares.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (existing) {
       // Sync to E-goi for existing registrations (non-blocking) — only for imagens webinar
@@ -143,6 +159,8 @@ serve(async (req) => {
       const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
       return new Response(
         JSON.stringify({
+          id: existing.id,
+          editToken: existing.edit_token,
           referralCode: existing.referral_code,
           referralLink: `${origin}/?ref=${existing.referral_code}`,
           alreadyRegistered: true,
@@ -174,7 +192,7 @@ serve(async (req) => {
     const orderId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
 
     // Insert new registration
-    const { error: insertError } = await supabase.from("registrations").insert({
+    const { data: inserted, error: insertError } = await supabase.from("registrations").insert({
       name,
       first_name: firstName.trim(),
       last_name: lastName.trim(),
@@ -187,7 +205,7 @@ serve(async (req) => {
       order_id: orderId,
       registration_source: registrationSource || "webinar",
       webinar: webinar || "imagens",
-    });
+    }).select("id").single();
 
     if (insertError) {
       console.error("Insert error:", insertError);
@@ -277,6 +295,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        id: inserted?.id ?? null,
         referralCode,
         referralLink: `${origin}/?ref=${referralCode}`,
         alreadyRegistered: false,

@@ -1,78 +1,33 @@
+# Instalação das automações do curso — já concluída
 
+## Estado verificado agora
 
-# Auditoria Cloud Lovable — Dados reais e optimizações
+A instalação pedida já está feita; verifiquei por leitura neste momento:
 
-## Estado actual do projecto
+- O ficheiro `supabase/migrations/20260919110000_course_sms_templates.sql` existe no repositório (sincronizado do commit b4cbdc0).
+- A migração **já está aplicada na base de dados**: a tabela de textos de SMS do curso existe, a operação de gravação de textos (RPC) existe, e não há nenhuma linha de dados criada (0 registos).
+- A função de servidor `course-operations` já foi publicada com os módulos partilhados atuais na ronda anterior.
 
-### Base de dados: 22 MB total
+Aplicar a migração outra vez falharia (os objetos já existem) e voltar a publicar a função não mudaria nada.
 
-| Tabela | Tamanho | Registos | Notas |
-|--------|---------|----------|-------|
-| `message_logs` | **1.5 MB** | 3 582 | Maior tabela — logs de emails/SMS |
-| `email_send_logs` | **960 KB** | 2 628 | Dedup de envios |
-| `registrations` | 448 KB | 521 | Dados core |
-| `email_templates` | 296 KB | — | HTML dos templates |
-| `payment_events` | 184 KB | — | Eventos de pagamento |
-| Restantes 6 tabelas | ~170 KB | — | Pequenas |
-| **Total dados públicos** | **~3.5 MB** | — | — |
-| **Total BD (c/ sistema)** | **22 MB** | — | Maioria é overhead Postgres/auth/extensions |
+## O que este plano faz
 
-**Conclusão BD**: Os dados ocupam muito pouco. 22 MB é minúsculo — o $25 de crédito mensal cobre isto sem problema.
+1. **Nada a aplicar** — nenhuma migração nova, nenhum deploy novo, nenhum ficheiro alterado.
+2. Confirmar por leitura, em relatório final:
+   - tabela de textos de SMS com proteção de linhas ativa e leitura restrita a administrador com verificação em dois passos (aal2);
+   - RPC de gravação de textos com validação de texto e exigência de administrador aal2;
+   - zero dados de teste (sem participantes, campanhas ou textos criados);
+   - nenhuma migração duplicada no repositório — não é preciso criar equivalente timestamped nem tocar em `scripts/test-course-db.mjs`.
+3. O pedido de autenticação/password fica **pendente e intocado**, como pediu.
 
-### Edge Functions: 48 funções deployadas
+## O que este plano NÃO faz
 
-São o maior custo variável. Últimos 7 dias mostram actividade mínima (apenas 1 invocação registada de `followup-abandoned`). O pico de actividade foi entre 3-10 de Março (campanha do webinar) com ~2 500 emails enviados. Desde 21 de Março, actividade quase zero.
+- Não publica frontend, não altera layouts.
+- Não altera flags de vendas, envios, faturação ou cron.
+- Não contacta fornecedores nem envia mensagens.
+- Não cria credenciais, participantes, campanhas ou dados de teste.
+- Não toca na migração `legacy_rls_lockdown` (continua em rascunho).
 
-### Storage: 0 buckets, 0 ficheiros
+## Nota técnica
 
-Não há ficheiros armazenados. Zero custo.
-
----
-
-## Optimizações recomendadas
-
-### 1. Eliminar edge functions obsoletas (impacto: reduz deploy time)
-Funções de uso único que já cumpriram o seu propósito:
-
-| Função | Razão para eliminar |
-|--------|-------------------|
-| `backfill-sms-logs` | Backfill já executado |
-| `backfill-video-confirmations` | Backfill já executado |
-| `test-send-email` | Função de teste |
-| `bulk-sync-egoi` | Sync em massa já feito |
-| `cleanup-egoi-tags` | Limpeza pontual já feita |
-| `check-referrals` | Campanha referrals terminada |
-
-**Acção**: Apagar código + chamar `delete_edge_functions` para as 6 funções.
-
-### 2. Limpar logs antigos da BD (~1 MB recuperado)
-Os `message_logs` e `email_send_logs` anteriores a Março já não servem para dedup (campanha terminada). Podemos:
-- Apagar `email_send_logs` com `created_at < '2026-03-01'` (logs do webinar "imagens" antigo)
-- Ou manter tudo — 1.5 MB é irrelevante em termos de custo
-
-### 3. Desactivar cron jobs que já não são necessários
-Se existem cron jobs activos (ex: `followup-abandoned` a correr periodicamente, `generate-reminder`), podem ser desactivados via SQL:
-```sql
-SELECT jobid, schedule, command FROM cron.job;
--- Depois: SELECT cron.unschedule(jobid);
-```
-
-### 4. Verificar instance size
-Se o projecto está num instance maior que o necessário (micro é suficiente para este volume), reduzir em **Cloud → Overview → Advanced settings**.
-
----
-
-## Resumo de custos
-
-| Categoria | Uso actual | Custo estimado/mês | Acção |
-|-----------|-----------|-------------------|-------|
-| BD (22 MB) | Muito baixo | ~$2-3 (compute fixo) | Nenhuma necessária |
-| Edge Functions (48) | Quase inactivas | ~$0.50 | Eliminar 6 obsoletas |
-| Storage | Zero | $0 | — |
-| Bandwidth | Mínimo | ~$0.10 | — |
-| **Total** | — | **~$3-4/mês** | **Coberto pelo $25 grátis** |
-
-**Conclusão**: O projecto está bem dentro do crédito gratuito de $25/mês. As optimizações são mais de "higiene" do que de necessidade financeira. A acção com mais impacto prático é eliminar as 6 edge functions obsoletas e desactivar cron jobs desnecessários.
-
-Quer que avance com a eliminação das funções obsoletas e verificação dos cron jobs?
-
+Verificações feitas via consultas de leitura ao catálogo da base de dados e às políticas de acesso; nenhuma escrita será executada.

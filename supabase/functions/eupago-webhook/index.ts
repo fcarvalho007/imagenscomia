@@ -1,3 +1,4 @@
+import { readVerifiedCallback, CallbackError, type PaymentData } from "./verify.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -6,15 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-interface PaymentData {
-  transactionStatus: string;
-  reference: string;
-  amount: string;
-  identifier: string;
-  paymentMethod: string;
-  transactionID: string;
-}
 
 // Amount-to-plan safety net: derive correct plan from the paid amount
 const AMOUNT_TO_PLAN: Record<string, Record<number, string>> = {
@@ -31,31 +23,6 @@ function derivePlanFromAmount(amountStr: string, webinar: string): string | null
     if (Math.abs(amt - parseFloat(key)) < 0.02) return plan;
   }
   return null;
-}
-
-function extractFromGET(req: Request): PaymentData {
-  const url = new URL(req.url);
-  const p = url.searchParams;
-  return {
-    transactionStatus: "Success",
-    reference: p.get("referencia") || "",
-    amount: p.get("valor") || "",
-    identifier: p.get("identificador") || "",
-    paymentMethod: p.get("canal") || "",
-    transactionID: p.get("transacao") || "",
-  };
-}
-
-async function extractFromPOST(req: Request): Promise<PaymentData> {
-  const body = await req.json();
-  return {
-    transactionStatus: body.transactionStatus || "",
-    reference: body.reference || "",
-    amount: body.amount || "",
-    identifier: body.identifier || "",
-    paymentMethod: body.paymentMethod || "",
-    transactionID: body.transactionID || body.transaction_id || "",
-  };
 }
 
 async function processPayment(data: PaymentData) {
@@ -1238,24 +1205,16 @@ serve(async (req) => {
   }
 
   try {
-    let data: PaymentData;
-
-    if (req.method === "GET") {
-      console.log("📥 EuPago classic GET callback");
-      data = extractFromGET(req);
-    } else {
-      console.log("📥 EuPago POST webhook (2.0)");
-      data = await extractFromPOST(req);
-    }
-
-    await processPayment(data);
+    const data = await readVerifiedCallback(req, key => Deno.env.get(key));
+    if (data) await processPayment(data);
 
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
-    console.error("Webhook error:", error);
+    if (error instanceof CallbackError) return new Response(JSON.stringify({ error: error.message }), { status: error.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.error("Webhook processing failed");
     return new Response(JSON.stringify({ error: "Webhook processing failed" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
