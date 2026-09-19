@@ -26,3 +26,13 @@
 - [ ] Aplicar a migração apenas com os percursos públicos adaptados e testados. Ficheiro permanece em supabase/migrations-draft, fora da instalação automática.
 
 A segurança das tabelas antigas NÃO está resolvida em produção por este rascunho. Não publicar como se a integração estivesse encerrada nem executar o SQL isoladamente. Os pedidos anteriores em fila no Lovable estão pausados e são substituídos por este estado consolidado.
+
+## Conferência final de integração (19 set, em curso)
+- Confirmar commit eca17d8 sincronizado (HEAD local: 0a8a96d — verificar divergência)
+- Verificar CourseAutomationFlow, CourseOperations, componentes Comunicação
+- Verificar RPCs/tabelas campanhas, emails, SMS
+- Confirmar migrações 20260919090040 e 20260919092733 aplicadas; aplicar só se em falta
+- Verificar deploy course-operations com leitura de templates SMS
+- Correr testes/build; corrigir só falhas concretas
+- Relatório factual final
+- PENDENTE (reservado ao titular): pedidos de password/autenticação
