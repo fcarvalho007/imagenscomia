@@ -131,39 +131,33 @@ const UpgradeGravacao = () => {
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarregue a página.");
+    if (!editToken) {
+      toast.error("Sessão expirada. Peça uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      // Determine the actual plan to send
       const actualPlan = orderState.masterclass ? "gravacao-masterclass" : "gravacao";
-      const planLabel = actualPlan;
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: planLabel,
-          sources: sources.join(", "),
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
+      await legacyRegSaveStep(editToken, "imagens", null, {
+        sources: sources.join(", "),
+      });
 
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan: actualPlan, email: userData.email, nome: userData.nome },
+        body: { plan: actualPlan, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(actualPlan, planGrossPrice(actualPlan));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tente novamente.");
       setLoading(false);
     }
-  }, [userData, sources, orderState]);
+  }, [editToken, userData.nome, sources, orderState]);
 
   const totalSteps = 3;
   const progress = (step / totalSteps) * 100;
