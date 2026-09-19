@@ -512,6 +512,31 @@ assert.equal((await db.query("select * from course_sms_templates")).rows.length,
 await denied(()=>db.query("select save_course_sms_template('porto-2026','practical_sms','Texto para participantes.',null)"));
 await auth('anon');
 await denied(()=>db.query("select * from course_sms_templates"));
+
+// Rich-text format indicator and self-test log.
+await auth('authenticated',true,'aal2');
+assert.equal((await rpc("select format f from course_email_templates where edition='lisboa-2026' and template='confirmation'")).f,'text');checks++;
+const richVersion=(await rpc("select updated_at v from course_email_templates where edition='lisboa-2026' and template='confirmation'")).v;
+await db.query("select save_course_email_template('lisboa-2026','confirmation','Assunto','<p>Ola</p>',$1,'html')",[richVersion]);
+assert.equal((await rpc("select format f from course_email_templates where edition='lisboa-2026' and template='confirmation'")).f,'html');checks++;
+await denied(()=>db.query("select save_course_email_template('lisboa-2026','confirmation','Assunto','<p>Ola</p>',null,'markdown')"));
+await denied(()=>db.query("select queue_course_campaign(gen_random_uuid(),'lisboa-2026','sms','','Ola',$1::uuid[],now(),'html')",[[lateRid]]));
+await denied(()=>db.query("select claim_course_test_send(gen_random_uuid(),gen_random_uuid(),'email','a@b.pt')"));
+await auth('anon');
+await denied(()=>db.query("select * from course_test_sends"));
+await denied(()=>db.query("select claim_course_test_send(gen_random_uuid(),gen_random_uuid(),'email','a@b.pt')"));
+await db.exec("reset role");
+const actor='fa000000-0000-4000-8000-000000000001';
+const first=(await rpc("select claim_course_test_send($1,'aa000000-0000-4000-8000-000000000001','email','admin@example.pt') r",[actor])).r;
+assert.equal(first.state,'claimed');checks++;
+assert.equal((await rpc("select claim_course_test_send($1,'aa000000-0000-4000-8000-000000000001','email','admin@example.pt') r",[actor])).r.state,'duplicate');checks++;
+assert.equal((await rpc("select claim_course_test_send($1,'aa000000-0000-4000-8000-000000000002','email','admin@example.pt') r",[actor])).r.state,'throttled');checks++;
+assert.equal((await rpc("select claim_course_test_send($1,'aa000000-0000-4000-8000-000000000003','sms','351915015508') r",[actor])).r.state,'claimed');checks++;
+await db.query("select finish_course_test_send($1,'sent','prov-1',null)",[first.id]);
+assert.equal((await rpc("select state s from course_test_sends where id=$1",[first.id])).s,'sent');checks++;
+await denied(()=>db.query("select finish_course_test_send($1,'sent','prov-1',null)",[first.id]));
+await denied(()=>db.query("select finish_course_test_send($1,'delivered',null,null)",[first.id]));
+assert.equal((await rpc("select count(*)::int n from course_registrations where email='admin@example.pt'")).n,0);checks++;
 await db.close();
 console.log(
   `PASS: ${checks} database checks; migrations, RLS, prices, idempotency, signed-payment reconciliation, refunds, edition isolation and capacity.`,
