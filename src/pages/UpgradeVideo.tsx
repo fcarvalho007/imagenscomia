@@ -13,6 +13,16 @@ import { VideoConfirmation, type VideoOrderState } from "@/components/upgrade/Vi
 import { toast } from "sonner";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Mail, Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import {
+  resolveToken,
+  clearToken,
+  legacyRegLookup,
+  legacyRegSaveStep,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyRegistration,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 /* ── CSS for step transitions + confirmation animation ── */
 const transitionStyles = `
