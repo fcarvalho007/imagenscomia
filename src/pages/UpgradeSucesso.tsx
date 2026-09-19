@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2, XCircle, ArrowLeft, Mail, Calendar, MessageCircle } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { supabase } from "@/integrations/supabase/client";
+import { legacyRegLookup, storeToken } from "@/lib/legacyAccess";
+import { planGrossPrice, trackPurchaseOnce } from "@/lib/legacyPricing";
 import { Button } from "@/components/ui/button";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 
