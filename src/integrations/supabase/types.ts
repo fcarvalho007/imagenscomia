@@ -1259,7 +1259,13 @@ export type Database = {
         Returns: undefined
       }
       course_admin_required: { Args: never; Returns: undefined }
+      course_cron_install: { Args: never; Returns: string }
       course_cron_installed: { Args: never; Returns: boolean }
+      course_cron_sync: {
+        Args: { p_secret: string; p_url: string }
+        Returns: undefined
+      }
+      course_cron_uninstall: { Args: never; Returns: string }
       course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
       course_job_eligible: {
         Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
