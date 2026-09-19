@@ -208,7 +208,7 @@ serve(async (req) => {
       order_id: orderId,
       registration_source: registrationSource || "webinar",
       webinar: webinar || "imagens",
-    });
+    }).select("id").single();
 
     if (insertError) {
       console.error("Insert error:", insertError);
