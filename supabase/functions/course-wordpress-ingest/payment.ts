@@ -41,7 +41,7 @@ export async function checkout(
   if (claim.state !== "claimed") return { accepted: true, ...claim };
   const host =
     environment === "production" ? "clientes.eupago.pt" : "sandbox.eupago.pt";
-  const returned = new URL(publicUrl);
+  const returned = new URL(body.checkout_source === "lovable" ? "https://imagenscomia.com/curso-ia/checkout" : publicUrl);
   returned.searchParams.set("fcia_payment", "return");
   // Only this order identifier is sent to the provider. Never match a payment by name/plan/email.
   const controller = new AbortController();

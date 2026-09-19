@@ -45,7 +45,7 @@ type Job = {
   error_code: string | null;
   course_registrations: { name: string; edition: string };
 };
-export default function CourseOperations({ edition, refresh = 0 }: { edition: string; refresh?: number }) {
+export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
   const [view, setView] = useState("pending"), [revision, setRevision] = useState(0), [now, setNow] = useState(Date.now());
   useEffect(() => { const id=setInterval(()=>setNow(Date.now()),60000);return ()=>clearInterval(id); }, []);
   const [editions, setEditions] = useState<Edition[]>([]),
@@ -164,10 +164,10 @@ export default function CourseOperations({ edition, refresh = 0 }: { edition: st
   }
   const recent = heartbeat && now - Date.parse(heartbeat) < 20 * 60000;
   return (
-    <section className="space-y-7" aria-label="Operação das automações">
+    <section className="flex flex-col gap-7" aria-label="Operação das automações">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-5">
         <div>
-          <h2 className="text-xl font-semibold">Emails, SMS e faturação</h2>
+          <h2 className="text-xl font-semibold">{communicationOnly ? "Histórico de comunicação" : "Emails, SMS e faturação"}</h2>
           <p className="text-sm text-muted-foreground mt-2">
             Cada edição tem os seus links, calendário e histórico. Sem envios
             automáticos durante a formação.
@@ -190,7 +190,7 @@ export default function CourseOperations({ edition, refresh = 0 }: { edition: st
         </p>
       )}
       {!loaded && !error && <p role="status">A carregar a configuração…</p>}
-      {!edition && loaded && (
+      {!communicationOnly && !edition && loaded && (
         <div className="grid sm:grid-cols-3 gap-5">
           {editions.map((e) => (
             <div key={e.id} className="border rounded-xl p-5">
@@ -201,18 +201,18 @@ export default function CourseOperations({ edition, refresh = 0 }: { edition: st
                   : "Sequência em pausa"}
               </p>
               <p className="text-sm text-muted-foreground mt-3">
-                Selecione esta edição no topo para configurar e rever os emails.
+                Selecione esta edição na barra lateral para configurar e rever os emails.
               </p>
             </div>
           ))}
         </div>
       )}
-      {selected && <div className="grid gap-3 sm:grid-cols-3" aria-label="Sequência de acompanhamento">
+      {!communicationOnly && selected && <div className="grid gap-3 sm:grid-cols-3" aria-label="Sequência de acompanhamento">
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Antes</h3><p className="text-sm mt-2">Confirmação → sessão individual → informação prática → SMS opcional.</p></div>
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Durante</h3><p className="text-sm mt-2">Sem mensagens automáticas. A formação é o foco.</p></div>
         <div className="rounded-xl border p-4"><h3 className="font-semibold">Depois</h3><p className="text-sm mt-2">Recursos → sessão individual → lembrete SMS, se ainda não estiver agendada.</p></div>
       </div>}
-      {selected && (
+      {!communicationOnly && selected && (
         <div className="grid lg:grid-cols-2 gap-8">
           <form
             className="space-y-4"

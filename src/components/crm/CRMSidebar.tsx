@@ -1,14 +1,18 @@
-import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt, ChevronDown } from "lucide-react";
+import { BarChart2, LayoutDashboard, Columns, Table, Trash2, LogOut, Menu, X, Zap, MessageSquare, Receipt, ChevronDown, BookOpen } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState } from "react";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, CONSOLIDADO_COLOR, type WebinarContext as WebinarCtxType } from "@/config/webinarConfig";
 
-export type CRMView = "dashboard" | "pipeline" | "tabela" | "faturacao" | "templates" | "comunicacao" | "lixo";
+import { EDITIONS } from "@/lib/course/contract";
+import { editionNames } from "@/lib/course/editions";
+
+export type CRMView = "dashboard" | "pipeline" | "tabela" | "faturacao" | "templates" | "comunicacao" | "lixo" | "recursos";
 interface CRMSidebarProps {
   activeView: CRMView;
   onChangeView: (v: CRMView) => void;
   onLogout: () => void;
+  course?: { edition: string; onEditionChange: (edition: string) => void };
 }
 
 const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[] = [
@@ -36,7 +40,7 @@ const WEBINAR_OPTIONS: { key: WebinarCtxType; emoji: string; label: string; colo
   })),
 ];
 
-function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps) {
+function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSidebarProps) {
   const { webinarContext, setWebinarContext } = useWebinarContext();
   const activeOption = WEBINAR_OPTIONS.find((o) => o.key === webinarContext) || WEBINAR_OPTIONS[0];
 
@@ -53,12 +57,13 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
       {/* Webinar selector */}
       <div className="px-1 py-3 mb-1" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
         <p className="text-[10px] font-bold uppercase tracking-wider mb-2 px-2" style={{ color: "rgba(255,255,255,0.30)" }}>
-          Formação
+          Projeto
         </p>
         <div className="relative">
           <select
-            value={webinarContext}
-            onChange={(e) => { if (e.target.value === "curso-ia") window.location.assign("/crm/curso-ia"); else setWebinarContext(e.target.value as WebinarCtxType); }}
+            aria-label="Projeto"
+            value={course ? "curso-ia" : webinarContext}
+            onChange={(e) => { if (e.target.value === "curso-ia") window.location.assign("/crm/curso-ia"); else if(course) window.location.assign("/crm?webinar="+e.target.value); else setWebinarContext(e.target.value as WebinarCtxType); }}
             className="w-full appearance-none rounded-md px-3 py-2 pr-8 text-[13px] font-semibold text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-400"
             style={{
               background: "rgba(255,255,255,0.08)",
@@ -79,18 +84,25 @@ function SidebarContent({ activeView, onChangeView, onLogout }: CRMSidebarProps)
           />
           <div
             className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-md"
-            style={{ background: activeOption.color }}
+            style={{ background: course ? "#60A5FA" : activeOption.color }}
           />
         </div>
       </div>
 
+      {course && <div className="px-1 py-3">
+        <label htmlFor="course-edition" className="block text-xs font-semibold text-white/60 mb-2 px-2">Edição</label>
+        <select id="course-edition" value={course.edition} onChange={e=>course.onEditionChange(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm text-white bg-white/10 border border-white/10">
+          <option value="">Todas as edições</option>{EDITIONS.map(id=><option key={id} value={id}>{editionNames[id]}</option>)}
+        </select>
+      </div>}
       {/* Nav */}
       <nav className="flex flex-col gap-1 mt-3">
-        {NAV_ITEMS.map((item) => {
+        {(course ? [...NAV_ITEMS.filter(item=>item.view!=="lixo"), {icon:BookOpen,label:"Recursos",view:"recursos" as CRMView}] : NAV_ITEMS).map((item) => {
           const active = activeView === item.view;
           return (
             <button
               key={item.view}
+              aria-current={active ? "page" : undefined}
               onClick={() => onChangeView(item.view)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
               style={{

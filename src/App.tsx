@@ -1,3 +1,4 @@
+import CourseCheckout from "./pages/CourseCheckout";
 import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -44,6 +45,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/curso-ia/checkout" element={<CourseCheckout />} />
           {CourseCheckoutDemo && (
             <Route
               path="/curso-ia/checkout-demonstracao"

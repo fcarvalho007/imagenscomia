@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Frederico Carvalho — Curso IA e CRM
  * Description: Landing page nativa, pedidos de inscrição e acesso ao CRM existente. Integração desativada por defeito.
- * Version: 0.6.2
+ * Version: 0.7.0
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: Frederico Carvalho
@@ -73,9 +73,20 @@ final class FCIA_Course {
   if($s['embed']&&$s['crm_url'])echo '<h2>CRM</h2><p>Se o alojamento impedir a incorporação, use “Abrir CRM”.</p><iframe src="'.esc_url($s['crm_url']).'" title="CRM do curso de inteligência artificial" referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:80vh;border:1px solid #ccd0d4;background:white"></iframe>';
   echo '</div>';
  }
+ static function checkout_origin_allowed($origin) {
+  if(!$origin)return true;
+  $home=wp_parse_url(home_url());$incoming=wp_parse_url($origin);
+  $own=($home['host']??'')===($incoming['host']??'')&&($home['scheme']??'')===($incoming['scheme']??'')&&($home['port']??null)===($incoming['port']??null);
+  return $own||in_array($origin,array('https://imagenscomia.com','https://preview--imagenscomia.lovable.app','https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app'),true);
+ }
+ static function checkout_config($req) {
+  if(!self::checkout_origin_allowed($req->get_header('origin')))return new WP_Error('invalid_origin','Origem inválida.',array('status'=>403));
+  $s=self::settings();$response=new WP_REST_Response(array('enabled'=>(bool)self::ready(),'nonce'=>wp_create_nonce('wp_rest'),'privacyUrl'=>$s['privacy_url'],'termsUrl'=>$s['terms_url']));
+  $response->header('Cache-Control','no-store, private');return $response;
+ }
  static function allowed_request($req) {
   if(!wp_verify_nonce($req->get_header('X-WP-Nonce'),'wp_rest'))return new WP_Error('invalid_nonce','Atualize a página e volte a tentar.',array('status'=>403));
-  $origin=$req->get_header('origin');if($origin){$home=wp_parse_url(home_url());$incoming=wp_parse_url($origin);if(($home['host']??'')!==($incoming['host']??'')||($home['scheme']??'')!==($incoming['scheme']??'')||($home['port']??null)!==($incoming['port']??null))return new WP_Error('invalid_origin','Origem inválida.',array('status'=>403));}
+  if(!self::checkout_origin_allowed($req->get_header('origin')))return new WP_Error('invalid_origin','Origem inválida.',array('status'=>403));
   return true;
  }
  static function relay($kind,$data) {
@@ -86,7 +97,7 @@ final class FCIA_Course {
   return rest_ensure_response($result);
  }
  static function receive($req,$kind) {
-  $s=self::settings();if(!self::bridge_ready()||($kind==='event'?!$s['tracking']:!self::ready()))return new WP_Error('disabled','Integração indisponível.',array('status'=>503));
+  $s=self::settings();if(!self::bridge_ready()||($kind==='event'?!$s['tracking']:(!in_array($kind,array('status','billing'),true)&&!self::ready())))return new WP_Error('disabled','Integração indisponível.',array('status'=>503));
   if(strlen($req->get_body())>10000)return new WP_Error('size','Pedido demasiado grande.',array('status'=>413));
   $data=$req->get_json_params();if(!is_array($data))return new WP_Error('fields','Dados inválidos.',array('status'=>400));
   $ip=$_SERVER['REMOTE_ADDR']??'unknown';$bucket='fcia_'.hash_hmac('sha256',$kind.$ip,wp_salt());$n=(int)get_transient($bucket);
@@ -94,7 +105,7 @@ final class FCIA_Course {
   if($kind==='checkout'){
    foreach(array('name','email','phone') as $field)if(isset($data[$field])&&!is_string($data[$field]))return new WP_Error('fields','Dados inválidos.',array('status'=>400));
    if(!empty($data['website']))return new WP_Error('invalid','Dados inválidos.',array('status'=>400));
-   $data=array_intersect_key($data,array_flip(array('request_id','edition','name','email','phone','sms_consent','marketing_consent','privacy_acknowledged','terms_acknowledged','session_id','attribution','expected_amount')));
+   $data=array_intersect_key($data,array_flip(array('request_id','edition','name','email','phone','sms_consent','marketing_consent','privacy_acknowledged','terms_acknowledged','session_id','attribution','expected_amount','checkout_source')));
    $data['name']=sanitize_text_field($data['name']??'');$data['email']=sanitize_email($data['email']??'');$data['phone']=sanitize_text_field($data['phone']??'');
    if(!$data['email']||strlen($data['name'])<2||empty($data['privacy_acknowledged']))return new WP_Error('fields','Verifique o nome, o email e a política de privacidade.',array('status'=>400));
   }elseif($kind==='event') $data=array_intersect_key($data,array_flip(array('id','session_id','name','edition')));
@@ -112,12 +123,12 @@ final class FCIA_Course {
   status_header(200);nocache_headers();header('Content-Type: text/html; charset=UTF-8');
   $indexable=!$preview&&$s['indexable']&&get_option('blog_public');header('X-Robots-Tag: '.($indexable?'index, follow':'noindex, nofollow'),true);
   $html=file_get_contents($file);$base=plugins_url('page/',__FILE__);
-  // LP1 uses the brand headline; LP2 retains the course headline. Also supports
+  // LP1 and LP2 share the brand headline. Also supports
   // installations carrying the previous bundled HTML, without replacing assets.
   $html=str_replace('<h1 id="hero-title">Curso de inteligência artificial. ', '<h1 id="hero-title">Inteligência artificial. ', $html);
   $html=str_replace('<h2 id="public-summary-title">Formação prática em IA para o seu negócio</h2>', '<h2 id="public-summary-title">Curso de inteligência artificial aplicada ao negócio</h2>', $html);
   $headline_script = <<<'JS'
-<script>(()=>{const title=document.getElementById('hero-title');if(!title)return;const sync=()=>{const text=document.body.classList.contains('is-intro')?'Inteligência artificial. ':'Curso de inteligência artificial. ';if(title.firstChild.nodeValue!==text)title.firstChild.nodeValue=text;};new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});})();</script>
+<script>(()=>{const title=document.getElementById('hero-title');if(!title)return;const sync=()=>{const text='Inteligência artificial. ';if(title.firstChild.nodeValue!==text)title.firstChild.nodeValue=text;};new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});})();</script>
 JS;
   $html=str_replace('</body>',$headline_script.'</body>',$html);
 
@@ -129,9 +140,9 @@ JS;
   $canonical=$s['page_id']?get_permalink($s['page_id']):'';
   if($indexable)$html=str_replace('content="noindex, nofollow"','content="index, follow, max-image-preview:large"',$html);
   if($canonical)$html=str_replace('</head>','<link rel="canonical" href="'.esc_url($canonical).'"><meta property="og:url" content="'.esc_url($canonical).'">'.'</head>',$html);
-  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.6.2',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
-  $config=array('enabled'=>!$preview&&self::ready(),'tracking'=>!$preview&&$s['tracking']&&$s['privacy_url']&&self::bridge_ready(),'registrationUrl'=>rest_url('fcia/v1/checkout'),'quoteUrl'=>rest_url('fcia/v1/quote'),'statusUrl'=>rest_url('fcia/v1/status'),'billingUrl'=>rest_url('fcia/v1/billing'),'eventUrl'=>rest_url('fcia/v1/event'),'nonce'=>wp_create_nonce('wp_rest'),'privacyUrl'=>$s['privacy_url'],'termsUrl'=>$s['terms_url']);
-  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.6.2',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
+  $html=str_replace('</head>','<meta property="og:image" content="'.esc_url($base.'assets/frederico-carvalho-v20.webp').'"><link rel="stylesheet" href="'.esc_url(add_query_arg('ver','0.7.0',plugins_url('assets/integration.css',__FILE__))).'">'.'</head>',$html);
+  $config=array('enabled'=>!$preview&&self::ready(),'tracking'=>!$preview&&$s['tracking']&&$s['privacy_url']&&self::bridge_ready(),'registrationUrl'=>rest_url('fcia/v1/checkout'),'quoteUrl'=>rest_url('fcia/v1/quote'),'statusUrl'=>rest_url('fcia/v1/status'),'billingUrl'=>rest_url('fcia/v1/billing'),'eventUrl'=>rest_url('fcia/v1/event'),'nonce'=>wp_create_nonce('wp_rest'),'privacyUrl'=>$s['privacy_url'],'termsUrl'=>$s['terms_url'],'checkoutUrl'=>'https://imagenscomia.com/curso-ia/checkout');
+  $html=str_replace('</body>','<script>window.FCIA_INTEGRATION='.wp_json_encode($config,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).';</script><script defer src="'.esc_url(add_query_arg('ver','0.7.0',plugins_url('assets/integration.js',__FILE__))).'"></script></body>',$html);
   echo $html;exit;
  }
 }
@@ -139,3 +150,14 @@ add_action('admin_menu',function(){add_menu_page('Curso IA','Curso IA','manage_o
 add_action('admin_init',function(){register_setting('fcia_course',FCIA_Course::OPTION,array('sanitize_callback'=>array('FCIA_Course','sanitize')));});
 add_action('rest_api_init',function(){foreach(array('checkout','event','quote','status','billing') as $kind)register_rest_route('fcia/v1','/'.$kind,array('methods'=>'POST','permission_callback'=>array('FCIA_Course','allowed_request'),'callback'=>function($req)use($kind){return FCIA_Course::receive($req,$kind);}));});
 add_action('template_redirect',array('FCIA_Course','render'),0);
+
+add_action('rest_api_init',function(){register_rest_route('fcia/v1','/checkout-config',array('methods'=>'GET','permission_callback'=>'__return_true','callback'=>array('FCIA_Course','checkout_config')));});
+add_filter('rest_pre_serve_request',function($served,$result,$request){
+ if(strpos($request->get_route(),'/fcia/v1/')!==0)return $served;
+ header('Cache-Control: no-store, private');header('Vary: Origin',false);
+ $origin=get_http_origin();
+ if($origin&&FCIA_Course::checkout_origin_allowed($origin)){
+  header('Access-Control-Allow-Origin: '.$origin);header('Access-Control-Allow-Methods: GET, POST, OPTIONS');header('Access-Control-Allow-Headers: Content-Type, X-WP-Nonce');
+ }else{header_remove('Access-Control-Allow-Origin');}
+ return $served;
+},20,3);

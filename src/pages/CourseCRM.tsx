@@ -1,3 +1,7 @@
+import CRMSidebar, { type CRMView } from "@/components/crm/CRMSidebar";
+import { WebinarProvider } from "@/contexts/WebinarContext";
+import { Search, RefreshCw, Download } from "lucide-react";
+import "./course-crm.css";
 import CourseMaterials from "@/components/course/CourseMaterials";
 import CourseOperations from "@/components/course/CourseOperations";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,7 +25,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -75,7 +79,12 @@ const date = (value: string) =>
   });
 const selectClass =
   "h-11 rounded-md border border-input bg-background px-3 text-sm";
-export default function CourseCRM() {
+export default function CourseCRM() { return <WebinarProvider><CourseCRMContent /></WebinarProvider>; }
+function CourseCRMContent() {
+  const [activeView, setActiveView] = useState<CRMView>("dashboard");
+  const [search, setSearch] = useState("");
+  const viewNames: Partial<Record<CRMView,string>> = {dashboard:"Dashboard",pipeline:"Pipeline",tabela:"Tabela",faturacao:"Faturação",templates:"Automações",comunicacao:"Comunicação",recursos:"Recursos"};
+
   const [auth, setAuth] = useState<boolean | null>(null),
     [rows, setRows] = useState<Row[]>([]),
     [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -247,77 +256,27 @@ export default function CourseCRM() {
       30,
     );
   }
+  const visibleRows = rows.filter(row=>!search || `${row.name} ${row.email} ${row.phone}`.toLocaleLowerCase('pt-PT').includes(search.toLocaleLowerCase('pt-PT')));
+  const pipelineColors: Record<string,string> = {new:"#94a3b8",contacted:"#8b5cf6",awaiting_payment:"#f59e0b",confirmed:"#22c55e",cancelled:"#64748b"};
+  function exportRows() {
+    const safe=(value:unknown)=>'"'+String(value??'').replace(/^[=+@-]/," '$&").replace(/"/g,'""')+'"';
+    const csv=[['Nome','Email','Telemóvel','Edição','Estado'],...visibleRows.map(r=>[r.name,r.email,r.phone,editionNames[r.edition],states[r.status]])].map(row=>row.map(safe).join(';')).join('\r\n');
+    const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='inscricoes-curso-ia.csv';a.click();URL.revokeObjectURL(url);
+  }
+  const searchControl=<label className="course-crm-search"><Search aria-hidden="true" size={17}/><Input aria-label="Pesquisar registos carregados" placeholder="Pesquisar nome, email ou telemóvel…" value={search} onChange={e=>setSearch(e.target.value)} /></label>;
   if (auth === null)
     return <main className="p-8">A verificar o acesso ao CRM…</main>;
   if (!auth) return <CRMLogin onLogin={() => void checkAuth()} />;
   return (
-    <main className="min-h-screen bg-background text-foreground p-5 md:p-9">
-      <div className="mx-auto max-w-7xl flex flex-col gap-7">
-        <header className="flex flex-wrap justify-between gap-5 items-start">
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">
-              WebinarCRM / Curso de inteligência artificial
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <label className="flex flex-col gap-2">
-                Projeto
-                <select
-                  className={selectClass}
-                  value="curso-ia"
-                  onChange={(e) => {
-                    if (e.target.value !== "curso-ia")
-                      window.location.assign("/crm?webinar=" + e.target.value);
-                  }}
-                >
-                  <option value="curso-ia">
-                    Curso de IA aplicada ao negócio
-                  </option>
-                  <option value="imagens">Webinar Imagens IA</option>
-                  <option value="video">Webinar Vídeo IA</option>
-                  <option value="consolidado">Todos os webinars</option>
-                </select>
-              </label>
-              <label className="flex flex-col gap-2">
-                Edição
-                <select
-                  className={selectClass}
-                  value={edition}
-                  onChange={(e) => {
-                    setEdition(e.target.value);
-                    setStatus("");
-                  }}
-                >
-                  <option value="">Visão geral das três edições</option>
-                  {EDITIONS.map((id) => (
-                    <option value={id} key={id}>
-                      {editionNames[id]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <h1 className="text-3xl font-semibold mt-6">
-              {edition ? editionNames[edition] : "Um curso. Três edições."}
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Inscrições, pagamentos e acompanhamento, no mesmo lugar.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {import.meta.env.DEV && <Button variant="outline" asChild><a href="/curso-ia/checkout-demonstracao">Ver checkout de demonstração</a></Button>}
-            <Button
-              variant="outline"
-              onClick={() => void load()}
-              disabled={loading}
-            >
-              Atualizar
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => void supabase.auth.signOut()}
-            >
-              Sair
-            </Button>
+    <div className="course-crm-shell">
+      <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);setSearch("");}} onLogout={()=>void supabase.auth.signOut()} course={{edition,onEditionChange:e=>{setEdition(e);setStatus("");setSearch("");}}} />
+      <main className="course-crm-main">
+      <div className="flex flex-col gap-6">
+        <header className="course-crm-heading">
+          <div><h1>{viewNames[activeView]}</h1><p>{edition ? editionNames[edition] : "Curso de IA aplicada ao negócio · Todas as edições"}</p></div>
+          <div className="flex flex-wrap items-center gap-2">
+            {(activeView==="dashboard"||activeView==="faturacao")&&<select aria-label="Período dos indicadores" className={selectClass} value={period} onChange={e=>setPeriod(e.target.value)}><option value="7">7 dias</option><option value="14">14 dias</option><option value="30">30 dias</option><option value="all">Tudo</option></select>}
+            <Button variant="outline" size="sm" onClick={()=>void load()} disabled={loading}><RefreshCw aria-hidden="true" />{loading?"A atualizar…":"Atualizar"}</Button>
           </div>
         </header>
         {error && (
@@ -325,8 +284,7 @@ export default function CourseCRM() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <div className="flex flex-wrap items-center gap-4"><label className="text-sm font-medium">Período dos indicadores <select className={selectClass + " ml-3"} value={period} onChange={ev=>setPeriod(ev.target.value)}><option value="all">Desde o início</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></label><p className="text-sm text-muted-foreground">Pedidos pela data de entrada; pagamentos pela data de confirmação. Tarefas vencidas: situação atual.</p></div>
-        <section
+        {(activeView==="dashboard"||activeView==="faturacao")&&<section
           aria-label="Indicadores da edição"
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"
         >
@@ -346,24 +304,8 @@ export default function CourseCRM() {
               </CardHeader>
             </Card>
           ))}
-        </section>
-        <Tabs
-          onValueChange={(view) => {
-            if (view !== "inscricoes") setStatus("");
-          }}
-          defaultValue="dashboard"
-          className="flex flex-col gap-5"
-        >
-          <div className="overflow-x-auto">
-            <TabsList aria-label="Áreas do CRM">
-              <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-              <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
-              <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
-              <TabsTrigger value="faturacao">Faturação</TabsTrigger>
-              <TabsTrigger value="automacoes">Automações</TabsTrigger>
-              <TabsTrigger value="recursos">Recursos</TabsTrigger>
-            </TabsList>
-          </div>
+        </section>}
+        <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="flex flex-col gap-5">
           <TabsContent value="dashboard">
             <div className="grid md:grid-cols-2 gap-5">
               <Card>
@@ -386,11 +328,11 @@ export default function CourseCRM() {
                       ],
                     ].map(([label, value]) => (
                       <li
-                        className="flex justify-between gap-4 border-b pb-3"
+                        className="flex flex-col gap-2 pb-3"
                         key={String(label)}
                       >
-                        <span>{label}</span>
-                        <strong>{value ?? "—"}</strong>
+                        <div className="flex justify-between gap-4"><span>{label}</span><strong>{value ?? "—"}</strong></div>
+                        <div className="course-crm-funnel" aria-hidden="true"><span style={{width:`${metrics?.sessions && typeof value==='number' ? Math.min(100,value/metrics.sessions*100):0}%`}} /></div>
                       </li>
                     ))}
                   </ol>
@@ -426,26 +368,27 @@ export default function CourseCRM() {
               Percurso comercial. Apresenta os {rows.length} registos
               carregados; use “Carregar mais” para consultar os restantes.
             </p>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {searchControl}
+            <div className="course-crm-board">
               {Object.entries(states).map(([state, label]) => (
-                <Card key={state}>
+                <Card key={state} className="course-crm-column" style={{borderTopColor:pipelineColors[state]}}>
                   <CardHeader>
                     <CardTitle className="text-base">{label}</CardTitle>
                     <CardDescription>
-                      {rows.filter((r) => r.status === state).length} carregados
+                      {visibleRows.filter((r) => r.status === state).length} registos
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-3">
-                    {rows
+                    {visibleRows
                       .filter((r) => r.status === state)
                       .map((r) => (
                         <Button
                           key={r.id}
                           variant="outline"
-                          className="h-auto text-left justify-start whitespace-normal"
+                          className="course-crm-person"
                           onClick={() => open(r)}
                         >
-                          {r.name}
+                          <strong>{r.name}</strong><span className="course-crm-person-email">{r.email}</span><small>{editionNames[r.edition]}</small><Badge variant={r.status==="confirmed"?"default":"secondary"}>{states[r.status]}</Badge><small>Inscrição · {date(r.created_at)}</small>
                         </Button>
                       ))}
                   </CardContent>
@@ -454,6 +397,7 @@ export default function CourseCRM() {
             </div>
           </TabsContent>
           <TabsContent value="inscricoes">
+            <div className="course-crm-table-tools">{searchControl}<Button variant="outline" onClick={exportRows} disabled={!visibleRows.length}><Download aria-hidden="true"/>Exportar CSV</Button></div>
             <label className="flex flex-col gap-2 mb-5 max-w-xs">
               Estado
               <select
@@ -478,6 +422,7 @@ export default function CourseCRM() {
                   <tr>
                     {[
                       "Participante",
+                      "Telemóvel",
                       "Edição",
                       "Estado",
                       "Próximo contacto",
@@ -490,7 +435,7 @@ export default function CourseCRM() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
+                  {visibleRows.map((r) => (
                     <tr key={r.id}>
                       <td className="p-4 border-b">
                         <strong>{r.name}</strong>
@@ -498,10 +443,11 @@ export default function CourseCRM() {
                           {r.email}
                         </span>
                       </td>
+                      <td className="p-4 border-b">{r.phone||"—"}</td>
                       <td className="p-4 border-b">
                         {editionNames[r.edition]}
                       </td>
-                      <td className="p-4 border-b">{states[r.status]}</td>
+                      <td className="p-4 border-b"><Badge variant={r.status==="confirmed"?"default":"secondary"}>{states[r.status]}</Badge></td>
                       <td className="p-4 border-b">
                         {r.next_followup_at
                           ? date(r.next_followup_at)
@@ -585,6 +531,7 @@ export default function CourseCRM() {
               </table>
             </div>
           </TabsContent>
+          <TabsContent value="comunicacao"><CourseOperations edition={edition} refresh={operationRefresh} communicationOnly /></TabsContent>
           <TabsContent value="recursos"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes">
             <CourseOperations edition={edition} refresh={operationRefresh} />
@@ -793,6 +740,6 @@ export default function CourseCRM() {
           </Card>
         )}
       </div>
-    </main>
+    </main></div>
   );
 }

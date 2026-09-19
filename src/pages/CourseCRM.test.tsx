@@ -98,7 +98,7 @@ describe("Course CRM access and edition scope", () => {
   });
   it("filters rows and metrics together when changing edition", async () => {
     render(<CourseCRM />);
-    await screen.findByText("Um curso. Três edições.");
+    await screen.findByRole("heading", {name:"Dashboard"});
     await waitFor(() => expect(mocks.from).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText("Edição"), {
       target: { value: "porto-2026" },
@@ -108,6 +108,18 @@ describe("Course CRM access and edition scope", () => {
       edition_id: "porto-2026",
       since: null,
     });
+  });
+  it("keeps the shared WebinarCRM sidebar and switches pipeline and table in place", async () => {
+    render(<CourseCRM />);
+    await screen.findByRole("heading", {name:"Dashboard"});
+    expect(screen.getByText("WebinarCRM")).toBeInTheDocument();
+    expect(screen.getByLabelText("Projeto")).toHaveValue("curso-ia");
+    fireEvent.click(screen.getByRole("button",{name:"Pipeline"}));
+    expect(screen.getByRole("heading",{name:"Pipeline"})).toBeInTheDocument();
+    expect(screen.getByRole("button",{name:"Pipeline"})).toHaveAttribute("aria-current","page");
+    fireEvent.click(screen.getByRole("button",{name:"Tabela"}));
+    expect(screen.getByRole("table",{name:"Inscrições da edição selecionada"})).toBeInTheDocument();
+    expect(screen.getByRole("button",{name:"Exportar CSV"})).toBeDisabled();
   });
   it("shows a backend error instead of invented statistics", async () => {
     mocks.rpc.mockImplementation(async (name) =>

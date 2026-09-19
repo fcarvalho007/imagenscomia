@@ -65,7 +65,7 @@
  }
  const holder=$('#inscricao');
  let form;
- if(config.enabled&&holder){
+ if(config.enabled&&holder&&!config.checkoutUrl){
   holder.removeAttribute('role');
   const intro=holder.querySelector('p');if(intro)intro.textContent='Preencha os seus dados e continue para o pagamento seguro. A inscrição é confirmada após validação do pagamento.';
   form=document.createElement('form');form.className='fcia-registration';form.id='fcia-registration';
@@ -107,10 +107,22 @@
    finally{busy=false;button.disabled=!quote;button.textContent='Continuar para pagamento';}
   });
  }
+ function checkoutLink(){
+  const target=new URL(config.checkoutUrl);if(target.origin!=='https://imagenscomia.com'||target.pathname!=='/curso-ia/checkout')throw new Error('Invalid checkout destination');
+  target.searchParams.set('edition',edition);
+  if(consent&&session){const data=new URLSearchParams({metrics:'allow',sid:session,...campaign});target.hash=data.toString();}
+  return target.href;
+ }
+ if(config.enabled&&holder&&config.checkoutUrl){
+  const intro=holder.querySelector('p');if(intro)intro.textContent='Continue para a inscrição segura, com a edição e o valor que escolheu.';
+  const link=document.createElement('a');link.className='button button-primary';link.textContent='Continuar a inscrição';link.href=checkoutLink();link.id='fcia-checkout-link';
+  link.addEventListener('click',()=>{event('registration_started');link.href=checkoutLink();});holder.insertBefore(link,$('#registration-whatsapp'));
+ }
  document.addEventListener('fc:checkout',e=>{
   const label=String(e.detail?.label||'').toLowerCase();edition=label.includes('porto')?'porto-2026':label.includes('online')?'online-2026':'lisboa-2026';
   if(form)form.selectEdition(edition);
   event('edition_selected',false);event('registration_started');
+  if(config.enabled&&config.checkoutUrl)window.location.assign(checkoutLink());
  });
  if(config.enabled&&new URLSearchParams(location.search).get('fcia_payment')==='return'){
   let order;try{order=JSON.parse(storage.get('fcia-checkout',true)||'null');}catch{order=null;}
