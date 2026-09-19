@@ -216,13 +216,14 @@ const UpgradeVideo = () => {
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(plan, planGrossPrice(plan));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tente novamente.");
       setLoading(false);
     }
-  }, [userData]);
+  }, [editToken, userData.nome]);
 
   // ── Free confirmation (in-card, step 7) ──
   const goToFreeConfirmation = useCallback(() => {
