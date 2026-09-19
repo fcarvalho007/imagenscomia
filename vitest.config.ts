@@ -11,6 +11,6 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src"), "npm:htmlparser2@10.0.0": "htmlparser2" },
+    alias: { "@": path.resolve(__dirname, "./src"), "@shared": path.resolve(__dirname, "./supabase/functions/_shared"), "npm:htmlparser2@10.0.0": "htmlparser2" },
   },
 });
