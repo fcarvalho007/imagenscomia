@@ -372,7 +372,7 @@ export const PurchaseModal = ({
 
               <button
                 type="submit"
-                disabled={loading || (!invoiceValid && buyerFieldsValid) || invoiceSaveError}
+                disabled={loading || !registrationReady || !invoiceValid || invoiceSaveError}
                 className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
                   background: ctaBg(plan),
