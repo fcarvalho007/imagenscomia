@@ -17,7 +17,7 @@ for (const file of [
   "20260918153532_course_queue_revoke.sql",
   "20260918180000_course_operation_hardening.sql",
   "20260919090040_9988a0ca-e1eb-4a1b-9ad9-2acc888a72ce.sql",
-  "20260919110000_course_sms_templates.sql",
+  "20260919092733_c5194bf1-ed45-4f6a-9c33-abfe71bec5a9.sql",
 ])
   await db.exec(
     await readFile(

@@ -222,7 +222,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
   }
   const recent = heartbeat && now - Date.parse(heartbeat) < 20 * 60000;
   return (
-    <section className="flex flex-col gap-7" aria-label="Operação das automações">
+    <section className="flex flex-col gap-7 pt-10 md:pt-0" aria-label="Operação das automações">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-5">
         <div>
           <h2 className="text-xl font-semibold">{communicationOnly ? "Histórico de comunicação" : "Emails, SMS e faturação"}</h2>
@@ -248,7 +248,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         </p>
       )}
       {!loaded && !error && <p role="status">A carregar a configuração…</p>}
-      {loaded && counts && <div className="flex flex-wrap gap-3 text-sm" aria-label="Estado das operações">{[["queued","Agendadas"],["sent","Aceites pelo fornecedor"],["blocked","Bloqueadas"],["review","A verificar"]].map(([key,label])=><button key={key} className="rounded-lg border bg-white px-4 py-3 text-left hover:bg-slate-50" onClick={()=>{setStateFilter(key);setTemplateFilter("");setChannel("all");setView(key==="sent"?"history":"pending");setTab("pessoas");}}><strong className="mr-2">{counts[key]||0}</strong>{label}</button>)}</div>}
+      {loaded && counts && <div className="flex flex-wrap gap-3 text-sm" aria-label="Estado das operações">{[["queued","Agendadas"],["sent","Aceites pelo fornecedor"],["blocked","Bloqueadas"],["review","A verificar"]].map(([key,label])=><button key={key} className="rounded-lg border bg-white px-4 py-3 text-left hover:bg-slate-50" onClick={()=>{setStateFilter(key);setTemplateFilter("");setChannel("all");setView(key==="sent"?"history":"pending");setTab("pessoas");}}><strong className="mr-2">{counts[key]||0}</strong>{" "}{label}</button>)}</div>}
       {loaded && counts && ((counts.blocked||0)+(counts.review||0)>0) && <Alert variant="destructive"><AlertDescription>Há operações que precisam de atenção. Abra «Bloqueadas» para completar a configuração ou «A verificar» para confirmar o resultado no fornecedor antes de repetir um envio.</AlertDescription></Alert>}
       {!communicationOnly && <AutomationTabs value={tab} onChange={setTab} configuration />}
       {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setStateFilter(state);setTemplateFilter("");setChannel("all");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}

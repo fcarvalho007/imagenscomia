@@ -91,7 +91,7 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
 
       {course && <div className="px-1 py-3">
         <label htmlFor="course-edition" className="block text-xs font-semibold text-white/60 mb-2 px-2">Edição</label>
-        <select id="course-edition" value={course.edition} onChange={e=>course.onEditionChange(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm text-white bg-white/10 border border-white/10">
+        <select aria-label="Edição" id="course-edition" value={course.edition} onChange={e=>course.onEditionChange(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm text-white bg-white/10 border border-white/10">
           <option value="">Todas as edições</option>{EDITIONS.map(id=><option key={id} value={id}>{editionNames[id]}</option>)}
         </select>
       </div>}
