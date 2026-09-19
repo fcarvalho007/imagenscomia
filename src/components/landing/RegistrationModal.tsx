@@ -27,14 +27,29 @@ export const RegistrationModal = () => {
   const firstName = fullName.trim().split(" ")[0] || "";
   const lastName = fullName.trim().split(" ").slice(1).join(" ");
 
-  const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
+  const registerFree = async (): Promise<{
+    referralCode?: string;
+    referralLink?: string;
+    alreadyRegistered?: boolean;
+    needsVerification?: boolean;
+    editToken?: string;
+    name?: string;
+  } | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPhone = whatsapp ? whatsapp.replace(/[^\d]/g, "") : undefined;
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined, webinar },
+      body: {
+        firstName,
+        lastName,
+        email: normalizedEmail,
+        whatsapp: normalizedPhone || undefined,
+        referredBy: referredBy || undefined,
+        webinar,
+        editToken: readToken(scope) ?? undefined,
+      },
     });
     if (fnError) throw fnError;
-    return { referralCode: data.referralCode, referralLink: data.referralLink, alreadyRegistered: data.alreadyRegistered };
+    return data;
   };
 
   const handleCapture = async () => {
