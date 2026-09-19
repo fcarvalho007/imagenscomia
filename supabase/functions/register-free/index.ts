@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { ownsRegistration } from "../_shared/legacy/access.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,11 +51,7 @@ serve(async (req) => {
 
     // An existing registration is only disclosed to whoever proves possession of
     // its token. Otherwise the answer is generic: no data, no sync, no PII.
-    const ownsExisting =
-      !!existing?.edit_token &&
-      typeof providedToken === "string" &&
-      providedToken.trim().length >= 20 &&
-      providedToken.trim() === existing.edit_token;
+    const ownsExisting = ownsRegistration(providedToken, existing?.edit_token);
 
     if (existing && !ownsExisting) {
       return new Response(

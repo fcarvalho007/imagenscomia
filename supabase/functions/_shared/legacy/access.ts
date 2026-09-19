@@ -32,8 +32,31 @@ export const LEGACY_DESTINATIONS: Record<LegacyDestination, DestinationSpec> = {
 
 export function resolveDestination(value: unknown): DestinationSpec | null {
   if (typeof value !== "string") return null;
-  const spec = LEGACY_DESTINATIONS[value as LegacyDestination];
-  return spec ?? null;
+  // An own-property check keeps inherited keys such as "constructor" or
+  // "toString" from resolving to a truthy prototype member.
+  if (!Object.prototype.hasOwnProperty.call(LEGACY_DESTINATIONS, value)) return null;
+  return LEGACY_DESTINATIONS[value as LegacyDestination] ?? null;
+}
+
+/** Escapes text before it is interpolated into an HTML email body. */
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Proof of possession: only an exact, non-trivial token match authorises access
+ * to an existing registration. An email or an id never does.
+ */
+export function ownsRegistration(providedToken: unknown, storedToken: string | null | undefined): boolean {
+  if (typeof providedToken !== "string" || !storedToken) return false;
+  const provided = providedToken.trim();
+  if (provided.length < 20) return false;
+  return provided === storedToken.trim();
 }
 
 /** Lower-cases and trims; returns null when the value is not a plausible address. */

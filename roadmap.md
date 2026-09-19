@@ -21,6 +21,8 @@
 - [x] register-free devolve token ao próprio, create-payment exige token e webinar correto sem alterar plano pago, group checkout não sobrescreve registos alheios, generate-reminder exige administrador com MFA.
 - [x] Analytics: InitiateCheckout no arranque do checkout; Purchase só com pagamento confirmado e deduplicado por transação.
 - [x] CRM exige MFA efetivamente verificada; páginas públicas leem apenas a vista pública de definições.
+- [x] 16 testes unitários novos da recuperação de acesso e da posse de token; nome e ligação escapados no email; destinos validados por propriedade própria.
+- [ ] Publicar legacy-access-link, create-payment, register-free, generate-reminder (a aguardar autorização; nada publicado).
 - [ ] Aplicar a migração apenas com os percursos públicos adaptados e testados. Ficheiro permanece em supabase/migrations-draft, fora da instalação automática.
 
 A segurança das tabelas antigas NÃO está resolvida em produção por este rascunho. Não publicar como se a integração estivesse encerrada nem executar o SQL isoladamente. Os pedidos anteriores em fila no Lovable estão pausados e são substituídos por este estado consolidado.
