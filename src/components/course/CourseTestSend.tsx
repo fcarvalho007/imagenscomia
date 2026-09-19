@@ -183,7 +183,12 @@ export default function CourseTestSend() {
           {sending ? <Loader2 size={13} className="animate-spin" /> : <TestTube size={13} />}
           Enviar teste
         </button>
-        {last && <span className="text-xs text-slate-500">{stateMessages[last] || last}</span>}
+        {last && (
+          <span className="text-xs text-slate-500">
+            {stateMessages[last] || last}
+            {lastReason ? ` ${lastReason}` : ""}
+          </span>
+        )}
       </div>
       <p className="mt-2 text-xs text-slate-500">Limite: um teste por minuto e 20 por dia em cada canal. Os testes ficam num registo separado.</p>
     </div>
