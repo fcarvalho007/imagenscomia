@@ -95,14 +95,13 @@ const UpgradeVideo = () => {
 
   const firstName = userData.nome?.trim().split(" ")[0] || "";
 
-  // ── Helper: restore state from DB record ──
-  const restoreFromRecord = useCallback((data: any) => {
+  // ── Helper: restore state from the token-scoped lookup (never returns the token) ──
+  const restoreFromRecord = useCallback((data: LegacyRegistration) => {
     setRegistrationId(data.id);
-    setEditToken(data.edit_token || null);
     setUserData(prev => ({
       ...prev,
       nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-      email: prev.email || data.email,
+      email: data.email || prev.email,
     }));
     if (data.role) setRole(data.role);
     if (data.team_size) setTeamSize(data.team_size);
@@ -115,42 +114,48 @@ const UpgradeVideo = () => {
     }
   }, []);
 
-  // ── Auto-check on mount (email in URL) ──
+  // ── Hydrate from the token on mount ──
   useEffect(() => {
-    if (!userData.email || needsRecovery) {
+    if (!editToken) {
       setInitialLoading(false);
       return;
     }
-    const check = async () => {
+    let active = true;
+    (async () => {
       try {
-        const { data } = await supabase
-          .from("registrations")
-          .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
-          .eq("email", userData.email)
-          .eq("webinar", "video")
-          .maybeSingle();
-
-        if (data && (data.step_reached ?? 0) >= 2) {
-          restoreFromRecord(data);
+        const reg = await legacyRegLookup(editToken);
+        if (!active) return;
+        if (!reg) {
+          clearToken("upgrade-video");
+          setEditToken(null);
+          setNeedsRecovery(true);
+          return;
+        }
+        restoreFromRecord(reg);
+        setNeedsRecovery(false);
+        if ((reg.step_reached ?? 0) >= 2) {
           setReturningData({
-            step_reached: data.step_reached,
-            paid_at: data.paid_at,
-            plan_selected: data.plan_selected,
+            step_reached: reg.step_reached,
+            paid: reg.paid,
+            plan_selected: reg.plan_selected,
           });
           setIsReturning(true);
           setStep(0);
         }
       } catch (err) {
-        console.error("Auto-check error:", err);
+        if (!active) return;
+        clearToken("upgrade-video");
+        setEditToken(null);
+        setNeedsRecovery(true);
       } finally {
-        setInitialLoading(false);
+        if (active) setInitialLoading(false);
       }
-    };
-    check();
+    })();
+    return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editToken]);
 
-  // ── Recovery ──
+  // ── Recovery: sends the access link, never reveals data ──
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -160,57 +165,24 @@ const UpgradeVideo = () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
-        .eq("email", trimmed)
-        .eq("webinar", "video")
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página do vídeo.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      setUserData(prev => ({ ...prev, email: trimmed }));
-      restoreFromRecord(data);
-
-      if ((data.step_reached ?? 0) >= 2) {
-        setReturningData({
-          step_reached: data.step_reached,
-          paid_at: data.paid_at,
-          plan_selected: data.plan_selected,
-        });
-        setIsReturning(true);
-        setStep(0);
-      } else {
-        setStep(1);
-      }
-
-      setNeedsRecovery(false);
-    } catch (err) {
-      console.error("Recovery error:", err);
-      setRecoveryError("Erro ao recuperar dados. Tente novamente.");
+      await requestAccessLink(trimmed, "upgrade-video");
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError("Erro de ligação. Tente novamente daqui a pouco.");
     } finally {
       setRecoveryLoading(false);
     }
-  }, [recoveryEmail, restoreFromRecord]);
+  }, [recoveryEmail]);
 
-  // ── Save step data ──
+  // ── Save step data (whitelisted fields, token required) ──
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
-    if (!userData.email) return;
+    if (!editToken) return;
     try {
-      await supabase
-        .from("registrations")
-        .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email)
-        .eq("webinar", "video");
+      await legacyRegSaveStep(editToken, "video", stepNum, extraData);
     } catch (err) {
       console.error("Error saving step data:", err);
     }
-  }, [userData.email]);
+  }, [editToken]);
 
   // ── Navigation helpers ──
   const goForward = useCallback((next: number) => {
