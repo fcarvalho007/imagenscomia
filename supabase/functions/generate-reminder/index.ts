@@ -23,6 +23,23 @@ serve(async (req) => {
     const EUPAGO_API_KEY = Deno.env.get("EUPAGO_API_KEY");
     if (!EUPAGO_API_KEY) throw new Error("EUPAGO_API_KEY not configured");
 
+    // Administrative action: requires a verified admin JWT (MFA aal2).
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const isAdmin = await authorizedAdmin(
+      req,
+      authClient,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+    );
+    if (!isAdmin) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const { email, plan, nome, webinar: rawWebinar } = await req.json();
     const webinar = rawWebinar || "imagens";
     if (!email || !plan || !nome) {
