@@ -510,6 +510,31 @@ assert.equal((await db.query("select * from course_sms_templates")).rows.length,
 await denied(()=>db.query("select save_course_sms_template('porto-2026','practical_sms','Texto para participantes.',null)"));
 await auth('anon');
 await denied(()=>db.query("select * from course_sms_templates"));
+
+// Complete isolated journey: consent-based visits are separate from authoritative purchases.
+await auth('service_role');
+await db.exec("update course_editions set sales_enabled=true,capacity=1000,starts_at=now()+interval '90 days',ends_at=now()+interval '91 days',early_until=now()+interval '1 day'");
+for(const [i,edition] of ['lisboa-2026','porto-2026','online-2026'].entries()){
+ await auth('authenticated',true,'aal2');
+ const before=(await rpc("select course_period_metrics($1,null) m",[edition])).m;
+ await auth('service_role');
+ const sid=`ee000000-0000-4000-8000-00000000000${i+1}`;
+ const request=`ef000000-0000-4000-8000-00000000000${i+1}`;
+ for(const name of ['page_view','quiz_completed','pricing_viewed','registration_started']){
+  for(let duplicate=0;duplicate<2;duplicate++)await db.query("insert into course_events(id,session_id,name,edition) values(gen_random_uuid(),$1,$2,$3)",[sid,name,name==='page_view'?null:edition]);
+ }
+ const amount=(await rpc("select course_quote($1) q",[edition])).q.amount_cents;
+ const claimed=await claim({...payload,request_id:request,edition,email:`journey-${i}@example.invalid`,session_id:sid},amount);
+ assert.equal(claimed.state,'claimed');checks++;
+ await auth('authenticated',true,'aal2');
+ const pending=(await rpc("select course_period_metrics($1,null) m",[edition])).m;
+ assert.equal(pending.confirmed,before.confirmed);assert.equal(pending.requests,before.requests+1);assert.equal(pending.registration_sessions,before.registration_sessions+1);checks++;
+ await auth('service_role');
+ for(let duplicate=0;duplicate<2;duplicate++)await db.query("select confirm_course_payment($1,$2,$3,'EUR','Paid')",[claimed.id,`journey-${i}`,amount]);
+ await auth('authenticated',true,'aal2');
+ const paid=(await rpc("select course_period_metrics($1,null) m",[edition])).m;
+ assert.equal(paid.confirmed,before.confirmed+1);assert.equal(paid.revenue_cents,before.revenue_cents+amount);checks++;
+}
 await db.close();
 console.log(
   `PASS: ${checks} database checks; migrations, RLS, prices, idempotency, signed-payment reconciliation, refunds, edition isolation and capacity.`,

@@ -19,9 +19,9 @@ async function tracking(consent=false){
 describe('WordPress tracking regressions',()=>{
  it('records a registration start per edition, not only the first selected edition',async()=>{
   const {dom,w,fetch}=await tracking(true);
-  for(const label of ['Porto','Online','Online'])w.document.dispatchEvent(new w.CustomEvent('fc:checkout',{detail:{label}}));
+  for(const label of ['Lisboa','Porto','Online','Online','Lisboa'])w.document.dispatchEvent(new w.CustomEvent('fc:checkout',{detail:{label}}));
   await tick();const events=fetch.mock.calls.map(c=>JSON.parse(c[1].body)).filter(e=>e.name==='registration_started');
-  expect(events.map(e=>e.edition)).toEqual(['porto-2026','online-2026']);dom.window.close();
+  expect(events.map(e=>e.edition)).toEqual(['lisboa-2026','porto-2026','online-2026']);dom.window.close();
  });
  it('does not consume a quiz listener before metrics consent',async()=>{
   const {dom,w,fetch}=await tracking();
