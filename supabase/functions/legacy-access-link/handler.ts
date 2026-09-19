@@ -6,6 +6,7 @@
 // to the address stored on the registration itself.
 import {
   buildAccessUrl,
+  escapeHtml,
   normalizeEmail,
   resolveDestination,
   type DestinationSpec,
@@ -35,7 +36,8 @@ export const GENERIC_MESSAGE =
 const genericBody = JSON.stringify({ ok: true, message: GENERIC_MESSAGE });
 
 export function renderAccessEmail(firstName: string | null, spec: DestinationSpec, url: string): string {
-  const greeting = firstName && firstName.trim() ? `Olá ${firstName.trim()},` : "Olá,";
+  const safeName = firstName && firstName.trim() ? escapeHtml(firstName.trim()) : "";
+  const greeting = safeName ? `Olá ${safeName},` : "Olá,";
   return `<!doctype html>
 <html lang="pt-PT"><body style="margin:0;padding:24px;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#111827;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
@@ -43,10 +45,10 @@ export function renderAccessEmail(firstName: string | null, spec: DestinationSpe
       <tr><td>
         <p style="margin:0 0 16px;font-size:16px;line-height:1.6;">${greeting}</p>
         <p style="margin:0 0 24px;font-size:16px;line-height:1.6;">
-          Aqui está a tua ligação pessoal para aceder a ${spec.label}. É válida apenas para a tua inscrição — não a partilhes.
+          Aqui está a tua ligação pessoal para aceder a ${escapeHtml(spec.label)}. É válida apenas para a tua inscrição — não a partilhes.
         </p>
         <p style="margin:0 0 24px;">
-          <a href="${url}" style="display:inline-block;background:#1e40af;color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;padding:14px 28px;border-radius:10px;">Abrir a minha página</a>
+          <a href="${escapeHtml(url)}" style="display:inline-block;background:#1e40af;color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;padding:14px 28px;border-radius:10px;">Abrir a minha página</a>
         </p>
         <p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">
           Se não pediste esta ligação, podes ignorar este email.

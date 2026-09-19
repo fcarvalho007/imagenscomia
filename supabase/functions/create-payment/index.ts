@@ -72,7 +72,7 @@ serve(async (req) => {
     const nome = typeof body?.nome === "string" ? body.nome : "";
     const providedToken = typeof body?.editToken === "string" ? body.editToken.trim() : "";
 
-    const product = PRODUCTS[plan];
+    const product = Object.hasOwn(PRODUCTS, plan) ? PRODUCTS[plan] : undefined;
     if (!product) {
       return new Response(
         JSON.stringify({ error: "Plano inválido" }),
