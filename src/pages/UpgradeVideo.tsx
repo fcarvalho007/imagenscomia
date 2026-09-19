@@ -81,15 +81,15 @@ const UpgradeVideo = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [editToken, setEditToken] = useState<string | null>(initialToken);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   // ── Returning user state ──
-  const [initialLoading, setInitialLoading] = useState(!!searchParams.get("email"));
+  const [initialLoading, setInitialLoading] = useState(!!initialToken);
   const [isReturning, setIsReturning] = useState(false);
   const [returningData, setReturningData] = useState<{
     step_reached: number | null;
-    paid_at: string | null;
+    paid: boolean;
     plan_selected: string | null;
   } | null>(null);
 
