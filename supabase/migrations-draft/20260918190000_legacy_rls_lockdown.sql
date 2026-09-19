@@ -177,6 +177,13 @@ begin
     'email', r.email,
     'name', r.name,
     'first_name', r.first_name,
+    'last_name', r.last_name,
+    'whatsapp', r.whatsapp,
+    'role', r.role,
+    'team_size', r.team_size,
+    'sources', r.sources,
+    'duvida', r.duvida,
+    'referral_code', r.referral_code,
     'step_reached', r.step_reached,
     'plan_selected', r.plan_selected,
     'paid', r.paid_at is not null,
@@ -394,3 +401,53 @@ grant execute on function public.legacy_reg_save_step(text, text, integer, jsonb
 grant execute on function public.legacy_recursos_access(text, text) to anon, authenticated;
 grant execute on function public.legacy_reg_attendance(text, text) to anon, authenticated;
 grant execute on function public.legacy_invoice_get(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 6. Recuperação de acesso: limitação atómica por registo
+-- ---------------------------------------------------------------------------
+-- Reserva o direito de enviar UMA ligação de acesso para um registo.
+-- Atómica: o advisory lock transaccional serializa pedidos concorrentes do
+-- mesmo registo, por isso a contagem e a inserção não podem correr em paralelo.
+-- Regras: mínimo 10 minutos entre envios e máximo 3 por período de 24 horas.
+-- Nunca recebe nem guarda o token; apenas regista que houve um envio.
+create or replace function public.legacy_access_link_claim(
+  p_registration_id uuid,
+  p_destination text
+)
+returns boolean
+language plpgsql
+volatile
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_recent integer;
+  v_daily integer;
+begin
+  if p_registration_id is null then return false; end if;
+
+  perform pg_advisory_xact_lock(hashtextextended('legacy_access_link:' || p_registration_id::text, 0));
+
+  select count(*) into v_recent
+  from message_logs
+  where registration_id = p_registration_id
+    and template_key = 'legacy_access_link'
+    and created_at > now() - interval '10 minutes';
+  if v_recent > 0 then return false; end if;
+
+  select count(*) into v_daily
+  from message_logs
+  where registration_id = p_registration_id
+    and template_key = 'legacy_access_link'
+    and created_at > now() - interval '24 hours';
+  if v_daily >= 3 then return false; end if;
+
+  insert into message_logs (registration_id, channel, provider, template_key, status)
+  values (p_registration_id, 'email', 'resend', 'legacy_access_link', 'queued');
+
+  return true;
+end $$;
+
+-- Só o service_role (edge function) pode reservar envios.
+revoke execute on function public.legacy_access_link_claim(uuid, text) from public, anon, authenticated;
+grant execute on function public.legacy_access_link_claim(uuid, text) to service_role;
