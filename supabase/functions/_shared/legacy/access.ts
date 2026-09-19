@@ -32,9 +32,9 @@ export const LEGACY_DESTINATIONS: Record<LegacyDestination, DestinationSpec> = {
 
 export function resolveDestination(value: unknown): DestinationSpec | null {
   if (typeof value !== "string") return null;
-  // Object.hasOwn keeps inherited keys such as "constructor" or "toString"
-  // from resolving to a truthy prototype member.
-  if (!Object.hasOwn(LEGACY_DESTINATIONS, value)) return null;
+  // An own-property check keeps inherited keys such as "constructor" or
+  // "toString" from resolving to a truthy prototype member.
+  if (!Object.prototype.hasOwnProperty.call(LEGACY_DESTINATIONS, value)) return null;
   return LEGACY_DESTINATIONS[value as LegacyDestination] ?? null;
 }
 
