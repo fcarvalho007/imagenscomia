@@ -9,7 +9,10 @@ begin
  or not exists(select 1 from vault.decrypted_secrets where name='course_operations_url' and decrypted_secret ~ '^https://[a-z0-9]+\.supabase\.co/functions/v1/course-operations$') then
   raise exception 'Configure the two dedicated Vault entries first';
  end if;
- if not exists(select 1 from cron.job where jobname='course-operations-every-5m') then
+ -- Idempotent: re-running converges the schedule instead of creating a second job.
+ if exists(select 1 from cron.job where jobname='course-operations-every-5m') then
+  perform cron.alter_job((select jobid from cron.job where jobname='course-operations-every-5m'),schedule := '*/5 * * * *');
+ else
   perform cron.schedule('course-operations-every-5m','*/5 * * * *',$job$
    select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name='course_operations_url'),
