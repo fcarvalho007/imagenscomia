@@ -189,10 +189,10 @@ export default function CourseTestSend() {
           {sending ? <Loader2 size={13} className="animate-spin" /> : <TestTube size={13} />}
           Enviar teste
         </button>
-        {last && (
+        {current && (
           <span className="text-xs text-slate-500">
-            {stateMessages[last] || last}
-            {lastReason ? ` ${lastReason}` : ""}
+            {stateMessages[current.state] || current.state}
+            {current.reason ? ` ${current.reason}` : ""}
           </span>
         )}
       </div>
