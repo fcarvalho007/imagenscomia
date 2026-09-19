@@ -7,7 +7,7 @@ import HistoricoTab from "./comunicacao/HistoricoTab";
 
 interface ComunicacaoViewProps {
   inscritos: Inscrito[];
-  course?: {queue:(channel:"email"|"sms",ids:string[],subject:string,body:string,date:Date|null)=>Promise<void>; smsRecipients:Inscrito[]; history:React.ReactNode};
+  course?: {queue:(channel:"email"|"sms",ids:string[],subject:string,body:string,date:Date|null,format:"text"|"html")=>Promise<void>; smsRecipients:Inscrito[]; history:React.ReactNode};
 }
 
 export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewProps) {
