@@ -119,6 +119,91 @@ export type Database = {
           },
         ]
       }
+      course_campaigns: {
+        Row: {
+          actor_id: string
+          body: string
+          channel: string
+          created_at: string
+          due_at: string
+          edition: string
+          id: string
+          recipient_ids: string[]
+          subject: string
+        }
+        Insert: {
+          actor_id: string
+          body: string
+          channel: string
+          created_at?: string
+          due_at: string
+          edition: string
+          id: string
+          recipient_ids: string[]
+          subject?: string
+        }
+        Update: {
+          actor_id?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          due_at?: string
+          edition?: string
+          id?: string
+          recipient_ids?: string[]
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_campaigns_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_costs: {
+        Row: {
+          amount: number
+          category: string
+          cost_date: string
+          description: string
+          edition: string
+          id: string
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          cost_date: string
+          description?: string
+          edition: string
+          id?: string
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          cost_date?: string
+          description?: string
+          edition?: string
+          id?: string
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_costs_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_editions: {
         Row: {
           automation_enabled: boolean
@@ -169,6 +254,38 @@ export type Database = {
           vat_percent?: number
         }
         Relationships: []
+      }
+      course_email_templates: {
+        Row: {
+          body: string
+          edition: string
+          subject: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          edition: string
+          subject: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          edition?: string
+          subject?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_email_templates_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       course_events: {
         Row: {
@@ -238,6 +355,7 @@ export type Database = {
       course_jobs: {
         Row: {
           attempts: number
+          campaign_id: string | null
           completed_at: string | null
           created_at: string
           due_at: string
@@ -255,6 +373,7 @@ export type Database = {
         }
         Insert: {
           attempts?: number
+          campaign_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_at: string
@@ -272,6 +391,7 @@ export type Database = {
         }
         Update: {
           attempts?: number
+          campaign_id?: string | null
           completed_at?: string | null
           created_at?: string
           due_at?: string
@@ -288,6 +408,13 @@ export type Database = {
           template?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "course_jobs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "course_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "course_jobs_registration_id_fkey"
             columns: ["registration_id"]
@@ -355,6 +482,7 @@ export type Database = {
           before_session: string
           course_id: string
           created_at: string
+          do_not_contact: boolean
           edition: string
           email: string
           id: string
@@ -379,6 +507,7 @@ export type Database = {
           before_session?: string
           course_id?: string
           created_at?: string
+          do_not_contact?: boolean
           edition: string
           email: string
           id?: string
@@ -403,6 +532,7 @@ export type Database = {
           before_session?: string
           course_id?: string
           created_at?: string
+          do_not_contact?: boolean
           edition?: string
           email?: string
           id?: string
@@ -1045,17 +1175,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      course_admin_required: { Args: never; Returns: undefined }
       course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
       course_job_eligible: {
         Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
         Returns: boolean
       }
+      course_job_eligible_base: {
+        Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
+        Returns: boolean
+      }
       course_metrics: { Args: never; Returns: Json }
+      course_operation_counts: { Args: { edition_id?: string }; Returns: Json }
       course_period_metrics: {
         Args: { edition_id?: string; since?: string }
         Returns: Json
       }
       course_quote: { Args: { edition_id: string }; Returns: Json }
+      delete_course_cost: { Args: { cost_id: string }; Returns: undefined }
       ensure_admin_role: { Args: never; Returns: undefined }
       finish_course_job: {
         Args: {
@@ -1076,9 +1213,25 @@ export type Database = {
         Returns: boolean
       }
       ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      manage_course_job: {
+        Args: { action: string; job_uuid: string }
+        Returns: undefined
+      }
       prepare_course_job: {
         Args: { frozen_payload: Json; job_id: string; job_lease: string }
         Returns: boolean
+      }
+      queue_course_campaign: {
+        Args: {
+          body: string
+          campaign_uuid: string
+          channel: string
+          edition_id: string
+          recipients: string[]
+          scheduled_at: string
+          subject: string
+        }
+        Returns: number
       }
       read_course_resources: { Args: { access_token: string }; Returns: Json }
       record_course_invoice: {
@@ -1088,6 +1241,28 @@ export type Database = {
       save_course_billing: {
         Args: { details: Json; request_token: string }
         Returns: undefined
+      }
+      save_course_cost: {
+        Args: {
+          cost_amount: number
+          cost_category: string
+          cost_day: string
+          cost_description: string
+          cost_id: string
+          cost_platform: string
+          edition_id: string
+        }
+        Returns: string
+      }
+      save_course_email_template: {
+        Args: {
+          edition_id: string
+          email_body: string
+          email_subject: string
+          expected_updated_at: string
+          template_key: string
+        }
+        Returns: string
       }
       save_course_resource: {
         Args: {
@@ -1102,12 +1277,28 @@ export type Database = {
         }
         Returns: string
       }
+      set_course_contact_pause: {
+        Args: { paused: boolean; request_uuid: string }
+        Returns: undefined
+      }
       set_course_session: {
         Args: { phase: string; request_uuid: string; session_state: string }
         Returns: undefined
       }
       update_course_request: {
         Args: {
+          followup: string
+          new_notes: string
+          new_status: string
+          request_uuid: string
+        }
+        Returns: undefined
+      }
+      update_course_request_checked: {
+        Args: {
+          expected_followup: string
+          expected_notes: string
+          expected_status: string
           followup: string
           new_notes: string
           new_status: string
