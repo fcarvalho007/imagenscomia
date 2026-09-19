@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { z } from "zod";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { legacyInvoiceGet } from "@/lib/legacyAccess";
 
 const invoiceSchema = z.object({
   invoice_name: z.string().trim().min(2, "Indicar nome ou empresa."),
