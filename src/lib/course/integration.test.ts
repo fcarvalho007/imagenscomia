@@ -35,7 +35,7 @@ describe('WordPress tracking regressions',()=>{
 describe('delivery authorization',()=>{
  const db={auth:{getUser:vi.fn(async()=>({error:true}))}};
  it.each(['public-anon','prefix-service-suffix',''])('rejects public or fabricated authorization %s',async(token)=>{
-  expect(await authorizedDelivery(new Request('https://example.com',{headers:{authorization:`Bearer ${token}`,'x-crm-admin-email':'fredericodigital@gmail.com'}}),db,k=>({SUPABASE_SERVICE_ROLE_KEY:'service'})[k])).toBe(false);
+  expect(await authorizedDelivery(new Request('https://example.com',{headers:{authorization:`Bearer ${token}`,'x-crm-admin-email':'admin@example.invalid'}}),db,k=>({SUPABASE_SERVICE_ROLE_KEY:'service'})[k])).toBe(false);
  });
  it('accepts only exact service or configured cron credentials',async()=>{
   expect(await authorizedDelivery(new Request('https://example.com',{headers:{authorization:'Bearer service'}}),db,k=>({SUPABASE_SERVICE_ROLE_KEY:'service'})[k])).toBe(true);

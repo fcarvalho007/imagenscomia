@@ -1,5 +1,6 @@
 import CourseAutomationFlow, {type FlowCount} from "./CourseAutomationFlow";
 import EmailEditorPanel,{type EmailTemplate} from "@/components/crm/EmailEditorPanel";
+import CourseDiagnostics from "@/components/course/CourseDiagnostics";
 import {AutomationTabs} from "@/components/crm/FollowUpView";
 import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -54,7 +55,7 @@ type Job = {
 export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
   const [smsTemplates,setSmsTemplates]=useState<Record<string,{body:string;updated_at:string}>>({}),[smsEditing,setSmsEditing]=useState(""),[smsBody,setSmsBody]=useState(""),[smsError,setSmsError]=useState(""),[smsReady,setSmsReady]=useState(false);
   const [flowCounts,setFlowCounts]=useState<FlowCount[]|null>(null),[registrationCount,setRegistrationCount]=useState<number|null>(null),[templateFilter,setTemplateFilter]=useState(""),[stateFilter,setStateFilter]=useState("");
-  const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string}>>({});
+  const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string;format?:"text"|"html"}>>({});
   const [tab,setTab]=useState("fluxo"),[page,setPage]=useState(0),[counts,setCounts]=useState<Record<string,number>|null>(null),[channel,setChannel]=useState("all");
   const [view, setView] = useState("pending"), [revision, setRevision] = useState(0), [now, setNow] = useState(Date.now());
   useEffect(() => { const id=setInterval(()=>setNow(Date.now()),60000);return ()=>clearInterval(id); }, []);
@@ -99,7 +100,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             .eq("worker", "course-operations")
             .maybeSingle(),
           db.rpc("course_operation_counts",{edition_id:edition||null}),
-          db.from("course_email_templates").select("template,subject,body,updated_at").eq("edition",edition),
+          db.from("course_email_templates").select("template,subject,body,updated_at,format").eq("edition",edition),
         ]);
         if (es.error || js.error || hs.error || templates.error) throw new Error("load");
         if (!active) return;
@@ -270,6 +271,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         </div>
       )}
       {!communicationOnly && tab==="fluxo" && selected && <CourseAutomationFlow counts={flowCounts} registrations={registrationCount} enabled={selected.automation_enabled} startsAt={selected.starts_at} endsAt={selected.ends_at} onPreview={key=>{if(key in emailLabels)setPreview(key);setTab("templates");if(key in smsLabels)requestAnimationFrame(()=>document.getElementById("course-sms-templates")?.scrollIntoView({block:"start"}));}} onPeople={(key,state)=>{setTemplateFilter(key);setStateFilter(state);setChannel("all");setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}} />}
+      {!communicationOnly && tab==="config" && <div className="mb-6"><CourseDiagnostics /></div>}
       {!communicationOnly && selected && ["templates","config"].includes(tab) && (
         <div className="grid lg:grid-cols-2 gap-8">
           {tab==="config" && <form
@@ -437,7 +439,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         )}
       <div className="flex items-center gap-3 mt-4"><Button variant="outline" disabled={page===0 || !loaded} onClick={()=>setPage(p=>p-1)}>Anterior</Button><span className="text-sm">Página {page+1}</span><Button variant="outline" disabled={jobs.length<50 || !loaded} onClick={()=>setPage(p=>p+1)}>Seguinte</Button></div>
       </div>}
-      {selected && <EmailEditorPanel template={editing} onClose={()=>setEditing(null)} onSaved={()=>{setEditing(null);setRevision(v=>v+1);}} course={{label:selected.label,save:async(subject,body)=>{const {data,error}=await db.rpc("save_course_email_template",{edition_id:selected.id,template_key:editing!.template_key,email_subject:subject,email_body:body,expected_updated_at:editing!.updated_at||null});if(error)throw error;return data;},render:(subject,body)=>{try{return renderCourseEmail(editing!.template_key,{...selected.operations,name:"Participante",edition:selected.id,label:selected.label,schedule:selected.operations.schedule||"",portal_url:"https://fredericocarvalho.pt/curso-de-inteligencia-artificial/",resources_url:selected.operations.resources_url||"https://imagenscomia.com/curso-ia/recursos",recordings_url:selected.operations.recordings_url||"https://imagenscomia.com/curso-ia/recursos"},{subject,body}).html;}catch{return "Pré-visualização indisponível: verifique os campos e a configuração da edição.";}}}} />}
+      {selected && <EmailEditorPanel template={editing} onClose={()=>setEditing(null)} onSaved={()=>{setEditing(null);setRevision(v=>v+1);}} course={{label:selected.label,format:(overrides[editing?.template_key||""]?.format as "text"|"html")||"text",save:async(subject,body,format)=>{const {data,error}=await db.rpc("save_course_email_template",{edition_id:selected.id,template_key:editing!.template_key,email_subject:subject,email_body:body,expected_updated_at:editing!.updated_at||null,body_format:format});if(error)throw error;return data;},render:(subject,body,format)=>{try{return renderCourseEmail(editing!.template_key,{...selected.operations,name:"Participante",edition:selected.id,label:selected.label,schedule:selected.operations.schedule||"",portal_url:"https://fredericocarvalho.pt/curso-de-inteligencia-artificial/",resources_url:selected.operations.resources_url||"https://imagenscomia.com/curso-ia/recursos",recordings_url:selected.operations.recordings_url||"https://imagenscomia.com/curso-ia/recursos"},{subject,body,format}).html;}catch{return "Pré-visualização indisponível: verifique os campos e a configuração da edição.";}}}} />}
     </section>
   );
 }

@@ -7,6 +7,8 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import EmailPreview from "./EmailPreview";
 import SendConfirmDialog from "./SendConfirmDialog";
+import RichTextEditor from "./RichTextEditor";
+import { renderCourseBody } from "@shared/course/richtext";
 import SchedulePicker from "./SchedulePicker";
 
 type WebinarFilter = "imagens" | "video" | "todos";
@@ -14,7 +16,7 @@ type PlanoFilter = "todos" | "pagos" | "premium" | "masterclass" | "free";
 
 interface EmailTabProps {
   inscritos: Inscrito[];
-  courseQueue?: (ids:string[],subject:string,body:string,date:Date|null)=>Promise<void>;
+  courseQueue?: (ids:string[],subject:string,body:string,date:Date|null,format:"text"|"html")=>Promise<void>;
 }
 
 /* ── Shared filtering logic ── */
@@ -118,6 +120,7 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
   const [results, setResults] = useState<SendResult[] | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
+  const [bodyFormat, setBodyFormat] = useState<"text" | "html">("html");
 
   const filteredPool = useMemo(() => filterInscritos(inscritos, webinar, plano), [inscritos, webinar, plano]);
 
@@ -151,23 +154,18 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
     return rawHtml || editorRef.current?.innerHTML || "";
   }, [rawMode, rawHtml]);
 
-  /* ── Send test to admin ── */
+  /* ── Send test to the signed-in administrator (destination resolved server-side) ── */
   const handleSendTest = async () => {
-    if (courseQueue) return;
-    const html = getHtml();
+    const html = courseQueue ? renderCourseBody(rawHtml, bodyFormat).html : getHtml();
     if (!subject || !html.trim() || sendingTest) return;
     setSendingTest(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const adminEmail = session?.user?.email;
-      if (!adminEmail) { toast.error("Sessão não encontrada"); return; }
-
-      const { data, error } = await supabase.functions.invoke("test-send-email", {
-        body: { to: adminEmail, subject: `[TESTE] ${subject}`, html },
+      const { data, error } = await supabase.functions.invoke("course-test-send", {
+        body: { channel: "email", request_id: crypto.randomUUID(), subject, body: html, format: "html" },
       });
       if (error) throw error;
-      if (data?.success) toast.success(`Email de teste enviado para ${adminEmail}`);
-      else toast.error(data?.error || "Falha no envio de teste");
+      if (data?.state === "sent") toast.success(`Email de teste enviado para ${data.target}`);
+      else toast.error(data?.reason || data?.state || "Falha no envio de teste");
     } catch (err: any) {
       toast.error(err.message || "Erro ao enviar teste");
     } finally {
@@ -182,7 +180,7 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
 
     if (courseQueue) {
       setSending(true);
-      try { await courseQueue(recipients.map(r=>r.id),subject,rawHtml,scheduledAt); resetForm(); }
+      try { await courseQueue(recipients.map(r=>r.id),subject,rawHtml,scheduledAt,bodyFormat); resetForm(); }
       catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível agendar."); }
       finally { setSending(false); }
       return;
@@ -245,7 +243,8 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
   const successCount = results?.filter(r => r.ok).length ?? 0;
   const failCount = results?.filter(r => !r.ok).length ?? 0;
 
-  const currentHtml = courseQueue ? '<div style="white-space:pre-wrap">'+rawHtml.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+"</div>" : getHtml();
+  // Preview uses the same sanitiser as the delivery worker.
+  const currentHtml = courseQueue ? renderCourseBody(rawHtml, bodyFormat).html : getHtml();
 
   return (
     <div>
@@ -335,7 +334,22 @@ export default function EmailTab({ inscritos, courseQueue }: EmailTabProps) {
           </div>
 
           {/* Course messages are escaped server-side, with the same composer and recipient picker. */}
-          {courseQueue ? <label className="block text-sm font-medium">Mensagem<textarea aria-label="Mensagem de email" className="mt-2 w-full rounded-xl border bg-white p-4 min-h-[220px]" maxLength={10000} value={rawHtml} onChange={e=>setRawHtml(e.target.value)} /><span className="text-xs text-slate-500">Texto simples. Use parágrafos curtos e links completos.</span></label> : <div>
+          {courseQueue ? <div>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Mensagem</label>
+              <div className="flex items-center gap-1">
+                {(["html", "text"] as const).map(f => (
+                  <button key={f} type="button" onClick={() => setBodyFormat(f)} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${bodyFormat === f ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-100"}`}>
+                    {f === "html" ? "Texto formatado" : "Texto simples"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {bodyFormat === "html"
+              ? <RichTextEditor value={rawHtml} onChange={setRawHtml} placeholder="Escreva a mensagem. Use {{nome}} para o primeiro nome." />
+              : <textarea aria-label="Mensagem de email" className="w-full rounded-xl border bg-white p-4 min-h-[220px]" maxLength={20000} value={rawHtml} onChange={e=>setRawHtml(e.target.value)} />}
+            <span className="text-xs text-slate-500">{bodyFormat === "html" ? "Negrito, itálico, listas e links seguros. {{nome}} é substituído pelo primeiro nome." : "Texto simples: o conteúdo nunca é interpretado como formatação."}</span>
+          </div> : <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400">Corpo</label>
               <button onClick={() => {

@@ -4,10 +4,11 @@ import type { Inscrito } from "@/pages/crm/mockData";
 import SmsTab from "./comunicacao/SmsTab";
 import EmailTab from "./comunicacao/EmailTab";
 import HistoricoTab from "./comunicacao/HistoricoTab";
+import CourseTestSend from "@/components/course/CourseTestSend";
 
 interface ComunicacaoViewProps {
   inscritos: Inscrito[];
-  course?: {queue:(channel:"email"|"sms",ids:string[],subject:string,body:string,date:Date|null)=>Promise<void>; smsRecipients:Inscrito[]; history:React.ReactNode};
+  course?: {queue:(channel:"email"|"sms",ids:string[],subject:string,body:string,date:Date|null,format:"text"|"html")=>Promise<void>; smsRecipients:Inscrito[]; history:React.ReactNode};
 }
 
 export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewProps) {
@@ -20,6 +21,7 @@ export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewPr
         </p>
       </div>
 
+      {course && <CourseTestSend />}
       {course && <div className="mb-5 rounded-lg border bg-white p-4 text-sm text-slate-700"><strong>Destinatários disponíveis nesta edição</strong><p className="mt-1">Email: {inscritos.length} · SMS com consentimento: {course.smsRecipients.length}</p><p className="mt-2">{inscritos.length ? "Selecione os participantes, reveja a mensagem e escolha quando colocar em fila. Consulte o resultado em Histórico." : "Selecione uma edição na barra lateral. Só aparecem participantes com pagamento confirmado e contacto autorizado."}</p></div>}
       <Tabs defaultValue="email" className="w-full">
         <TabsList className="bg-white border border-slate-200 mb-6">
@@ -35,10 +37,10 @@ export default function ComunicacaoView({ inscritos, course }: ComunicacaoViewPr
         </TabsList>
 
         <TabsContent value="email">
-          <EmailTab inscritos={inscritos} courseQueue={course ? (...args)=>course.queue("email",...args) : undefined} />
+          <EmailTab inscritos={inscritos} courseQueue={course ? (ids,subject,body,date,format)=>course.queue("email",ids,subject,body,date,format) : undefined} />
         </TabsContent>
         <TabsContent value="sms">
-          <SmsTab inscritos={course?.smsRecipients || inscritos} courseQueue={course ? (...args)=>course.queue("sms",...args) : undefined} />
+          <SmsTab inscritos={course?.smsRecipients || inscritos} courseQueue={course ? (ids,subject,body,date)=>course.queue("sms",ids,subject,body,date,"text") : undefined} />
         </TabsContent>
         <TabsContent value="historico">
           {course?.history || <HistoricoTab />}
