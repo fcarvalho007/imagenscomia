@@ -16,16 +16,25 @@ interface RichTextEditorProps {
  */
 export default function RichTextEditor({ value, onChange, placeholder, minHeight = 220 }: RichTextEditorProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const hydrated = useRef(false);
+  // Last HTML this editor emitted. Anything else arriving in `value` is an
+  // external change (template switch, cleared form) and must be re-hydrated.
+  const emitted = useRef<string | null>(null);
 
   useEffect(() => {
-    if (hydrated.current || !ref.current) return;
-    hydrated.current = true;
-    ref.current.innerHTML = sanitizeCourseHTML(value || "");
+    const el = ref.current;
+    if (!el) return;
+    const next = sanitizeCourseHTML(value || "");
+    if (emitted.current === next) return;
+    // Never destroy the caret while the author is typing in this editor.
+    if (emitted.current !== null && document.activeElement === el) return;
+    emitted.current = next;
+    if (el.innerHTML !== next) el.innerHTML = next;
   }, [value]);
 
   const push = useCallback(() => {
-    onChange(sanitizeCourseHTML(ref.current?.innerHTML || ""));
+    const html = sanitizeCourseHTML(ref.current?.innerHTML || "");
+    emitted.current = html;
+    onChange(html);
   }, [onChange]);
 
   const run = (command: string, argument?: string) => {
@@ -70,10 +79,8 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
             type="button"
             title={b.label}
             aria-label={b.label}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              b.action();
-            }}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={b.action}
             className="w-7 h-7 rounded flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             {b.icon}
@@ -84,10 +91,8 @@ export default function RichTextEditor({ value, onChange, placeholder, minHeight
           type="button"
           title="Inserir o primeiro nome do participante"
           aria-label="Inserir nome"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            insertToken();
-          }}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={insertToken}
           className="flex h-7 items-center gap-1 rounded px-2 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-700"
         >
           <User size={12} /> nome
