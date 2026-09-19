@@ -264,8 +264,13 @@ const UpgradeVideo = () => {
             Retomar a sua compra
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduza o email que usou para se inscrever.
+            Introduza o email que usou para se inscrever e enviamos a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
