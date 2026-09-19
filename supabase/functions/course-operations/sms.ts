@@ -1,4 +1,5 @@
 import { mobilePhone, renderCourseSMS } from "../_shared/course/sms.ts";
+import { smsBasicAuth } from "../_shared/course/sms-auth.ts";
 // Reuse the existing SMSOnline provider. No fallback/retry after an ambiguous delivery.
 export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => string | undefined, send: typeof fetch = fetch) {
   const { job, registration: r } = ctx;
@@ -7,7 +8,8 @@ export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => strin
     if (error) throw new Error("job_persist_failed");
   };
   const credentials = env("SMSONLINE_API_KEY"), from = env("COURSE_SMS_FROM");
-  if (!credentials || !from || !/^[A-Za-z0-9]{1,11}$/.test(from)) return finish("blocked", "sms_configuration_missing");
+  const basic = credentials ? smsBasicAuth(credentials) : null;
+  if (!basic || !from || !/^[A-Za-z0-9]{1,11}$/.test(from)) return finish("blocked", "sms_configuration_missing");
   if (!r.sms_consent) return finish("blocked", "sms_consent_missing");
   if (job.attempts > 0) return finish("review", "sms_verify_provider_before_retry");
   let payload;
@@ -24,7 +26,7 @@ export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => strin
     }
     // ASCII only, maximum one segment. Never silently spend on concatenated SMS.
     if (text.length > 160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(text)) throw new Error("segment_limit");
-    payload = { to: [mobilePhone(r.phone)], text, from, coding: "gsm" };
+    payload = { to: [mobilePhone(r.phone)], text, from, coding: "gsm-pt" };
   } catch { return finish("blocked", "sms_content_or_phone_invalid"); }
   const { data: ready, error } = await db.rpc("prepare_course_job", { job_id: job.id, job_lease: job.lease, frozen_payload: payload });
   if (error || !ready) throw new Error("job_not_prepared");
@@ -32,7 +34,7 @@ export async function sendCourseSMS(db: any, ctx: any, env: (k: string) => strin
   try {
     const res = await send("https://login.smsonline.pt/Api/rest/message", {
       method: "POST", signal: controller.signal,
-      headers: { "Content-Type": "application/json", Authorization: `Basic ${credentials.includes(":") ? btoa(credentials) : credentials}` },
+      headers: { "Content-Type": "application/json", Authorization: `Basic ${basic}` },
       body: JSON.stringify(payload),
     });
     if (!res.ok) return await finish("review", `sms_http_${res.status}`);

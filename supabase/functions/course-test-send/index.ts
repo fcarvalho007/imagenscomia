@@ -4,6 +4,7 @@ import { resolveCourseAdmin } from "../_shared/course/admin.ts";
 import { normalizeFormat, personalize, renderCourseBody, wrapCourseEmail } from "../_shared/course/richtext.ts";
 
 import { corsHeaders, trace } from "../_shared/course/cors.ts";
+import { smsBasicAuth } from "../_shared/course/sms-auth.ts";
 // The SMS test target is fixed in code. No caller can choose a destination.
 const OWNER_TEST_MOBILE = Deno.env.get("COURSE_TEST_MOBILE") || "";
 const env = (key: string) => Deno.env.get(key);
@@ -122,7 +123,8 @@ serve(async (req) => {
     }
 
     const credentials = env("SMSONLINE_API_KEY"), from = env("COURSE_SMS_FROM");
-    if (!credentials || !from || !/^[A-Za-z0-9]{1,11}$/.test(from)) {
+    const basic = credentials ? smsBasicAuth(credentials) : null;
+    if (!basic || !from || !/^[A-Za-z0-9]{1,11}$/.test(from)) {
       await finish("blocked", "sms_configuration_missing");
       return json(200, { state: "blocked", reason: "sms_configuration_missing" });
     }
@@ -131,9 +133,9 @@ serve(async (req) => {
       signal: controller.signal,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Basic ${credentials.includes(":") ? btoa(credentials) : credentials}`,
+        Authorization: `Basic ${basic}`,
       },
-      body: JSON.stringify({ to: [OWNER_TEST_MOBILE], text: body, from, coding: "gsm" }),
+      body: JSON.stringify({ to: [OWNER_TEST_MOBILE], text: body, from, coding: "gsm-pt" }),
     });
     if (!res.ok) {
       await finish("review", `sms_http_${res.status}`);
