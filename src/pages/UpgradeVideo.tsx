@@ -202,23 +202,15 @@ const UpgradeVideo = () => {
 
   // ── Payment ──
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarregue a página.");
+    if (!editToken) {
+      toast.error("Sessão expirada. Peça uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: plan,
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
-
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan, email: userData.email, nome: userData.nome },
+        body: { plan, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
@@ -496,7 +488,7 @@ const UpgradeVideo = () => {
             {/* ── Step 0: Returning user ── */}
             {step === 0 && returningData && (() => {
               const sr = returningData.step_reached ?? 1;
-              const hasPaid = !!returningData.paid_at;
+              const hasPaid = returningData.paid;
               return (
                 <div className="text-center py-4">
                   <div
