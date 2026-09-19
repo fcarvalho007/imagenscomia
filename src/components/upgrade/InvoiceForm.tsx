@@ -35,7 +35,7 @@ const AUTOCOMPLETE_MAP: Record<keyof InvoiceData, string> = {
   invoice_email: "email",
 };
 
-export function InvoiceForm({ userEmail, registrationId, editToken, webinar, defaultName, context = "checkout", onValidChange, onSaveError }: Props) {
+export function InvoiceForm({ userEmail, registrationId, editToken, defaultName, context = "checkout", onValidChange, onSaveError }: Props) {
   const [form, setForm] = useState<InvoiceData>({
     invoice_name: defaultName || "",
     invoice_vat: "",
