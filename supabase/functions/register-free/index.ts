@@ -43,10 +43,29 @@ serve(async (req) => {
     const targetWebinar = webinar || "imagens";
     const { data: existing } = await supabase
       .from("registrations")
-      .select("referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
+      .select("id, edit_token, referral_code, premium_unlocked, first_name, last_name, whatsapp, webinar")
       .eq("email", email.toLowerCase().trim())
       .eq("webinar", targetWebinar)
       .maybeSingle();
+
+    // An existing registration is only disclosed to whoever proves possession of
+    // its token. Otherwise the answer is generic: no data, no sync, no PII.
+    const ownsExisting =
+      !!existing?.edit_token &&
+      typeof providedToken === "string" &&
+      providedToken.trim().length >= 20 &&
+      providedToken.trim() === existing.edit_token;
+
+    if (existing && !ownsExisting) {
+      return new Response(
+        JSON.stringify({
+          alreadyRegistered: true,
+          needsVerification: true,
+          message: "Já existe uma inscrição com este email. Pede a ligação de acesso para continuares.",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (existing) {
       // Sync to E-goi for existing registrations (non-blocking) — only for imagens webinar
