@@ -1,3 +1,4 @@
+import { normalizeFormat, personalize, renderCourseBody } from "./richtext.ts";
 export const emailLabels: Record<string, string> = {
   confirmation: "Inscrição confirmada",
   individual_before: "A sua sessão individual antes do curso",
@@ -33,7 +34,7 @@ export function safeLink(value: string | undefined): string {
     throw new Error("invalid_link");
   return u.href;
 }
-export function renderCourseEmail(template: string, c: MailContext, override?: {subject:string;body:string}) {
+export function renderCourseEmail(template: string, c: MailContext, override?: {subject:string;body:string;format?:string}) {
   const online = c.edition === "online-2026";
   let paragraphs: string[];
   let label: string;
@@ -96,9 +97,16 @@ export function renderCourseEmail(template: string, c: MailContext, override?: {
       throw new Error("unknown_template");
   }
   const defaultBody=paragraphs.join("\n\n");
+  let bodyHTML = paragraphs.map((p) => `<p>${escapeHTML(p)}</p>`).join("");
+  let bodyText = paragraphs.join("\n\n");
   if(override) {
-    if(override.subject.length<2 || override.subject.length>160 || /[\r\n]/.test(override.subject) || override.body.length<10 || override.body.length>10000)throw new Error("invalid_template");
-    paragraphs=override.body.split(/\n\s*\n/);
+    if(override.subject.length<2 || override.subject.length>160 || /[\r\n]/.test(override.subject) || override.body.length<10 || override.body.length>20000)throw new Error("invalid_template");
+    // Legacy templates stay format "text" and are escaped, never interpreted as markup.
+    const rendered = renderCourseBody(override.body, normalizeFormat(override.format));
+    if(!rendered.text.trim())throw new Error("invalid_template");
+    bodyHTML = personalize(rendered.html, c.name, true);
+    bodyText = personalize(rendered.text, c.name, false);
+    paragraphs = bodyText.split(/\n\s*\n/);
   }
   const subject = override?.subject || `${emailLabels[template]} · ${c.label}`;
   const link = safeLink(url);
