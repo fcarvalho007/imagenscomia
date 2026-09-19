@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,15 @@ import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepConfirmation } from "@/components/upgrade/StepConfirmation";
 import { toast } from "sonner";
 import { Mail, Loader2, ArrowRight, CheckCircle2, Check } from "lucide-react";
+import {
+  resolveToken,
+  clearToken,
+  legacyRegLookup,
+  legacyRegSaveStep,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 export interface OrderState {
   premium: boolean;
