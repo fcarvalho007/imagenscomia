@@ -200,43 +200,38 @@ serve(async (req) => {
     const reference = data.reference || data.referencia;
     const transactionID = data.transactionID || data.transaction_id || data.id;
 
-    // Save transactionID + reference + payment link to DB
-    if (email) {
-      try {
-        await supabase
-          .from("registrations")
-          .update({
-            eupago_ref: transactionID,
-            eupago_transaction_id: transactionID || null,
-            plan_selected: plan === "premium-masterclass" ? "bundle" : plan,
-            upgrade_clicked_at: new Date().toISOString(),
-            last_payment_link: paymentLink || null,
-            payment_link_created_at: new Date().toISOString(),
-          })
-          .eq("email", email)
-          .eq("webinar", webinar);
+    // Save transactionID + reference + payment link to DB, scoped to the single
+    // registration that owns the token. A paid plan is never overwritten.
+    try {
+      await supabase
+        .from("registrations")
+        .update({
+          eupago_ref: transactionID,
+          eupago_transaction_id: transactionID || null,
+          plan_selected: nextStoredPlan(reg.plan_selected, reg.paid_at, plan === "premium-masterclass" ? "bundle" : plan),
+          upgrade_clicked_at: new Date().toISOString(),
+          last_payment_link: paymentLink || null,
+          payment_link_created_at: new Date().toISOString(),
+        })
+        .eq("id", regId);
 
-        console.log(`✅ Saved transactionID=${transactionID} for ${email}`);
+      console.log(`✅ Saved transactionID=${transactionID} for registration ${regId}`);
 
-        // Log to payment_events
-        if (regId) {
-          const idempotencyKey = `link-${email}-${plan}-${transactionID}`;
-          await supabase.from("payment_events").insert({
-            registration_id: regId,
-            event_type: "link_created",
-            eupago_ref: transactionID,
-            idempotency_key: idempotencyKey,
-            payload: { plan, email, paymentLink, reference, transactionID },
-          }).then(({ error }) => {
-            if (error) console.warn("payment_events insert (non-blocking):", error.message);
-          });
-        }
-      } catch (dbErr) {
-        console.error("DB save error (non-blocking):", dbErr);
-      }
+      const idempotencyKey = `link-${regId}-${plan}-${transactionID}`;
+      await supabase.from("payment_events").insert({
+        registration_id: regId,
+        event_type: "link_created",
+        eupago_ref: transactionID,
+        idempotency_key: idempotencyKey,
+        payload: { plan, registration_id: regId, paymentLink, reference, transactionID },
+      }).then(({ error }) => {
+        if (error) console.warn("payment_events insert (non-blocking):", error.message);
+      });
+    } catch (dbErr) {
+      console.error("DB save error (non-blocking):", dbErr);
     }
 
-    console.log(`Payment link created: plan=${plan}, email=${email}, ref=${reference}, txID=${transactionID}, link=${paymentLink}`);
+    console.log(`Payment link created: plan=${plan}, registration=${regId}, ref=${reference}, txID=${transactionID}`);
 
     return new Response(
       JSON.stringify({ paymentLink, reference }),
