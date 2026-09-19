@@ -127,6 +127,7 @@ export type Database = {
           created_at: string
           due_at: string
           edition: string
+          format: string
           id: string
           recipient_ids: string[]
           subject: string
@@ -138,6 +139,7 @@ export type Database = {
           created_at?: string
           due_at: string
           edition: string
+          format?: string
           id: string
           recipient_ids: string[]
           subject?: string
@@ -149,6 +151,7 @@ export type Database = {
           created_at?: string
           due_at?: string
           edition?: string
+          format?: string
           id?: string
           recipient_ids?: string[]
           subject?: string
@@ -259,6 +262,7 @@ export type Database = {
         Row: {
           body: string
           edition: string
+          format: string
           subject: string
           template: string
           updated_at: string
@@ -266,6 +270,7 @@ export type Database = {
         Insert: {
           body: string
           edition: string
+          format?: string
           subject: string
           template: string
           updated_at?: string
@@ -273,6 +278,7 @@ export type Database = {
         Update: {
           body?: string
           edition?: string
+          format?: string
           subject?: string
           template?: string
           updated_at?: string
@@ -664,6 +670,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      course_test_sends: {
+        Row: {
+          actor_id: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          id: string
+          provider_id: string | null
+          request_id: string
+          state: string
+          target: string
+        }
+        Insert: {
+          actor_id: string
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          provider_id?: string | null
+          request_id: string
+          state?: string
+          target: string
+        }
+        Update: {
+          actor_id?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          provider_id?: string | null
+          request_id?: string
+          state?: string
+          target?: string
+        }
+        Relationships: []
       }
       course_worker_health: {
         Row: {
@@ -1176,6 +1221,15 @@ export type Database = {
         Args: { expected_amount: number; payload: Json }
         Returns: Json
       }
+      claim_course_test_send: {
+        Args: {
+          actor: string
+          request_uuid: string
+          target_hint: string
+          test_channel: string
+        }
+        Returns: Json
+      }
       configure_course_channels: {
         Args: { edition_id: string; invoicing: boolean; sms: boolean }
         Returns: undefined
@@ -1205,6 +1259,7 @@ export type Database = {
         Returns: undefined
       }
       course_admin_required: { Args: never; Returns: undefined }
+      course_cron_installed: { Args: never; Returns: boolean }
       course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
       course_job_eligible: {
         Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
@@ -1234,6 +1289,15 @@ export type Database = {
         Returns: undefined
       }
       finish_course_task: { Args: { task_uuid: string }; Returns: undefined }
+      finish_course_test_send: {
+        Args: {
+          external_id?: string
+          outcome: string
+          reason?: string
+          test_uuid: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1253,6 +1317,7 @@ export type Database = {
       queue_course_campaign: {
         Args: {
           body: string
+          body_format?: string
           campaign_uuid: string
           channel: string
           edition_id: string
@@ -1285,6 +1350,7 @@ export type Database = {
       }
       save_course_email_template: {
         Args: {
+          body_format?: string
           edition_id: string
           email_body: string
           email_subject: string

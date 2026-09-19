@@ -24,6 +24,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@shared": path.resolve(__dirname, "./supabase/functions/_shared"),
+      // Shared course modules run in Deno too, where the specifier needs the npm: prefix.
+      "npm:htmlparser2@10.0.0": "htmlparser2",
     },
   },
 }));

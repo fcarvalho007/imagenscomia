@@ -1,4 +1,5 @@
 import { renderCourseEmail, safeLink } from "../_shared/course/emails.ts";
+import { normalizeFormat, personalize, renderCourseBody, wrapCourseEmail } from "../_shared/course/richtext.ts";
 export type DB = any;
 export async function sendCourseEmail(
   db: DB,
@@ -63,12 +64,18 @@ export async function sendCourseEmail(
       }
       let mail;
       if (job.campaign_id) {
-        const {data:campaign,error}=await db.from("course_campaigns").select("subject,body,edition,channel").eq("id",job.campaign_id).single();
+        const {data:campaign,error}=await db.from("course_campaigns").select("subject,body,edition,channel,format").eq("id",job.campaign_id).single();
         if(error || !campaign || campaign.edition!==r.edition || campaign.channel!=="email") throw new Error("campaign_missing");
-        const escape=(v:string)=>v.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-        mail={subject:campaign.subject,text:campaign.body,html:`<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.7;max-width:600px;margin:auto;white-space:pre-wrap">${escape(campaign.body)}</div>`};
+        // Same sanitiser as the editor preview: the delivered body is the previewed body.
+        const rendered=renderCourseBody(campaign.body,normalizeFormat(campaign.format));
+        if(!rendered.text.trim())throw new Error("campaign_empty");
+        mail={
+          subject:campaign.subject,
+          text:personalize(rendered.text,r.name,false),
+          html:wrapCourseEmail(campaign.subject,personalize(rendered.html,r.name,true),`Curso de inteligência artificial · ${e.label}`),
+        };
       } else {
-      const {data:template,error:templateError}=await db.from("course_email_templates").select("subject,body").eq("edition",r.edition).eq("template",job.template).maybeSingle();
+      const {data:template,error:templateError}=await db.from("course_email_templates").select("subject,body,format").eq("edition",r.edition).eq("template",job.template).maybeSingle();
       if(templateError)throw new Error("template_unavailable");
       mail = renderCourseEmail(job.template, {
         ...operations,

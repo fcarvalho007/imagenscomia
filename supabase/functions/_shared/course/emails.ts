@@ -1,3 +1,4 @@
+import { normalizeFormat, personalize, renderCourseBody } from "./richtext.ts";
 export const emailLabels: Record<string, string> = {
   confirmation: "Inscrição confirmada",
   individual_before: "A sua sessão individual antes do curso",
@@ -33,7 +34,7 @@ export function safeLink(value: string | undefined): string {
     throw new Error("invalid_link");
   return u.href;
 }
-export function renderCourseEmail(template: string, c: MailContext, override?: {subject:string;body:string}) {
+export function renderCourseEmail(template: string, c: MailContext, override?: {subject:string;body:string;format?:string}) {
   const online = c.edition === "online-2026";
   let paragraphs: string[];
   let label: string;
@@ -96,9 +97,16 @@ export function renderCourseEmail(template: string, c: MailContext, override?: {
       throw new Error("unknown_template");
   }
   const defaultBody=paragraphs.join("\n\n");
+  let bodyHTML = paragraphs.map((p) => `<p>${escapeHTML(p)}</p>`).join("");
+  let bodyText = paragraphs.join("\n\n");
   if(override) {
-    if(override.subject.length<2 || override.subject.length>160 || /[\r\n]/.test(override.subject) || override.body.length<10 || override.body.length>10000)throw new Error("invalid_template");
-    paragraphs=override.body.split(/\n\s*\n/);
+    if(override.subject.length<2 || override.subject.length>160 || /[\r\n]/.test(override.subject) || override.body.length<10 || override.body.length>20000)throw new Error("invalid_template");
+    // Legacy templates stay format "text" and are escaped, never interpreted as markup.
+    const rendered = renderCourseBody(override.body, normalizeFormat(override.format));
+    if(!rendered.text.trim())throw new Error("invalid_template");
+    bodyHTML = personalize(rendered.html, c.name, true);
+    bodyText = personalize(rendered.text, c.name, false);
+    paragraphs = bodyText.split(/\n\s*\n/);
   }
   const subject = override?.subject || `${emailLabels[template]} · ${c.label}`;
   const link = safeLink(url);
@@ -107,7 +115,7 @@ export function renderCourseEmail(template: string, c: MailContext, override?: {
     template === "resources" && online
       ? `<p><a style="color:#124c67" href="${escapeHTML(safeLink(c.recordings_url))}">Ver as gravações das sessões</a></p>`
       : "";
-  const html = `<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f2f5f7;color:#102c3d;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:32px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:auto;background:#fff"><tr><td style="padding:30px 32px;background:#09212f;color:#fff;font-size:20px;font-weight:bold">Frederico Carvalho</td></tr><tr><td style="padding:32px;font-size:17px;line-height:1.65"><h1 style="font-size:27px;line-height:1.2;margin:0 0 24px">${escapeHTML(emailLabels[template])}</h1><p>${escapeHTML(greeting)}</p>${paragraphs.map((p) => `<p>${escapeHTML(p)}</p>`).join("")}<p style="margin:28px 0"><a href="${escapeHTML(link)}" style="display:inline-block;padding:14px 22px;background:#b7e9fa;color:#09212f;text-decoration:none;font-weight:bold;border-radius:8px">${escapeHTML(label)}</a></p>${recording}<p>Até breve,<br><strong>Frederico Carvalho</strong></p></td></tr><tr><td style="padding:24px 32px;background:#eaf1f5;font-size:14px;line-height:1.6">Curso de inteligência artificial · ${escapeHTML(c.label)}<br>Precisa de ajuda? Responda a este email ou ligue <a style="color:#124c67" href="tel:+351915015508">915 015 508</a>.<br>Mensagem de acompanhamento da sua inscrição.</td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f2f5f7;color:#102c3d;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:32px 16px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:auto;background:#fff"><tr><td style="padding:30px 32px;background:#09212f;color:#fff;font-size:20px;font-weight:bold">Frederico Carvalho</td></tr><tr><td style="padding:32px;font-size:17px;line-height:1.65"><h1 style="font-size:27px;line-height:1.2;margin:0 0 24px">${escapeHTML(emailLabels[template])}</h1><p>${escapeHTML(greeting)}</p>${bodyHTML}<p style="margin:28px 0"><a href="${escapeHTML(link)}" style="display:inline-block;padding:14px 22px;background:#b7e9fa;color:#09212f;text-decoration:none;font-weight:bold;border-radius:8px">${escapeHTML(label)}</a></p>${recording}<p>Até breve,<br><strong>Frederico Carvalho</strong></p></td></tr><tr><td style="padding:24px 32px;background:#eaf1f5;font-size:14px;line-height:1.6">Curso de inteligência artificial · ${escapeHTML(c.label)}<br>Precisa de ajuda? Responda a este email ou ligue <a style="color:#124c67" href="tel:+351915015508">915 015 508</a>.<br>Mensagem de acompanhamento da sua inscrição.</td></tr></table></td></tr></table></body></html>`;
   return {
     subject,
     body:override?.body || defaultBody,
@@ -115,7 +123,7 @@ export function renderCourseEmail(template: string, c: MailContext, override?: {
     text: [
       emailLabels[template],
       greeting,
-      ...paragraphs,
+      bodyText,
       `${label}: ${link}`,
       template === "resources" && online
         ? `Gravações: ${safeLink(c.recordings_url)}`

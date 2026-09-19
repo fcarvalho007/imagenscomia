@@ -235,12 +235,13 @@ function CourseCRMContent() {
     else await load();
   };
 
-  async function queueCampaign(channel:"email"|"sms", ids:string[],subject:string,body:string,scheduled:Date|null) {
+  async function queueCampaign(channel:"email"|"sms", ids:string[],subject:string,body:string,scheduled:Date|null,format:"text"|"html"="text") {
     if(!edition)throw new Error("Selecione uma edição na barra lateral.");
-    const signature=JSON.stringify([edition,channel,[...ids].sort(),subject,body,scheduled?.toISOString()]);
+    const body_format=channel==="sms"?"text":format;
+    const signature=JSON.stringify([edition,channel,[...ids].sort(),subject,body,scheduled?.toISOString(),body_format]);
     if(campaignAttempt.current?.signature!==signature)campaignAttempt.current={signature,id:crypto.randomUUID(),date:(scheduled||new Date()).toISOString()};
     const attempt=campaignAttempt.current;
-    const {error}=await db.rpc("queue_course_campaign",{campaign_uuid:attempt.id,edition_id:edition,channel,subject,body,recipients:ids,scheduled_at:attempt.date});
+    const {error}=await db.rpc("queue_course_campaign",{campaign_uuid:attempt.id,edition_id:edition,channel,subject,body,recipients:ids,scheduled_at:attempt.date,body_format});
     if(error)throw new Error("Não foi possível colocar em fila. Verifique os destinatários (máximo 200), conteúdo e horário fora do evento. SMS: 08h–20h de Lisboa. Atualize se os contactos mudaram.");
     campaignAttempt.current=null;setOperationRefresh(v=>v+1);
     toast.success("Comunicação colocada em fila. Consulte o histórico para acompanhar o processamento; isto não confirma entrega.");
