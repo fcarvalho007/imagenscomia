@@ -601,6 +601,35 @@ export type Database = {
           },
         ]
       }
+      course_sms_templates: {
+        Row: {
+          body: string
+          edition: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          edition: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          edition?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sms_templates_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_tasks: {
         Row: {
           due_at: string
@@ -1274,6 +1303,15 @@ export type Database = {
           resource_kind: string
           resource_title: string
           resource_url: string
+        }
+        Returns: string
+      }
+      save_course_sms_template: {
+        Args: {
+          edition_id: string
+          expected_updated_at: string
+          sms_body: string
+          template_key: string
         }
         Returns: string
       }
