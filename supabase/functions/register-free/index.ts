@@ -162,6 +162,8 @@ serve(async (req) => {
       const origin = req.headers.get("origin") || "https://id-preview--bacfa751-bc77-4ced-ab7c-bb62e7ceb144.lovable.app";
       return new Response(
         JSON.stringify({
+          id: existing.id,
+          editToken: existing.edit_token,
           referralCode: existing.referral_code,
           referralLink: `${origin}/?ref=${existing.referral_code}`,
           alreadyRegistered: true,
