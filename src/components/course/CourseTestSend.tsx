@@ -13,6 +13,34 @@ const stateMessages: Record<string, string> = {
   review: "O fornecedor não confirmou o envio. Verifique antes de repetir.",
   blocked: "Configuração em falta para este canal.",
   throttled: "Aguarde antes de enviar outro teste.",
+  rejected: "O pedido foi recusado antes de qualquer envio.",
+  unreachable: "O pedido não chegou ao servidor. Nada foi enviado.",
+};
+
+// Server-side reason codes turned into a useful sentence, without exposing contacts.
+const reasonMessages: Record<string, string> = {
+  unauthorized: "Sessão sem permissão de administrador verificada em dois passos.",
+  invalid_request: "Pedido mal formado.",
+  invalid_subject: "Assunto inválido.",
+  invalid_message: "Mensagem inválida.",
+  invalid_sms_body: "SMS: até 160 caracteres básicos, sem acentos.",
+  email_not_verified: "O email da sessão não está verificado.",
+  claim_failed: "A base de dados não aceitou o registo do teste.",
+  email_configuration_missing: "Falta configuração de email.",
+  sms_configuration_missing: "Falta configuração de SMS.",
+  test_mobile_missing: "Falta o telemóvel de teste no servidor.",
+  provider_unreachable: "Não foi possível contactar o fornecedor.",
+  provider_timeout: "O fornecedor não respondeu a tempo; resultado por confirmar.",
+  resend_missing_id: "O fornecedor respondeu sem identificador de envio.",
+  sms_response_requires_verification: "Resposta do fornecedor de SMS por confirmar.",
+};
+
+const describeReason = (reason?: string | null) => {
+  if (!reason) return "";
+  if (reasonMessages[reason]) return reasonMessages[reason];
+  const http = /^(resend|sms_http)_(\d{3})$/.exec(reason);
+  if (http) return `O fornecedor respondeu com erro ${http[2]}.`;
+  return `Motivo: ${reason}`;
 };
 
 /**
@@ -29,6 +57,7 @@ export default function CourseTestSend() {
   const [sending, setSending] = useState(false);
   const [adminEmail, setAdminEmail] = useState("");
   const [last, setLast] = useState<string | null>(null);
+  const [lastReason, setLastReason] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setAdminEmail(data.session?.user?.email || ""));
