@@ -141,39 +141,36 @@ const Upsell = () => {
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarrega a página.");
-      console.error("handlePayment called with empty email — aborting");
+    if (!editToken) {
+      toast.error("Sessão expirada. Pede uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
       const planLabel = plan === "premium-masterclass" ? "bundle" : plan;
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: planLabel,
-          sources: sources.join(", "),
-          duvida,
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
+      // Only whitelisted qualification fields; the plan and entitlements are
+      // decided server-side by the payment function.
+      await legacyRegSaveStep(editToken, "imagens", null, {
+        sources: sources.join(", "),
+        duvida,
+      });
 
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan: planLabel, email: userData.email, nome: userData.nome },
+        body: { plan: planLabel, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(planLabel, planGrossPrice(planLabel));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tenta novamente.");
       setLoading(false);
     }
-  }, [userData, sources, duvida]);
+  }, [editToken, userData.nome, sources, duvida]);
 
   const progress = (step / 5) * 100;
   const total = getTotal(orderState);
