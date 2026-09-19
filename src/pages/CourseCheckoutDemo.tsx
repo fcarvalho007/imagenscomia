@@ -47,7 +47,7 @@ export default function CourseCheckoutDemo() {
       </div>
       <div className="checkout-demo-shell">
         <header className="checkout-demo-nav">
-          <a href="/crm/curso-ia" className="checkout-demo-back">
+          <a href="/crm?project=curso-ia&view=links" className="checkout-demo-back">
             <ArrowLeft size={18} aria-hidden="true" /> Voltar ao CRM
           </a>
           <span>Frederico Carvalho</span>
