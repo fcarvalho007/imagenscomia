@@ -24,6 +24,13 @@ const fields: Record<string, string> = {
   resources_url: "Recursos externos (opcional)",
   recordings_url: "Gravações externas (opcional)",
 };
+const dayMonth = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long", timeZone: "Europe/Lisbon" });
+function editionDates(startsAt: string, endsAt: string) {
+  const start = new Date(startsAt), end = new Date(endsAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "Datas por definir";
+  const from = dayMonth.format(start), to = dayMonth.format(end);
+  return from === to ? from : `${from} a ${to}`;
+}
 const states: Record<string, string> = {
   queued: "Agendado",
   processing: "Em processamento",
@@ -52,7 +59,7 @@ type Job = {
   error_code: string | null;
   course_registrations: { name: string; edition: string };
 };
-export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
+export default function CourseOperations({ edition, refresh = 0, communicationOnly = false, onEditionChange }: { edition: string; refresh?: number; communicationOnly?: boolean; onEditionChange?: (edition: string) => void }) {
   const [smsTemplates,setSmsTemplates]=useState<Record<string,{body:string;updated_at:string}>>({}),[smsEditing,setSmsEditing]=useState(""),[smsBody,setSmsBody]=useState(""),[smsError,setSmsError]=useState(""),[smsReady,setSmsReady]=useState(false);
   const [flowCounts,setFlowCounts]=useState<FlowCount[]|null>(null),[registrationCount,setRegistrationCount]=useState<number|null>(null),[templateFilter,setTemplateFilter]=useState(""),[stateFilter,setStateFilter]=useState("");
   const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string;format?:"text"|"html"}>>({});
@@ -254,20 +261,33 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
       {!communicationOnly && <AutomationTabs value={tab} onChange={setTab} configuration />}
       {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setStateFilter(state);setTemplateFilter("");setChannel("all");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}
       {!communicationOnly && !edition && loaded && (
-        <div className="grid sm:grid-cols-3 gap-5">
-          {editions.map((e) => (
-            <div key={e.id} className="border rounded-xl p-5">
-              <h3 className="font-semibold">{e.label}</h3>
-              <p className="text-sm mt-2">
-                {e.automation_enabled
-                  ? "Sequência autorizada"
-                  : "Sequência em pausa"}
-              </p>
-              <p className="text-sm text-muted-foreground mt-3">
-                Selecione esta edição na barra lateral para configurar e rever os emails.
-              </p>
-            </div>
-          ))}
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-muted-foreground">
+            Escolha uma edição para ver o fluxo sequencial de contacto.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-5">
+            {editions.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                className="border rounded-xl p-5 text-left transition-colors hover:border-primary hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => onEditionChange?.(e.id)}
+              >
+                <h3 className="font-semibold">{e.label}</h3>
+                <p className="text-sm mt-2">
+                  {e.automation_enabled
+                    ? "Sequência autorizada"
+                    : "Sequência em pausa"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-3">
+                  {editionDates(e.starts_at, e.ends_at)}
+                </p>
+                <p className="text-sm font-medium mt-3">
+                  Ver fluxo desta edição →
+                </p>
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {!communicationOnly && tab==="fluxo" && selected && <CourseAutomationFlow counts={flowCounts} registrations={registrationCount} enabled={selected.automation_enabled} startsAt={selected.starts_at} endsAt={selected.ends_at} onPreview={key=>{if(key in emailLabels)setPreview(key);setTab("templates");if(key in smsLabels)requestAnimationFrame(()=>document.getElementById("course-sms-templates")?.scrollIntoView({block:"start"}));}} onPeople={(key,state)=>{setTemplateFilter(key);setStateFilter(state);setChannel("all");setView(["sent","cancelled"].includes(state)?"history":"pending");setTab("pessoas");}} />}
