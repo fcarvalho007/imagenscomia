@@ -1213,7 +1213,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      webinar_settings_public: {
+        Row: {
+          color: string | null
+          cutoff_date: string | null
+          emoji: string | null
+          event_date: string | null
+          label: string | null
+          price_bundle: number | null
+          price_masterclass: number | null
+          price_premium: number | null
+          webinar: string | null
+        }
+        Insert: {
+          color?: string | null
+          cutoff_date?: string | null
+          emoji?: string | null
+          event_date?: string | null
+          label?: string | null
+          price_bundle?: number | null
+          price_masterclass?: number | null
+          price_premium?: number | null
+          webinar?: string | null
+        }
+        Update: {
+          color?: string | null
+          cutoff_date?: string | null
+          emoji?: string | null
+          event_date?: string | null
+          label?: string | null
+          price_bundle?: number | null
+          price_masterclass?: number | null
+          price_premium?: number | null
+          webinar?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_course_job: { Args: { job_kind: string }; Returns: Json }
@@ -1312,6 +1347,33 @@ export type Database = {
         Returns: boolean
       }
       ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      legacy_access_link_claim: {
+        Args: { p_destination: string; p_registration_id: string }
+        Returns: boolean
+      }
+      legacy_invoice_get: { Args: { p_token: string }; Returns: Json }
+      legacy_recursos_access: {
+        Args: { p_token: string; p_webinar?: string }
+        Returns: Json
+      }
+      legacy_reg_attendance: {
+        Args: { p_token: string; p_webinar: string }
+        Returns: Json
+      }
+      legacy_reg_lookup: { Args: { p_token: string }; Returns: Json }
+      legacy_reg_save_step: {
+        Args: {
+          p_patch?: Json
+          p_step?: number
+          p_token: string
+          p_webinar?: string
+        }
+        Returns: boolean
+      }
+      legacy_reg_session: {
+        Args: { p_token: string; p_webinar?: string }
+        Returns: Json
+      }
       manage_course_job: {
         Args: { action: string; job_uuid: string }
         Returns: undefined
