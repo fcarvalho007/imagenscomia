@@ -1,33 +1,45 @@
-# Instalação das automações do curso — já concluída
+# Fluxo de automações do Curso IA — alinhamento visual por dias
 
-## Estado verificado agora
+## Resposta direta
 
-A instalação pedida já está feita; verifiquei por leitura neste momento:
+Sim, o fluxo foi criado em função da edição: as datas, contagens e templates derivam da edição selecionada (`course_editions`), e a sequência real é agendada por inscrição confirmada com base nas datas dessa edição (`queue_course_operations`). O que falta é a apresentação: hoje o fluxo mostra um único separador "Pré-evento/Pós-evento" com cartões genéricos, sem os grupos por dia (Dia 0, Dia 1, …) nem as datas calculadas que existem na vista do Vídeo IA.
 
-- O ficheiro `supabase/migrations/20260919110000_course_sms_templates.sql` existe no repositório (sincronizado do commit b4cbdc0).
-- A migração **já está aplicada na base de dados**: a tabela de textos de SMS do curso existe, a operação de gravação de textos (RPC) existe, e não há nenhuma linha de dados criada (0 registos).
-- A função de servidor `course-operations` já foi publicada com os módulos partilhados atuais na ronda anterior.
+## Objetivo
 
-Aplicar a migração outra vez falharia (os objetos já existem) e voltar a publicar a função não mudaria nada.
+Dar à secção Automações do Curso IA o mesmo alinhamento visual da vista legada: fluxo sequencial vertical com grupos de dia, cores por fase, etiquetas de estado e datas reais calculadas a partir da edição.
 
-## O que este plano faz
+## Alterações
 
-1. **Nada a aplicar** — nenhuma migração nova, nenhum deploy novo, nenhum ficheiro alterado.
-2. Confirmar por leitura, em relatório final:
-   - tabela de textos de SMS com proteção de linhas ativa e leitura restrita a administrador com verificação em dois passos (aal2);
-   - RPC de gravação de textos com validação de texto e exigência de administrador aal2;
-   - zero dados de teste (sem participantes, campanhas ou textos criados);
-   - nenhuma migração duplicada no repositório — não é preciso criar equivalente timestamped nem tocar em `scripts/test-course-db.mjs`.
-3. O pedido de autenticação/password fica **pendente e intocado**, como pediu.
+### 1. `src/components/course/CourseAutomationFlow.tsx` (único componente alterado)
 
-## O que este plano NÃO faz
+Reorganizar os 7 passos existentes (sem mudar a sequência real na base de dados) em grupos de dia com o padrão visual do legado:
 
-- Não publica frontend, não altera layouts.
-- Não altera flags de vendas, envios, faturação ou cron.
-- Não contacta fornecedores nem envia mensagens.
-- Não cria credenciais, participantes, campanhas ou dados de teste.
-- Não toca na migração `legacy_rls_lockdown` (continua em rascunho).
+- **PRÉ-CURSO** (azul) — gatilho "Inscrições submetidas", Confirmação de pagamento (imediato), Agendar 1.ª sessão individual (1h após pagamento), Preparar a participação (48h antes), Lembrete SMS (24h antes).
+- **DIA 0 · INÍCIO DA FORMAÇÃO** (violeta) — marco com a data de início da edição; nota "sem mensagens automáticas durante a formação".
+- **DIA 1 · PÓS-CURSO** (âmbar) — Continuar com os recursos (1 dia depois do fim).
+- **DIA 7 · ACOMPANHAMENTO** (âmbar) — Agendar a sessão de acompanhamento.
+- **DIA 14 · LEMBRETE** (âmbar) — SMS da sessão individual.
+- **DIA 30 · FECHO** (vermelho) — fim do acompanhamento; lembretes fora do prazo cancelados.
 
-## Nota técnica
+Detalhes:
 
-Verificações feitas via consultas de leitura ao catálogo da base de dados e às políticas de acesso; nenhuma escrita será executada.
+- Datas reais por grupo calculadas de `startsAt`/`endsAt` da edição (hora de Lisboa), em vez de textos fixos.
+- Cartões com borda lateral colorida por grupo, ícone email/SMS, contadores clicáveis (Agendados / Aceites / Bloqueados / A verificar) e botão "Ver email/SMS e template" — mantém os callbacks `onPreview`/`onPeople` existentes.
+- Remover o alternador Pré/Pós: o fluxo passa a ser uma única linha temporal, como no Vídeo IA.
+- Manter o aviso legal no rodapé e o estado "Sequência autorizada / em pausa".
+
+### 2. Testes — `src/components/course/CourseAutomationFlow.test.tsx`
+
+- Atualizar para a nova estrutura: grupos de dia presentes e ordenados, datas calculadas por edição (ex.: Lisboa 29–30 out → Dia 1 = 31 out), contadores por estado, chamadas de preview/pessoas.
+- Correr `npm test`, `tsgo` e build.
+
+## Fora de âmbito
+
+- Nenhuma alteração à sequência real (trigger `queue_course_operations`), templates, flags ou envios.
+- Sem novas migrações, sem deploy de funções, sem publicar o frontend.
+- Vista legada Vídeo IA intocada.
+
+## Detalhes técnicos
+
+- A sequência real continua a ser agendada por `queue_course_operations` a partir de `course_editions.starts_at`/`ends_at`; o componente apenas passa a apresentar esses mesmos offsets por dia.
+- Tokens de cor via classes utilitárias já usadas no componente; pt-PT, sentence case.
