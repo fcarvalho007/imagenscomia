@@ -22,8 +22,13 @@ interface GroupDef {
 
 const LISBON = "Europe/Lisbon";
 
+const MONTHS = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
+
 function dayLabel(value: Date): string {
-  return value.toLocaleDateString("pt-PT", { timeZone: LISBON, day: "numeric", month: "short" }).replace(/\s+de\s+/g, " ").replace(/\./g, "").toUpperCase();
+  const parts = new Intl.DateTimeFormat("pt-PT", { timeZone: LISBON, day: "numeric", month: "numeric" }).formatToParts(value);
+  const day = parts.find(p => p.type === "day")?.value || "";
+  const month = Number(parts.find(p => p.type === "month")?.value || 0);
+  return `${day} ${MONTHS[month - 1] || ""}`.trim();
 }
 
 function addDays(value: Date, days: number): Date {
