@@ -1,12 +1,15 @@
+import { useEffect, useState } from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { useWebinarContext } from "@/contexts/WebinarContext";
 import { WEBINAR_CONFIG, type WebinarKey } from "@/config/webinarConfig";
 
 const focus = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2";
 
 interface LinkItem { title: string; description: string; href: string; token?: boolean }
+
 
 const LINKS: Record<WebinarKey, { group: string; items: LinkItem[] }[]> = {
   video: [
