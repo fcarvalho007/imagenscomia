@@ -257,11 +257,12 @@ function WebinarDashboard({ inscritos, onSelectInscrito, onRefresh }: DashboardV
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const buildQuery = (base: ReturnType<typeof supabase.from>) => {
+    const buildQuery = <T extends { lte: (c: string, v: string) => T; in: (c: string, v: string[]) => T }>(base: T): T => {
       let q = base;
       if (cutoff) q = q.lte("created_at", cutoff.toISOString());
       return q.in("registration_id", inscritoIds);
     };
+
 
     Promise.all([
       buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("provider", "resend").eq("status", "sent").not("provider_message_id", "is", null).gte("created_at", oneDayAgo)),
