@@ -276,7 +276,7 @@ function CourseCRMContent() {
           <TabsContent value="links"><CourseLinks edition={edition} onNavigate={setActiveView} /></TabsContent>
           <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes" className="p-7 max-sm:p-4">
-            <CourseOperations edition={edition} refresh={operationRefresh} />
+            <CourseOperations edition={edition} refresh={operationRefresh} onEditionChange={e=>{setEdition(e);setStatus("");}} />
             <div className="mt-10">
               <div className="flex flex-col gap-5">
                 <div>
