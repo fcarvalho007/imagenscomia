@@ -286,7 +286,7 @@ function CourseCRMContent() {
                   <p className="text-muted-foreground mt-3">
                     {edition
                       ? "Fluxo da edição selecionada."
-                      : "Selecione Lisboa, Porto ou Online para ver o contexto de cada edição. O percurso abaixo é comum às edições presenciais."}
+                      : "Clique em Lisboa, Porto ou Online acima para abrir o fluxo dessa edição. O percurso é comum às edições presenciais."}
                   </p>
                 </div>
                 <Card>
