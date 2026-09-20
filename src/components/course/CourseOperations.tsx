@@ -52,7 +52,7 @@ type Job = {
   error_code: string | null;
   course_registrations: { name: string; edition: string };
 };
-export default function CourseOperations({ edition, refresh = 0, communicationOnly = false }: { edition: string; refresh?: number; communicationOnly?: boolean }) {
+export default function CourseOperations({ edition, refresh = 0, communicationOnly = false, onEditionChange }: { edition: string; refresh?: number; communicationOnly?: boolean; onEditionChange?: (edition: string) => void }) {
   const [smsTemplates,setSmsTemplates]=useState<Record<string,{body:string;updated_at:string}>>({}),[smsEditing,setSmsEditing]=useState(""),[smsBody,setSmsBody]=useState(""),[smsError,setSmsError]=useState(""),[smsReady,setSmsReady]=useState(false);
   const [flowCounts,setFlowCounts]=useState<FlowCount[]|null>(null),[registrationCount,setRegistrationCount]=useState<number|null>(null),[templateFilter,setTemplateFilter]=useState(""),[stateFilter,setStateFilter]=useState("");
   const [editing,setEditing]=useState<EmailTemplate|null>(null),[overrides,setOverrides]=useState<Record<string,{subject:string;body:string;updated_at:string;format?:"text"|"html"}>>({});
