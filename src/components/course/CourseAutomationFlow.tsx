@@ -26,7 +26,7 @@ const MONTHS = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "
 
 function dayLabel(value: Date): string {
   const parts = new Intl.DateTimeFormat("pt-PT", { timeZone: LISBON, day: "numeric", month: "numeric" }).formatToParts(value);
-  const day = parts.find(p => p.type === "day")?.value || "";
+  const day = parts.find(p => p.type === "day")?.value.replace(/^0/, "") || "";
   const month = Number(parts.find(p => p.type === "month")?.value || 0);
   return `${day} ${MONTHS[month - 1] || ""}`.trim();
 }
