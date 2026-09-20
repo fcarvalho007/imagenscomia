@@ -257,10 +257,14 @@ function WebinarDashboard({ inscritos, onSelectInscrito, onRefresh }: DashboardV
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const buildQuery = (base: ReturnType<typeof supabase.from>) => {
-      let q = base;
+    type CountQuery = {
+      lte: (column: string, value: string) => CountQuery;
+      in: (column: string, values: string[]) => CountQuery;
+    };
+    const buildQuery = (base: unknown): Promise<{ count: number | null }> => {
+      let q = base as CountQuery;
       if (cutoff) q = q.lte("created_at", cutoff.toISOString());
-      return q.in("registration_id", inscritoIds);
+      return q.in("registration_id", inscritoIds) as unknown as Promise<{ count: number | null }>;
     };
 
     Promise.all([
@@ -269,6 +273,7 @@ function WebinarDashboard({ inscritos, onSelectInscrito, onRefresh }: DashboardV
       buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", oneDayAgo)),
       buildQuery(supabase.from("message_logs").select("id", { count: "exact", head: true }).eq("status", "failed").gte("created_at", sevenDaysAgo)),
     ]).then(([resend24, resend7d, failed24, failed7d]) => {
+
       setResendSent24h(resend24.count || 0);
       setResendSent7d(resend7d.count || 0);
       setEmailFailed24h(failed24.count || 0);
