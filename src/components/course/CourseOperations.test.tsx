@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+// keyboard-accessible button: fireEvent click is sufficient
 
 const editions = [
   { id: "lisboa-2026", label: "Lisboa · presencial", starts_at: "2026-10-29T09:00:00Z", ends_at: "2026-10-30T17:00:00Z", automation_enabled: true, sms_enabled: false, invoicing_enabled: false, operations: {} },
@@ -37,7 +37,7 @@ describe("CourseOperations sem edição selecionada", () => {
     const onEditionChange = vi.fn();
     render(<CourseOperations edition="" onEditionChange={onEditionChange} />);
     await waitFor(() => expect(screen.getByRole("button", { name: /Lisboa · presencial/ })).toBeInTheDocument());
-    await userEvent.click(screen.getByRole("button", { name: /Lisboa · presencial/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Lisboa · presencial/ }));
     expect(onEditionChange).toHaveBeenCalledWith("lisboa-2026");
   });
 });
