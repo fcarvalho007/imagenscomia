@@ -10,6 +10,7 @@ import TrashView from "@/components/crm/TrashView";
 import FollowUpView from "@/components/crm/FollowUpView";
 import ComunicacaoView from "@/components/crm/ComunicacaoView";
 import FaturacaoView from "@/components/crm/FaturacaoView";
+import WebinarLinks from "@/components/crm/WebinarLinks";
 import InscritoModal from "@/components/crm/InscritoModal";
 import CRMCommandPalette from "@/components/crm/CRMCommandPalette";
 import { useInscritos } from "@/hooks/useInscritos";
@@ -147,6 +148,7 @@ function CRMInner() {
         {activeView === "comunicacao" && (
           <ComunicacaoView inscritos={inscritos} />
         )}
+        {activeView === "links" && <WebinarLinks />}
         {activeView === "lixo" && (
           <TrashView
             inscritos={filteredInscritos}
