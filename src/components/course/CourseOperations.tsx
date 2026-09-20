@@ -24,6 +24,13 @@ const fields: Record<string, string> = {
   resources_url: "Recursos externos (opcional)",
   recordings_url: "Gravações externas (opcional)",
 };
+const dayMonth = new Intl.DateTimeFormat("pt-PT", { day: "numeric", month: "long", timeZone: "Europe/Lisbon" });
+function editionDates(startsAt: string, endsAt: string) {
+  const start = new Date(startsAt), end = new Date(endsAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "Datas por definir";
+  const from = dayMonth.format(start), to = dayMonth.format(end);
+  return from === to ? from : `${from} a ${to}`;
+}
 const states: Record<string, string> = {
   queued: "Agendado",
   processing: "Em processamento",
