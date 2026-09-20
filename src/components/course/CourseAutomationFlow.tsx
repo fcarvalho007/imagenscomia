@@ -23,7 +23,7 @@ interface GroupDef {
 const LISBON = "Europe/Lisbon";
 
 function dayLabel(value: Date): string {
-  return value.toLocaleDateString("pt-PT", { timeZone: LISBON, day: "numeric", month: "short" }).toUpperCase();
+  return value.toLocaleDateString("pt-PT", { timeZone: LISBON, day: "numeric", month: "short" }).replace(/\s+de\s+/g, " ").replace(/\./g, "").toUpperCase();
 }
 
 function addDays(value: Date, days: number): Date {
