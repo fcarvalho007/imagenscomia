@@ -85,16 +85,71 @@ function LinkRow({ item }: { item: LinkItem }) {
   );
 }
 
+/** Ligações pessoais do próprio administrador, para testar as páginas reservadas. */
+function useOwnTestTokens() {
+  const [tokens, setTokens] = useState<Partial<Record<WebinarKey, string>>>({});
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const email = auth.user?.email;
+      if (!email) return;
+      const { data } = await supabase
+        .from("registrations")
+        .select("webinar, edit_token")
+        .eq("email", email);
+      if (!active || !data) return;
+      const map: Partial<Record<WebinarKey, string>> = {};
+      for (const row of data) {
+        if ((row.webinar === "video" || row.webinar === "imagens") && row.edit_token) {
+          map[row.webinar as WebinarKey] = row.edit_token;
+        }
+      }
+      setTokens(map);
+    })();
+    return () => { active = false; };
+  }, []);
+  return tokens;
+}
+
+function testItems(key: WebinarKey, token: string): LinkItem[] {
+  const gated = LINKS[key].flatMap((section) => section.items).filter((item) => item.token);
+  const live: LinkItem[] = key === "video"
+    ? [{ title: "Sessão ao vivo", description: "Transmissão em direto, com a sua ligação pessoal.", href: "/live-video" }]
+    : [{ title: "Sessão ao vivo", description: "Transmissão em direto, com a sua ligação pessoal.", href: "/live" }];
+  return [...live, ...gated].map((item) => ({
+    title: item.title,
+    description: item.description,
+    href: `${item.href}?t=${token}`,
+  }));
+}
+
 export default function WebinarLinks() {
   const { webinarContext } = useWebinarContext();
   const keys: WebinarKey[] = webinarContext === "consolidado" ? ["imagens", "video"] : [webinarContext];
+  const tokens = useOwnTestTokens();
   return (
     <section className="px-4 pb-4 pt-16 sm:px-7 sm:pb-7 md:pt-7 lg:p-8 max-w-6xl">
       <header className="mb-8">
         <h1 className="font-heading text-2xl font-bold text-slate-900">Links</h1>
         <p className="mt-2 max-w-2xl text-slate-600">As páginas públicas do webinar selecionado no menu lateral. Copie o endereço ou abra num novo separador.</p>
       </header>
+      {keys.some((key) => tokens[key]) && (
+        <section aria-label="Ligações de teste" className="mb-9 rounded-lg border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
+          <h2 className="text-lg font-bold text-slate-900">Ligações de teste (a sua conta)</h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-700">Abrem as páginas reservadas já autenticadas com a inscrição de teste do seu email. Não partilhe estes endereços.</p>
+          {keys.filter((key) => tokens[key]).map((key) => (
+            <div key={key} className="mt-4">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">{WEBINAR_CONFIG[key].emoji} {WEBINAR_CONFIG[key].label}</h3>
+              <div className="mt-1 divide-y divide-emerald-200 border-y border-emerald-200">
+                {testItems(key, tokens[key] as string).map((item) => <LinkRow key={item.href} item={item} />)}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
       {keys.map((key) => (
+
         <section key={key} aria-label={`Links de ${WEBINAR_CONFIG[key].label}`} className="mb-9">
           {keys.length > 1 && <h2 className="mb-2 text-lg font-bold text-slate-900">{WEBINAR_CONFIG[key].emoji} {WEBINAR_CONFIG[key].label}</h2>}
           {LINKS[key].map((section) => (
