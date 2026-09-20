@@ -12,9 +12,9 @@ Tal como o Curso IA já tem "Links e testes", os webinars passam a ter uma secç
 2. **Nova vista `WebinarLinks`** (`src/components/crm/WebinarLinks.tsx`)
    - Mesmo padrão visual do `CourseLinks`: linhas com título, descrição, endereço completo, botão **Copiar** e botão **Abrir** (novo separador).
    - Conteúdo conforme o webinar escolhido no seletor do menu:
-     - **Vídeo IA**: landing page (`/video-lp`), checkout (`/comprar`), upgrade (`/upgrade-video`), gravação (`/upgrade-gravacao`), sessão ao vivo (`/live-video`), masterclass (`/masterclass-video`), área de recursos (`/recursos-video`).
-     - **Imagens IA**: landing page (`/`), upgrade (`/upgrade`), sessão ao vivo (`/live`), gravação (`/gravacao`), recursos (`/recursos`).
-     - **Consolidado (Todos)**: os dois grupos, um de cada webinar.
+     - **Vídeo IA**: landing page (`/video-lp`, e variante `/video`), checkout (`/comprar`), upgrade (`/upgrade-video`), gravação (`/upgrade-gravacao`), sessão ao vivo (`/live-video`), masterclass (`/masterclass-video`), recursos da masterclass (`/recursos-masterclass`), área de recursos (`/recursos-video`).
+     - **Imagens IA**: landing page (`/`), upgrade (`/upgrade`), sessão ao vivo (`/live`), gravação (`/gravacao`), recursos (`/recursos`), convites (`/convites`).
+     - **Consolidado (Todos)**: os dois grupos, um por webinar.
    - Aviso discreto de que páginas com ligação pessoal (recursos, upgrades) só abrem com o link enviado ao participante.
    - As descrições finais de cada página são confirmadas lendo o respetivo ficheiro antes de escrever o texto, para não inventar conteúdo.
 
