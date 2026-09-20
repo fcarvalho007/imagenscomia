@@ -97,7 +97,7 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
       </div>}
       {/* Nav */}
       <nav className="flex flex-col gap-1 mt-3">
-        {(course ? [...NAV_ITEMS.filter(item=>item.view!=="lixo"), {icon:BookOpen,label:"Recursos",view:"recursos" as CRMView}, {icon:Link2,label:"Links e testes",view:"links" as CRMView}] : NAV_ITEMS).map((item) => {
+        {(course ? [...NAV_ITEMS.filter(item=>item.view!=="lixo"), {icon:BookOpen,label:"Recursos",view:"recursos" as CRMView}, {icon:Link2,label:"Links e testes",view:"links" as CRMView}] : [...NAV_ITEMS, {icon:Link2,label:"Links",view:"links" as CRMView}]).map((item) => {
           const active = activeView === item.view;
           return (
             <button
