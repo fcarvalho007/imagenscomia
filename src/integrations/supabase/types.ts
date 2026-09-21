@@ -210,6 +210,7 @@ export type Database = {
       course_editions: {
         Row: {
           automation_enabled: boolean
+          availability: string
           capacity: number
           early_net_cents: number
           early_until: string | null
@@ -217,15 +218,19 @@ export type Database = {
           id: string
           invoicing_enabled: boolean
           label: string
+          modality: string
           net_cents: number
           operations: Json
           sales_enabled: boolean
           sms_enabled: boolean
           starts_at: string
           vat_percent: number
+          wp_product_id: number | null
+          wp_revision: number
         }
         Insert: {
           automation_enabled?: boolean
+          availability?: string
           capacity?: number
           early_net_cents: number
           early_until?: string | null
@@ -233,15 +238,19 @@ export type Database = {
           id: string
           invoicing_enabled?: boolean
           label: string
+          modality?: string
           net_cents: number
           operations?: Json
           sales_enabled?: boolean
           sms_enabled?: boolean
           starts_at: string
           vat_percent?: number
+          wp_product_id?: number | null
+          wp_revision?: number
         }
         Update: {
           automation_enabled?: boolean
+          availability?: string
           capacity?: number
           early_net_cents?: number
           early_until?: string | null
@@ -249,12 +258,15 @@ export type Database = {
           id?: string
           invoicing_enabled?: boolean
           label?: string
+          modality?: string
           net_cents?: number
           operations?: Json
           sales_enabled?: boolean
           sms_enabled?: boolean
           starts_at?: string
           vat_percent?: number
+          wp_product_id?: number | null
+          wp_revision?: number
         }
         Relationships: []
       }
@@ -318,7 +330,15 @@ export type Database = {
           name?: string
           session_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "course_events_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       course_invoices: {
         Row: {
@@ -486,6 +506,7 @@ export type Database = {
           analytics_session: string | null
           attribution: Json
           before_session: string
+          commerce_source: string
           course_id: string
           created_at: string
           do_not_contact: boolean
@@ -505,12 +526,15 @@ export type Database = {
           status: string
           terms_version: string
           updated_at: string
+          wp_order_id: number | null
+          wp_revision: number
         }
         Insert: {
           after_session?: string
           analytics_session?: string | null
           attribution?: Json
           before_session?: string
+          commerce_source?: string
           course_id?: string
           created_at?: string
           do_not_contact?: boolean
@@ -530,12 +554,15 @@ export type Database = {
           status?: string
           terms_version?: string
           updated_at?: string
+          wp_order_id?: number | null
+          wp_revision?: number
         }
         Update: {
           after_session?: string
           analytics_session?: string | null
           attribution?: Json
           before_session?: string
+          commerce_source?: string
           course_id?: string
           created_at?: string
           do_not_contact?: boolean
@@ -555,6 +582,8 @@ export type Database = {
           status?: string
           terms_version?: string
           updated_at?: string
+          wp_order_id?: number | null
+          wp_revision?: number
         }
         Relationships: [
           {
@@ -1424,6 +1453,8 @@ export type Database = {
         Args: { phase: string; request_uuid: string; session_state: string }
         Returns: undefined
       }
+      sync_course_woo_order: { Args: { payload: Json }; Returns: Json }
+      sync_course_wp_edition: { Args: { payload: Json }; Returns: Json }
       update_course_request: {
         Args: {
           followup: string

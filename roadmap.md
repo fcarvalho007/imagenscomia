@@ -56,3 +56,11 @@ A segurança das tabelas antigas NÃO está resolvida em produção por este ras
 - [x] Rascunho supabase/migrations-draft removido após aplicação.
 - [x] Idempotência de pagamentos do curso (confirm_course_payment) aplicada.
 - [ ] Publicação do frontend: reservada ao titular.
+
+## Checkout WordPress definitivo (21 set)
+- [x] Commit 9fac56d sincronizado; checkout oficial https://fredericocarvalho.pt/checkout/curso-inteligencia-artificial-marketing/
+- [x] Migração 20260921140000_course_wordpress_commerce aplicada; sync_course_wp_edition e sync_course_woo_order só service_role.
+- [x] course-wordpress-ingest e course-operations publicadas (mesma assinatura COURSE_WP_BRIDGE_SECRET).
+- [x] Confirmação de compra e fatura passam ao WooCommerce; CRM mantém apenas lembretes e recursos.
+- [x] 25 verificações commerce + 144 BD + 164 testes + tipos + build.
+- [ ] Preparação dos produtos e plugin no WordPress: titular.
