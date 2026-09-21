@@ -42,9 +42,12 @@ A segurança das tabelas antigas NÃO está resolvida em produção por este ras
 
 ## Plano "10 pontos Curso IA" (21 set, aprovado) — ponto 9 concluído
 - [x] Painel de diagnóstico reforçado: aviso de canais desligados, alerta de processo atrasado (>15 min) ou com falha, tabela de envios por estado e edição. Função course-diagnostics publicada. 147 testes + tipos a passar.
-- [ ] Pontos 1, 2, 4, 7, 10 bloqueados em ações/decisões do titular (ligações por edição, credencial SMS, COURSE_WP_BRIDGE_SECRET, vendas reais, publicação).
-- [ ] Ponto 3: fecho RLS do legado em rascunho, à revisão do titular.
+- [ ] Pontos 1, 2, 7, 10 bloqueados em ações/decisões do titular (ligações por edição, credencial SMS, vendas reais, publicação).
+- [x] Ponto 4: ponte WordPress verificada em 21 set — ligação autenticada e totais corretos. Não voltar a pedir COURSE_WP_BRIDGE_SECRET sem um teste que comprove falha.
+- [x] Ponto 3: fecho RLS do legado aplicado (21 set).
+- [x] scheduled_sends restrita a admin + aal2 (21 set); anon sem acesso (401), service_role preservado.
 - [ ] Pontos 5, 6, 8: textos das mensagens, percurso ponta a ponta, integrar 99 verificações SQL do titular.
+
 
 ## Segurança do legado — APLICADA (21 set)
 - [x] Políticas anónimas (USING true) removidas em registrations, invoice_details, message_logs, payment_events, email_send_logs, analytics_cache, email_templates, acquisition_costs e webinar_settings.
