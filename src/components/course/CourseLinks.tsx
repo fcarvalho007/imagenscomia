@@ -47,7 +47,7 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
       <div className="flex flex-wrap items-center gap-3"><h2 id="demo-links" className="text-lg font-bold text-slate-900">Checkout WordPress</h2><span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">Checkout definido para o curso</span></div>
       <p className="mt-2 text-sm text-slate-600">Confira a edição, os dados e o total. Não conclua o pagamento para uma simples revisão visual. As encomendas deste checkout são sincronizadas com o CRM.</p>
       <p className="mt-2 text-sm text-slate-600">{edition ? "A mostrar a edição selecionada no menu lateral." : "Escolha uma edição abaixo ou filtre no menu lateral."}</p>
-      <div className="mt-3 divide-y divide-slate-200 border-y border-slate-200">{editions.map(id => <LinkRow key={id} title={editionNames[id]} description="Abre o checkout existente com a edição escolhida. A submissão cria uma encomenda real." href={`https://fredericocarvalho.pt/checkout/curso-inteligencia-artificial-marketing/?fcia_edition=${encodeURIComponent(id)}`} action="Rever" />)}</div>
+      <div className="mt-3 divide-y divide-slate-200 border-y border-slate-200">{editions.map(id => <LinkRow key={id} title={labelOf(id)} description="Abre o checkout existente com a edição escolhida. A submissão cria uma encomenda real." href={`https://fredericocarvalho.pt/checkout/curso-inteligencia-artificial-marketing/?fcia_edition=${encodeURIComponent(id)}`} action="Rever" />)}</div>
     </section>
     <section aria-labelledby="management-links" className="mb-9">
       <h2 id="management-links" className="text-lg font-bold text-slate-900">Rever dentro do CRM</h2>
@@ -60,7 +60,7 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
     <details className="border-t border-slate-200 pt-5">
       <summary className={`cursor-pointer rounded text-sm font-semibold text-slate-700 ${focus}`}>Outros acessos · checkout real e área do participante</summary>
       <p className="mt-4 text-sm text-slate-600">Estes links usam a versão da aplicação onde está a trabalhar. Abrir uma página não confirma que esteja publicada ou que as vendas estejam ativas. O pagamento efetivo só deve ser concluído numa inscrição real.</p>
-      <div className="divide-y divide-slate-200">{editions.map(id => <LinkRow key={id} title={`Checkout real · ${editionNames[id]}`} description="Fluxo de inscrição ligado ao backend. Quando as vendas estiverem ativas, submeter pode criar uma inscrição real." href={`https://fredericocarvalho.pt/checkout/curso-inteligencia-artificial-marketing/?fcia_edition=${encodeURIComponent(id)}`} />)}
+      <div className="divide-y divide-slate-200">{editions.map(id => <LinkRow key={id} title={`Checkout real · ${labelOf(id)}`} description="Fluxo de inscrição ligado ao backend. Quando as vendas estiverem ativas, submeter pode criar uma inscrição real." href={`https://fredericocarvalho.pt/checkout/curso-inteligencia-artificial-marketing/?fcia_edition=${encodeURIComponent(id)}`} />)}
         <LinkRow title="Área do participante" description="Veja o ecrã de entrada. Os materiais exigem o link privado enviado ao participante; este atalho não concede acesso." href="/curso-ia/recursos" />
       </div>
     </details>
