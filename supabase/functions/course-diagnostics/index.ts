@@ -61,6 +61,7 @@ serve(async (req) => {
       },
       worker: { last_run_at: health.data?.last_run_at ?? null, result: health.data?.result ?? null },
       cron_installed: cron,
+      jobs: { totals, per_edition: perEdition },
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } },
   );
