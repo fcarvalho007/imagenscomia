@@ -1,3 +1,4 @@
+import { CheckoutProgress } from "@/components/course/CheckoutProgress";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import {
@@ -76,7 +77,7 @@ export default function CourseCheckoutDemo() {
               setComplete(true);
             }}
           >
-            {!complete && <div className="checkout-step-header"><p role="status">Passo {step+1} de 3</p><progress value={step+1} max={3} aria-label="Progresso da simulação"/><h2 ref={stepHeading} tabIndex={-1}>{["Onde quer participar?", "Quer explorar o complemento?", "Reveja a sua escolha."][step]}</h2></div>}
+            {!complete && <div className="checkout-step-header"><CheckoutProgress labels={["Edição", "Complemento", "Resumo"]} current={step}/><p role="status">Passo {step+1} de 3</p><progress value={step+1} max={3} aria-label="Progresso da simulação"/><h2 ref={stepHeading} tabIndex={-1}>{["Onde quer participar?", "Quer explorar o complemento?", "Reveja a sua escolha."][step]}</h2></div>}
             <div className="checkout-demo-content">
               <section
                 className="checkout-demo-course" hidden={!complete && step!==0}
@@ -148,7 +149,21 @@ export default function CourseCheckoutDemo() {
                     Quer aprofundar a criação de imagem e vídeo? Acrescente
                     videoaulas práticas para explorar esta área ao seu ritmo.
                   </p>
-                  <dl className="checkout-demo-syllabus">
+                  {!complete && (
+                    <label className="checkout-demo-choice">
+                      <input
+                        type="checkbox"
+                        checked={complement}
+                        onChange={(e) => setComplement(e.target.checked)}
+                        aria-describedby="checkout-demo-price-note"
+                      />
+                      <span>
+                        Adicionar o pacote à simulação
+                        <strong>+67 € + IVA</strong>
+                      </span>
+                    </label>
+                  )}
+                  <details className="checkout-offer-details"><summary>O que poderá explorar</summary><dl className="checkout-demo-syllabus">
                     <div>
                       <dt>Preparar a direção visual</dt>
                       <dd>Referências, estilo e coerência com a marca.</dd>
@@ -164,27 +179,12 @@ export default function CourseCheckoutDemo() {
                         publicação.
                       </dd>
                     </div>
-                  </dl>
+                  </dl></details>
                   <p className="checkout-demo-offer-note">
-                    Uma formação complementar gravada, com materiais
-                    reutilizáveis. As videoaulas de resumo e os restantes
-                    recursos do curso principal continuam incluídos, mesmo sem
-                    este complemento.
+                    O curso principal mantém as duas sessões individuais, as
+                    videoaulas de resumo e todos os recursos, sem este extra.
                   </p>
-                  {!complete && (
-                    <label className="checkout-demo-choice">
-                      <input
-                        type="checkbox"
-                        checked={complement}
-                        onChange={(e) => setComplement(e.target.checked)}
-                        aria-describedby="checkout-demo-price-note"
-                      />
-                      <span>
-                        Adicionar o pacote à simulação
-                        <strong>+67 € + IVA</strong>
-                      </span>
-                    </label>
-                  )}
+
                   <p
                     id="checkout-demo-price-note"
                     className="checkout-demo-caption"
@@ -204,7 +204,7 @@ export default function CourseCheckoutDemo() {
             </div>
             <aside
               className="checkout-demo-summary"
-              aria-labelledby="checkout-summary-title"
+              aria-labelledby="checkout-summary-title" data-review={step===2||complete}
             >
               <h2 id="checkout-summary-title">
                 {complete ? "A sua simulação" : "Resumo da simulação"}

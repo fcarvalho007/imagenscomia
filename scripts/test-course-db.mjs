@@ -20,6 +20,7 @@ for (const file of [
   "20260919092733_c5194bf1-ed45-4f6a-9c33-abfe71bec5a9.sql",
   "20260919095001_34572f4b-8574-4edb-bc2b-f97485be3c2f.sql",
   "20260919095017_646e0b16-ea32-468f-baee-97238e331df6.sql",
+  "20260921120000_course_closed_payment_idempotency.sql",
 ])
   await db.exec(
     await readFile(
@@ -536,6 +537,21 @@ for(const [i,edition] of ['lisboa-2026','porto-2026','online-2026'].entries()){
  await auth('authenticated',true,'aal2');
  const paid=(await rpc("select course_period_metrics($1,null) m",[edition])).m;
  assert.equal(paid.confirmed,before.confirmed+1);assert.equal(paid.revenue_cents,before.revenue_cents+amount);checks++;
+}
+// Cancel/expiry and repeated terminal callbacks for every edition, in memory only.
+for(const [i,edition] of ['lisboa-2026','porto-2026','online-2026'].entries()){
+ for(const [j,status] of ['Cancel','Expired'].entries()){
+  await auth('service_role');
+  const amount=(await rpc('select course_quote($1) q',[edition])).q.amount_cents;
+  const closed=await claim({...payload,edition,request_id:`ed000000-0000-4000-8000-0000000000${i}${j}`,email:`closed-${i}-${j}@example.invalid`},amount);
+  assert.equal(closed.state,'claimed');checks++;
+  for(let n=0;n<2;n++)await db.query("select confirm_course_payment($1,$2,$3,'EUR',$4)",[closed.id,`closed-${i}-${j}`,amount,status]);
+  const row=await rpc('select state,registration_id from course_payments where id=$1',[closed.id]);
+  assert.equal(row.state,status==='Cancel'?'cancelled':'expired');checks++;
+  assert.equal((await rpc("select count(*)::int n from course_activity where registration_id=$1 and action='payment_closed'",[row.registration_id])).n,1);checks++;
+  assert.equal((await rpc('select count(*)::int n from course_invoices where registration_id=$1',[row.registration_id])).n,0);checks++;
+  await denied(()=>db.query("select confirm_course_payment($1,$2,$3,'EUR','Paid')",[closed.id,`closed-${i}-${j}`,amount]));
+ }
 }
 // Rich-text format indicator and self-test log.
 await auth('authenticated',true,'aal2');

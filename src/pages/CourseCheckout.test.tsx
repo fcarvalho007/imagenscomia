@@ -24,6 +24,7 @@ describe('guided checkout',()=>{
   fireEvent.click(screen.getByLabelText(/Li a/));fireEvent.click(screen.getByLabelText(/Aceito as/));next();
   expect(screen.getByRole('heading',{name:'Está tudo certo?'})).toBeInTheDocument();
   expect(vi.mocked(checkoutRequest).mock.calls.filter(c=>c[1]==='checkout')).toHaveLength(0);
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Continuar para pagamento'})).toBeEnabled());
   fireEvent.click(screen.getByRole('button',{name:'Continuar para pagamento'}));
   await waitFor(()=>expect(vi.mocked(checkoutRequest).mock.calls.filter(c=>c[1]==='checkout')).toHaveLength(1));
   const payload=vi.mocked(checkoutRequest).mock.calls.find(c=>c[1]==='checkout')![2];

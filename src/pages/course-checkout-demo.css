@@ -424,3 +424,49 @@
 .checkout-guided .checkout-demo-content{animation:checkout-arrive .28s cubic-bezier(.16,1,.3,1)}
 @keyframes checkout-arrive{from{transform:translateY(8px)}to{transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.checkout-guided .checkout-demo-content{animation:none}}
+
+/* A short checkout rail and restrained order summary, shared by demo and live. */
+.checkout-progress{display:flex;list-style:none;padding:0;margin:0 0 26px;gap:0;max-width:640px}
+.checkout-progress li{display:flex;align-items:center;gap:9px;flex:1;font-size:13px;color:var(--checkout-muted);position:relative}
+.checkout-progress li:not(:last-child)::after{content:"";height:1px;background:var(--checkout-line);flex:1;margin:0 12px}
+.checkout-progress li[aria-current]{color:var(--checkout-ink);font-weight:700}
+.checkout-progress-dot{display:grid;place-items:center;flex:none;width:26px;height:26px;border:1px solid #91a8b6;border-radius:50%;font-size:12px;background:#fff}
+.checkout-progress [aria-current] .checkout-progress-dot,.checkout-progress .is-complete .checkout-progress-dot{background:#173f55;border-color:#173f55;color:#fff}
+.checkout-offer-details{margin:0 0 16px}
+.checkout-offer-details summary,.checkout-inclusions summary{cursor:pointer;min-height:44px;padding:10px 0;font-size:14px;font-weight:600;text-decoration:underline;text-underline-offset:4px}
+.course-checkout-demo summary:focus-visible{outline:3px solid #247696;outline-offset:3px}
+.checkout-demo-offer{padding:24px}
+.checkout-demo-offer h2{font-size:24px;line-height:1.25;text-wrap:pretty}
+.checkout-demo-offer-meta{gap:4px;margin-bottom:12px;flex-direction:column}
+.checkout-demo-offer-intro{font-size:16px;margin-bottom:10px}
+.checkout-demo-offer-note{margin:10px 0 16px}
+.checkout-demo-choice{padding:16px 0}
+.checkout-demo-summary{border:1px solid var(--checkout-line);background:#fff}
+.checkout-demo-summary h2{font-size:18px}
+.checkout-demo-shell{padding-bottom:24px}
+.checkout-demo-nav{padding:14px 0}
+.checkout-demo-heading{padding:32px 0}
+.checkout-demo-heading h1{font-size:clamp(30px,3.5vw,42px)}
+.checkout-heading-compact{padding:24px 0}
+.checkout-heading-compact h1{font-size:23px}
+.checkout-step-header h2{font-size:clamp(25px,3vw,32px)}
+.checkout-live-summary ul{border:0;padding:8px 0 16px;font-size:14px}
+.checkout-inclusions{border-bottom:1px solid var(--checkout-line);margin:12px 0}
+@media(max-width:850px){
+ .checkout-progress{margin-bottom:20px}
+ .checkout-progress li{flex-direction:column;gap:6px;align-items:center;font-size:12px;text-align:center}
+ .checkout-progress li:not(:last-child)::after{position:absolute;top:13px;left:calc(50% + 20px);width:calc(100% - 40px);margin:0}
+ .checkout-demo-offer{padding:20px}
+ .checkout-demo-offer h2{font-size:22px}
+ .checkout-demo-summary,.checkout-live-summary{padding:20px}
+ .checkout-demo-summary:not([data-review="true"]) .checkout-demo-lines{display:none}
+ .checkout-demo-summary:not([data-review="true"]) .checkout-demo-totals{border:0;margin:0;padding:0}
+ .checkout-demo-choice span{font-size:15px}
+ .checkout-demo-caption{font-size:12px}
+ .checkout-demo-total dd{font-size:23px}
+ .checkout-step-actions{margin-top:24px;gap:16px}
+ .checkout-demo-heading{padding:26px 0}
+ .checkout-heading-compact h1{font-size:21px}
+}
+.course-checkout-demo:not(.course-checkout-live) .checkout-step-header progress{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.checkout-demo-choice+.checkout-offer-details{margin-top:12px}
