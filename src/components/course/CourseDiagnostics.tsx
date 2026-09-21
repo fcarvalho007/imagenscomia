@@ -95,6 +95,22 @@ export default function CourseDiagnostics() {
 
       {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
 
+      {report && disabledChannels.length > 0 && (
+        <p className="mt-3 flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">
+          <AlertTriangle size={13} className="text-amber-500" />
+          Canais desligados: {disabledChannels.join(" · ")}. Nada é enviado ou cobrado enquanto estiverem assim.
+        </p>
+      )}
+
+      {report && report.cron_installed && (workerStale || workerFailed) && (
+        <p className="mt-3 flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+          <XCircle size={13} />
+          {workerFailed
+            ? `A última execução do processo terminou com resultado "${report.worker.result}".`
+            : "O processo automático está atrasado: sem execução há mais de 15 minutos."}
+        </p>
+      )}
+
       {report && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div>
