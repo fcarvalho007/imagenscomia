@@ -28,6 +28,21 @@ serve(async (req) => {
     cron = null;
   }
 
+  // Aggregated job counts only — never contacts, ids or content.
+  const { data: jobRows } = await db.from("course_jobs").select("kind,state,course_registrations(edition)");
+  const totals: Record<string, number> = {};
+  const perEdition: Record<string, Record<string, number>> = {};
+  for (const row of jobRows ?? []) {
+    const state = String(row.state);
+    totals[state] = (totals[state] ?? 0) + 1;
+    const reg = row.course_registrations as { edition?: string } | { edition?: string }[] | null;
+    const edition = Array.isArray(reg) ? reg[0]?.edition : reg?.edition;
+    if (edition) {
+      perEdition[edition] = perEdition[edition] ?? {};
+      perEdition[edition][state] = (perEdition[edition][state] ?? 0) + 1;
+    }
+  }
+
   return new Response(
     JSON.stringify({
       checks: {
@@ -46,6 +61,7 @@ serve(async (req) => {
       },
       worker: { last_run_at: health.data?.last_run_at ?? null, result: health.data?.result ?? null },
       cron_installed: cron,
+      jobs: { totals, per_edition: perEdition },
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" } },
   );
