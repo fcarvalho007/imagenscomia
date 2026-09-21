@@ -33,19 +33,18 @@ async function fetchSettings(): Promise<Map<string, WebinarSettings>> {
   if (_cache) return _cache;
   if (_fetchPromise) return _fetchPromise;
   _fetchPromise = (async () => {
-    // Public pages read the restricted view (prices, dates and branding only).
+    // Public pages read the narrow RPC (prices, dates and branding only).
     // Internal CRM metrics come from the base table and are only readable by
     // an authenticated admin; the extra read simply returns nothing otherwise.
-    const publicRead = await (supabase as any)
-      .from("webinar_settings_public")
-      .select("*");
+    const publicRead = await (supabase as any).rpc("legacy_webinar_settings_public");
     const internalRead = await (supabase as any)
       .from("webinar_settings")
       .select("*");
 
+    const publicRows = Array.isArray(publicRead.data) ? (publicRead.data as any[]) : null;
     const data = (internalRead.data && internalRead.data.length
       ? internalRead.data
-      : publicRead.data) as any[] | null;
+      : publicRows) as any[] | null;
     const error = publicRead.error && internalRead.error ? publicRead.error : null;
 
     if (error || !data) {

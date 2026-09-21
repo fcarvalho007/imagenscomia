@@ -45,3 +45,11 @@ A segurança das tabelas antigas NÃO está resolvida em produção por este ras
 - [ ] Pontos 1, 2, 4, 7, 10 bloqueados em ações/decisões do titular (ligações por edição, credencial SMS, COURSE_WP_BRIDGE_SECRET, vendas reais, publicação).
 - [ ] Ponto 3: fecho RLS do legado em rascunho, à revisão do titular.
 - [ ] Pontos 5, 6, 8: textos das mensagens, percurso ponta a ponta, integrar 99 verificações SQL do titular.
+
+## Segurança do legado — APLICADA (21 set)
+- [x] Políticas anónimas (USING true) removidas em registrations, invoice_details, message_logs, payment_events, email_send_logs, analytics_cache, email_templates, acquisition_costs e webinar_settings.
+- [x] Acesso passa a exigir administrador autenticado com MFA aal2 (legacy_is_admin); anon sem qualquer GRANT (401 verificado nas 9 tabelas).
+- [x] Vista webinar_settings_public substituída pela RPC legacy_webinar_settings_public (preços/datas/identidade visual) — useWebinarSettings atualizado.
+- [x] Rascunho supabase/migrations-draft removido após aplicação.
+- [x] Idempotência de pagamentos do curso (confirm_course_payment) aplicada.
+- [ ] Publicação do frontend: reservada ao titular.
