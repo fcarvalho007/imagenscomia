@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import CourseCheckoutDemo from "./CourseCheckoutDemo";
+beforeEach(()=>{vi.spyOn(window,"scrollTo").mockImplementation(()=>{});});
 afterEach(() => {
   cleanup();
   history.replaceState(null, "", "/");
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 describe("isolated checkout demonstration", () => {
   it.each([
@@ -17,16 +19,19 @@ describe("isolated checkout demonstration", () => {
       const fetch = vi.fn();
       vi.stubGlobal("fetch", fetch);
       render(<CourseCheckoutDemo />);
-      const checkbox = screen.getByRole("checkbox");
-      expect(checkbox).not.toBeChecked();
+
       fireEvent.change(screen.getByRole("combobox", { name: "Edição" }), {
         target: { value: edition },
       });
       expect(screen.getByTestId("demo-total")).toHaveTextContent(base);
+      fireEvent.click(screen.getByRole("button", {name:"Próximo passo"}));
+      const checkbox = screen.getByRole("checkbox");
+      expect(checkbox).not.toBeChecked();
       fireEvent.click(checkbox);
       expect(screen.getByTestId("demo-total")).toHaveTextContent(extra);
       fireEvent.click(checkbox);
       expect(screen.getByTestId("demo-total")).toHaveTextContent(base);
+      fireEvent.click(screen.getByRole("button", {name:/Continuar sem complemento|Próximo passo/}));
       fireEvent.click(
         screen.getByRole("button", { name: "Concluir simulação" }),
       );
@@ -35,7 +40,9 @@ describe("isolated checkout demonstration", () => {
       ).toHaveFocus();
       expect(screen.getByTestId("demo-total")).toHaveTextContent(base);
       fireEvent.click(screen.getByRole("button", { name: "Editar simulação" }));
-      fireEvent.click(screen.getByRole("checkbox"));
+      fireEvent.click(screen.getByRole("button", {name:"Próximo passo"}));
+      fireEvent.click(screen.getByRole("checkbox",{hidden:true}));
+      fireEvent.click(screen.getByRole("button", {name:/Continuar sem complemento|Próximo passo/}));
       fireEvent.click(
         screen.getByRole("button", { name: "Concluir simulação" }),
       );
@@ -47,7 +54,7 @@ describe("isolated checkout demonstration", () => {
     history.replaceState(null, "", "/curso-ia/checkout-demonstracao?edition=" + edition);
     render(<CourseCheckoutDemo />);
     expect(screen.getByRole("combobox", { name: "Edição" })).toHaveValue(edition);
-    expect(screen.getByRole("checkbox")).not.toBeChecked();
+    expect(screen.getByRole("checkbox",{hidden:true})).not.toBeChecked();
   });
   it("ignores an unsupported edition in the URL", () => {
     history.replaceState(null, "", "/curso-ia/checkout-demonstracao?edition=constructor");
@@ -56,7 +63,7 @@ describe("isolated checkout demonstration", () => {
   });
   it("recalculates a selected pack when the edition changes and preserves the base inclusions", () => {
     render(<CourseCheckoutDemo />);
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox",{hidden:true}));
     fireEvent.change(screen.getByRole("combobox", { name: "Edição" }), {
       target: { value: "online-2026" },
     });

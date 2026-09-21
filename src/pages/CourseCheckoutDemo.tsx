@@ -15,9 +15,12 @@ export default function CourseCheckoutDemo() {
     return requested && Object.prototype.hasOwnProperty.call(demoEditions, requested) ? requested as DemoEdition : "lisboa-2026";
   });
   const [complement, setComplement] = useState(false);
+  const [step, setStep] = useState(0);
   const [complete, setComplete] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const stepHeading = useRef<HTMLHeadingElement>(null);
   const previousComplete = useRef(complete);
+  useEffect(() => { stepHeading.current?.focus({preventScroll:true}); window.scrollTo({top:0,behavior:"instant"}); }, [step]);
   const selected = demoEditions[edition];
   const totals = demoTotal(edition, complement);
   useEffect(() => {
@@ -53,7 +56,7 @@ export default function CourseCheckoutDemo() {
           <span>Frederico Carvalho</span>
         </header>
         <main>
-          <header className="checkout-demo-heading">
+          <header className={`checkout-demo-heading ${step>0&&!complete ? "checkout-heading-compact" : ""}`}>
             <h1 ref={heading} tabIndex={-1}>
               {complete
                 ? "Simulação concluída."
@@ -66,18 +69,20 @@ export default function CourseCheckoutDemo() {
             </p>
           </header>
           <form
-            className="checkout-demo-layout"
+            className="checkout-demo-layout checkout-guided"
             onSubmit={(e) => {
               e.preventDefault();
+              if(step<2){setStep(step+1);return;}
               setComplete(true);
             }}
           >
+            {!complete && <div className="checkout-step-header"><p role="status">Passo {step+1} de 3</p><progress value={step+1} max={3} aria-label="Progresso da simulação"/><h2 ref={stepHeading} tabIndex={-1}>{["Onde quer participar?", "Quer explorar o complemento?", "Reveja a sua escolha."][step]}</h2></div>}
             <div className="checkout-demo-content">
               <section
-                className="checkout-demo-course"
+                className="checkout-demo-course" hidden={!complete && step!==0}
                 aria-labelledby="checkout-course-title"
               >
-                <h2 id="checkout-course-title">
+                <h2 id="checkout-course-title" hidden={!complete}>
                   {complete ? "A edição escolhida" : "Escolha a sua edição"}
                 </h2>
                 {complete ? (
@@ -132,7 +137,7 @@ export default function CourseCheckoutDemo() {
               {(!complete || complement) && (
                 <section
                   className={`checkout-demo-offer ${complement ? "is-selected" : ""}`}
-                  aria-labelledby="checkout-offer-title"
+                  aria-labelledby="checkout-offer-title" hidden={!complete && step!==1}
                 >
                   <div className="checkout-demo-offer-meta">
                     <span>Demonstração — oferta em estudo</span>
@@ -195,6 +200,7 @@ export default function CourseCheckoutDemo() {
                   acompanhamento incluídos.
                 </p>
               )}
+              {!complete && <div className="checkout-step-actions">{step>0 && <button type="button" className="checkout-step-back" onClick={()=>setStep(step-1)}><ArrowLeft size={18}/> Voltar</button>}{step<2 && <button className="checkout-live-submit" type="submit">{step===1&&!complement ? "Continuar sem complemento" : "Próximo passo"}<ArrowRight size={18}/></button>}</div>}
             </div>
             <aside
               className="checkout-demo-summary"
@@ -243,14 +249,14 @@ export default function CourseCheckoutDemo() {
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    setComplete(false);
+                    setComplete(false); setStep(0);
                   }}
                 >
                   Editar simulação
                   <ArrowLeft size={19} aria-hidden="true" />
                 </button>
               ) : (
-                <button className="checkout-demo-submit" type="submit">
+                <button className="checkout-demo-submit" type="submit" hidden={step!==2}>
                   Concluir simulação
                   <ArrowRight size={19} aria-hidden="true" />
                 </button>
