@@ -29,6 +29,8 @@ function LinkRow({ title, description, href, action = "Abrir" }: { title: string
 
 export default function CourseLinks({ edition, onNavigate, catalog = [] }: { catalog?: {id:string;label:string}[]; edition: string; onNavigate: (view: CRMView) => void }) {
   const editions = (catalog.length?catalog.map(e=>e.id):[...EDITIONS]).filter(id => !edition || edition === id);
+  // WordPress owns the catalogue, so a new edition may not exist in the local label map yet.
+  const labelOf = (id: string) => catalog.find(e => e.id === id)?.label || editionNames[id] || id;
   return <section className="px-4 pb-4 pt-16 sm:px-7 sm:pb-7 md:pt-7 lg:p-8 max-w-6xl">
     <header className="mb-8">
       <h1 className="font-heading text-2xl font-bold text-slate-900">Links e testes</h1>
