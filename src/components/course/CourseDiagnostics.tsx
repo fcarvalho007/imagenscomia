@@ -72,6 +72,15 @@ export default function CourseDiagnostics() {
     load();
   }, [load]);
 
+  const disabledChannels = report
+    ? (Object.entries(switchLabels) as [string, string][]).filter(([key]) => !report.switches[key]).map(([, label]) => label)
+    : [];
+  const workerStale = (() => {
+    if (!report?.worker.last_run_at) return false;
+    return Date.now() - new Date(report.worker.last_run_at).getTime() > STALE_MINUTES * 60_000;
+  })();
+  const workerFailed = Boolean(report?.worker.result && report.worker.result !== "ok");
+
   return (
     <div className="rounded-lg border bg-white p-4">
       <div className="flex items-center justify-between">
