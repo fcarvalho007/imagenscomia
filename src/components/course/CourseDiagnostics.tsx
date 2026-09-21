@@ -174,6 +174,41 @@ export default function CourseDiagnostics() {
               </button>
             </div>
           </div>
+          {report.jobs && (
+            <div className="md:col-span-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Envios por edição</p>
+              {Object.keys(report.jobs.per_edition).length === 0 ? (
+                <p className="mt-2 text-xs text-slate-500">Sem mensagens agendadas ou enviadas — ainda não há inscritos.</p>
+              ) : (
+                <table className="mt-2 w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <th className="py-1 pr-2">Edição</th>
+                      {Object.keys(jobStateLabels).map((state) => (
+                        <th key={state} className="py-1 pr-2">{jobStateLabels[state]}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(report.jobs.per_edition).map(([edition, counts]) => (
+                      <tr key={edition} className="border-t border-slate-200">
+                        <td className="py-1 pr-2 font-semibold">{editionLabels[edition] || edition}</td>
+                        {Object.keys(jobStateLabels).map((state) => (
+                          <td key={state} className="py-1 pr-2">{counts[state] ?? 0}</td>
+                        ))}
+                      </tr>
+                    ))}
+                    <tr className="border-t border-slate-300 font-semibold">
+                      <td className="py-1 pr-2">Total</td>
+                      {Object.keys(jobStateLabels).map((state) => (
+                        <td key={state} className="py-1 pr-2">{report.jobs!.totals[state] ?? 0}</td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
