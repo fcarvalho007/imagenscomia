@@ -1352,6 +1352,7 @@ export type Database = {
         Returns: boolean
       }
       legacy_invoice_get: { Args: { p_token: string }; Returns: Json }
+      legacy_is_admin: { Args: never; Returns: boolean }
       legacy_recursos_access: {
         Args: { p_token: string; p_webinar?: string }
         Returns: Json
