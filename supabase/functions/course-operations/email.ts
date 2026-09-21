@@ -48,7 +48,7 @@ export async function sendCourseEmail(
         if (
           materialsError ||
           !materials?.length ||
-          (r.edition === "online-2026" &&
+          (r.edition.startsWith("online-") &&
             !materials.some((x: any) => x.kind === "recording")) ||
           !r.resource_token
         )
@@ -59,7 +59,7 @@ export async function sendCourseEmail(
         );
         resources.hash = r.resource_token;
         operations.resources_url = resources.href;
-        if (r.edition === "online-2026")
+        if (r.edition.startsWith("online-"))
           operations.recordings_url = resources.href;
       }
       let mail;

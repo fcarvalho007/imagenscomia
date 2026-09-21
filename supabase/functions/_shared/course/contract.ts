@@ -67,7 +67,7 @@ export function normalizeEvent(body: Record<string, unknown>) {
     id: body.id,
     session_id: body.session_id,
     name: body.name,
-    edition: EDITIONS.includes(body.edition as (typeof EDITIONS)[number])
+    edition: typeof body.edition === "string" && /^(lisboa|porto|online)-[a-z0-9-]{4,60}$/.test(body.edition)
       ? body.edition
       : null,
   };

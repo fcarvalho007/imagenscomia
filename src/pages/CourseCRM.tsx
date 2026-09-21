@@ -50,6 +50,7 @@ const selectClass =
   "h-11 rounded-md border border-input bg-background px-3 text-sm";
 export default function CourseCRM() { return <WebinarProvider><CourseCRMContent /></WebinarProvider>; }
 function CourseCRMContent() {
+  const [catalog,setCatalog]=useState<{id:string;label:string}[]>([]);
   const [activeView, setActiveView] = useState<CRMView>(() => new URLSearchParams(window.location.search).get("view") === "links" ? "links" : "dashboard");
 
 
@@ -117,7 +118,7 @@ function CourseCRMContent() {
         const fetchRows = async () => {
           const data: any[] = [];
           for (let start = 0; ; start += 500) {
-            let query = db.from("course_registrations").select("id,name,email,phone,edition,status,notes,next_followup_at,created_at,marketing_consent,sms_consent,do_not_contact,before_session,after_session,attribution,course_editions(starts_at,ends_at),course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)").order("created_at",{ascending:false}).order("id").range(start,start+499);
+            let query = db.from("course_registrations").select("id,name,email,phone,edition,status,notes,commerce_source,wp_order_id,next_followup_at,created_at,marketing_consent,sms_consent,do_not_contact,before_session,after_session,attribution,course_editions(starts_at,ends_at),course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)").order("created_at",{ascending:false}).order("id").range(start,start+499);
             if (edition) query=query.eq("edition",edition);
             const batch=await query;
             if (request !== sequence.current || batch.error) return batch;
@@ -127,12 +128,17 @@ function CourseCRMContent() {
         };
         let costQuery=db.from("course_costs").select("id,edition,platform,description,amount,cost_date,category");
         if(edition)costQuery=costQuery.eq("edition",edition);
-        const [items, kpis, loadedCosts] = await Promise.all([
+        const [items, kpis, loadedCosts, editionsResult] = await Promise.all([
           fetchRows(),
           db.rpc("course_period_metrics", { edition_id: edition || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
           costQuery,
+          db.from("course_editions").select("id,label,starts_at").order("starts_at"),
         ]);
         if (request !== sequence.current) return;
+        if(editionsResult.error)throw new Error("Catalogue unavailable");
+        const editionRows=(editionsResult.data||[]).map(e=>({id:e.id,label:e.label+" · "+new Date(e.starts_at).toLocaleDateString("pt-PT")}));
+        for(const e of editionRows)editionNames[e.id]=e.label;
+        setCatalog(editionRows);
         if (items.error) throw new Error("Backend unavailable");
         const received = items.data.map((item) => ({
           ...item,
@@ -259,7 +265,7 @@ function CourseCRMContent() {
   if (!auth) return <CRMLogin course onLogin={() => void checkAuth()} />;
   return (
     <div className="flex min-h-screen bg-off-white">
-      <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);}} onLogout={()=>void supabase.auth.signOut()} course={{edition,onEditionChange:e=>{setEdition(e);setStatus("");}}} />
+      <CRMSidebar activeView={activeView} onChangeView={v=>{setActiveView(v);setStatus("");setSelected(null);}} onLogout={()=>void supabase.auth.signOut()} course={{edition,editions:catalog,onEditionChange:e=>{setEdition(e);setStatus("");}}} />
       <main className="flex-1 min-w-0 md:ml-[240px] overflow-x-hidden">
       <div className="flex flex-col gap-6">
         {error && (
@@ -271,9 +277,9 @@ function CourseCRMContent() {
           <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown}} /></TabsContent>
           <TabsContent value="pipeline"><PipelineView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course={{onMove:moveParticipant}} /></TabsContent>
           <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
-          <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
+          <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,editions:catalog,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
           <TabsContent value="comunicacao"><ComunicacaoView key={edition} inscritos={participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition)} course={{queue:queueCampaign,smsRecipients:participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition && rows.find(r=>r.id===i.id)?.sms_consent),history:<CourseOperations edition={edition} refresh={operationRefresh} communicationOnly />}} /></TabsContent>
-          <TabsContent value="links"><CourseLinks edition={edition} onNavigate={setActiveView} /></TabsContent>
+          <TabsContent value="links"><CourseLinks catalog={catalog} edition={edition} onNavigate={setActiveView} /></TabsContent>
           <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes" className="p-7 max-sm:p-4">
             <CourseOperations edition={edition} refresh={operationRefresh} onEditionChange={e=>{setEdition(e);setStatus("");}} />

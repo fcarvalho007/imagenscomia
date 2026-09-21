@@ -108,21 +108,22 @@
   });
  }
  function checkoutLink(){
-  const target=new URL(config.checkoutUrl);if(target.origin!=='https://imagenscomia.com'||target.pathname!=='/curso-ia/checkout')throw new Error('Invalid checkout destination');
+  const target=new URL(config.checkoutUrl);const woo=config.commerce==='woocommerce';if(woo ? target.origin!==location.origin||target.pathname!=='/checkout/curso-inteligencia-artificial-marketing/' : target.origin!=='https://imagenscomia.com'||target.pathname!=='/curso-ia/checkout')throw new Error('Invalid checkout destination');
+  if(woo){const selected=window.FCIA_CATALOG?.selected(edition.split('-')[0]);if(!selected?.can_buy)throw new Error('Edição indisponível');edition=selected.id;target.searchParams.set('fcia_edition',edition);return target.href;}
   target.searchParams.set('edition',edition);
   if(consent&&session){const data=new URLSearchParams({metrics:'allow',sid:session,...campaign});target.hash=data.toString();}
   return target.href;
  }
  if(config.enabled&&holder&&config.checkoutUrl){
   const intro=holder.querySelector('p');if(intro)intro.textContent='Continue para a inscrição segura, com a edição e o valor que escolheu.';
-  const link=document.createElement('a');link.className='button button-primary';link.textContent='Continuar a inscrição';link.href=checkoutLink();link.id='fcia-checkout-link';
+  const link=document.createElement('a');link.className='button button-primary';link.textContent='Continuar a inscrição';link.href=config.checkoutUrl;link.id='fcia-checkout-link';
   link.addEventListener('click',()=>{event('registration_started');link.href=checkoutLink();});holder.insertBefore(link,$('#registration-whatsapp'));
  }
  document.addEventListener('fc:checkout',e=>{
   const label=String(e.detail?.label||'').toLowerCase();edition=label.includes('porto')?'porto-2026':label.includes('online')?'online-2026':'lisboa-2026';
   if(form)form.selectEdition(edition);
   event('edition_selected',false);event('registration_started');
-  if(config.enabled&&config.checkoutUrl)window.location.assign(checkoutLink());
+  if(config.enabled&&config.checkoutUrl){try{window.location.assign(checkoutLink());}catch{const result=holder?.querySelector('p');if(result)result.textContent='Esta edição está indisponível. Escolha outra edição ou contacte o suporte.';}}
  });
  if(config.enabled&&new URLSearchParams(location.search).get('fcia_payment')==='return'){
   let order;try{order=JSON.parse(storage.get('fcia-checkout',true)||'null');}catch{order=null;}

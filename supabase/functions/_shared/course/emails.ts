@@ -35,7 +35,7 @@ export function safeLink(value: string | undefined): string {
   return u.href;
 }
 export function renderCourseEmail(template: string, c: MailContext, override?: {subject:string;body:string;format?:string}) {
-  const online = c.edition === "online-2026";
+  const online = c.edition.startsWith("online-");
   let paragraphs: string[];
   let label: string;
   let url: string;

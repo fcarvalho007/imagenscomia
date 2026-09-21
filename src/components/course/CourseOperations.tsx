@@ -304,7 +304,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             <h3 className="font-semibold">Preparação da edição</h3>
             {Object.entries(fields)
               .filter(([key]) =>
-                selected.id === "online-2026"
+                selected.id.startsWith("online-")
                   ? key !== "venue"
                   : !["join_url", "recordings_url"].includes(key),
               )

@@ -1,7 +1,7 @@
 // Signed server-to-server diagnostics only: no registration, provider request or message.
 export async function courseDiagnostics(db: any, env: (key: string) => string | undefined) {
   const { data, error } = await db.from("course_editions").select("id,label,early_until,early_net_cents,net_cents,vat_percent,sales_enabled,automation_enabled,sms_enabled,invoicing_enabled").order("starts_at");
-  if (error || !data || data.length !== 3) throw new Error("course_schema_unavailable");
+  if (error || !data || data.length < 1) throw new Error("course_schema_unavailable");
   const checks = {
     payment_enabled: env("COURSE_PAYMENTS_ENABLED") === "true",
     payment_environment: env("COURSE_PAYMENT_ENV") === "production" ? "production" : "sandbox",

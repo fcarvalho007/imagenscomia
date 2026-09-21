@@ -78,7 +78,7 @@ beforeEach(() => {
         return q;
       },
       then: (resolve: (v: unknown) => unknown) =>
-        Promise.resolve({ data: ['course_registrations','course_activity','course_costs'].includes(table)?mocks.rows:[], error: null }).then(resolve),
+        Promise.resolve({ data: ['course_registrations','course_activity','course_costs','course_editions'].includes(table)?mocks.rows:[], error: null }).then(resolve),
     };
     return q;
   });
@@ -150,9 +150,9 @@ it("opens the original contact modal and financial table without touching webina
  expect(screen.queryByRole('button',{name:'Enviar link de pagamento'})).not.toBeInTheDocument();
  fireEvent.click(screen.getByRole('button',{name:'Fechar ficha'}));
  fireEvent.click(screen.getByRole('button',{name:'Faturação'}));
- expect(await screen.findByText('Faturação · InvoiceExpress')).toBeInTheDocument();
+ expect(await screen.findByText('Faturação do curso')).toBeInTheDocument();
  expect(screen.queryByRole('button',{name:'Emitir e Enviar'})).not.toBeInTheDocument();
- expect(mocks.from.mock.calls.every(([table])=>['course_registrations','course_activity','course_costs'].includes(table))).toBe(true);
+ expect(mocks.from.mock.calls.every(([table])=>['course_registrations','course_activity','course_costs','course_editions'].includes(table))).toBe(true);
  expect(mocks.rpc.mock.calls.every(([name])=>['has_role','course_period_metrics'].includes(name))).toBe(true);
 });
 

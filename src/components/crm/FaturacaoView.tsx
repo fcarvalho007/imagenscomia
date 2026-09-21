@@ -31,7 +31,7 @@ export const applyIVA = (v: number, showIVA: boolean) => showIVA ? v : removeIVA
 type FaturacaoTab = string;
 
 interface FaturacaoViewProps {
-  course?: { edition: string; onEditionChange: (id:string)=>void; onSelectInscrito: (i:Inscrito)=>void };
+  course?: { editions?: {id:string;label:string}[]; edition: string; onEditionChange: (id:string)=>void; onSelectInscrito: (i:Inscrito)=>void };
   inscritos: Inscrito[];
   onRefresh: () => void;
 }
@@ -94,10 +94,10 @@ export default function FaturacaoView({ inscritos, onRefresh, course }: Faturaca
 
   const paidCountImagens = useMemo(() => inscritos.filter(i => i.webinar === "imagens" && i.payment_status === "paid").length, [inscritos]);
   const paidCountVideo = useMemo(() => inscritos.filter(i => i.webinar === "video" && i.payment_status === "paid").length, [inscritos]);
-  const tabOptions = useMemo(() => course ? [{value:"todos",label:"Todas as edições"},...Object.entries(editionNames).map(([value,label])=>({value,label}))] : TAB_BASE.map(t => ({
+  const tabOptions = useMemo(() => course ? [{value:"todos",label:"Todas as edições"},...(course.editions?.length?course.editions.map(e=>({value:e.id,label:e.label})):Object.entries(editionNames).map(([value,label])=>({value,label})))] : TAB_BASE.map(t => ({
     ...t,
     label: t.value === "todos" ? `Todos (${paidCountImagens + paidCountVideo})` : t.value === "imagens" ? `Imagens (${paidCountImagens})` : `Vídeo (${paidCountVideo})`,
-  })), [paidCountImagens, paidCountVideo, !!course]);
+  })), [paidCountImagens, paidCountVideo, !!course, course?.editions]);
 
   const webinarForEdgeFunction = activeTab === "todos" ? "all" : activeTab;
 

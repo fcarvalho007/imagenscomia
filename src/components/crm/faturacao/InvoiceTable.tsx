@@ -69,7 +69,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
   }, [inscritos, !!course]);
 
   const sentCount = inscritos.filter(i => i.invoice_sent).length;
-  const pendingCount = inscritos.filter(i => !i.invoice_sent).length;
+  const pendingCount = inscritos.filter(i => !i.invoice_sent && i.course?.invoiceState!=="woocommerce").length;
   const missingNifCount = inscritos.filter(i => !idsWithNif.has(i.id)).length;
 
   const toggleSelect = (id: string) => {
@@ -202,8 +202,9 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
         <h2 className="text-[15px] font-bold text-slate-900">
-          Faturação · InvoiceExpress
+          {course ? "Faturação do curso" : "Faturação · InvoiceExpress"}
         </h2>
+        {course && <p className="text-sm text-slate-600">As encomendas do checkout WordPress são faturadas no WooCommerce. O CRM apresenta o respetivo estado sem emitir uma segunda fatura.</p>}
         <span className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
           {sentCount > 0 && <span className="text-emerald-600">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
           {sentCount > 0 && pendingCount > 0 && <span>·</span>}

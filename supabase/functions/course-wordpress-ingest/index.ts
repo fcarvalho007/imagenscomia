@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { saveBilling } from "./billing.ts";
 import { normalizeEvent } from "../_shared/course/contract.ts";
 import { checkout, paymentStatus } from "./payment.ts";
+import { validateCommerce } from "./commerce.ts";
 import { courseDiagnostics } from "./diagnostics.ts";
 const encoder = new TextEncoder();
 const reply = (status: number, body: unknown) =>
@@ -58,7 +59,12 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
   try {
-    if (body.kind === "diagnostics") {
+    if (["wordpress_edition", "woocommerce_order"].includes(body.kind)) {
+      const payload=validateCommerce(body.kind,body.data || {});
+      const {data,error}=await db.rpc(body.kind === "wordpress_edition" ? "sync_course_wp_edition" : "sync_course_woo_order",{payload});
+      if(error) { console.error("course commerce rejected",error.code); return reply(409,{error:"Commerce record requires review"}); }
+      return reply(200,data);
+    } else if (body.kind === "diagnostics") {
       return reply(200, await courseDiagnostics(db, (key) => Deno.env.get(key)));
     } else if (body.kind === "checkout") {
       return reply(200, await checkout(db, body.data || {}));

@@ -124,7 +124,7 @@ export default function CourseMaterials({ edition }: { edition: string }) {
             >
               {Object.entries(labels)
                 .filter(
-                  ([key]) => edition === "online-2026" || key !== "recording",
+                  ([key]) => edition.startsWith("online-") || key !== "recording",
                 )
                 .map(([k, v]) => (
                   <option key={k} value={k}>

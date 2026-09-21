@@ -17,7 +17,7 @@ export const taskNames: Record<string, string> = {
   individual_after: "Agendar sessão individual depois",
 };
 export function automationSteps(edition: string) {
-  const online = edition === "online-2026";
+  const online = edition.startsWith("online-");
   return [
     {
       phase: "Pré-evento",
