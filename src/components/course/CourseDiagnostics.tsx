@@ -7,7 +7,21 @@ type Report = {
   switches: Record<string, boolean | string>;
   worker: { last_run_at: string | null; result: string | null };
   cron_installed: boolean | null;
+  jobs?: { totals: Record<string, number>; per_edition: Record<string, Record<string, number>> };
 };
+
+const jobStateLabels: Record<string, string> = {
+  queued: "em fila",
+  processing: "a processar",
+  sent: "enviados",
+  blocked: "retidos",
+  review: "em revisão",
+  cancelled: "cancelados",
+};
+
+const editionLabels: Record<string, string> = { lisboa: "Lisboa", porto: "Porto", online: "Online" };
+
+const STALE_MINUTES = 15;
 
 const checkLabels: Record<string, string> = {
   email_configured: "Envio de email configurado",
