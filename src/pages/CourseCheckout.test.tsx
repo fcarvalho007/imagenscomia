@@ -19,7 +19,7 @@ describe('guided checkout',()=>{
   fireEvent.change(screen.getByLabelText('Email',{exact:true}),{target:{value:'invalid'}});next();
   expect(screen.getByRole('heading',{name:'Qual é o seu email?'})).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Email',{exact:true}),{target:{value:'test@example.invalid'}});next();
-  fireEvent.click(screen.getByRole('button',{name:'Continuar',exact:true}));next();
+  fireEvent.click(screen.getByRole('button',{name:/^Continuar$/}));next();
   expect(screen.getByRole('heading',{name:'Como podemos contactar consigo?'})).toBeInTheDocument();
   fireEvent.click(screen.getByLabelText(/Li a/));fireEvent.click(screen.getByLabelText(/Aceito as/));next();
   expect(screen.getByRole('heading',{name:'Está tudo certo?'})).toBeInTheDocument();
