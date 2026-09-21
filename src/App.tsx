@@ -1,37 +1,51 @@
-import CourseCheckout from "./pages/CourseCheckout";
-import { lazy, Suspense } from "react";
+import { Component, lazy, Suspense, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Index from "./pages/Index";
-import Confirmacao from "./pages/Confirmacao";
-import Upsell from "./pages/Upsell";
-import Convites from "./pages/Convites";
-import NotFound from "./pages/NotFound";
-import CRM from "./pages/CRM";
-import WebinarLive from "./pages/WebinarLive";
-import WebinarLiveVideo from "./pages/WebinarLiveVideo";
-import Termos from "./pages/Termos";
-import UpgradeSucesso from "./pages/UpgradeSucesso";
-import Pagar from "./pages/Pagar";
-import Gravacao from "./pages/Gravacao";
-import UpgradeGravacao from "./pages/UpgradeGravacao";
-import UpgradeVideo from "./pages/UpgradeVideo";
-import Inicial from "./pages/Inicial";
-import CourseResources from "./pages/CourseResources";
-import Recursos from "./pages/Recursos";
-import VideoPage from "./pages/Video";
-import Comprar from "./pages/Comprar";
-import Fatura from "./pages/Fatura";
-import VideoLPPage from "./pages/VideoLP";
-import RecursosVideo from "./pages/RecursosVideo";
-import MasterclassVideo from "./pages/MasterclassVideo";
-import GuiaPrompts from "./pages/GuiaPrompts";
-import RecursosMasterclass from "./pages/RecursosMasterclass";
 
 const CourseCheckoutDemo = lazy(() => import("./pages/CourseCheckoutDemo"));
+
+const CourseCheckout = lazy(() => import("./pages/CourseCheckout"));
+const Index = lazy(() => import("./pages/Index"));
+const Confirmacao = lazy(() => import("./pages/Confirmacao"));
+const Upsell = lazy(() => import("./pages/Upsell"));
+const Convites = lazy(() => import("./pages/Convites"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const CRM = lazy(() => import("./pages/CRM"));
+const WebinarLive = lazy(() => import("./pages/WebinarLive"));
+const WebinarLiveVideo = lazy(() => import("./pages/WebinarLiveVideo"));
+const Termos = lazy(() => import("./pages/Termos"));
+const UpgradeSucesso = lazy(() => import("./pages/UpgradeSucesso"));
+const Pagar = lazy(() => import("./pages/Pagar"));
+const Gravacao = lazy(() => import("./pages/Gravacao"));
+const UpgradeGravacao = lazy(() => import("./pages/UpgradeGravacao"));
+const UpgradeVideo = lazy(() => import("./pages/UpgradeVideo"));
+const Inicial = lazy(() => import("./pages/Inicial"));
+const CourseResources = lazy(() => import("./pages/CourseResources"));
+const Recursos = lazy(() => import("./pages/Recursos"));
+const VideoPage = lazy(() => import("./pages/Video"));
+const Comprar = lazy(() => import("./pages/Comprar"));
+const Fatura = lazy(() => import("./pages/Fatura"));
+const VideoLPPage = lazy(() => import("./pages/VideoLP"));
+const RecursosVideo = lazy(() => import("./pages/RecursosVideo"));
+const MasterclassVideo = lazy(() => import("./pages/MasterclassVideo"));
+const GuiaPrompts = lazy(() => import("./pages/GuiaPrompts"));
+const RecursosMasterclass = lazy(() => import("./pages/RecursosMasterclass"));
+
+class RouteErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (this.state.failed) return <main className="min-h-screen flex flex-col items-center justify-center gap-5 p-6 text-center">
+      <h1 className="text-2xl font-semibold">Não foi possível abrir esta página.</h1>
+      <p>Verifique a ligação à internet e tente novamente.</p>
+      <button type="button" className="rounded-lg bg-primary text-primary-foreground px-6 py-3" onClick={() => window.location.reload()}>Voltar a carregar</button>
+    </main>;
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient();
 
@@ -41,6 +55,8 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <RouteErrorBoundary>
+        <Suspense fallback={<main className="min-h-screen flex items-center justify-center p-6" role="status">A abrir a página…</main>}>
         <Routes>
           <Route path="/curso-ia/checkout" element={<CourseCheckout />} />
             <Route
@@ -82,6 +98,8 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
+        </RouteErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
