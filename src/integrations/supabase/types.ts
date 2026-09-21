@@ -1213,42 +1213,7 @@ export type Database = {
       }
     }
     Views: {
-      webinar_settings_public: {
-        Row: {
-          color: string | null
-          cutoff_date: string | null
-          emoji: string | null
-          event_date: string | null
-          label: string | null
-          price_bundle: number | null
-          price_masterclass: number | null
-          price_premium: number | null
-          webinar: string | null
-        }
-        Insert: {
-          color?: string | null
-          cutoff_date?: string | null
-          emoji?: string | null
-          event_date?: string | null
-          label?: string | null
-          price_bundle?: number | null
-          price_masterclass?: number | null
-          price_premium?: number | null
-          webinar?: string | null
-        }
-        Update: {
-          color?: string | null
-          cutoff_date?: string | null
-          emoji?: string | null
-          event_date?: string | null
-          label?: string | null
-          price_bundle?: number | null
-          price_masterclass?: number | null
-          price_premium?: number | null
-          webinar?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       claim_course_job: { Args: { job_kind: string }; Returns: Json }
@@ -1375,6 +1340,7 @@ export type Database = {
         Args: { p_token: string; p_webinar?: string }
         Returns: Json
       }
+      legacy_webinar_settings_public: { Args: never; Returns: Json }
       manage_course_job: {
         Args: { action: string; job_uuid: string }
         Returns: undefined
