@@ -1,3 +1,4 @@
+import { authorizedAdmin } from "../_shared/admin-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -74,6 +75,9 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    if (req.method !== "POST" || !(await authorizedAdmin(req,supabase,supabaseKey))) {
+      return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{...corsHeaders,"Content-Type":"application/json"}});
+    }
     const body: InvoiceRequest = await req.json();
     const { registration_id, send_email = true, draft_only = false, email_subject, email_body } = body;
 

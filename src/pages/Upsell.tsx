@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,15 @@ import { StepMasterclass } from "@/components/upgrade/StepMasterclass";
 import { StepConfirmation } from "@/components/upgrade/StepConfirmation";
 import { toast } from "sonner";
 import { Mail, Loader2, ArrowRight, CheckCircle2, Check } from "lucide-react";
+import {
+  resolveToken,
+  clearToken,
+  legacyRegLookup,
+  legacyRegSaveStep,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 export interface OrderState {
   premium: boolean;
@@ -41,10 +50,13 @@ const Upsell = () => {
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
-  const [needsRecovery, setNeedsRecovery] = useState(!searchParams.get("email"));
+  // Access requires the existing token (URL ?t= or the one kept for this area).
+  const initialToken = resolveToken("upgrade", searchParams.get("t"));
+  const [needsRecovery, setNeedsRecovery] = useState(!initialToken);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySent, setRecoverySent] = useState(false);
   const [sources, setSources] = useState<string[]>([]);
   const [otherSource, setOtherSource] = useState("");
   const [duvida, setDuvida] = useState("");
@@ -54,9 +66,47 @@ const Upsell = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [editToken, setEditToken] = useState<string | null>(initialToken);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
+  // Hydrate the funnel from the token. The lookup never returns the token
+  // itself and an email alone can never open this page.
+  useEffect(() => {
+    if (!editToken) return;
+    let active = true;
+    (async () => {
+      try {
+        const reg = await legacyRegLookup(editToken);
+        if (!active) return;
+        if (!reg) {
+          clearToken("upgrade");
+          setEditToken(null);
+          setNeedsRecovery(true);
+          return;
+        }
+        setRegistrationId(reg.id);
+        setUserData({
+          nome: reg.name || `${reg.first_name || ""} ${reg.last_name || ""}`.trim(),
+          email: reg.email,
+          whatsapp: reg.whatsapp || "",
+          referralCode: reg.referral_code || "",
+        });
+        if (reg.step_reached && reg.step_reached > 1) setStep(reg.step_reached);
+        if (reg.plan_selected === "premium") setOrderState({ premium: true, masterclass: false });
+        else if (reg.plan_selected === "masterclass") setOrderState({ premium: false, masterclass: true });
+        else if (reg.plan_selected === "bundle") setOrderState({ premium: true, masterclass: true });
+        setNeedsRecovery(false);
+      } catch {
+        if (!active) return;
+        clearToken("upgrade");
+        setEditToken(null);
+        setNeedsRecovery(true);
+      }
+    })();
+    return () => { active = false; };
+  }, [editToken]);
+
+  /** Recovery never reveals data: the link is emailed to the registration. */
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -66,59 +116,23 @@ const Upsell = () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("id, name, step_reached, plan_selected, eupago_ref, first_name, last_name, edit_token")
-        .eq("email", trimmed)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        setRecoveryError("Email não encontrado. Verifica ou inscreve-te primeiro.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      setRegistrationId(data.id);
-      setEditToken((data as any).edit_token || null);
-      setUserData({
-        nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-        email: trimmed,
-        whatsapp: "",
-        referralCode: "",
-      });
-
-      const resumeStep = data.step_reached && data.step_reached > 1 ? data.step_reached : 1;
-      setStep(resumeStep);
-
-      if (data.plan_selected === "premium") setOrderState({ premium: true, masterclass: false });
-      else if (data.plan_selected === "masterclass") setOrderState({ premium: false, masterclass: true });
-      else if (data.plan_selected === "bundle") setOrderState({ premium: true, masterclass: true });
-
-      setNeedsRecovery(false);
-    } catch (err) {
-      console.error("Recovery error:", err);
-      setRecoveryError("Erro ao recuperar dados. Tenta novamente.");
+      await requestAccessLink(trimmed, "upgrade");
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError("Erro de ligação. Tenta novamente daqui a pouco.");
     } finally {
       setRecoveryLoading(false);
     }
   }, [recoveryEmail]);
 
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
-    if (!userData.email) {
-      console.error("saveStepData called with empty email — aborting");
-      toast.error("Erro: email não definido. Recarrega a página.");
-      return;
-    }
+    if (!editToken) return;
     try {
-      await supabase
-        .from("registrations")
-        .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email);
+      await legacyRegSaveStep(editToken, "imagens", stepNum, extraData);
     } catch (err) {
       console.error("Error saving step data:", err);
     }
-  }, [userData.email]);
+  }, [editToken]);
 
   const advanceStep = useCallback((next: number) => {
     setStep(next);
@@ -127,39 +141,36 @@ const Upsell = () => {
   }, []);
 
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarrega a página.");
-      console.error("handlePayment called with empty email — aborting");
+    if (!editToken) {
+      toast.error("Sessão expirada. Pede uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
       const planLabel = plan === "premium-masterclass" ? "bundle" : plan;
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: planLabel,
-          sources: sources.join(", "),
-          duvida,
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
+      // Only whitelisted qualification fields; the plan and entitlements are
+      // decided server-side by the payment function.
+      await legacyRegSaveStep(editToken, "imagens", null, {
+        sources: sources.join(", "),
+        duvida,
+      });
 
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan: planLabel, email: userData.email, nome: userData.nome },
+        body: { plan: planLabel, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(planLabel, planGrossPrice(planLabel));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tenta novamente.");
       setLoading(false);
     }
-  }, [userData, sources, duvida]);
+  }, [editToken, userData.nome, sources, duvida]);
 
   const progress = (step / 5) * 100;
   const total = getTotal(orderState);
@@ -177,8 +188,13 @@ const Upsell = () => {
             Retomar o teu upgrade
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduz o email que usaste para te inscreveres.
+            Introduz o email que usaste para te inscreveres e enviamos-te a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
@@ -203,9 +219,10 @@ const Upsell = () => {
               ) : (
                 <ArrowRight className="w-5 h-5" />
               )}
-              {recoveryLoading ? "A verificar..." : "Continuar"}
+              {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
+          )}
         </motion.div>
         <WhatsAppSupportButton />
       </div>

@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, Euro, Users, Target, BarChart3, Zap } from "l
 import { applyIVA } from "@/components/crm/FaturacaoView";
 
 interface Props {
+  costsKnown?: boolean;
   receitaConfirmada: number;
   pipelinePendente: number;
   numPagamentos: number;
@@ -21,6 +22,9 @@ function useAnimatedValue(target: number, duration = 1800) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    if(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches){setValue(target);return;}
+    let frame = 0;
+    triggered.current = false;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting && !triggered.current) {
         triggered.current = true;
@@ -29,24 +33,24 @@ function useAnimatedValue(target: number, duration = 1800) {
           const p = Math.min((now - start) / duration, 1);
           const eased = 1 - Math.pow(1 - p, 4);
           setValue(eased * target);
-          if (p < 1) requestAnimationFrame(animate);
+          if (p < 1) frame = requestAnimationFrame(animate);
         };
-        requestAnimationFrame(animate);
+        frame = requestAnimationFrame(animate);
       }
     }, { threshold: 0.3 });
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); cancelAnimationFrame(frame); };
   }, [target, duration]);
 
   return { value, ref };
 }
 
-export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, numPagamentos, totalCosts, paidMediaCosts, showIVA }: Props) {
+export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, numPagamentos, totalCosts, paidMediaCosts, showIVA, costsKnown = true }: Props) {
   const receita = applyIVA(receitaConfirmada, showIVA);
   const pipeline = applyIVA(pipelinePendente, showIVA);
-  const margem = receita - totalCosts;
+  const margem = applyIVA(receitaConfirmada,false) - totalCosts;
   const margemPositiva = margem >= 0;
-  const roas = paidMediaCosts > 0 ? receita / paidMediaCosts : 0;
+  const roas = paidMediaCosts > 0 ? applyIVA(receitaConfirmada,false) / paidMediaCosts : 0;
   const cac = numPagamentos > 0 ? totalCosts / numPagamentos : 0;
   const ticketMedio = numPagamentos > 0 ? receita / numPagamentos : 0;
 
@@ -101,14 +105,14 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             {margemPositiva ? <TrendingUp size={16} style={{ color: "#22c55e" }} /> : <TrendingDown size={16} style={{ color: "#ef4444" }} />}
             <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Margem Operacional
+              Margem sobre custos registados · s/ IVA
             </span>
           </div>
           <p className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums tracking-tight truncate" style={{ color: margemPositiva ? "#22c55e" : "#ef4444" }}>
-            {margemPositiva ? "" : "-"}€{fmt(animMargem.value)}
+            {costsKnown ? `${margemPositiva ? "" : "-"}€${fmt(animMargem.value)}` : "—"}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2 text-slate-400">
-            Receita ({ivaLabel}) − Custos totais
+            {costsKnown ? `Receita (${ivaLabel}) − Custos totais` : "Margem não apurada · verificar custos"}
           </p>
         </div>
 
@@ -133,7 +137,7 @@ export default function FaturacaoKPIs({ receitaConfirmada, pipelinePendente, num
             </span>
           </div>
           <p className="text-2xl sm:text-4xl lg:text-5xl font-black tabular-nums tracking-tight truncate" style={{ color: roas >= 2 ? "#3b82f6" : "#f59e0b" }}>
-            {animRoas.value.toFixed(1)}<span className="text-lg sm:text-2xl">×</span>
+            {costsKnown && paidMediaCosts > 0 ? <>{animRoas.value.toFixed(1)}<span className="text-lg sm:text-2xl">×</span></> : "—"}
           </p>
           <p className="text-[10px] sm:text-[11px] mt-2 text-slate-400">
             {paidMediaCosts > 0 ? `€${fmt(paidMediaCosts)} investidos em ads` : "Sem custos de ads registados"}

@@ -42,6 +42,8 @@
 
   <!-- Meta Pixel Code -->
   <script>
+  // Course tracking is consent-based and handled by its own funnel, never by this legacy pixel.
+  if (!/^\/(?:curso-ia|crm)(?:\/|$)/.test(window.location.pathname)) {
   !function(f,b,e,v,n,t,s)
   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -52,14 +54,13 @@
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', '1461563193926022');
   fbq('track', 'PageView');
+  }
   </script>
   <!-- End Meta Pixel Code -->
 </head>
 
   <body>
-  <noscript><img height="1" width="1" style="display:none"
-  src="https://www.facebook.com/tr?id=1461563193926022&ev=PageView&noscript=1"
-  /></noscript>
+  <noscript>Ative o JavaScript para utilizar esta aplicação.</noscript>
     <div id="root"></div>
     <script src="https://player.vimeo.com/api/player.js"></script>
     <script type="module" src="/src/main.tsx"></script>

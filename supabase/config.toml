@@ -110,3 +110,30 @@ verify_jwt = false
 
 [functions.send-video-masterclass-reminder]
 verify_jwt = false
+# Authenticated by a dedicated HMAC secret, server-to-server only.
+[functions.course-wordpress-ingest]
+verify_jwt = false
+
+# Authenticated by Eupago HMAC signature, not a Supabase user JWT.
+[functions.course-eupago-webhook]
+verify_jwt = false
+
+[functions.course-operations]
+verify_jwt = false
+
+[functions.course-resources]
+verify_jwt = false
+
+# Public recovery endpoint: always answers generically and is rate limited server-side.
+[functions.legacy-access-link]
+verify_jwt = false
+
+# These functions validate the user JWT and administrator aal2 inside the handler.
+[functions.course-test-send]
+verify_jwt = false
+
+[functions.course-diagnostics]
+verify_jwt = false
+
+[functions.course-cron-setup]
+verify_jwt = false

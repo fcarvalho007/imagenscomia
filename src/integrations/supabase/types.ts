@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -68,6 +68,692 @@ export type Database = {
           source?: string
           updated_at?: string
           value?: number
+        }
+        Relationships: []
+      }
+      course_activity: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          edition: string | null
+          id: number
+          previous_status: string | null
+          registration_id: string | null
+          status: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          edition?: string | null
+          id?: never
+          previous_status?: string | null
+          registration_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          edition?: string | null
+          id?: never
+          previous_status?: string | null
+          registration_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_activity_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_activity_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_campaigns: {
+        Row: {
+          actor_id: string
+          body: string
+          channel: string
+          created_at: string
+          due_at: string
+          edition: string
+          format: string
+          id: string
+          recipient_ids: string[]
+          subject: string
+        }
+        Insert: {
+          actor_id: string
+          body: string
+          channel: string
+          created_at?: string
+          due_at: string
+          edition: string
+          format?: string
+          id: string
+          recipient_ids: string[]
+          subject?: string
+        }
+        Update: {
+          actor_id?: string
+          body?: string
+          channel?: string
+          created_at?: string
+          due_at?: string
+          edition?: string
+          format?: string
+          id?: string
+          recipient_ids?: string[]
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_campaigns_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_costs: {
+        Row: {
+          amount: number
+          category: string
+          cost_date: string
+          description: string
+          edition: string
+          id: string
+          platform: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          cost_date: string
+          description?: string
+          edition: string
+          id?: string
+          platform: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          cost_date?: string
+          description?: string
+          edition?: string
+          id?: string
+          platform?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_costs_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_editions: {
+        Row: {
+          automation_enabled: boolean
+          availability: string
+          capacity: number
+          early_net_cents: number
+          early_until: string | null
+          ends_at: string
+          id: string
+          invoicing_enabled: boolean
+          label: string
+          modality: string
+          net_cents: number
+          operations: Json
+          sales_enabled: boolean
+          sms_enabled: boolean
+          starts_at: string
+          vat_percent: number
+          wp_product_id: number | null
+          wp_revision: number
+        }
+        Insert: {
+          automation_enabled?: boolean
+          availability?: string
+          capacity?: number
+          early_net_cents: number
+          early_until?: string | null
+          ends_at: string
+          id: string
+          invoicing_enabled?: boolean
+          label: string
+          modality?: string
+          net_cents: number
+          operations?: Json
+          sales_enabled?: boolean
+          sms_enabled?: boolean
+          starts_at: string
+          vat_percent?: number
+          wp_product_id?: number | null
+          wp_revision?: number
+        }
+        Update: {
+          automation_enabled?: boolean
+          availability?: string
+          capacity?: number
+          early_net_cents?: number
+          early_until?: string | null
+          ends_at?: string
+          id?: string
+          invoicing_enabled?: boolean
+          label?: string
+          modality?: string
+          net_cents?: number
+          operations?: Json
+          sales_enabled?: boolean
+          sms_enabled?: boolean
+          starts_at?: string
+          vat_percent?: number
+          wp_product_id?: number | null
+          wp_revision?: number
+        }
+        Relationships: []
+      }
+      course_email_templates: {
+        Row: {
+          body: string
+          edition: string
+          format: string
+          subject: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          edition: string
+          format?: string
+          subject: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          edition?: string
+          format?: string
+          subject?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_email_templates_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_events: {
+        Row: {
+          course_id: string
+          created_at: string
+          edition: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Insert: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id: string
+          name: string
+          session_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          edition?: string | null
+          id?: string
+          name?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_events_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_invoices: {
+        Row: {
+          billing: Json
+          document_id: string | null
+          emailed_at: string | null
+          finalized_at: string | null
+          registration_id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          billing?: Json
+          document_id?: string | null
+          emailed_at?: string | null
+          finalized_at?: string | null
+          registration_id: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          billing?: Json
+          document_id?: string | null
+          emailed_at?: string | null
+          finalized_at?: string | null
+          registration_id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_invoices_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_jobs: {
+        Row: {
+          attempts: number
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string
+          due_at: string
+          error_code: string | null
+          first_attempt_at: string | null
+          id: string
+          kind: string
+          lease: string | null
+          locked_at: string | null
+          payload: Json | null
+          provider_id: string | null
+          registration_id: string
+          state: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at: string
+          error_code?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          kind: string
+          lease?: string | null
+          locked_at?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          registration_id: string
+          state?: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          due_at?: string
+          error_code?: string | null
+          first_attempt_at?: string | null
+          id?: string
+          kind?: string
+          lease?: string | null
+          locked_at?: string | null
+          payload?: Json | null
+          provider_id?: string | null
+          registration_id?: string
+          state?: string
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_jobs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "course_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_jobs_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          net_cents: number
+          paid_at: string | null
+          paid_transaction: string | null
+          payment_url: string | null
+          provider_transaction: string | null
+          registration_id: string
+          state: string
+          vat_percent: number
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          id?: string
+          net_cents: number
+          paid_at?: string | null
+          paid_transaction?: string | null
+          payment_url?: string | null
+          provider_transaction?: string | null
+          registration_id: string
+          state?: string
+          vat_percent: number
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          net_cents?: number
+          paid_at?: string | null
+          paid_transaction?: string | null
+          payment_url?: string | null
+          provider_transaction?: string | null
+          registration_id?: string
+          state?: string
+          vat_percent?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: true
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_registrations: {
+        Row: {
+          after_session: string
+          analytics_session: string | null
+          attribution: Json
+          before_session: string
+          commerce_source: string
+          course_id: string
+          created_at: string
+          do_not_contact: boolean
+          edition: string
+          email: string
+          id: string
+          marketing_consent: boolean
+          name: string
+          next_followup_at: string | null
+          notes: string
+          paid_at: string | null
+          phone: string
+          privacy_version: string
+          request_id: string
+          resource_token: string
+          sms_consent: boolean
+          status: string
+          terms_version: string
+          updated_at: string
+          wp_order_id: number | null
+          wp_revision: number
+        }
+        Insert: {
+          after_session?: string
+          analytics_session?: string | null
+          attribution?: Json
+          before_session?: string
+          commerce_source?: string
+          course_id?: string
+          created_at?: string
+          do_not_contact?: boolean
+          edition: string
+          email: string
+          id?: string
+          marketing_consent?: boolean
+          name: string
+          next_followup_at?: string | null
+          notes?: string
+          paid_at?: string | null
+          phone?: string
+          privacy_version: string
+          request_id: string
+          resource_token?: string
+          sms_consent?: boolean
+          status?: string
+          terms_version?: string
+          updated_at?: string
+          wp_order_id?: number | null
+          wp_revision?: number
+        }
+        Update: {
+          after_session?: string
+          analytics_session?: string | null
+          attribution?: Json
+          before_session?: string
+          commerce_source?: string
+          course_id?: string
+          created_at?: string
+          do_not_contact?: boolean
+          edition?: string
+          email?: string
+          id?: string
+          marketing_consent?: boolean
+          name?: string
+          next_followup_at?: string | null
+          notes?: string
+          paid_at?: string | null
+          phone?: string
+          privacy_version?: string
+          request_id?: string
+          resource_token?: string
+          sms_consent?: boolean
+          status?: string
+          terms_version?: string
+          updated_at?: string
+          wp_order_id?: number | null
+          wp_revision?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_registrations_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_resources: {
+        Row: {
+          available_at: string
+          description: string
+          edition: string
+          enabled: boolean
+          id: string
+          kind: string
+          title: string
+          url: string
+        }
+        Insert: {
+          available_at?: string
+          description?: string
+          edition: string
+          enabled?: boolean
+          id?: string
+          kind: string
+          title: string
+          url: string
+        }
+        Update: {
+          available_at?: string
+          description?: string
+          edition?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_resources_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_sms_templates: {
+        Row: {
+          body: string
+          edition: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          edition: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          edition?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_sms_templates_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: false
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_tasks: {
+        Row: {
+          due_at: string
+          id: string
+          registration_id: string
+          stage: string
+          state: string
+          task_key: string
+        }
+        Insert: {
+          due_at: string
+          id?: string
+          registration_id: string
+          stage: string
+          state?: string
+          task_key: string
+        }
+        Update: {
+          due_at?: string
+          id?: string
+          registration_id?: string
+          stage?: string
+          state?: string
+          task_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tasks_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "course_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_test_sends: {
+        Row: {
+          actor_id: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          id: string
+          provider_id: string | null
+          request_id: string
+          state: string
+          target: string
+        }
+        Insert: {
+          actor_id: string
+          channel: string
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          provider_id?: string | null
+          request_id: string
+          state?: string
+          target: string
+        }
+        Update: {
+          actor_id?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          provider_id?: string | null
+          request_id?: string
+          state?: string
+          target?: string
+        }
+        Relationships: []
+      }
+      course_worker_health: {
+        Row: {
+          last_run_at: string
+          result: string
+          worker: string
+        }
+        Insert: {
+          last_run_at: string
+          result: string
+          worker: string
+        }
+        Update: {
+          last_run_at?: string
+          result?: string
+          worker?: string
         }
         Relationships: []
       }
@@ -559,13 +1245,236 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_course_job: { Args: { job_kind: string }; Returns: Json }
+      claim_course_payment: {
+        Args: { expected_amount: number; payload: Json }
+        Returns: Json
+      }
+      claim_course_test_send: {
+        Args: {
+          actor: string
+          request_uuid: string
+          target_hint: string
+          test_channel: string
+        }
+        Returns: Json
+      }
+      configure_course_channels: {
+        Args: { edition_id: string; invoicing: boolean; sms: boolean }
+        Returns: undefined
+      }
+      configure_course_edition: {
+        Args: { edition_id: string; enabled: boolean; settings: Json }
+        Returns: undefined
+      }
+      configure_course_operation: {
+        Args: {
+          edition_id: string
+          enabled: boolean
+          invoicing: boolean
+          settings: Json
+          sms: boolean
+        }
+        Returns: undefined
+      }
+      confirm_course_payment: {
+        Args: {
+          paid_cents: number
+          payment_currency: string
+          payment_state: string
+          payment_uuid: string
+          transaction_id: string
+        }
+        Returns: undefined
+      }
+      course_admin_required: { Args: never; Returns: undefined }
+      course_cron_install: { Args: never; Returns: string }
+      course_cron_installed: { Args: never; Returns: boolean }
+      course_cron_sync: {
+        Args: { p_secret: string; p_url: string }
+        Returns: undefined
+      }
+      course_cron_uninstall: { Args: never; Returns: string }
+      course_edition_metrics: { Args: { edition_id?: string }; Returns: Json }
+      course_job_eligible: {
+        Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
+        Returns: boolean
+      }
+      course_job_eligible_base: {
+        Args: { j: Database["public"]["Tables"]["course_jobs"]["Row"] }
+        Returns: boolean
+      }
+      course_metrics: { Args: never; Returns: Json }
+      course_operation_counts: { Args: { edition_id?: string }; Returns: Json }
+      course_period_metrics: {
+        Args: { edition_id?: string; since?: string }
+        Returns: Json
+      }
+      course_quote: { Args: { edition_id: string }; Returns: Json }
+      delete_course_cost: { Args: { cost_id: string }; Returns: undefined }
       ensure_admin_role: { Args: never; Returns: undefined }
+      finish_course_job: {
+        Args: {
+          external_id?: string
+          job_id: string
+          job_lease: string
+          outcome: string
+          reason?: string
+        }
+        Returns: undefined
+      }
+      finish_course_task: { Args: { task_uuid: string }; Returns: undefined }
+      finish_course_test_send: {
+        Args: {
+          external_id?: string
+          outcome: string
+          reason?: string
+          test_uuid: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      ingest_course_request: { Args: { payload: Json }; Returns: undefined }
+      legacy_access_link_claim: {
+        Args: { p_destination: string; p_registration_id: string }
+        Returns: boolean
+      }
+      legacy_invoice_get: { Args: { p_token: string }; Returns: Json }
+      legacy_is_admin: { Args: never; Returns: boolean }
+      legacy_recursos_access: {
+        Args: { p_token: string; p_webinar?: string }
+        Returns: Json
+      }
+      legacy_reg_attendance: {
+        Args: { p_token: string; p_webinar: string }
+        Returns: Json
+      }
+      legacy_reg_lookup: { Args: { p_token: string }; Returns: Json }
+      legacy_reg_save_step: {
+        Args: {
+          p_patch?: Json
+          p_step?: number
+          p_token: string
+          p_webinar?: string
+        }
+        Returns: boolean
+      }
+      legacy_reg_session: {
+        Args: { p_token: string; p_webinar?: string }
+        Returns: Json
+      }
+      legacy_webinar_settings_public: { Args: never; Returns: Json }
+      manage_course_job: {
+        Args: { action: string; job_uuid: string }
+        Returns: undefined
+      }
+      prepare_course_job: {
+        Args: { frozen_payload: Json; job_id: string; job_lease: string }
+        Returns: boolean
+      }
+      queue_course_campaign: {
+        Args: {
+          body: string
+          body_format?: string
+          campaign_uuid: string
+          channel: string
+          edition_id: string
+          recipients: string[]
+          scheduled_at: string
+          subject: string
+        }
+        Returns: number
+      }
+      read_course_resources: { Args: { access_token: string }; Returns: Json }
+      record_course_invoice: {
+        Args: { external_document_id: string; request_uuid: string }
+        Returns: undefined
+      }
+      save_course_billing: {
+        Args: { details: Json; request_token: string }
+        Returns: undefined
+      }
+      save_course_cost: {
+        Args: {
+          cost_amount: number
+          cost_category: string
+          cost_day: string
+          cost_description: string
+          cost_id: string
+          cost_platform: string
+          edition_id: string
+        }
+        Returns: string
+      }
+      save_course_email_template: {
+        Args: {
+          body_format?: string
+          edition_id: string
+          email_body: string
+          email_subject: string
+          expected_updated_at: string
+          template_key: string
+        }
+        Returns: string
+      }
+      save_course_resource: {
+        Args: {
+          active: boolean
+          available: string
+          edition_id: string
+          resource_description: string
+          resource_id: string
+          resource_kind: string
+          resource_title: string
+          resource_url: string
+        }
+        Returns: string
+      }
+      save_course_sms_template: {
+        Args: {
+          edition_id: string
+          expected_updated_at: string
+          sms_body: string
+          template_key: string
+        }
+        Returns: string
+      }
+      set_course_contact_pause: {
+        Args: { paused: boolean; request_uuid: string }
+        Returns: undefined
+      }
+      set_course_session: {
+        Args: { phase: string; request_uuid: string; session_state: string }
+        Returns: undefined
+      }
+      sync_course_woo_order: { Args: { payload: Json }; Returns: Json }
+      sync_course_wp_edition: { Args: { payload: Json }; Returns: Json }
+      update_course_request: {
+        Args: {
+          followup: string
+          new_notes: string
+          new_status: string
+          request_uuid: string
+        }
+        Returns: undefined
+      }
+      update_course_request_checked: {
+        Args: {
+          expected_followup: string
+          expected_notes: string
+          expected_status: string
+          followup: string
+          new_notes: string
+          new_status: string
+          request_uuid: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
@@ -585,12 +1494,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -614,11 +1523,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -639,11 +1548,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -664,11 +1573,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -681,11 +1590,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

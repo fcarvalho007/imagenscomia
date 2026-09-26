@@ -13,6 +13,16 @@ import { VideoConfirmation, type VideoOrderState } from "@/components/upgrade/Vi
 import { toast } from "sonner";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Mail, Loader2, ArrowRight, ArrowLeft, Check } from "lucide-react";
+import {
+  resolveToken,
+  clearToken,
+  legacyRegLookup,
+  legacyRegSaveStep,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyRegistration,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 /* ── CSS for step transitions + confirmation animation ── */
 const transitionStyles = `
@@ -57,10 +67,13 @@ const UpgradeVideo = () => {
     whatsapp: searchParams.get("whatsapp") || "",
     referralCode: searchParams.get("ref_code") || "",
   });
-  const [needsRecovery, setNeedsRecovery] = useState(!searchParams.get("email"));
+  // Access requires the existing token (URL ?t= or the one kept for this area).
+  const initialToken = resolveToken("upgrade-video", searchParams.get("t"));
+  const [needsRecovery, setNeedsRecovery] = useState(!initialToken);
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoverySent, setRecoverySent] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [teamSize, setTeamSize] = useState<string | null>(null);
   const [duvida, setDuvida] = useState("");
@@ -68,28 +81,27 @@ const UpgradeVideo = () => {
   const [error, setError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [editToken, setEditToken] = useState<string | null>(searchParams.get("t") || null);
+  const [editToken, setEditToken] = useState<string | null>(initialToken);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   // ── Returning user state ──
-  const [initialLoading, setInitialLoading] = useState(!!searchParams.get("email"));
+  const [initialLoading, setInitialLoading] = useState(!!initialToken);
   const [isReturning, setIsReturning] = useState(false);
   const [returningData, setReturningData] = useState<{
     step_reached: number | null;
-    paid_at: string | null;
+    paid: boolean;
     plan_selected: string | null;
   } | null>(null);
 
   const firstName = userData.nome?.trim().split(" ")[0] || "";
 
-  // ── Helper: restore state from DB record ──
-  const restoreFromRecord = useCallback((data: any) => {
+  // ── Helper: restore state from the token-scoped lookup (never returns the token) ──
+  const restoreFromRecord = useCallback((data: LegacyRegistration) => {
     setRegistrationId(data.id);
-    setEditToken(data.edit_token || null);
     setUserData(prev => ({
       ...prev,
       nome: data.name || `${data.first_name || ""} ${data.last_name || ""}`.trim(),
-      email: prev.email || data.email,
+      email: data.email || prev.email,
     }));
     if (data.role) setRole(data.role);
     if (data.team_size) setTeamSize(data.team_size);
@@ -102,42 +114,48 @@ const UpgradeVideo = () => {
     }
   }, []);
 
-  // ── Auto-check on mount (email in URL) ──
+  // ── Hydrate from the token on mount ──
   useEffect(() => {
-    if (!userData.email || needsRecovery) {
+    if (!editToken) {
       setInitialLoading(false);
       return;
     }
-    const check = async () => {
+    let active = true;
+    (async () => {
       try {
-        const { data } = await supabase
-          .from("registrations")
-          .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
-          .eq("email", userData.email)
-          .eq("webinar", "video")
-          .maybeSingle();
-
-        if (data && (data.step_reached ?? 0) >= 2) {
-          restoreFromRecord(data);
+        const reg = await legacyRegLookup(editToken);
+        if (!active) return;
+        if (!reg) {
+          clearToken("upgrade-video");
+          setEditToken(null);
+          setNeedsRecovery(true);
+          return;
+        }
+        restoreFromRecord(reg);
+        setNeedsRecovery(false);
+        if ((reg.step_reached ?? 0) >= 2) {
           setReturningData({
-            step_reached: data.step_reached,
-            paid_at: data.paid_at,
-            plan_selected: data.plan_selected,
+            step_reached: reg.step_reached,
+            paid: reg.paid,
+            plan_selected: reg.plan_selected,
           });
           setIsReturning(true);
           setStep(0);
         }
       } catch (err) {
-        console.error("Auto-check error:", err);
+        if (!active) return;
+        clearToken("upgrade-video");
+        setEditToken(null);
+        setNeedsRecovery(true);
       } finally {
-        setInitialLoading(false);
+        if (active) setInitialLoading(false);
       }
-    };
-    check();
+    })();
+    return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [editToken]);
 
-  // ── Recovery ──
+  // ── Recovery: sends the access link, never reveals data ──
   const handleRecovery = useCallback(async () => {
     const trimmed = recoveryEmail.toLowerCase().trim();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -147,57 +165,24 @@ const UpgradeVideo = () => {
     setRecoveryLoading(true);
     setRecoveryError(null);
     try {
-      const { data, error } = await supabase
-        .from("registrations")
-        .select("id, name, first_name, last_name, edit_token, role, team_size, step_reached, plan_selected, paid_at")
-        .eq("email", trimmed)
-        .eq("webinar", "video")
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        setRecoveryError("Email não encontrado. Inscreva-se primeiro na página do vídeo.");
-        setRecoveryLoading(false);
-        return;
-      }
-
-      setUserData(prev => ({ ...prev, email: trimmed }));
-      restoreFromRecord(data);
-
-      if ((data.step_reached ?? 0) >= 2) {
-        setReturningData({
-          step_reached: data.step_reached,
-          paid_at: data.paid_at,
-          plan_selected: data.plan_selected,
-        });
-        setIsReturning(true);
-        setStep(0);
-      } else {
-        setStep(1);
-      }
-
-      setNeedsRecovery(false);
-    } catch (err) {
-      console.error("Recovery error:", err);
-      setRecoveryError("Erro ao recuperar dados. Tente novamente.");
+      await requestAccessLink(trimmed, "upgrade-video");
+      setRecoverySent(true);
+    } catch {
+      setRecoveryError("Erro de ligação. Tente novamente daqui a pouco.");
     } finally {
       setRecoveryLoading(false);
     }
-  }, [recoveryEmail, restoreFromRecord]);
+  }, [recoveryEmail]);
 
-  // ── Save step data ──
+  // ── Save step data (whitelisted fields, token required) ──
   const saveStepData = useCallback(async (stepNum: number, extraData: Record<string, unknown> = {}) => {
-    if (!userData.email) return;
+    if (!editToken) return;
     try {
-      await supabase
-        .from("registrations")
-        .update({ step_reached: stepNum, ...extraData } as any)
-        .eq("email", userData.email)
-        .eq("webinar", "video");
+      await legacyRegSaveStep(editToken, "video", stepNum, extraData);
     } catch (err) {
       console.error("Error saving step data:", err);
     }
-  }, [userData.email]);
+  }, [editToken]);
 
   // ── Navigation helpers ──
   const goForward = useCallback((next: number) => {
@@ -217,35 +202,28 @@ const UpgradeVideo = () => {
 
   // ── Payment ──
   const handlePayment = useCallback(async (plan: string) => {
-    if (!userData.email) {
-      toast.error("Erro: email não definido. Recarregue a página.");
+    if (!editToken) {
+      toast.error("Sessão expirada. Peça uma nova ligação de acesso.");
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      await supabase
-        .from("registrations")
-        .update({
-          plan_selected: plan,
-          upgrade_clicked_at: new Date().toISOString(),
-        } as any)
-        .eq("email", userData.email);
-
       const { data, error: fnError } = await supabase.functions.invoke("create-payment", {
-        body: { plan, email: userData.email, nome: userData.nome },
+        body: { plan, editToken, nome: userData.nome },
       });
 
       if (fnError) throw fnError;
       if (!data?.paymentLink) throw new Error("Link de pagamento não recebido");
 
+      trackInitiateCheckout(plan, planGrossPrice(plan));
       window.location.href = data.paymentLink;
     } catch (err) {
       console.error("Payment error:", err);
       setError("Erro ao processar pagamento. Tente novamente.");
       setLoading(false);
     }
-  }, [userData]);
+  }, [editToken, userData.nome]);
 
   // ── Free confirmation (in-card, step 7) ──
   const goToFreeConfirmation = useCallback(() => {
@@ -286,8 +264,13 @@ const UpgradeVideo = () => {
             Retomar a sua compra
           </h2>
           <p className="text-[15px] text-ink-500 mb-6">
-            Introduza o email que usou para se inscrever.
+            Introduza o email que usou para se inscrever e enviamos a ligação de acesso.
           </p>
+          {recoverySent ? (
+            <p className="text-[15px] text-ink-700 bg-surface border border-border rounded-lg p-4">
+              {ACCESS_LINK_GENERIC_MESSAGE}
+            </p>
+          ) : (
           <div className="space-y-3">
             <input
               type="email"
@@ -306,9 +289,10 @@ const UpgradeVideo = () => {
               className="w-full bg-gradient-to-r from-neon-purple to-blue-600 text-white font-heading font-bold text-base py-3.5 rounded-xl shadow-neon-purple transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {recoveryLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
-              {recoveryLoading ? "A verificar..." : "Continuar"}
+              {recoveryLoading ? "A enviar..." : "Enviar ligação"}
             </motion.button>
           </div>
+          )}
         </motion.div>
         <WhatsAppSupportButton />
       </div>
@@ -511,7 +495,7 @@ const UpgradeVideo = () => {
             {/* ── Step 0: Returning user ── */}
             {step === 0 && returningData && (() => {
               const sr = returningData.step_reached ?? 1;
-              const hasPaid = !!returningData.paid_at;
+              const hasPaid = returningData.paid;
               return (
                 <div className="text-center py-4">
                   <div

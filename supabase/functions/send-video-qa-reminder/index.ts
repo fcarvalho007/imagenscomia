@@ -1,3 +1,4 @@
+import { authorizedDelivery } from "../_shared/delivery-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-crm-admin-email, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ALLOWED_ADMIN = "fredericodigital@gmail.com";
 const EMAIL_TEMPLATE_KEY = "video_qa_reminder";
 const SMS_TEMPLATE_KEY = "sms_reminder_qa_post";
 const SMS_TEXT = "Lembrete: a sessao Q&A comeca as 14:30. Entra aqui: https://us02web.zoom.us/j/88370994509?jst=3 — Frederico";
@@ -45,7 +45,6 @@ async function callSendSms(supabaseUrl: string, serviceRoleKey: string, to: stri
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${serviceRoleKey}`,
-      "x-crm-admin-email": ALLOWED_ADMIN,
     },
     body: JSON.stringify({ to, text, provider: "egoi", registrationId }),
   });
@@ -58,12 +57,8 @@ serve(async (req) => {
   }
 
   try {
-    const cronSecret = req.headers.get("x-cron-secret");
-    const adminEmail = req.headers.get("x-crm-admin-email");
-    const validCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
-    const validAdmin = adminEmail?.toLowerCase() === ALLOWED_ADMIN;
-
-    if (!validCron && !validAdmin) {
+    const authDb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    if (!await authorizedDelivery(req, authDb, key => Deno.env.get(key))) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

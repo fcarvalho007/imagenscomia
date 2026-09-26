@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Lock, Zap, Mail, Users } from "lucide-react";
 import GroupCheckoutForm from "@/components/webinar/GroupCheckoutForm";
 import { InvoiceForm } from "@/components/upgrade/InvoiceForm";
+import {
+  storeToken,
+  readToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyScope,
+  type LegacyDestination,
+} from "@/lib/legacyAccess";
+import { planGrossPrice, trackInitiateCheckout } from "@/lib/legacyPricing";
 
 interface PurchaseModalProps {
   open: boolean;
@@ -56,54 +65,28 @@ export const PurchaseModal = ({
   const [registrationReady, setRegistrationReady] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | undefined>();
   const [editToken, setEditToken] = useState<string | undefined>();
-  const registerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   const showGroupToggle = plan === "masterclass" || plan === "bundle" || plan === "gravacao";
 
-  // Early register-free call when name+email are valid
-  const tryEarlyRegister = useCallback(async (fName: string, lName: string, em: string) => {
-    const trimmedFirst = fName.trim();
-    const trimmedLast = lName.trim();
-    const trimmedEmail = em.trim();
-    if (!trimmedFirst || !trimmedLast || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) return;
+  const scope: LegacyScope = webinar === "video" ? "upgrade-video" : "upgrade";
+  const destination: LegacyDestination = webinar === "video" ? "upgrade-video" : "upgrade";
 
-    try {
-      await supabase.functions.invoke("register-free", {
-        body: { firstName: trimmedFirst, lastName: trimmedLast, email: trimmedEmail, webinar },
-      });
-      // Lookup registration_id + edit_token
-      const { data: reg } = await supabase
-        .from("registrations")
-        .select("id, edit_token")
-        .eq("email", trimmedEmail.toLowerCase())
-        .eq("webinar", webinar)
-        .maybeSingle();
-      if (reg) {
-        setRegistrationId(reg.id);
-        setEditToken((reg as any).edit_token || undefined);
-        setRegistrationReady(true);
-      }
-    } catch {
-      // Silent — will retry on submit
-    }
-  }, [webinar]);
+  const paymentPlan = webinar === "video"
+    ? { gravacao: "video-premium", masterclass: "video-masterclass", bundle: "video-bundle" }[plan] || plan
+    : plan;
 
-  // Debounced early registration
-  useEffect(() => {
-    if (registerDebounceRef.current) clearTimeout(registerDebounceRef.current);
-    registerDebounceRef.current = setTimeout(() => {
-      tryEarlyRegister(firstName, lastName, email);
-    }, 800);
-    return () => { if (registerDebounceRef.current) clearTimeout(registerDebounceRef.current); };
-  }, [firstName, lastName, email, tryEarlyRegister]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /**
+   * Registration only happens on an explicit user action, never while typing.
+   * An existing registration is not disclosed here: the server answers
+   * generically and the participant recovers access by email link.
+   */
+  const handleStartCheckout = async () => {
     setError("");
-
     const trimmedFirst = firstName.trim();
     const trimmedLast = lastName.trim();
-    const trimmedEmail = email.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedFirst || !trimmedLast) {
       setError("Por favor, preencha o nome completo.");
@@ -113,6 +96,59 @@ export const PurchaseModal = ({
       setError("Por favor, introduza um email válido.");
       return;
     }
+
+    setLoading(true);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("register-free", {
+        body: {
+          firstName: trimmedFirst,
+          lastName: trimmedLast,
+          email: trimmedEmail,
+          webinar,
+          editToken: readToken(scope) ?? undefined,
+        },
+      });
+      if (fnError) throw fnError;
+
+      if (data?.needsVerification) {
+        setNeedsVerification(true);
+        return;
+      }
+      if (!data?.editToken) {
+        throw new Error("Não foi possível iniciar o pagamento. Tenta novamente.");
+      }
+
+      storeToken(scope, data.editToken);
+      setEditToken(data.editToken);
+      setRegistrationId(data.id || undefined);
+      setRegistrationReady(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRequestLink = async () => {
+    setLoading(true);
+    try {
+      await requestAccessLink(email, destination);
+      setLinkSent(true);
+    } catch {
+      setError("Erro de ligação. Tenta novamente daqui a pouco.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!registrationReady || !editToken) {
+      setError("Confirma primeiro os teus dados.");
+      return;
+    }
     if (!invoiceValid) {
       setError("Por favor, preencha os dados de faturação.");
       return;
@@ -120,24 +156,13 @@ export const PurchaseModal = ({
 
     setLoading(true);
     try {
-      // Ensure registration exists (may already exist from early call)
-      if (!registrationReady) {
-        await supabase.functions.invoke("register-free", {
-          body: { firstName: trimmedFirst, lastName: trimmedLast, email: trimmedEmail, webinar },
-        });
-      }
-
-      const paymentPlan = webinar === "video"
-        ? { gravacao: "video-premium", masterclass: "video-masterclass", bundle: "video-bundle" }[plan] || plan
-        : plan;
-
       const { data, error: fnError } = await supabase.functions.invoke(
         "create-payment",
         {
           body: {
             plan: paymentPlan,
-            email: trimmedEmail,
-            nome: `${trimmedFirst} ${trimmedLast}`,
+            editToken,
+            nome: `${firstName.trim()} ${lastName.trim()}`,
           },
         }
       );
@@ -146,14 +171,8 @@ export const PurchaseModal = ({
         throw new Error(data?.error || fnError?.message || "Erro ao criar pagamento");
       }
 
-      const prices: Record<string, number> = { premium: 33.21, masterclass: 82.41, bundle: 131.61, gravacao: 33.21, "video-premium": 33.21, "video-masterclass": 82.41, "video-bundle": 131.61 };
-      const capturedPlan = paymentPlan;
-      setTimeout(() => {
-        try {
-          const fbqSafe = (window as any)?.fbq;
-          if (typeof fbqSafe === "function") fbqSafe("track", "Purchase", { value: prices[capturedPlan] || 0, currency: "EUR" });
-        } catch {}
-      }, 0);
+      // Creating a link is not a sale: only the server-confirmed payment is.
+      trackInitiateCheckout(paymentPlan, planGrossPrice(paymentPlan));
 
       window.location.href = data.paymentLink;
     } catch (err: unknown) {
@@ -240,8 +259,52 @@ export const PurchaseModal = ({
             </div>
           </div>
 
-          {/* Invoice form — shown when buyer fields are valid */}
-          {buyerFieldsValid && (
+          {/* Explicit confirmation step — creates the registration once */}
+          {buyerFieldsValid && !registrationReady && !needsVerification && !groupMode && (
+            <button
+              type="button"
+              onClick={handleStartCheckout}
+              disabled={loading}
+              className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 mt-4"
+              style={{ background: ctaBg(plan), borderRadius: 10, height: 48, fontSize: 15 }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  A confirmar…
+                </span>
+              ) : (
+                "Continuar"
+              )}
+            </button>
+          )}
+
+          {/* Existing registration: nothing is revealed, only an emailed link */}
+          {needsVerification && !groupMode && (
+            <div className="mt-4 rounded-xl border p-4" style={{ borderColor: "#e5e7eb", background: "#fafafa" }}>
+              {linkSent ? (
+                <p style={{ fontSize: 13, color: "#374151" }}>{ACCESS_LINK_GENERIC_MESSAGE}</p>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: "#374151" }}>
+                    Já existe uma inscrição com este email. Enviamos-te a ligação de acesso para continuares em segurança.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestLink}
+                    disabled={loading}
+                    className="mt-3 w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                    style={{ background: ctaBg(plan), borderRadius: 10, height: 44, fontSize: 14 }}
+                  >
+                    {loading ? "A enviar…" : "Receber ligação de acesso"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Invoice form — only after the registration is confirmed */}
+          {registrationReady && (
             <div className="mt-4">
               <InvoiceForm
                 userEmail={email.trim()}
@@ -309,7 +372,7 @@ export const PurchaseModal = ({
 
               <button
                 type="submit"
-                disabled={loading || (!invoiceValid && buyerFieldsValid) || invoiceSaveError}
+                disabled={loading || !registrationReady || !invoiceValid || invoiceSaveError}
                 className="w-full font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
                   background: ctaBg(plan),

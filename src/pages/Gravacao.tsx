@@ -25,6 +25,12 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  storeToken,
+  readToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+} from "@/lib/legacyAccess";
 import googleLogo from "@/assets/logos/google.png";
 import chatgptLogo from "@/assets/logos/chatgpt.webp";
 import claudeLogo from "@/assets/logos/claude.png";
@@ -230,12 +236,35 @@ const Gravacao = () => {
       const lastName = fullName.trim().split(" ").slice(1).join(" ");
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedPhone = whatsapp.replace(/[^\d]/g, "");
+      const existingToken = readToken("upgrade-gravacao");
       const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-        body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, registrationSource: "gravacao" },
+        body: {
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          whatsapp: normalizedPhone || undefined,
+          registrationSource: "gravacao",
+          ...(existingToken ? { editToken: existingToken } : {}),
+        },
       });
       if (fnError) throw fnError;
+
+      // Already registered and no proof of ownership: email the access link
+      // instead of revealing anything about the registration.
+      if (data?.needsVerification) {
+        await requestAccessLink(normalizedEmail, "upgrade-gravacao");
+        setError(ACCESS_LINK_GENERIC_MESSAGE);
+        return;
+      }
+
+      const token = data?.editToken || existingToken || null;
+      storeToken("upgrade-gravacao", token);
       setModalOpen(false);
-      navigate(`/upgrade-gravacao?name=${encodeURIComponent(fullName.trim())}&email=${encodeURIComponent(normalizedEmail)}${data?.referralCode ? `&ref_code=${data.referralCode}` : ""}`);
+      navigate(
+        `/upgrade-gravacao?name=${encodeURIComponent(fullName.trim())}` +
+        `${token ? `&t=${encodeURIComponent(token)}` : ""}` +
+        `${data?.referralCode ? `&ref_code=${data.referralCode}` : ""}`,
+      );
       setTimeout(() => { try { const fbqSafe = (window as any)?.fbq; if (typeof fbqSafe === "function") fbqSafe("track", "Lead"); } catch {} }, 0);
     } catch (err: unknown) {
       console.error("Registration error:", err);

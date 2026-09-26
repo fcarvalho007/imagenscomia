@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { authorizedDelivery } from "../_shared/delivery-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -136,12 +138,8 @@ serve(async (req) => {
 
   try {
     // Auth: service role key OR cron secret
-    const authHeader = req.headers.get("authorization") || "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "__none__";
-    const cronSecret = req.headers.get("x-cron-secret");
-    const isCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
-    const isServiceRole = authHeader.includes(serviceRoleKey);
-    if (!isCron && !isServiceRole) {
+    const authDb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    if (!await authorizedDelivery(req, authDb, key => Deno.env.get(key))) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
 import RecursosMasterclassLogin from "@/components/recursos/RecursosMasterclassLogin";
 import RecursosMasterclassConteudo from "@/components/recursos/RecursosMasterclassConteudo";
+import { clearToken, legacyRegLookup, resolveToken } from "@/lib/legacyAccess";
 
 type PageState = "loading" | "login" | "authed";
 
@@ -14,60 +15,43 @@ interface UserData {
   name: string | null;
 }
 
+const SCOPE = "recursos-masterclass" as const;
+
 export default function RecursosMasterclass() {
+  const [searchParams] = useSearchParams();
   const [state, setState] = useState<PageState>("loading");
   const [userData, setUserData] = useState<UserData | null>(null);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("recursos_masterclass_token");
-    const email = sessionStorage.getItem("recursos_masterclass_email");
-
-    if (!token || !email) {
+    const token = resolveToken(SCOPE, searchParams.get("t"));
+    if (!token) {
       setState("login");
       return;
     }
 
     const validate = async () => {
       try {
-        const { data: rows } = await supabase
-          .from("registrations")
-          .select("paid_at, plan_selected, first_name, premium_granted_at")
-          .eq("email", email)
-          .eq("edit_token", token)
-          .order("paid_at", { ascending: false, nullsFirst: false })
-          .order("premium_granted_at", { ascending: false, nullsFirst: false })
-          .limit(1);
-
-        const data = rows?.[0] ?? null;
-        const hasAccess = !!(data?.paid_at || (data as any)?.premium_granted_at);
-        if (hasAccess) {
-          setUserData({ email, token, plan: data!.plan_selected, name: data!.first_name });
-          setState("authed");
-        } else {
-          throw new Error("no access");
-        }
+        const reg = await legacyRegLookup(token);
+        if (!reg || !(reg.paid || reg.premium)) throw new Error("no access");
+        setUserData({
+          email: reg.email,
+          token,
+          plan: reg.plan_selected,
+          name: reg.first_name ?? reg.name,
+        });
+        setState("authed");
       } catch {
-        sessionStorage.removeItem("recursos_masterclass_token");
-        sessionStorage.removeItem("recursos_masterclass_email");
-        sessionStorage.removeItem("recursos_masterclass_plan");
-        sessionStorage.removeItem("recursos_masterclass_name");
+        clearToken(SCOPE);
         setState("login");
       }
     };
 
     validate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAuthed = (data: UserData) => {
-    setUserData(data);
-    setState("authed");
-  };
-
   const handleLogout = () => {
-    sessionStorage.removeItem("recursos_masterclass_token");
-    sessionStorage.removeItem("recursos_masterclass_email");
-    sessionStorage.removeItem("recursos_masterclass_plan");
-    sessionStorage.removeItem("recursos_masterclass_name");
+    clearToken(SCOPE);
     setUserData(null);
     setState("login");
   };
@@ -84,7 +68,7 @@ export default function RecursosMasterclass() {
   }
 
   if (state === "login") {
-    return <><RecursosMasterclassLogin onAuthed={handleAuthed} /><WhatsAppSupportButton /></>;
+    return <><RecursosMasterclassLogin /><WhatsAppSupportButton /></>;
   }
 
   return <><RecursosMasterclassConteudo userData={userData!} onLogout={handleLogout} /><WhatsAppSupportButton /></>;
