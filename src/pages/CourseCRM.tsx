@@ -49,6 +49,26 @@ const date = (value: string) =>
 const selectClass =
   "h-11 rounded-md border border-input bg-background px-3 text-sm";
 export default function CourseCRM() { return <WebinarProvider><CourseCRMContent /></WebinarProvider>; }
+
+function CourseMetaContext({edition}: {edition:string}) {
+  const campaigns = [
+    {edition:"lisboa-2026",label:"Lisboa · 29–30 outubro",id:"120249392882640470",budget:450,utm:"curso_ia_lisboa_2026"},
+    {edition:"porto-2026",label:"Porto · 19–20 novembro",id:"120249392884480470",budget:350,utm:"curso_ia_porto_2026"},
+    {edition:"online-2026",label:"Online · 2, 4, 9 e 11 dezembro",id:"120249392885520470",budget:200,utm:"curso_ia_online_2026"},
+  ];
+  const visible = campaigns.filter(c => !edition || c.edition === edition);
+  if (!visible.length) return null;
+  return <section className="mx-7 mb-7 rounded-xl border bg-white p-5 max-sm:mx-4" aria-label="Campanhas Meta do Curso IA">
+    <h2 className="text-lg font-semibold">Meta Ads · Instagram Feed</h2>
+    <p className="mt-2 text-sm text-muted-foreground">Configuração de 26/09/2026 · conta 10208372751306344. Teto Meta: 1.000 €, separado dos 1.500 € Google. Publicidade até 26/10/2026. Objetivo: visitas à página do curso.</p>
+    <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Edição</th><th className="p-2">Teto total</th><th className="p-2">Campanha / UTM</th></tr></thead><tbody>{visible.map(c=><tr key={c.id} className="border-t"><td className="p-2">{c.label}</td><td className="p-2">{c.budget} €</td><td className="p-2">{c.id}<br/><code className="text-xs">{c.utm}</code></td></tr>)}</tbody></table></div>
+    <p className="mt-3 text-sm">Duas imagens por edição: 01 Secretária e 02 Módulos. Comparação exploratória com distribuição adaptativa; não é um A/B aleatório.</p>
+    <p className="mt-2 text-sm text-muted-foreground">Origem: instagram / paid_social. A ficha do participante mostra as UTMs recebidas; ausência de origem não é uma venda Meta. Os tetos acima não são despesa realizada. Visitas Meta, sessões consentidas e pagamentos confirmados são medições diferentes.</p>
+    <a className="mt-4 inline-block font-medium text-blue-700 underline" href="https://fredericocarvalho.pt/wp-admin/admin.php?page=fcia-ads" target="_blank" rel="noopener noreferrer">Abrir investimento, anúncios e última sincronização no WordPress</a>
+    <p className="mt-2 text-xs text-muted-foreground">O painel WordPress é a fonte dos snapshots publicitários e indica a data da última leitura. Não duplicamos métricas antigas no CRM. Atribuição de compras Meta ainda requer validação.</p>
+  </section>;
+}
+
 function CourseCRMContent() {
   const [catalog,setCatalog]=useState<{id:string;label:string}[]>([]);
   const [activeView, setActiveView] = useState<CRMView>(() => new URLSearchParams(window.location.search).get("view") === "links" ? "links" : "dashboard");
@@ -274,12 +294,12 @@ function CourseCRMContent() {
           </Alert>
         )}
         <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="w-full">
-          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown}} /></TabsContent>
+          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown}} /><CourseMetaContext edition={edition} /></TabsContent>
           <TabsContent value="pipeline"><PipelineView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course={{onMove:moveParticipant}} /></TabsContent>
           <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
           <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,editions:catalog,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
           <TabsContent value="comunicacao"><ComunicacaoView key={edition} inscritos={participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition)} course={{queue:queueCampaign,smsRecipients:participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition && rows.find(r=>r.id===i.id)?.sms_consent),history:<CourseOperations edition={edition} refresh={operationRefresh} communicationOnly />}} /></TabsContent>
-          <TabsContent value="links"><CourseLinks catalog={catalog} edition={edition} onNavigate={setActiveView} /></TabsContent>
+          <TabsContent value="links"><CourseLinks catalog={catalog} edition={edition} onNavigate={setActiveView} /><CourseMetaContext edition={edition} /></TabsContent>
           <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
           <TabsContent value="automacoes" className="p-7 max-sm:p-4">
             <CourseOperations edition={edition} refresh={operationRefresh} onEditionChange={e=>{setEdition(e);setStatus("");}} />
@@ -347,7 +367,7 @@ function CourseCRMContent() {
             <CardContent className="flex flex-col gap-5">
               <p className="text-sm text-muted-foreground">
                 Origem: {selected.attribution.utm_source || "Não atribuída"} ·
-                Campanha: {selected.attribution.utm_campaign || "—"} ·
+                Campanha: {selected.attribution.utm_campaign || "—"} · Meio: {selected.attribution.utm_medium || "—"} · Imagem: {selected.attribution.utm_content || "—"} ·
                 Marketing:{" "}
                 {selected.marketing_consent ? "autorizado" : "não autorizado"}.
               </p>
