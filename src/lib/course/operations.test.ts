@@ -86,12 +86,12 @@ describe("course operations", () => {
   });
   it("blocks missing links and unsafe schemes", () => {
     expect(() =>
-      renderCourseEmail("individual_before", { ...c, before_url: "" }),
+      renderCourseEmail("individual_after", { ...c, after_url: "" }),
     ).toThrow();
     expect(() =>
-      renderCourseEmail("individual_before", {
+      renderCourseEmail("individual_after", {
         ...c,
-        before_url: "javascript:alert(1)",
+        after_url: "javascript:alert(1)",
       }),
     ).toThrow();
   });
@@ -238,9 +238,13 @@ describe("course operations", () => {
 });
 
 it('template edits preserve safe links, greeting and escaped body in actual renderer',()=>{
- const mail=renderCourseEmail('individual_before',c,{subject:'A sua sessão',body:'Texto <script>alert(1)</script> com duas linhas.\n\nEscolha o horário.'});
+ const mail=renderCourseEmail('individual_after',c,{subject:'A sua sessão',body:'Texto <script>alert(1)</script> com duas linhas.\n\nEscolha o horário.'});
  expect(mail.html).not.toContain('<script>');
- expect(mail.html).toContain('https://example.com/before');
+ expect(mail.html).toContain(c.after_url);
+ const reply=renderCourseEmail('individual_before',{...c,before_url:''});
+ expect(reply.text).toContain('duas datas');expect(reply.html).not.toContain('<a href');
+ const thanks=renderCourseEmail('thank_you',c);
+ expect(thanks.subject).toContain('Obrigado pela sua confiança');expect(thanks.text).toContain('corresponder às suas expectativas');
  expect(mail.text).toContain('Olá, Ana.');
  expect(()=>renderCourseEmail('confirmation',c,{subject:'Injected\r\nHeader',body:'Conteúdo válido'})).toThrow();
 });
