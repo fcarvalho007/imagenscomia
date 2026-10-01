@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { ChevronLeft } from "lucide-react";
 import {
   emailLabels,
   renderCourseEmail,
@@ -259,6 +261,14 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
       {!loaded && !error && <p role="status">A carregar a configuração…</p>}
       {loaded && counts && <div className="flex flex-wrap gap-3 text-sm" aria-label="Estado das operações">{[["queued","Agendadas"],["sent","Aceites pelo fornecedor"],["blocked","Bloqueadas"],["review","A verificar"]].map(([key,label])=><button key={key} className="rounded-lg border bg-white px-4 py-3 text-left hover:bg-slate-50" onClick={()=>{setStateFilter(key);setTemplateFilter("");setChannel("all");setView(key==="sent"?"history":"pending");setTab("pessoas");}}><strong className="mr-2">{counts[key]||0}</strong>{" "}{label}</button>)}</div>}
       {loaded && counts && ((counts.blocked||0)+(counts.review||0)>0) && <Alert variant="destructive"><AlertDescription>Há operações que precisam de atenção. Abra «Bloqueadas» para completar a configuração ou «A verificar» para confirmar o resultado no fornecedor antes de repetir um envio.</AlertDescription></Alert>}
+      {!communicationOnly && selected && onEditionChange && <nav aria-label="Caminho" className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" size="sm" onClick={()=>onEditionChange("")}><ChevronLeft size={16} className="mr-1" />Voltar às edições</Button>
+        <Breadcrumb><BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink asChild><button type="button" onClick={()=>onEditionChange("")}>Automações</button></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>{selected.label}</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList></Breadcrumb>
+      </nav>}
       {!communicationOnly && <AutomationTabs value={tab} onChange={setTab} configuration />}
       {!communicationOnly && tab==="metricas" && <div><h3 className="font-semibold mb-4">Operações · total da edição</h3>{counts ? <div className="grid sm:grid-cols-3 gap-4">{Object.entries(states).map(([state,label])=><button key={state} className="rounded-xl border bg-white p-5 text-left" onClick={()=>{setView(["sent","cancelled"].includes(state)?"history":"pending");setStateFilter(state);setTemplateFilter("");setChannel("all");setTab("pessoas");}}><span className="text-sm text-muted-foreground">{label}</span><strong className="block text-2xl mt-2">{counts[state]||0}</strong></button>)}</div>:<p>Contagens indisponíveis. Atualize para tentar novamente.</p>}<p className="text-sm text-muted-foreground mt-3">Aceitação pelo fornecedor não é entrega. Aberturas e cliques não são estimados.</p></div>}
       {!communicationOnly && !edition && loaded && (
