@@ -133,6 +133,11 @@ describe("Course CRM access and edition scope", () => {
         : { error: { message: "missing migration" } },
     );
     render(<CourseCRM />);
+    // Current system: visits are not integrated, so they show "—" with the WordPress source, never zero.
+    expect(await screen.findByRole("region", { name: "Funil do sistema atual" })).toBeInTheDocument();
+    expect(screen.getAllByText("Disponível no painel WordPress")).toHaveLength(2);
+    expect(screen.queryByText("Concluíram questionário")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Histórico anterior" }));
     expect(
       await screen.findByText(/Indicadores indisponíveis/),
     ).toBeInTheDocument();
@@ -140,7 +145,7 @@ describe("Course CRM access and edition scope", () => {
 });
 
 it("opens the original contact modal and financial table without touching webinar endpoints",async()=>{
- mocks.rows=[{id:'course-only',name:'Participante de teste',email:'teste@example.invalid',phone:'',edition:'lisboa-2026',status:'confirmed',notes:'',next_followup_at:null,created_at:'2026-09-01T10:00:00Z',marketing_consent:false,before_session:'pending',after_session:'pending',attribution:{},course_payments:{state:'paid',amount_cents:61131,paid_at:'2026-09-01T10:00:00Z'},course_invoices:null,course_tasks:[]}];
+ mocks.rows=[{id:'course-only',name:'Participante de teste',email:'teste@example.invalid',phone:'',edition:'course-only',status:'confirmed',notes:'',next_followup_at:null,created_at:'2026-09-01T10:00:00Z',marketing_consent:false,before_session:'pending',after_session:'pending',attribution:{},course_payments:{state:'paid',amount_cents:61131,paid_at:'2026-09-01T10:00:00Z'},course_invoices:null,course_tasks:[]}];
  render(<CourseCRM/>);
  await screen.findByRole('heading',{name:'Dashboard'});
  await waitFor(()=>expect(mocks.from).toHaveBeenCalled());

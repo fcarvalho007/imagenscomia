@@ -207,8 +207,38 @@ export type Database = {
           },
         ]
       }
+      course_edition_archive: {
+        Row: {
+          archived_at: string
+          edition: string
+          previous: Json
+          reason: string
+        }
+        Insert: {
+          archived_at?: string
+          edition: string
+          previous: Json
+          reason: string
+        }
+        Update: {
+          archived_at?: string
+          edition?: string
+          previous?: Json
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_edition_archive_edition_fkey"
+            columns: ["edition"]
+            isOneToOne: true
+            referencedRelation: "course_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_editions: {
         Row: {
+          archived_at: string | null
           automation_enabled: boolean
           availability: string
           capacity: number
@@ -229,6 +259,7 @@ export type Database = {
           wp_revision: number
         }
         Insert: {
+          archived_at?: string | null
           automation_enabled?: boolean
           availability?: string
           capacity?: number
@@ -249,6 +280,7 @@ export type Database = {
           wp_revision?: number
         }
         Update: {
+          archived_at?: string | null
           automation_enabled?: boolean
           availability?: string
           capacity?: number
