@@ -50,8 +50,9 @@ export default function CourseAutomationFlow({ counts, registrations, enabled, s
     {
       id: "pre", label: "PRÉ-CURSO", number: "0", borderColor: "#3b82f6", bgColor: "#f8fafc",
       steps: [
-        { key: "confirmation", title: "Confirmação de pagamento", timing: "Após o pagamento", description: "Confirma a inscrição e explica o acompanhamento incluído." },
-        { key: "individual_before", title: "Agendar a primeira sessão individual", timing: "1 hora após o pagamento", description: "Ajuda a escolher o problema a trabalhar. Apenas enquanto a sessão estiver por agendar." },
+        { key: "thank_you", title: "Agradecimento pela inscrição", timing: "Logo após o pagamento confirmado pelo WooCommerce", description: "Agradece a confiança e anuncia o email de agendamento. O recibo e a fatura continuam a ser enviados pelo WooCommerce." },
+        { key: "thank_you_sms", title: "SMS de agradecimento", timing: "Logo a seguir", description: "Avisa que foi enviado um email para agendar a 1.ª sessão individual. Apenas com consentimento; entre as 08h e as 20h de Lisboa.", sms: true },
+        { key: "individual_before", title: "Agendar a primeira sessão individual (Zoom)", timing: "1 hora após o pagamento", description: "Pede ao participante que responda ao email com duas datas e horas convenientes. Apenas enquanto a sessão estiver por agendar." },
         { key: "practical_information", title: "Preparar a participação", timing: "48 horas antes", description: "Datas, horário e local ou acesso online. Inscrições tardias recebem esta informação assim que forem elegíveis." },
         { key: "practical_sms", title: "Lembrete por SMS", timing: "24 horas antes", description: "Apenas com consentimento e telefone válido; envio entre as 08h e as 20h de Lisboa.", sms: true },
       ],
