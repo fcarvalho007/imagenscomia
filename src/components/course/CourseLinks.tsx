@@ -72,7 +72,6 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
       <div className="divide-y divide-slate-200">
         <LinkRow title="Histórico no WordPress" description="Eventos guardados do sistema anterior, sem os apagar." href={`${WP_ADMIN}?page=fcia-history`} />
         <LinkRow title="Antiga landing page" description="Versão anterior, apenas para consulta administrativa." href="https://fredericocarvalho.pt/?fc_ia_history=20261001&preview=primeira-visita" />
-        <LinkRow title="Área do participante" description="Ecrã de entrada. Os materiais exigem o link privado enviado ao participante." href="/curso-ia/recursos" />
       </div>
     </details>
   </section>;
