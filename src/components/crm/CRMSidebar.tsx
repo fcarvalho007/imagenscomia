@@ -12,7 +12,7 @@ interface CRMSidebarProps {
   activeView: CRMView;
   onChangeView: (v: CRMView) => void;
   onLogout: () => void;
-  course?: { editions?: {id:string;label:string}[]; edition: string; onEditionChange: (edition: string) => void };
+  course?: { editions?: {id:string;label:string;archived?:boolean}[]; edition: string; onEditionChange: (edition: string) => void };
 }
 
 const NAV_ITEMS: { icon: typeof LayoutDashboard; label: string; view: CRMView }[] = [
@@ -92,7 +92,8 @@ function SidebarContent({ activeView, onChangeView, onLogout, course }: CRMSideb
       {course && <div className="px-1 py-3">
         <label htmlFor="course-edition" className="block text-xs font-semibold text-white/60 mb-2 px-2">Edição</label>
         <select aria-label="Edição" id="course-edition" value={course.edition} onChange={e=>course.onEditionChange(e.target.value)} className="w-full rounded-md px-3 py-2 text-sm text-white bg-white/10 border border-white/10">
-          <option value="">Todas as edições</option>{(course.editions?.length?course.editions:EDITIONS.map(id=>({id,label:editionNames[id]}))).map(e=><option key={e.id} value={e.id}>{e.label}</option>)}
+          <option value="">Edições ativas</option>{(course.editions?.length?course.editions:EDITIONS.map(id=>({id,label:editionNames[id],archived:false}))).filter(e=>!e.archived).map(e=><option key={e.id} value={e.id}>{e.label}</option>)}
+          {course.editions?.some(e=>e.archived) && <optgroup label="Histórico / edições arquivadas"><option value="__history__">Todas, incluindo arquivadas</option>{course.editions.filter(e=>e.archived).map(e=><option key={e.id} value={e.id}>{e.label} · arquivada</option>)}</optgroup>}
         </select>
       </div>}
       {/* Nav */}

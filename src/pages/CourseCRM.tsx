@@ -12,6 +12,7 @@ import { WebinarProvider } from "@/contexts/WebinarContext";
 
 
 import CourseLinks from "@/components/course/CourseLinks";
+import { activeEditions, currentFunnel, editionScope, HISTORY_FILTER, WP_ADMIN, type CatalogEdition } from "@/lib/course/catalog";
 import CourseMaterials from "@/components/course/CourseMaterials";
 import CourseOperations from "@/components/course/CourseOperations";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -56,21 +57,22 @@ function CourseMetaContext({edition}: {edition:string}) {
     {edition:"porto-2026",label:"Porto · 19–20 novembro",id:"120249392884480470",budget:350,utm:"curso_ia_porto_2026"},
     {edition:"online-2026",label:"Online · 2, 4, 9 e 11 dezembro",id:"120249392885520470",budget:200,utm:"curso_ia_online_2026"},
   ];
-  const visible = campaigns.filter(c => !edition || c.edition === edition);
-  if (!visible.length) return null;
+  const visible = campaigns.filter(c => !edition || edition === HISTORY_FILTER || c.edition === edition);
   return <section className="mx-7 mb-7 rounded-xl border bg-white p-5 max-sm:mx-4" aria-label="Campanhas Meta do Curso IA">
-    <h2 className="text-lg font-semibold">Meta Ads · Instagram Feed</h2>
-    <p className="mt-2 text-sm text-muted-foreground">Configuração de 26/09/2026 · conta 10208372751306344. Teto Meta: 1.000 €, separado dos 1.500 € Google. Publicidade até 26/10/2026. Objetivo: visitas à página do curso.</p>
-    <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Edição</th><th className="p-2">Teto total</th><th className="p-2">Campanha / UTM</th></tr></thead><tbody>{visible.map(c=><tr key={c.id} className="border-t"><td className="p-2">{c.label}</td><td className="p-2">{c.budget} €</td><td className="p-2">{c.id}<br/><code className="text-xs">{c.utm}</code></td></tr>)}</tbody></table></div>
-    <p className="mt-3 text-sm">Duas imagens por edição: 01 Secretária e 02 Módulos. Comparação exploratória com distribuição adaptativa; não é um A/B aleatório.</p>
-    <p className="mt-2 text-sm text-muted-foreground">Origem: instagram / paid_social. A ficha do participante mostra as UTMs recebidas; ausência de origem não é uma venda Meta. Os tetos acima não são despesa realizada. Visitas Meta, sessões consentidas e pagamentos confirmados são medições diferentes.</p>
-    <a className="mt-4 inline-block font-medium text-blue-700 underline" href="https://fredericocarvalho.pt/wp-admin/admin.php?page=fcia-ads" target="_blank" rel="noopener noreferrer">Abrir investimento, anúncios e última sincronização no WordPress</a>
-    <p className="mt-2 text-xs text-muted-foreground">O painel WordPress é a fonte dos snapshots publicitários e indica a data da última leitura. Não duplicamos métricas antigas no CRM. Atribuição de compras Meta ainda requer validação.</p>
+    <h2 className="text-lg font-semibold">Meta Ads · contexto</h2>
+    <p className="mt-2 text-sm text-muted-foreground">A oferta mudou em 01/10/2026 para a página única com as edições Online (3 a 6 de novembro) e Lisboa (19 e 20 de novembro). O painel WordPress é a fonte da última sincronização de investimento e anúncios; o CRM não calcula retorno a partir de tetos orçamentais nem soma métricas de fontes diferentes.</p>
+    <a className="mt-3 inline-block font-medium text-blue-700 underline" href={`${WP_ADMIN}?page=fcia-ads`} target="_blank" rel="noopener noreferrer">Abrir anúncios e última sincronização no WordPress</a>
+    {visible.length>0 && <details className="mt-4 border-t pt-3"><summary className="cursor-pointer text-sm font-medium">Histórico · configuração registada em 26/09/2026 (oferta anterior)</summary>
+      <p className="mt-2 text-sm text-muted-foreground">Registo datado, mantido tal como foi configurado: conta 10208372751306344, teto Meta 1.000 € (separado dos 1.500 € Google), publicidade prevista até 26/10/2026. Os tetos não são despesa realizada. Este registo não indica o estado atual das campanhas.</p>
+      <div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Edição anterior</th><th className="p-2">Teto total</th><th className="p-2">Campanha / UTM</th></tr></thead><tbody>{visible.map(c=><tr key={c.id} className="border-t"><td className="p-2">{c.label}</td><td className="p-2">{c.budget} €</td><td className="p-2">{c.id}<br/><code className="text-xs">{c.utm}</code></td></tr>)}</tbody></table></div>
+      <p className="mt-2 text-xs text-muted-foreground">Origem instagram / paid_social; duas imagens por edição (01 Secretária, 02 Módulos). A ficha do participante mostra as UTMs recebidas; ausência de origem não é uma venda Meta.</p>
+    </details>}
   </section>;
 }
 
 function CourseCRMContent() {
-  const [catalog,setCatalog]=useState<{id:string;label:string}[]>([]);
+  const [catalog,setCatalog]=useState<CatalogEdition[]>([]);
+  const [dashMode,setDashMode]=useState<"current"|"history">("current");
   const [activeView, setActiveView] = useState<CRMView>(() => new URLSearchParams(window.location.search).get("view") === "links" ? "links" : "dashboard");
 
 
@@ -139,7 +141,7 @@ function CourseCRMContent() {
           const data: any[] = [];
           for (let start = 0; ; start += 500) {
             let query = db.from("course_registrations").select("id,name,email,phone,edition,status,notes,commerce_source,wp_order_id,next_followup_at,created_at,marketing_consent,sms_consent,do_not_contact,before_session,after_session,attribution,course_editions(starts_at,ends_at),course_payments(state,amount_cents,paid_at),course_invoices(state,document_id),course_tasks(id,task_key,stage,due_at,state)").order("created_at",{ascending:false}).order("id").range(start,start+499);
-            if (edition) query=query.eq("edition",edition);
+            if (edition && edition!==HISTORY_FILTER) query=query.eq("edition",edition);
             const batch=await query;
             if (request !== sequence.current || batch.error) return batch;
             data.push(...(batch.data || []));
@@ -147,16 +149,17 @@ function CourseCRMContent() {
           }
         };
         let costQuery=db.from("course_costs").select("id,edition,platform,description,amount,cost_date,category");
-        if(edition)costQuery=costQuery.eq("edition",edition);
+        if(edition && edition!==HISTORY_FILTER)costQuery=costQuery.eq("edition",edition);
         const [items, kpis, loadedCosts, editionsResult] = await Promise.all([
           fetchRows(),
-          db.rpc("course_period_metrics", { edition_id: edition || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
+          db.rpc("course_period_metrics", { edition_id: (edition!==HISTORY_FILTER && edition) || null, since: period === "all" ? null : new Date(Date.now()-Number(period)*86400000).toISOString() }),
           costQuery,
-          db.from("course_editions").select("id,label,starts_at").order("starts_at"),
+          db.from("course_editions").select("id,label,starts_at,modality,archived_at").order("starts_at"),
         ]);
         if (request !== sequence.current) return;
         if(editionsResult.error)throw new Error("Catalogue unavailable");
-        const editionRows=(editionsResult.data||[]).map(e=>({id:e.id,label:e.label+" · "+new Date(e.starts_at).toLocaleDateString("pt-PT")}));
+        const editionRows:CatalogEdition[]=(editionsResult.data||[]).map(e=>({id:e.id,modality:e.modality,archived:!!e.archived_at,label:e.label+" · "+new Date(e.starts_at).toLocaleDateString("pt-PT",{timeZone:"Europe/Lisbon"})}));
+        const scope=editionScope(edition,editionRows);
         for(const e of editionRows)editionNames[e.id]=e.label;
         setCatalog(editionRows);
         if (items.error) throw new Error("Backend unavailable");
@@ -170,9 +173,9 @@ function CourseCRMContent() {
             ? item.course_invoices[0] || null
             : item.course_invoices,
         })) as Row[];
-        setRows(received);
+        setRows(scope?received.filter(r=>scope.includes(r.edition)):received);
         setMetrics(kpis.error ? null : kpis.data);
-        setCostsKnown(!loadedCosts.error);setCosts((loadedCosts.data||[]).map(c=>({...c,webinar:c.edition})));
+        setCostsKnown(!loadedCosts.error);setCosts((loadedCosts.data||[]).filter(c=>!scope||scope.includes(c.edition)).map(c=>({...c,webinar:c.edition})));
       } catch {
         if (request === sequence.current) {
           setRows([]);
@@ -253,6 +256,8 @@ function CourseCRMContent() {
     setInvoiceRef(row.course_invoices?.document_id || "");
   }
   const participants = rows.map(row=>courseToInscrito(row));
+  const scoped = edition===HISTORY_FILTER?"":edition;
+  const funnel = currentFunnel(rows, period==="all"?undefined:Date.now()-Number(period)*86400000);
   const selectParticipant = (item: {id:string}) => {const row=rows.find(r=>r.id===item.id);if(row)open(row);};
   const moveParticipant = async (id:string, state:string) => {
     const row=rows.find(r=>r.id===id);
@@ -263,12 +268,12 @@ function CourseCRMContent() {
   };
 
   async function queueCampaign(channel:"email"|"sms", ids:string[],subject:string,body:string,scheduled:Date|null,format:"text"|"html"="text") {
-    if(!edition)throw new Error("Selecione uma edição na barra lateral.");
+    if(!scoped)throw new Error("Selecione uma edição na barra lateral.");
     const body_format=channel==="sms"?"text":format;
     const signature=JSON.stringify([edition,channel,[...ids].sort(),subject,body,scheduled?.toISOString(),body_format]);
     if(campaignAttempt.current?.signature!==signature)campaignAttempt.current={signature,id:crypto.randomUUID(),date:(scheduled||new Date()).toISOString()};
     const attempt=campaignAttempt.current;
-    const {error}=await db.rpc("queue_course_campaign",{campaign_uuid:attempt.id,edition_id:edition,channel,subject,body,recipients:ids,scheduled_at:attempt.date,body_format});
+    const {error}=await db.rpc("queue_course_campaign",{campaign_uuid:attempt.id,edition_id:scoped,channel,subject,body,recipients:ids,scheduled_at:attempt.date,body_format});
     if(error)throw new Error("Não foi possível colocar em fila. Verifique os destinatários (máximo 200), conteúdo e horário fora do evento. SMS: 08h–20h de Lisboa. Atualize se os contactos mudaram.");
     campaignAttempt.current=null;setOperationRefresh(v=>v+1);
     toast.success("Comunicação colocada em fila. Consulte o histórico para acompanhar o processamento; isto não confirma entrega.");
@@ -294,15 +299,15 @@ function CourseCRMContent() {
           </Alert>
         )}
         <Tabs value={activeView==="tabela"?"inscricoes":activeView==="templates"?"automacoes":activeView} className="w-full">
-          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown}} /><CourseMetaContext edition={edition} /></TabsContent>
+          <TabsContent value="dashboard" className="mt-0"><DashboardView inscritos={participants} onSelectInscrito={selectParticipant} onRefresh={()=>void load()} course={{metrics,period,onPeriodChange:setPeriod,loading,costs,costsKnown,mode:dashMode,onModeChange:setDashMode,current:funnel}} /><CourseMetaContext edition={edition} /></TabsContent>
           <TabsContent value="pipeline"><PipelineView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course={{onMove:moveParticipant}} /></TabsContent>
           <TabsContent value="inscricoes"><TableView key={edition} inscritos={participants} onSelectInscrito={selectParticipant} course /></TabsContent>
-          <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition,editions:catalog,onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
-          <TabsContent value="comunicacao"><ComunicacaoView key={edition} inscritos={participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition)} course={{queue:queueCampaign,smsRecipients:participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!edition && rows.find(r=>r.id===i.id)?.sms_consent),history:<CourseOperations edition={edition} refresh={operationRefresh} communicationOnly />}} /></TabsContent>
+          <TabsContent value="faturacao"><FaturacaoView inscritos={participants} onRefresh={()=>void load()} course={{edition:scoped,editions:edition===HISTORY_FILTER?catalog:activeEditions(catalog),onEditionChange:setEdition,onSelectInscrito:selectParticipant}} /></TabsContent>
+          <TabsContent value="comunicacao"><ComunicacaoView key={edition} inscritos={participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!scoped)} course={{queue:queueCampaign,smsRecipients:participants.filter(i=>i.course?.status==='confirmed' && i.payment_status==='paid' && !i.do_not_contact && !!scoped && rows.find(r=>r.id===i.id)?.sms_consent),history:<CourseOperations edition={scoped} refresh={operationRefresh} communicationOnly />}} /></TabsContent>
           <TabsContent value="links"><CourseLinks catalog={catalog} edition={edition} onNavigate={setActiveView} /><CourseMetaContext edition={edition} /></TabsContent>
-          <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={edition} /></TabsContent>
+          <TabsContent value="recursos" className="p-7 max-sm:p-4"><CourseMaterials edition={scoped} /></TabsContent>
           <TabsContent value="automacoes" className="p-7 max-sm:p-4">
-            <CourseOperations edition={edition} refresh={operationRefresh} onEditionChange={e=>{setEdition(e);setStatus("");}} />
+            <CourseOperations edition={scoped} refresh={operationRefresh} onEditionChange={e=>{setEdition(e);setStatus("");}} />
             <div className="mt-10">
               <div className="flex flex-col gap-5">
                 <div>
@@ -312,7 +317,7 @@ function CourseCRMContent() {
                   <p className="text-muted-foreground mt-3">
                     {edition
                       ? "Fluxo da edição selecionada."
-                      : "Clique em Lisboa, Porto ou Online acima para abrir o fluxo dessa edição. O percurso é comum às edições presenciais."}
+                      : "Escolha uma edição ativa acima para abrir o fluxo. Online: quatro manhãs; Lisboa: dois dias presenciais — ambos com 14 horas ao vivo e duas sessões individuais (uma antes, outra até 30 dias depois)."}
                   </p>
                 </div>
                 <Card>

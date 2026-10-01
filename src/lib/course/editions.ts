@@ -1,7 +1,10 @@
+/** Fallback labels only; the live catalogue from WordPress overrides these at runtime. */
 export const editionNames: Record<string, string> = {
-  "lisboa-2026": "Lisboa · 29–30 outubro",
-  "porto-2026": "Porto · 19–20 novembro",
-  "online-2026": "Online · 2–11 dezembro",
+  "online-2026-11-03": "Online · 3–6 novembro (4 manhãs)",
+  "lisboa-2026-11-19": "Lisboa · 19–20 novembro",
+  "lisboa-2026": "Lisboa · 29–30 outubro (arquivada)",
+  "porto-2026": "Porto · 19–20 novembro (arquivada)",
+  "online-2026": "Online · 2–11 dezembro (arquivada)",
 };
 export const states: Record<string, string> = {
   new: "Novo pedido",

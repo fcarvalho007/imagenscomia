@@ -41,6 +41,7 @@ const states: Record<string, string> = {
 };
 type Edition = {
   id: string;
+  archived_at?: string | null;
   starts_at: string;
   ends_at: string;
   label: string;
@@ -98,7 +99,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
         const [es, js, hs, totals, templates] = await Promise.all([
           db
             .from("course_editions")
-            .select("id,label,starts_at,ends_at,automation_enabled,sms_enabled,invoicing_enabled,operations")
+            .select("id,label,starts_at,ends_at,automation_enabled,sms_enabled,invoicing_enabled,operations,archived_at")
             .order("starts_at"),
           q,
           db
@@ -266,7 +267,7 @@ export default function CourseOperations({ edition, refresh = 0, communicationOn
             Escolha uma edição para ver o fluxo sequencial de contacto.
           </p>
           <div className="grid sm:grid-cols-3 gap-5">
-            {editions.map((e) => (
+            {editions.filter((e) => !e.archived_at).map((e) => (
               <button
                 key={e.id}
                 type="button"

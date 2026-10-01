@@ -104,7 +104,7 @@ function parseDuvidaParts(duvida: string, ctx: WebinarCtxType): string[] {
 }
 
 interface DashboardViewProps {
-  course?: {costs?:AcquisitionCost[];costsKnown?:boolean;metrics:CourseMetrics|null; period:string; onPeriodChange:(p:string)=>void; loading:boolean};
+  course?: {costs?:AcquisitionCost[];costsKnown?:boolean;metrics:CourseMetrics|null; period:string; onPeriodChange:(p:string)=>void; loading:boolean; mode?:'current'|'history'; onModeChange?:(m:'current'|'history')=>void; current?:{orders:number;paid:number}};
   inscritos: Inscrito[];
   onSelectInscrito: (i: Inscrito) => void;
   onRefresh?: () => Promise<void>;
@@ -1496,10 +1496,11 @@ function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: Dash
       <div><h1 className="font-heading font-bold text-[22px] text-ink-900">Dashboard</h1><p className="text-sm text-ink-500">Visão geral do curso · edição selecionada</p></div>
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex items-center gap-0.5 bg-surface rounded-lg p-0.5">{['7','14','30','all'].map(p=><button key={p} onClick={()=>course!.onPeriodChange(p)} className={`px-2.5 py-1 rounded-md text-[12px] font-medium ${p===period?'bg-white text-ink-900 shadow-sm':'text-ink-500'}`}>{p==='all'?'Tudo':p+'d'}</button>)}</div>
+        {course!.onModeChange && <div role="group" aria-label="Sistema" className="flex items-center gap-0.5 bg-surface rounded-lg p-0.5">{([['current','Sistema atual'],['history','Histórico anterior']] as const).map(([v,l])=><button key={v} aria-pressed={(course!.mode||'current')===v} onClick={()=>course!.onModeChange!(v)} className={`px-2.5 py-1 rounded-md text-[12px] font-medium ${(course!.mode||'current')===v?'bg-white text-ink-900 shadow-sm':'text-ink-500'}`}>{l}</button>)}</div>}
         <button disabled={course!.loading} onClick={onRefresh} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium bg-surface text-ink-600"><RefreshCw size={14} className={course!.loading?'animate-spin':''}/>Atualizar</button>
       </div>
     </div>
-    {!m ? <p role="status" className="text-sm text-ink-500">{course!.loading?'A carregar indicadores…':'Indicadores indisponíveis. Atualize para voltar a tentar.'}</p> : <>
+    {course!.mode!=='history' && course!.onModeChange ? <CurrentFunnel loading={course!.loading} current={course!.current}/> : !m ? <p role="status" className="text-sm text-ink-500">{course!.loading?'A carregar indicadores…':'Indicadores indisponíveis. Atualize para voltar a tentar.'}</p> : <>
     <ConversionFunnelBlock inscritos={[]} summary={{title:'Funil de inscrição',description:'Da landing page ao pagamento',revenue:m.revenue_cents/100,steps:[
       {label:'Visitaram a página',value:m.sessions,color:'#64748B'},
       {label:'Concluíram questionário',value:m.quiz_completed,color:'#2563EB'},
@@ -1507,7 +1508,7 @@ function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: Dash
       {label:'Abriram inscrição',value:m.registration_sessions,color:'#D97706'},
       {label:'Pedidos recebidos',value:m.requests,color:'#06B6D4'},
       {label:'Inscrições confirmadas',value:m.confirmed,color:'#16A34A'},
-    ],note:'As três primeiras etapas agregam a landing page inteira, antes da escolha da edição. As restantes respeitam a edição e o período. Visitas dependem do consentimento; pedidos e pagamentos são contados no backend. As etapas não representam uma coorte individual.'}}/>
+    ],note:'Histórico anterior a 01/10/2026 16:11:25 (Lisboa), quando existia questionário. As três primeiras etapas agregam a landing page inteira, antes da escolha da edição. As restantes respeitam a edição e o período. Visitas dependem do consentimento; pedidos e pagamentos são contados no backend. As etapas não representam uma coorte individual.'}}/>
     <div className="grid grid-cols-2 gap-4 mb-5">{[['Contactos em atraso',m.followups_due],['Tarefas por concluir',m.tasks_due]].map(([label,value])=><div key={label} className="bg-white border border-border rounded-xl p-5"><p className="text-sm text-ink-500">{label}</p><strong className="font-heading text-2xl text-ink-900">{value}</strong></div>)}</div>
     </>}
     {!course!.loading && <CourseInsights items={inscritos} period={period} onSelect={onSelectInscrito} />}
@@ -1515,4 +1516,16 @@ function ProjectDashboard({inscritos, onRefresh, onSelectInscrito, course}: Dash
     <FaturacaoKPIs receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} numPagamentos={paid.length} totalCosts={totalCosts} paidMediaCosts={paidMediaCosts} showIVA={false} costsKnown={course!.costsKnown && costs.length>0}/>
     <div className="mt-5"><FaturacaoCharts receitaConfirmada={paid.reduce((n,i)=>n+i.valor,0)} pipelinePendente={inscritos.filter(i=>i.payment_status==='awaiting_payment').reduce((n,i)=>n+i.valor,0)} totalCosts={totalCosts} inscritos={inscritos} groupByEdition costs={costs} showIVA={false} costsKnown={course!.costsKnown && costs.length>0}/></div></>}
   </div>;
+}
+
+function CurrentFunnel({loading,current}:{loading:boolean;current?:{orders:number;paid:number}}) {
+  const wp='https://fredericocarvalho.pt/wp-admin/admin.php?page=fcia-course';
+  const steps:[string,number|null,string][]=[['Visitaram a página',null,'Disponível no painel WordPress'],['Entraram no checkout',null,'Disponível no painel WordPress'],['Encomendas recebidas',current?current.orders:null,'WooCommerce sincronizado'],['Pagamentos confirmados',current?current.paid:null,'WooCommerce sincronizado']];
+  return <section aria-label="Funil do sistema atual" className="bg-white border border-border rounded-xl p-5 mb-5">
+    <h2 className="font-heading font-bold text-[15px] text-ink-900">Funil de inscrição · sistema atual</h2>
+    <p className="text-sm text-ink-500">Desde 01/10/2026 16:11:25 (Lisboa): página → checkout → encomenda → pagamento.</p>
+    {loading && !current ? <p role="status" className="mt-4 text-sm text-ink-500">A carregar…</p> :
+    <div className="grid sm:grid-cols-4 gap-3 mt-4">{steps.map(([label,value,source])=><div key={label} className="rounded-lg border border-border p-4"><p className="text-[13px] text-ink-500">{label}</p><strong className="font-heading text-2xl text-ink-900">{value===null?'—':value}</strong>{value===null&&current===undefined&&label.startsWith('Enc')?<p className="text-xs text-ink-500">Indisponível</p>:<p className="text-xs text-ink-500">{value===null&&label.startsWith('V')||value===null&&label.startsWith('Ent')?<a className="underline text-blue-700" href={wp} target="_blank" rel="noopener noreferrer">{source}</a>:source}</p>}</div>)}</div>}
+    <p className="mt-3 text-xs text-ink-500">Visitas e entradas no checkout são medidas no WordPress com consentimento e ainda não chegam ao CRM, por isso não são mostradas como zero. Encomendas e pagamentos vêm do WooCommerce, contados uma vez por encomenda e sem depender de consentimento. As etapas vêm de fontes diferentes e não representam uma coorte; a escolha da edição não é condição para a compra.</p>
+  </section>;
 }
