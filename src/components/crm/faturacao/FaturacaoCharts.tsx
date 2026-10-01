@@ -5,6 +5,8 @@ import { applyIVA } from "@/components/crm/FaturacaoView";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
+  costsKnown?: boolean;
+  groupByEdition?: boolean;
   receitaConfirmada: number;
   pipelinePendente: number;
   totalCosts: number;
@@ -28,7 +30,7 @@ const TOOLTIP_STYLE = {
   boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
 };
 
-export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs, showIVA }: Props) {
+export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, totalCosts, inscritos, costs, showIVA, costsKnown = true, groupByEdition = false }: Props) {
   const isMobile = useIsMobile();
   const chartHeight = isMobile ? 200 : 280;
   const smallChartHeight = isMobile ? 180 : 230;
@@ -41,21 +43,22 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
   const barData = [
     { name: "Receita", value: receita, fill: "#22c55e" },
     { name: "Pipeline", value: pipeline, fill: "#f59e0b" },
-    { name: "Custos", value: totalCosts, fill: "#ef4444" },
+    ...(costsKnown ? [{ name: "Custos", value: totalCosts, fill: "#ef4444" }] : []),
   ];
 
   const planRevenue: Record<string, number> = {};
   const planCounts: Record<string, number> = {};
   inscritos.filter(i => i.payment_status === "paid" && i.plan !== "free").forEach(i => {
     const val = applyIVA(i.valor, showIVA);
-    planRevenue[i.plan] = (planRevenue[i.plan] || 0) + val;
-    planCounts[i.plan] = (planCounts[i.plan] || 0) + 1;
+    const key = i.course?.editionLabel || i.plan;
+    planRevenue[key] = (planRevenue[key] || 0) + val;
+    planCounts[key] = (planCounts[key] || 0) + 1;
   });
   const pieData = Object.entries(planRevenue).map(([name, value]) => ({
     name: name.charAt(0).toUpperCase() + name.slice(1),
     value,
     count: planCounts[name] || 0,
-    fill: PLAN_COLORS[name] || "#64748b",
+    fill: PLAN_COLORS[name] || (name.startsWith("Lisboa") ? "#3b82f6" : name.startsWith("Porto") ? "#8b5cf6" : name.startsWith("Online") ? "#06b6d4" : "#64748b"),
   }));
 
   const margemPct = receita > 0 ? Math.max(0, Math.min(100, ((receita - totalCosts) / receita) * 100)) : 0;
@@ -83,7 +86,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Bar chart */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita vs Pipeline vs Custos <span className="text-slate-400">({ivaLabel})</span></p>
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita vs Pipeline{costsKnown ? " vs Custos" : ""} <span className="text-slate-400">({ivaLabel})</span></p>
           <ResponsiveContainer width="100%" height={chartHeight}>
             <BarChart data={barData} barSize={isMobile ? 36 : 52}>
               <XAxis dataKey="name" tick={{ fill: "#64748B", fontSize: isMobile ? 10 : 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
@@ -98,7 +101,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
 
         {/* Donut chart */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
-          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por Plano <span className="text-slate-400">({ivaLabel})</span></p>
+          <p className="text-[12px] font-semibold mb-4 text-slate-500">Receita por {groupByEdition ? "Edição" : "Plano"} <span className="text-slate-400">({ivaLabel})</span></p>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={chartHeight}>
               <PieChart>
@@ -131,6 +134,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
           )}
         </div>
 
+{costsKnown && <>
         {/* Margin gauge */}
         <div className="rounded-2xl p-4 sm:p-5 bg-white border border-slate-200 shadow-sm">
           <p className="text-[12px] font-semibold mb-4 text-slate-500">Estrutura de Custos</p>
@@ -207,7 +211,7 @@ export default function FaturacaoCharts({ receitaConfirmada, pipelinePendente, t
               <p className="text-[13px] text-slate-400">Sem custos registados</p>
             </div>
           )}
-        </div>
+        </div></>}
       </div>
     </div>
   );

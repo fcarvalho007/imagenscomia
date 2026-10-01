@@ -1,3 +1,4 @@
+import { authorizedDelivery } from "../_shared/delivery-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-crm-admin-email, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ADMIN_ALLOWLIST = ["fredericodigital@gmail.com"];
 
 const SITE = "https://imagenscomia.lovable.app";
 const WHATSAPP = "https://wa.me/351915015508";
@@ -129,18 +129,14 @@ serve(async (req) => {
   }
 
   try {
-    // Auth check
-    const adminEmail = req.headers.get("x-crm-admin-email") || "";
-    if (!ADMIN_ALLOWLIST.includes(adminEmail)) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    if (req.method !== "POST" || !(await authorizedDelivery(req, supabase, (key) => Deno.env.get(key)))) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const body = await req.json();
     const { registration_id, email } = body;

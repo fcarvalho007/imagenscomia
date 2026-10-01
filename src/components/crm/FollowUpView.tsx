@@ -230,21 +230,7 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
       </div>
 
       {/* Pill tabs */}
-      <div className="flex gap-1 mb-5 overflow-x-auto whitespace-nowrap">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors"
-            style={{
-              background: activeTab === tab.key ? "#2563EB" : "transparent",
-              color: activeTab === tab.key ? "#fff" : "#64748B",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <AutomationTabs value={activeTab} onChange={v=>setActiveTab(v as TabKey)} />
 
       {/* Tab content */}
       {activeTab === "fluxo" && (
@@ -335,4 +321,9 @@ export default function FollowUpView({ inscritos, onSelectInscrito }: Props) {
       />
     </div>
   );
+}
+
+export function AutomationTabs({value,onChange,configuration=false}:{value:string;onChange:(v:string)=>void;configuration?:boolean}) {
+ const tabs=configuration?[...TABS,{key:"config",label:"Configuração"}]:TABS;
+ return <div className="flex gap-1 mb-5 overflow-x-auto whitespace-nowrap" aria-label="Vistas de automações">{tabs.map(tab=><button key={tab.key} onClick={()=>onChange(tab.key)} aria-pressed={value===tab.key} className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors" style={{background:value===tab.key?"#2563EB":"transparent",color:value===tab.key?"#fff":"#64748B"}}>{tab.label}</button>)}</div>;
 }

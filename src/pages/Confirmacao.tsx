@@ -1,18 +1,13 @@
 import { useSearchParams, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, ArrowLeft } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import ConfirmacaoExtras from "@/components/landing/ConfirmacaoExtras";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
 import { WhatsAppSupportButton } from "@/components/landing/WhatsAppSupportButton";
-
-const PLAN_PRICES: Record<string, number> = {
-  premium: 18.45,
-  masterclass: 57.81,
-  bundle: 76.26,
-};
+import { legacyRegLookup } from "@/lib/legacyAccess";
+import { planGrossPrice, trackPurchaseOnce } from "@/lib/legacyPricing";
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 12 },
@@ -25,7 +20,7 @@ const Confirmacao = () => {
   const userName = searchParams.get("name") || "";
   const firstName = userName.split(" ")[0];
   const plan = searchParams.get("plan") || "";
-  const email = searchParams.get("email") || "";
+  const token = searchParams.get("t");
   const webinar = searchParams.get("webinar") === "video" ? "video" : "imagens";
 
   usePageMeta({
@@ -34,37 +29,24 @@ const Confirmacao = () => {
       : "Inscrição Confirmada — Webinar Imagens com IA",
     description: "A tua inscrição foi confirmada. Adiciona ao calendário e partilha.",
   });
-  const [pixelFired, setPixelFired] = useState(false);
 
-  // Only fire Purchase pixel if paid_at is confirmed in DB
+  // Purchase is only reported when the server confirms the payment for the
+  // registration that owns the token. An email in the URL proves nothing.
   useEffect(() => {
-    if (pixelFired || !email || !plan) return;
-
-    const value = PLAN_PRICES[plan];
-    if (!value) return;
-
-    const checkPaid = async () => {
+    if (!token) return;
+    let cancelled = false;
+    (async () => {
       try {
-        const { data } = await supabase
-          .from("registrations")
-          .select("paid_at")
-          .eq("email", email)
-          .maybeSingle();
-
-        if (data?.paid_at && typeof fbq !== "undefined") {
-          fbq("track", "Purchase", { value, currency: "EUR" });
-          setPixelFired(true);
-          console.log("✅ fbq Purchase fired for", email);
-        } else {
-          console.log("⏳ paid_at not confirmed, pixel NOT fired for", email);
-        }
-      } catch (err) {
-        console.error("Pixel check error:", err);
+        const reg = await legacyRegLookup(token);
+        if (cancelled || !reg || !reg.paid) return;
+        const effectivePlan = reg.plan_selected || plan;
+        trackPurchaseOnce(reg.id, effectivePlan, planGrossPrice(effectivePlan));
+      } catch {
+        /* analytics only */
       }
-    };
-
-    checkPaid();
-  }, [email, plan, pixelFired]);
+    })();
+    return () => { cancelled = true; };
+  }, [token, plan]);
 
   return (
     <div className="min-h-screen bg-off-white flex items-center justify-center p-4 sm:p-6">

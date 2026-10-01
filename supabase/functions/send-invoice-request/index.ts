@@ -1,3 +1,4 @@
+import { authorizedDelivery } from "../_shared/delivery-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -13,21 +14,15 @@ serve(async (req) => {
   }
 
   try {
-    const cronSecret = req.headers.get("x-cron-secret");
-    const validCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
-    const authHeader = req.headers.get("authorization") || "";
-    const hasAuth = authHeader.startsWith("Bearer ") && authHeader.length > 20;
-    if (!validCron && !hasAuth) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+    if (req.method !== "POST" || !(await authorizedDelivery(req, supabase, (key) => Deno.env.get(key)))) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Accept optional body params
     let bodyWebinar = "all";

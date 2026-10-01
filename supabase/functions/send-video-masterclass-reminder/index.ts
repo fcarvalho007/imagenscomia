@@ -1,3 +1,4 @@
+import { authorizedDelivery } from "../_shared/delivery-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
@@ -7,7 +8,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-cron-secret, x-crm-admin-email, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ALLOWED_ADMIN = "fredericodigital@gmail.com";
 const TEMPLATE_KEY = "video_masterclass_reminder";
 const ZOOM_LINK = "https://us06web.zoom.us/j/85839886498";
 
@@ -67,13 +67,9 @@ serve(async (req) => {
   }
 
   try {
-    // Auth: accept cron secret OR admin email header
-    const cronSecret = req.headers.get("x-cron-secret");
-    const adminEmail = req.headers.get("x-crm-admin-email");
-    const validCron = cronSecret && cronSecret === Deno.env.get("CRON_SECRET");
-    const validAdmin = adminEmail?.toLowerCase() === ALLOWED_ADMIN;
-
-    if (!validCron && !validAdmin) {
+    // Privileged server or verified administrator only.
+    const authDb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    if (!await authorizedDelivery(req, authDb, key => Deno.env.get(key))) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

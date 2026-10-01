@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { X, Eye, Pencil, Loader2, Copy, Check, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import RichTextEditor from "@/components/crm/comunicacao/RichTextEditor";
 
 export interface EmailTemplate {
   template_key: string;
@@ -69,6 +70,7 @@ function parseTemplateKey(templateKey: string): { webinar: string; emailKey: str
 type ViewMode = "edit" | "preview" | "history";
 
 interface Props {
+  course?: {label:string;format:"text"|"html";save:(subject:string,body:string,format:"text"|"html")=>Promise<string>;render:(subject:string,body:string,format:"text"|"html")=>string};
   template: EmailTemplate | null;
   onClose: () => void;
   onSaved: (updated: EmailTemplate) => void;
@@ -230,25 +232,40 @@ function HistoryTab({ templateKey }: { templateKey: string }) {
 }
 
 /* ─── Main Panel ─── */
-export default function EmailEditorPanel({ template, onClose, onSaved }: Props) {
+export default function EmailEditorPanel({ template, onClose, onSaved, course }: Props) {
   const [localSubject, setLocalSubject] = useState("");
   const [localBody, setLocalBody] = useState("");
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("edit");
+  const [localFormat, setLocalFormat] = useState<"text" | "html">("text");
 
   useEffect(() => {
     if (template) {
       setLocalSubject(template.subject);
       setLocalBody(template.html_body || "");
+      setLocalFormat(course?.format || "text");
       setViewMode("edit");
     }
-  }, [template]);
+  }, [template, course?.format]);
 
-  const hasChanges = template && (localSubject !== template.subject || localBody !== (template.html_body || ""));
+  useEffect(()=>{
+    if(!template)return;
+    const previous=document.activeElement as HTMLElement|null;
+    const close=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};
+    document.addEventListener('keydown',close);
+    return()=>{document.removeEventListener('keydown',close);previous?.focus();};
+  },[template,onClose]);
+
+  const hasChanges = template && (localSubject !== template.subject || localBody !== (template.html_body || "") || (course ? localFormat !== course.format : false));
 
   const handleSave = useCallback(async () => {
     if (!template) return;
     setSaving(true);
+    if(course) {
+      try {const updated=await course.save(localSubject,localBody,localFormat);onSaved({...template,subject:localSubject,html_body:localBody,updated_at:updated});toast.success("Template guardado. Aplica-se às mensagens ainda não tentadas.");}
+      catch {toast.error("Não foi possível guardar. Atualize se o template foi alterado por outro operador; assunto 2–160 caracteres e corpo 10–10000.");}
+      finally {setSaving(false);}return;
+    }
     const now = new Date().toISOString();
     const { error } = await supabase
       .from("email_templates")
@@ -267,7 +284,7 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
       onSaved({ ...template, subject: localSubject, html_body: localBody, updated_at: now, updated_by: "crm_manual" });
     }
     setSaving(false);
-  }, [template, localSubject, localBody, onSaved]);
+  }, [template, localSubject, localBody, localFormat, onSaved, course]);
 
   const handleCancel = () => {
     if (template) {
@@ -278,8 +295,8 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
 
   if (!template) return null;
 
-  const badge = getWebinarBadge(template.template_key);
-  const emailLabel = getEmailLabel(template.template_key);
+  const badge = course ? {label:course.label,bg:"#dbeafe",color:"#2563eb"} : getWebinarBadge(template.template_key);
+  const emailLabel = course ? template.name : getEmailLabel(template.template_key);
 
   return (
     <>
@@ -326,7 +343,7 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
             <p className="font-heading font-bold text-[15px]" style={{ color: "#0F172A" }}>{emailLabel}</p>
             <p style={{ fontFamily: "'Courier New', monospace", fontSize: 11, color: "#999", marginTop: 2 }}>{template.template_key}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 flex-shrink-0">
+          <button onClick={onClose} aria-label="Fechar editor de email" className="p-1 rounded hover:bg-gray-100 flex-shrink-0">
             <X size={18} style={{ color: "#64748B" }} />
           </button>
         </div>
@@ -391,9 +408,23 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
         <div className="flex-1 overflow-y-auto" style={{ padding: "16px 20px" }}>
           {viewMode === "edit" && (
             <>
-              <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const, display: "block", marginBottom: 6 }}>
-                Corpo do email (HTML)
-              </label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                <label style={{ fontSize: 11, color: "#888", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" as const }}>
+                  {course ? "Corpo do email" : "Corpo do email (HTML)"}
+                </label>
+                {course && (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["html", "text"] as const).map(f => (
+                      <button key={f} type="button" onClick={() => setLocalFormat(f)} style={{ fontSize: 10, fontWeight: 600, borderRadius: 999, padding: "2px 8px", background: localFormat === f ? "#0f172a" : "transparent", color: localFormat === f ? "#fff" : "#94a3b8" }}>
+                        {f === "html" ? "Texto formatado" : "Texto simples"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {course && localFormat === "html" ? (
+                <RichTextEditor value={localBody} onChange={setLocalBody} minHeight={340} placeholder="Escreva o texto do email. Use {{nome}} para o primeiro nome." />
+              ) : (
               <textarea
                 value={localBody}
                 onChange={(e) => setLocalBody(e.target.value)}
@@ -410,8 +441,9 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
                   outline: "none",
                 }}
               />
+              )}
               <p style={{ fontSize: 11, color: "#aaa", marginTop: 8 }}>
-                💡 Variáveis disponíveis: {"{{fname}}"}, {"{{email}}"}
+                {course ? "A saudação, assinatura e botão são mantidos. Em texto formatado use {{nome}} para o primeiro nome. Os links e as regras de envio continuam definidos pela edição." : "Variáveis disponíveis: {{fname}}, {{email}}"}
               </p>
             </>
           )}
@@ -419,7 +451,7 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
           {viewMode === "preview" && (
             <div style={{ border: "1px solid #e5e7eb", borderRadius: 6, maxHeight: 400, overflow: "auto" }}>
               <iframe
-                srcDoc={localBody.replace(/\{\{fname\}\}/g, "João").replace(/\{\{email\}\}/g, "joao@exemplo.com")}
+                srcDoc={course ? course.render(localSubject,localBody,localFormat) : localBody.replace(/\{\{fname\}\}/g, "João").replace(/\{\{email\}\}/g, "joao@exemplo.com")}
                 title="Email preview"
                 style={{ width: "100%", minHeight: 360, border: "none" }}
                 sandbox=""
@@ -428,7 +460,7 @@ export default function EmailEditorPanel({ template, onClose, onSaved }: Props) 
           )}
 
           {viewMode === "history" && (
-            <HistoryTab templateKey={template.template_key} />
+            course ? <p className="text-sm">Consulte Pessoas nas automações para ver o estado das mensagens. Alterar este template não modifica mensagens já tentadas.</p> : <HistoryTab templateKey={template.template_key} />
           )}
         </div>
 

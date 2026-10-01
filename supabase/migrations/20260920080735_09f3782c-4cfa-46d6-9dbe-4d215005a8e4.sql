@@ -1,0 +1,1 @@
+alter view public.webinar_settings_public set (security_invoker = true);

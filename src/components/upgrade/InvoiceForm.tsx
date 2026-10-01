@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { z } from "zod";
 import { Check, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { legacyInvoiceGet } from "@/lib/legacyAccess";
 
 const invoiceSchema = z.object({
   invoice_name: z.string().trim().min(2, "Indicar nome ou empresa."),
@@ -34,7 +35,7 @@ const AUTOCOMPLETE_MAP: Record<keyof InvoiceData, string> = {
   invoice_email: "email",
 };
 
-export function InvoiceForm({ userEmail, registrationId, editToken, webinar, defaultName, context = "checkout", onValidChange, onSaveError }: Props) {
+export function InvoiceForm({ userEmail, registrationId, editToken, defaultName, context = "checkout", onValidChange, onSaveError }: Props) {
   const [form, setForm] = useState<InvoiceData>({
     invoice_name: defaultName || "",
     invoice_vat: "",
@@ -70,92 +71,30 @@ export function InvoiceForm({ userEmail, registrationId, editToken, webinar, def
     }
   }, [defaultName, touched.invoice_name, prefilled]);
 
-  // Lookup registration_id + edit_token + pre-fill
+  // Pre-fill billing data. Only possible when the caller already holds the
+  // registration token: the email alone never unlocks stored invoice details.
   useEffect(() => {
-    if (regId && token) {
-      (async () => {
-        const { data: inv } = await supabase
-          .from("invoice_details" as any)
-          .select("*")
-          .eq("registration_id", regId)
-          .maybeSingle();
-        if (inv) {
-          const d = inv as any;
-          setForm({
-            invoice_name: d.invoice_name || defaultName || "",
-            invoice_vat: d.invoice_vat || "",
-            invoice_address: d.invoice_address || "",
-            invoice_zip: d.invoice_zip || "",
-            invoice_city: d.invoice_city || "",
-            invoice_email: d.invoice_email || userEmail,
-          });
-          setPrefilled(true);
-        }
-      })();
-      return;
-    }
-    if (!userEmail) return;
+    if (!regId || !token || prefilled) return;
+    let cancelled = false;
     (async () => {
-      let query = supabase
-        .from("registrations")
-        .select("id, edit_token")
-        .eq("email", userEmail);
-      if (webinar) query = query.eq("webinar", webinar);
-      const { data: reg } = await query.maybeSingle();
-      if (!reg) return;
-      setRegId(reg.id);
-      setToken((reg as any).edit_token || null);
-
-      const { data: inv } = await supabase
-        .from("invoice_details" as any)
-        .select("*")
-        .eq("registration_id", reg.id)
-        .maybeSingle();
-      if (inv) {
-        const d = inv as any;
+      try {
+        const inv = await legacyInvoiceGet(token);
+        if (cancelled || !inv) return;
         setForm({
-          invoice_name: d.invoice_name || defaultName || "",
-          invoice_vat: d.invoice_vat || "",
-          invoice_address: d.invoice_address || "",
-          invoice_zip: d.invoice_zip || "",
-          invoice_city: d.invoice_city || "",
-          invoice_email: d.invoice_email || userEmail,
+          invoice_name: inv.invoice_name || defaultName || "",
+          invoice_vat: inv.invoice_vat || "",
+          invoice_address: inv.invoice_address || "",
+          invoice_zip: inv.invoice_zip || "",
+          invoice_city: inv.invoice_city || "",
+          invoice_email: inv.invoice_email || userEmail,
         });
         setPrefilled(true);
-      } else if (userEmail) {
-        // Fallback: try to find invoice_details from a previous registration with the same email
-        const { data: prevRegs } = await supabase
-          .from("registrations")
-          .select("id")
-          .eq("email", userEmail)
-          .neq("id", reg.id)
-          .order("created_at", { ascending: false })
-          .limit(5);
-        if (prevRegs && prevRegs.length > 0) {
-          for (const pr of prevRegs) {
-            const { data: prevInv } = await supabase
-              .from("invoice_details" as any)
-              .select("*")
-              .eq("registration_id", pr.id)
-              .maybeSingle();
-            if (prevInv) {
-              const d = prevInv as any;
-              setForm({
-                invoice_name: d.invoice_name || defaultName || "",
-                invoice_vat: d.invoice_vat || "",
-                invoice_address: d.invoice_address || "",
-                invoice_zip: d.invoice_zip || "",
-                invoice_city: d.invoice_city || "",
-                invoice_email: d.invoice_email || userEmail,
-              });
-              setPrefilled(true);
-              break;
-            }
-          }
-        }
+      } catch {
+        /* prefill is best effort */
       }
     })();
-  }, [userEmail, regId, token, webinar]);
+    return () => { cancelled = true; };
+  }, [regId, token, prefilled, defaultName, userEmail]);
 
   // Validate on form change
   useEffect(() => {

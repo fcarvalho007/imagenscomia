@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Installable WordPress packages are delivered separately from the Lovable source.
+wordpress/releases/*.zip

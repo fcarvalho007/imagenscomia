@@ -6,10 +6,11 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 type Screen = "login" | "totp-setup" | "totp-verify";
 
 interface CRMLoginProps {
+  course?: boolean;
   onLogin: () => void;
 }
 
-export default function CRMLogin({ onLogin }: CRMLoginProps) {
+export default function CRMLogin({ onLogin, course }: CRMLoginProps) {
   const [screen, setScreen] = useState<Screen>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -200,7 +201,7 @@ export default function CRMLogin({ onLogin }: CRMLoginProps) {
           <span className="font-heading font-extrabold text-xl text-white">WebinarCRM</span>
         </div>
         <p className="text-sm mb-8" style={{ color: "rgba(255,255,255,0.4)" }}>
-          Webinar IA · Frederico Carvalho
+          {course ? "Curso de IA · Frederico Carvalho" : "Webinar IA · Frederico Carvalho"}
         </p>
 
         {/* ── Screen 1: Email + Password ── */}

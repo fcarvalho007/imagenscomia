@@ -1,0 +1,1 @@
+revoke all on function public.queue_course_operations() from public, anon, authenticated;

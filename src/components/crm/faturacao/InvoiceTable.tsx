@@ -1,3 +1,4 @@
+import { courseInvoiceLabel } from "@/lib/course/crmAdapter";
 import { useState, useEffect, useMemo } from "react";
 import { FileText, Send, Loader2, CheckCircle, AlertCircle, Circle, FilePlus, Zap, AlertTriangle, ChevronDown, Mail, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const PLAN_LABELS: Record<string, string> = {
 };
 
 interface Props {
+  course?: {onSelect:(i:Inscrito)=>void};
   inscritos: Inscrito[];
   onRefresh: () => void;
   webinarFilter: string;
@@ -45,7 +47,7 @@ const STATE_CONFIG: Record<InvoiceState, { icon: typeof Circle; color: string; l
 const DEFAULT_EMAIL_SUBJECT = "Fatura-Recibo — {{plano}}";
 const DEFAULT_EMAIL_BODY = "Olá {{nome}},\n\nSegue em anexo a sua fatura-recibo referente ao serviço subscrito.\n\nMuito obrigado pela confiança! Este documento foi emitido pela Fomentar Sonhos, Lda. — a empresa por detrás das formações do Frederico Carvalho.\n\nSe tiver qualquer questão, não hesite em responder a este email.\n\nCom os melhores cumprimentos,\nFrederico Carvalho\nFomentar Sonhos";
 
-export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, showIVA }: Props) {
+export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, showIVA, course }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkRunning, setBulkRunning] = useState<"drafts" | "finalize" | "emit" | null>(null);
   const [individualLoading, setIndividualLoading] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
   const [emailBody, setEmailBody] = useState(DEFAULT_EMAIL_BODY);
 
   useEffect(() => {
-    if (inscritos.length === 0) return;
+    if (course || inscritos.length === 0) return;
     const ids = inscritos.map(i => i.id);
     supabase
       .from("invoice_details")
@@ -64,10 +66,10 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
       .then(({ data }) => {
         if (data) setIdsWithNif(new Set(data.map((d: any) => d.registration_id)));
       });
-  }, [inscritos]);
+  }, [inscritos, !!course]);
 
   const sentCount = inscritos.filter(i => i.invoice_sent).length;
-  const pendingCount = inscritos.filter(i => !i.invoice_sent).length;
+  const pendingCount = inscritos.filter(i => !i.invoice_sent && i.course?.invoiceState!=="woocommerce").length;
   const missingNifCount = inscritos.filter(i => !idsWithNif.has(i.id)).length;
 
   const toggleSelect = (id: string) => {
@@ -200,15 +202,17 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
     <div className="space-y-4">
       <div className="flex flex-col gap-2">
         <h2 className="text-[15px] font-bold text-slate-900">
-          Faturação · InvoiceExpress
+          {course ? "Faturação do curso" : "Faturação · InvoiceExpress"}
         </h2>
+        {course && <p className="text-sm text-slate-600">As encomendas do checkout WordPress são faturadas no WooCommerce. O CRM apresenta o respetivo estado sem emitir uma segunda fatura.</p>}
         <span className="flex items-center gap-2 text-[12px] font-medium text-slate-500">
           {sentCount > 0 && <span className="text-emerald-600">{sentCount} emitida{sentCount !== 1 ? "s" : ""}</span>}
           {sentCount > 0 && pendingCount > 0 && <span>·</span>}
           {pendingCount > 0 && <span className="text-amber-600">{pendingCount} por emitir</span>}
-          {missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-600"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
+          {!course && missingNifCount > 0 && <><span>·</span><span className="flex items-center gap-0.5 text-amber-600"><AlertTriangle size={11} />{missingNifCount} sem NIF</span></>}
         </span>
 
+{!course && <>
         {/* Email customization */}
         <Collapsible open={emailOpen} onOpenChange={setEmailOpen}>
           <CollapsibleTrigger asChild>
@@ -290,7 +294,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
               <TooltipTrigger asChild>
                 <Button size="sm" variant="outline" onClick={handleSolicitarNif} disabled={bulkRunning !== null || missingNifCount === 0} className="h-8 text-[11px] sm:text-[12px] gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50">
                    {bulkRunning === "nif-request" as any ? <Loader2 size={13} className="animate-spin" /> : <AlertTriangle size={13} />}
-                   Solicitar NIF{missingNifCount > 0 && ` (${missingNifCount})`}
+                   Solicitar NIF{!course && missingNifCount > 0 && ` (${missingNifCount})`}
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-[11px] max-w-[260px]">
@@ -298,7 +302,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
               </TooltipContent>
             </Tooltip>
           </div>
-        </TooltipProvider>
+        </TooltipProvider></>}
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white overflow-x-auto shadow-sm" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -310,7 +314,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
               </th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Nome</th>
               <th className="px-3 py-2 text-left font-medium hidden md:table-cell text-slate-500">Email</th>
-              <th className="px-3 py-2 text-left font-medium text-slate-500">Plano</th>
+              <th className="px-3 py-2 text-left font-medium text-slate-500">{course ? "Edição" : "Plano"}</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Valor ({ivaLabel})</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Estado</th>
               <th className="px-3 py-2 text-left font-medium text-slate-500">Ação</th>
@@ -328,7 +332,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
                   <td className="px-3 py-2 font-medium text-slate-900">
                     <span className="flex items-center gap-1.5 flex-wrap">
                       {i.nome}
-                      {webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
+                      {!course && webinarFilter === "all" && <WebinarBadge webinar={i.webinar} />}
                       {i.group_payment_ref && (() => {
                         const groupCount = inscritos.filter(g => g.group_payment_ref === i.group_payment_ref).length;
                         return groupCount > 1 ? (
@@ -337,7 +341,7 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
                           </span>
                         ) : null;
                       })()}
-                      {!idsWithNif.has(i.id) && (
+                      {!course && !idsWithNif.has(i.id) && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                           <AlertTriangle size={9} />
                           Sem NIF
@@ -346,17 +350,17 @@ export default function InvoiceTable({ inscritos, onRefresh, webinarFilter, show
                     </span>
                   </td>
                   <td className="px-3 py-2 hidden md:table-cell text-slate-500">{i.email}</td>
-                  <td className="px-3 py-2 text-slate-600">{PLAN_LABELS[i.plan] || i.plan}</td>
+                  <td className="px-3 py-2 text-slate-600">{i.course?.editionLabel || PLAN_LABELS[i.plan] || i.plan}</td>
                   <td className="px-3 py-2 font-semibold text-slate-900">€{displayValue.toFixed(2)}</td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium">
                       <Icon size={12} style={{ color: cfg.color }} />
-                      <span style={{ color: cfg.color }}>{cfg.label}</span>
+                      <span style={{ color: cfg.color }}>{i.course ? courseInvoiceLabel(i.course.invoiceState) : cfg.label}</span>
                       {i.invoice_document_id && <span className="hidden sm:inline text-slate-400">#{i.invoice_document_id}</span>}
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    {individualLoading === i.id ? (
+                    {course ? <button className="text-xs font-medium text-blue-600" onClick={()=>course.onSelect(i)}>Ver ficha</button> : individualLoading === i.id ? (
                       <Loader2 size={13} className="animate-spin text-slate-400" />
                     ) : state === "sent" ? (
                       <span className="text-[10px] text-slate-300">—</span>

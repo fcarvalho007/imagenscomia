@@ -1,0 +1,8 @@
+import {useEffect,useState} from "react";
+import {supabase} from "@/integrations/supabase/client";
+const names:Record<string,string>={request_received:"Inscrição recebida",status_updated:"Estado atualizado",invoice_reference_recorded:"Referência fiscal registada",billing_received:"Dados fiscais recebidos",contact_paused:"Comunicações pausadas",contact_resumed:"Comunicações retomadas",job_cancel:"Operação cancelada",job_retry:"Operação recolocada em fila"};
+export default function CourseActivity({id,refresh}:{id:string;refresh:number}) {
+ const [items,setItems]=useState<{id:string;action:string;created_at:string}[]>([]),[error,setError]=useState(false),[loading,setLoading]=useState(true);
+ useEffect(()=>{let live=true;setLoading(true);setItems([]);setError(false);(supabase as any).from("course_activity").select("id,action,created_at").eq("registration_id",id).order("created_at",{ascending:false}).limit(50).then(({data,error})=>{if(live){setItems(data||[]);setError(!!error);setLoading(false);}});return()=>{live=false;};},[id,refresh]);
+ return <section className="border-t pt-5"><h3 className="font-semibold">Histórico do acompanhamento</h3><p className="text-xs text-muted-foreground mt-1">Últimas 50 operações registadas no servidor.</p>{error?<p role="alert">Não foi possível carregar o histórico.</p>:loading?<p role="status">A carregar…</p>:!items.length?<p className="text-sm mt-3">Sem operações registadas.</p>:<ol className="mt-3 space-y-3">{items.map(x=><li key={x.id} className="text-sm"><span>{names[x.action]||x.action.replace(/_/g," ")}</span><time className="block text-xs text-muted-foreground">{new Date(x.created_at).toLocaleString("pt-PT")}</time></li>)}</ol>}</section>;
+}

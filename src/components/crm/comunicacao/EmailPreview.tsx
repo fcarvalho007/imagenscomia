@@ -4,9 +4,10 @@ import { useState } from "react";
 interface EmailPreviewProps {
   subject: string;
   html: string;
+  sender?: string;
 }
 
-export default function EmailPreview({ subject, html }: EmailPreviewProps) {
+export default function EmailPreview({ subject, html, sender = "Imagens com IA <no-reply@imagenscomia.com>" }: EmailPreviewProps) {
   const [view, setView] = useState<"desktop" | "mobile">("desktop");
 
   const isDesktop = view === "desktop";
@@ -63,7 +64,7 @@ export default function EmailPreview({ subject, html }: EmailPreviewProps) {
         <div className="px-4 py-2.5 space-y-1" style={{ borderBottom: "1px solid #F1F5F9" }}>
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-semibold text-slate-400 w-8">De:</span>
-            <span className="text-[11px] text-slate-600">Imagens com IA &lt;no-reply@imagenscomia.com&gt;</span>
+            <span className="text-[11px] text-slate-600">{sender}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-semibold text-slate-400 w-8">Para:</span>

@@ -1,0 +1,161 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
+import { resolveCourseAdmin } from "../_shared/course/admin.ts";
+import { normalizeFormat, personalize, renderCourseBody, wrapCourseEmail } from "../_shared/course/richtext.ts";
+
+import { corsHeaders, trace } from "../_shared/course/cors.ts";
+import { smsBasicAuth } from "../_shared/course/sms-auth.ts";
+// The SMS test target is fixed in code. No caller can choose a destination.
+const OWNER_TEST_MOBILE = Deno.env.get("COURSE_TEST_MOBILE") || "";
+const env = (key: string) => Deno.env.get(key);
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json(405, { error: "POST required" });
+
+  const db = createClient(env("SUPABASE_URL")!, env("SUPABASE_SERVICE_ROLE_KEY")!);
+  const admin = await resolveCourseAdmin(req, db);
+  if (!admin) {
+    trace("course-test-send", { outcome: "rejected", reason: "unauthorized" });
+    return json(401, { state: "rejected", error: "Unauthorized", reason: "unauthorized" });
+  }
+
+  let payload: any;
+  try {
+    payload = await req.json();
+  } catch {
+    trace("course-test-send", { outcome: "rejected", reason: "invalid_body" });
+    return json(400, { state: "rejected", error: "Invalid body", reason: "invalid_body" });
+  }
+  const channel = payload?.channel === "sms" ? "sms" : payload?.channel === "email" ? "email" : null;
+  const requestId = String(payload?.request_id || "");
+  const refuse = (reason: string, error: string, status = 400) => {
+    trace("course-test-send", { outcome: "rejected", channel, reason });
+    return json(status, { state: "rejected", error, reason });
+  };
+  if (!channel || !UUID.test(requestId)) return refuse("invalid_request", "Invalid request");
+
+  const format = normalizeFormat(payload?.format);
+  const body = String(payload?.body ?? "");
+  const subject = String(payload?.subject ?? "").trim();
+  if (channel === "email") {
+    if (subject.length < 2 || subject.length > 160 || /[\r\n]/.test(subject)) return refuse("invalid_subject", "Assunto inválido");
+    if (body.trim().length < 2 || body.length > 20000) return refuse("invalid_message", "Mensagem inválida");
+    if (!admin.emailVerified) return refuse("email_not_verified", "Email da sessão não verificado");
+  } else {
+    if (body.length < 1 || body.length > 160 || /[^\x20-\x7e]|[\[\]{}^~|\\]/.test(body))
+      return refuse("invalid_sms_body", "SMS: até 160 caracteres básicos, sem acentos nem emojis");
+  }
+
+  if (channel === "sms" && !/^351[29][0-9]{8}$/.test(OWNER_TEST_MOBILE)) {
+    trace("course-test-send", { outcome: "blocked", channel, reason: "test_mobile_missing" });
+    return json(200, { state: "blocked", reason: "test_mobile_missing" });
+  }
+
+  // Atomic claim: throttle, idempotency and the separate test log all live in one statement.
+  const { data: claim, error: claimError } = await db.rpc("claim_course_test_send", {
+    actor: admin.id,
+    request_uuid: requestId,
+    test_channel: channel,
+    target_hint: channel === "email" ? admin.email : OWNER_TEST_MOBILE,
+  });
+  if (claimError) {
+    trace("course-test-send", { outcome: "rejected", channel, reason: "claim_failed", code: claimError.code || null });
+    return json(503, { state: "rejected", error: "Serviço indisponível", reason: "claim_failed" });
+  }
+  if (claim?.state !== "claimed") {
+    trace("course-test-send", { outcome: String(claim?.state || "unknown"), channel, reason: claim?.reason || null });
+    return json(claim?.state === "throttled" ? 429 : 200, claim);
+  }
+
+  const finish = async (outcome: string, reason?: string, externalId?: string) => {
+    trace("course-test-send", { outcome, channel, reason: reason || null });
+    const { error } = await db.rpc("finish_course_test_send", {
+      test_uuid: claim.id,
+      outcome,
+      reason: reason || null,
+      external_id: externalId || null,
+    });
+    if (error) throw new Error("test_result_not_recorded");
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    if (channel === "email") {
+      const key = env("RESEND_API_KEY"), from = env("COURSE_EMAIL_FROM"), reply = env("COURSE_EMAIL_REPLY_TO");
+      if (!key || !from || !reply) {
+        await finish("blocked", "email_configuration_missing");
+        return json(200, { state: "blocked", reason: "email_configuration_missing" });
+      }
+      const rendered = renderCourseBody(body, format);
+      const html = wrapCourseEmail(
+        subject,
+        personalize(rendered.html, admin.email.split("@")[0], true),
+        "Mensagem de teste do CRM. Nenhum participante foi contactado.",
+      );
+      const text = personalize(rendered.text, admin.email.split("@")[0], false);
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json", "Idempotency-Key": `course-test/${claim.id}` },
+        body: JSON.stringify({ from, reply_to: reply, to: [admin.email], subject: `[TESTE] ${subject}`, html, text }),
+      });
+      if (!res.ok) {
+        await finish("review", `resend_${res.status}`);
+        return json(200, { state: "review", reason: `resend_${res.status}` });
+      }
+      const data = await res.json();
+      if (typeof data.id !== "string") {
+        await finish("review", "resend_missing_id");
+        return json(200, { state: "review", reason: "resend_missing_id" });
+      }
+      await finish("sent", undefined, data.id);
+      return json(200, { state: "sent", target: admin.email });
+    }
+
+    const credentials = env("SMSONLINE_API_KEY"), from = env("COURSE_SMS_FROM");
+    const basic = credentials ? smsBasicAuth(credentials) : null;
+    if (!basic || !from || !/^[A-Za-z0-9]{1,11}$/.test(from)) {
+      await finish("blocked", "sms_configuration_missing");
+      return json(200, { state: "blocked", reason: "sms_configuration_missing" });
+    }
+    const res = await fetch("https://login.smsonline.pt/Api/rest/message", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${basic}`,
+      },
+      body: JSON.stringify({ to: [OWNER_TEST_MOBILE], text: body, from, coding: "gsm-pt" }),
+    });
+    if (!res.ok) {
+      await finish("review", `sms_http_${res.status}`);
+      return json(200, { state: "review", reason: `sms_http_${res.status}` });
+    }
+    const data = await res.json();
+    const id = data?.id || data?.messageId;
+    if (!id || !["string", "number"].includes(typeof id)) {
+      await finish("review", "sms_response_requires_verification");
+      return json(200, { state: "review", reason: "sms_response_requires_verification" });
+    }
+    await finish("sent", undefined, String(id));
+    return json(200, { state: "sent", target: OWNER_TEST_MOBILE });
+  } catch (err) {
+    // Transport failure before any provider answer versus an ambiguous timeout.
+    const aborted = (err as Error)?.name === "AbortError";
+    const reason = aborted ? "provider_timeout" : "provider_unreachable";
+    try { await finish("review", reason); } catch { /* Preserve uncertain outcome; never resend automatically. */ }
+    return json(200, { state: "review", reason });
+  } finally {
+    clearTimeout(timer);
+  }
+});

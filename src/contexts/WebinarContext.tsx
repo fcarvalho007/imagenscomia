@@ -9,7 +9,7 @@ interface WebinarContextValue {
 const Ctx = createContext<WebinarContextValue | null>(null);
 
 export function WebinarProvider({ children }: { children: ReactNode }) {
-  const [webinarContext, setWebinarContext] = useState<WebinarCtxType>("video");
+  const [webinarContext, setWebinarContext] = useState<WebinarCtxType>(() => { const key = new URLSearchParams(window.location.search).get("webinar"); return key === "imagens" || key === "consolidado" ? key : "video"; });
   return (
     <Ctx.Provider value={{ webinarContext, setWebinarContext }}>
       {children}

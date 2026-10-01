@@ -1,3 +1,4 @@
+import { authorizedAdmin } from "../_shared/admin-auth.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -319,29 +320,11 @@ serve(async (req) => {
   const requestSecret = req.headers.get("x-cron-secret");
   const hasCronSecret = cronSecret && requestSecret === cronSecret;
 
-  if (manualMode) {
-    // Manual mode: accept cron secret OR anon key (the function is called via supabase.functions.invoke which sends the anon key)
-    // Since verify_jwt=false, we just check that it's a manual mode call with valid body
-    // The CRM is password-protected client-side
-    if (!hasCronSecret) {
-      // Accept if Authorization header has a Bearer token (anon key from client)
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-  } else {
-    // Cron mode: require cron secret
-    if (!hasCronSecret) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  const authClient=createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  if (!hasCronSecret && (!manualMode || !(await authorizedAdmin(req,authClient,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))))) {
+    return new Response(JSON.stringify({error:"Unauthorized"}),{status:401,headers:{...corsHeaders,"Content-Type":"application/json"}});
   }
+  if(req.method!=="POST")return new Response("POST required",{status:405,headers:corsHeaders});
 
   try {
     const runId = `run-${Date.now()}`;

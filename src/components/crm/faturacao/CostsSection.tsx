@@ -1,3 +1,4 @@
+import { editionNames } from "@/lib/course/editions";
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Loader2, TrendingUp, Euro, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import WebinarBadge from "@/components/crm/WebinarBadge";
 
 interface Props {
+  courseEdition?: string;
   costs: AcquisitionCost[];
   loading: boolean;
   numPagamentos: number;
@@ -21,7 +23,7 @@ interface Props {
 
 const fmt = (v: number) => v.toLocaleString("pt-PT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh, showWebinarColumn, showIVA }: Props) {
+export default function CostsSection({ costs, loading, numPagamentos, receitaConfirmada, paidMediaCosts, onRefresh, showWebinarColumn, showIVA, courseEdition }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<AcquisitionCost | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -34,7 +36,10 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
   const handleDelete = async (id: string) => {
     if (!confirm("Eliminar este custo?")) return;
     setDeleting(id);
-    await supabase.from("acquisition_costs" as any).delete().eq("id", id);
+    try {
+      const {error}=courseEdition !== undefined ? await (supabase as any).rpc("delete_course_cost",{cost_id:id}) : await supabase.from("acquisition_costs" as any).delete().eq("id", id);
+      if(error) throw error;
+    } catch {toast({title:"Não foi possível eliminar o custo.",variant:"destructive"});setDeleting(null);return;}
     toast({ title: "Custo eliminado" });
     onRefresh();
     setDeleting(null);
@@ -43,14 +48,14 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <h2 className="text-[15px] font-bold text-slate-900">Custos de Aquisição</h2>
+        <h2 className="text-[15px] font-bold text-slate-900">Custos registados · s/ IVA</h2>
         <div className="flex items-center gap-2">
           {costs.length > 0 && (
             <Button size="sm" variant="outline" onClick={() => {
-              const header = "Plataforma,Descrição,Valor,Data,Categoria,Webinar";
-              const rows = costs.map(c => `"${c.platform}","${c.description || ""}",${c.amount},"${c.cost_date}","${c.category}","${(c as any).webinar || ""}"`);
-              const blob = new Blob([header + "\n" + rows.join("\n")], { type: "text/csv" });
-              const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "custos.csv"; a.click();
+              const rows = [["Plataforma","Descrição","Valor sem IVA","Data","Categoria",courseEdition !== undefined ? "Edição" : "Webinar"],...costs.map(c=>[c.platform,c.description,c.amount,c.cost_date,c.category,c.webinar])];
+              const csv="\uFEFF"+rows.map(row=>row.map(v=>'"'+String(v??'').replace(/^[=+@-]/," '$&").replace(/"/g,'""')+'"').join(';')).join('\r\n');
+              const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+              const a=document.createElement("a");a.href=url;a.download="custos.csv";a.click();URL.revokeObjectURL(url);
             }} className="h-8 text-[12px] gap-1.5">
               <Download size={13} /> CSV
             </Button>
@@ -94,7 +99,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
                 <th className="px-3 py-2 text-left font-medium text-slate-500">Valor</th>
                 <th className="px-3 py-2 text-left font-medium text-slate-500">Data</th>
                 <th className="px-3 py-2 text-left font-medium text-slate-500">Categoria</th>
-                {showWebinarColumn && <th className="px-3 py-2 text-left font-medium text-slate-500">Webinar</th>}
+                {showWebinarColumn && <th className="px-3 py-2 text-left font-medium text-slate-500">{courseEdition !== undefined ? "Edição" : "Webinar"}</th>}
                 <th className="px-3 py-2 text-left font-medium text-slate-500"></th>
               </tr>
             </thead>
@@ -110,7 +115,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
                       {c.category}
                     </span>
                   </td>
-                  {showWebinarColumn && <td className="px-3 py-2"><WebinarBadge webinar={c.webinar} /></td>}
+                  {showWebinarColumn && <td className="px-3 py-2">{courseEdition !== undefined ? editionNames[c.webinar] : <WebinarBadge webinar={c.webinar} />}</td>}
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
                       <button onClick={() => { setEditingCost(c); setModalOpen(true); }} className="p-1 rounded hover:bg-slate-100 transition-colors">
@@ -138,6 +143,7 @@ export default function CostsSection({ costs, loading, numPagamentos, receitaCon
 
       {modalOpen && (
         <CostModal
+          courseEdition={courseEdition}
           cost={editingCost}
           onClose={() => { setModalOpen(false); setEditingCost(null); }}
           onSaved={() => { setModalOpen(false); setEditingCost(null); onRefresh(); }}

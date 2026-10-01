@@ -7,6 +7,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRegistrationModal } from "@/hooks/useRegistrationModal";
 import { X, Loader2, Shield, MinusCircle, Sparkles, Gift, Copy, MessageCircle, Send, ExternalLink, User, Mail, Check, CalendarPlus, CheckCircle2, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  readToken,
+  storeToken,
+  requestAccessLink,
+  ACCESS_LINK_GENERIC_MESSAGE,
+  type LegacyScope,
+  type LegacyDestination,
+} from "@/lib/legacyAccess";
 
 type Step = "capture" | "upsell" | "confirmation";
 type ConfirmationMode = "referral" | "simple";
@@ -27,14 +35,33 @@ export const RegistrationModal = () => {
   const firstName = fullName.trim().split(" ")[0] || "";
   const lastName = fullName.trim().split(" ").slice(1).join(" ");
 
-  const registerFree = async (): Promise<{ referralCode: string; referralLink: string; alreadyRegistered?: boolean } | null> => {
+  // Token scope and recovery destination for this webinar area.
+  const scope: LegacyScope = webinar === "video" ? "upgrade-video" : "upgrade";
+  const destination: LegacyDestination = webinar === "video" ? "upgrade-video" : "upgrade";
+
+  const registerFree = async (): Promise<{
+    referralCode?: string;
+    referralLink?: string;
+    alreadyRegistered?: boolean;
+    needsVerification?: boolean;
+    editToken?: string;
+    name?: string;
+  } | null> => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPhone = whatsapp ? whatsapp.replace(/[^\d]/g, "") : undefined;
     const { data, error: fnError } = await supabase.functions.invoke("register-free", {
-      body: { firstName, lastName, email: normalizedEmail, whatsapp: normalizedPhone || undefined, referredBy: referredBy || undefined, webinar },
+      body: {
+        firstName,
+        lastName,
+        email: normalizedEmail,
+        whatsapp: normalizedPhone || undefined,
+        referredBy: referredBy || undefined,
+        webinar,
+        editToken: readToken(scope) ?? undefined,
+      },
     });
     if (fnError) throw fnError;
-    return { referralCode: data.referralCode, referralLink: data.referralLink, alreadyRegistered: data.alreadyRegistered };
+    return data;
   };
 
   const handleCapture = async () => {
@@ -58,16 +85,33 @@ export const RegistrationModal = () => {
     setError(null);
     try {
       const data = await registerFree();
+
+      // Existing registration without proof of possession: nothing is shown,
+      // the access link is emailed to the address on the registration.
+      if (data?.needsVerification) {
+        try {
+          await requestAccessLink(email.trim(), destination);
+        } catch {
+          /* generic message either way */
+        }
+        setError(ACCESS_LINK_GENERIC_MESSAGE);
+        setLoading(false);
+        return;
+      }
+
+      storeToken(scope, data?.editToken);
+      const tokenParam = data?.editToken ? `&t=${encodeURIComponent(data.editToken)}` : "";
+
       if (data?.alreadyRegistered) {
         close();
-        const existingName = (data as any).name || `${firstName.trim()} ${lastName.trim()}`;
-        navigate(`${redirectPath}?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+        const existingName = data.name || `${firstName.trim()} ${lastName.trim()}`;
+        navigate(`${redirectPath}?name=${encodeURIComponent(existingName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}${tokenParam}`);
         setLoading(false);
         return;
       }
       close();
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}`);
+      navigate(`${redirectPath}?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(email.trim())}${data?.referralCode ? `&ref=${data.referralCode}` : ""}${tokenParam}`);
       // Fire tracking after navigation — never block the flow
       setTimeout(() => {
         try {

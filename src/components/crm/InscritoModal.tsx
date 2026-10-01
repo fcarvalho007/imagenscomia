@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import {
   X, ChevronLeft, ChevronRight, MessageSquare, Mail, Pencil, Check, Loader2, Copy,
 } from "lucide-react";
@@ -23,14 +23,15 @@ import ResendModal from "./modal/ResendModal";
 import SendPaymentModal from "./modal/SendPaymentModal";
 
 interface InscritoModalProps {
+  courseContent?: ReactNode;
   inscrito: Inscrito;
   todos: Inscrito[];
   onClose: () => void;
   onSelectInscrito: (i: Inscrito) => void;
-  onAddNota: (id: string, texto: string) => void;
-  onRemoveNota: (id: string, notaId: string) => void;
-  onToggleFollowUp: (id: string) => void;
-  onArchive: (id: string) => void;
+  onAddNota?: (id: string, texto: string) => void;
+  onRemoveNota?: (id: string, notaId: string) => void;
+  onToggleFollowUp?: (id: string) => void;
+  onArchive?: (id: string) => void;
   onDelete?: (id: string) => void;
   onSetGender?: (id: string, gender: Gender) => void;
   onUpdateName?: (id: string, fullName: string) => void;
@@ -65,7 +66,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function InscritoModal({
-  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent, onGrantPremium, onUpdatePlan, onMarkAsPaid, onMarkAsLost,
+  inscrito, todos, onClose, onSelectInscrito, onAddNota, onRemoveNota, onToggleFollowUp, onArchive, onDelete, onSetGender, onUpdateName, onToggleDoNotContact, fetchMessageLogs, fetchPaymentEvents, sendBacklogCheckin, regenerateLink, resendPaymentEmail, onRefresh, onUpdateStepReached, onToggleInvoiceSent, onGrantPremium, onUpdatePlan, onMarkAsPaid, onMarkAsLost, courseContent,
 }: InscritoModalProps) {
   const [notaText, setNotaText] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -100,8 +101,15 @@ export default function InscritoModal({
       .finally(() => setLogsLoading(false));
   }, [inscrito.id, fetchMessageLogs, fetchPaymentEvents]);
 
+  useEffect(() => {
+    const close=(event:KeyboardEvent)=>{if(event.key === "Escape") onClose();};
+    window.addEventListener("keydown",close);
+    return ()=>window.removeEventListener("keydown",close);
+  },[onClose]);
+
   // Cross-webinar history fetch
   useEffect(() => {
+    if (inscrito.course) { setHistoryLoading(false); return; }
     setHistoryLoading(true);
     setCrossHistory([]);
     (async () => {
@@ -163,6 +171,7 @@ export default function InscritoModal({
 
   // Header status badge
   const getStatusBadge = () => {
+    if (inscrito.course) return {label:inscrito.course.statusLabel,bg:"rgba(59,130,246,0.1)",color:"#2563eb"};
     if (inscrito.paid_at) return { label: `✅ Pago — €${inscrito.valor}`, bg: "rgba(22,163,74,0.1)", color: "#16a34a" };
     if (inscrito.payment_status === "awaiting_payment") return { label: "⏳ Aguarda pagamento", bg: "rgba(245,158,11,0.1)", color: "#d97706" };
     if (inscrito.payment_status === "selected") return { label: "🟠 Seleccionou e saiu", bg: "rgba(245,158,11,0.1)", color: "#d97706" };
@@ -172,6 +181,7 @@ export default function InscritoModal({
 
   // Relationship badge
   const getRelBadge = () => {
+    if (inscrito.course) return {label:inscrito.course.editionLabel,bg:"rgba(59,130,246,0.1)",border:"rgba(59,130,246,0.2)",color:"#93c5fd"};
     if (hasPaidBefore) return { label: "⭐ Cliente anterior", bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.3)", color: "#d97706" };
     if (hasAttendedBefore) return { label: "🔄 Inscrito anterior", bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)", color: "#3b82f6" };
     return { label: "🆕 Primeira vez", bg: "rgba(100,116,139,0.1)", border: "rgba(100,116,139,0.2)", color: "#64748b" };
@@ -185,6 +195,7 @@ export default function InscritoModal({
 
       {/* Modal */}
       <div
+        role="dialog" aria-modal="true" aria-label={`Ficha de ${inscrito.nome}`}
         className={`fixed z-[101] flex flex-col overflow-hidden ${isMobile ? "inset-0" : ""}`}
         style={isMobile ? { background: "white" } : {
           top: "50%", left: "50%", transform: "translate(-50%,-50%)",
@@ -213,7 +224,7 @@ export default function InscritoModal({
             <button onClick={() => hasNext && onSelectInscrito(todos[currentIdx + 1])} disabled={!hasNext} className="flex items-center gap-0.5 px-2 md:px-3 py-1.5 text-[12px] md:text-[13px] font-medium text-muted-foreground border border-border rounded-lg hover:bg-accent disabled:opacity-40 transition-colors">
               <span className="hidden sm:inline">Próximo</span><ChevronRight size={14} />
             </button>
-            <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><X size={20} /></button>
+            <button aria-label="Fechar ficha" onClick={onClose} className="p-1 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><X size={20} /></button>
           </div>
         </div>
 
@@ -230,7 +241,7 @@ export default function InscritoModal({
                     {inscrito.primeiro_nome?.[0]?.toUpperCase() || inscrito.nome[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="font-bold text-[16px] text-white truncate">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                    <h2 className="font-bold text-[16px] text-white truncate">{!inscrito.course && genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full" style={{ background: statusBadge.bg, color: statusBadge.color }}>{statusBadge.label}</span>
                       <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: relBadge.bg, border: `1px solid ${relBadge.border}`, color: relBadge.color }}>{relBadge.label}</span>
@@ -238,7 +249,7 @@ export default function InscritoModal({
                   </div>
                 </div>
                 <div className="flex gap-2 mt-3">
-                  <button onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium" style={{ background: "rgba(37,211,102,0.12)", color: "#4ADE80" }}>
+                  <button disabled={!inscrito.whatsapp} aria-label={inscrito.whatsapp ? "Abrir WhatsApp" : "Telefone não indicado"} onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium" style={{ background: "rgba(37,211,102,0.12)", color: "#4ADE80" }}>
                     <MessageSquare size={13} /> WhatsApp
                   </button>
                   <button onClick={() => window.open(`mailto:${inscrito.email}`, "_blank")} className="flex-1 flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)" }}>
@@ -262,7 +273,7 @@ export default function InscritoModal({
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5 justify-center">
-                      <h2 className="font-bold text-[16px] text-white">{genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
+                      <h2 className="font-bold text-[16px] text-white">{!inscrito.course && genderEmoji(inscrito.gender)} {inscrito.nome}</h2>
                       {onUpdateName && <button onClick={() => { setEditName(inscrito.nome); setEditingName(true); }} className="text-white/30 hover:text-white/60 shrink-0"><Pencil size={12} /></button>}
                     </div>
                   )}
@@ -282,7 +293,7 @@ export default function InscritoModal({
                     </span>
                   </div>
                   <p className="text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>{inscrito.email}</p>
-                  <button onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")} className="w-full mt-2 flex items-center gap-2 justify-center rounded-lg px-3 py-1.5 transition-colors" style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.20)" }}>
+                  <button disabled={!inscrito.whatsapp} aria-label={inscrito.whatsapp ? "Abrir WhatsApp" : "Telefone não indicado"} onClick={() => window.open(`https://wa.me/${inscrito.whatsapp.replace(/\D/g, "")}`, "_blank")} className="w-full mt-2 flex items-center gap-2 justify-center rounded-lg px-3 py-1.5 transition-colors" style={{ background: "rgba(37,211,102,0.12)", border: "1px solid rgba(37,211,102,0.20)" }}>
                     <MessageSquare size={14} color="#25D366" />
                     <span className="text-[12px] font-medium" style={{ color: "#4ADE80" }}>{inscrito.whatsapp}</span>
                   </button>
@@ -292,6 +303,7 @@ export default function InscritoModal({
                 {/* Divider */}
                 <div className="my-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }} />
 
+{!inscrito.course && <>
                 {/* StatusBlock */}
                 <StatusBlock
                   inscrito={inscrito}
@@ -317,7 +329,7 @@ export default function InscritoModal({
                   onMarkAsPaid={onMarkAsPaid}
                   onMarkAsLost={onMarkAsLost}
                 />
-
+</>}
               </>
             )}
           </div>
@@ -326,7 +338,7 @@ export default function InscritoModal({
           <div className="flex-1 overflow-y-auto flex flex-col">
             {/* Tab bar */}
             <div className="sticky top-0 z-10 bg-white border-b border-border px-4 md:px-6 py-2 flex items-center gap-1 overflow-x-auto shrink-0">
-              {TABS.map(t => (
+              {(inscrito.course ? [{key:"resumo" as const,label:"Acompanhamento"}] : TABS).map(t => (
                 <button
                   key={t.key}
                   onClick={() => setActiveTab(t.key)}
@@ -342,7 +354,7 @@ export default function InscritoModal({
             </div>
 
             {/* Mobile sidebar extras (actions + funnel) */}
-            {isMobile && (
+            {isMobile && !inscrito.course && (
               <div className="px-4 py-3 space-y-3" style={{ background: "#0F172A" }}>
                 <StatusBlock inscrito={inscrito} onResendLink={() => setResendModalOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} />
                 <SidebarActions inscrito={inscrito} onToggleFollowUp={onToggleFollowUp} onArchive={onArchive} onDelete={onDelete} onOpenResendModal={() => setResendModalOpen(true)} onOpenSendPayment={() => setSendPaymentOpen(true)} onToggleInvoiceSent={() => onToggleInvoiceSent?.(inscrito.id)} sendBacklogCheckin={sendBacklogCheckin} regenerateLink={regenerateLink} onUpdatePlan={onUpdatePlan} onMarkAsPaid={onMarkAsPaid} onMarkAsLost={onMarkAsLost} />
@@ -352,6 +364,7 @@ export default function InscritoModal({
 
             {/* Tab content */}
             <div className="flex-1 p-4 md:p-6">
+{inscrito.course ? courseContent : <>
               {activeTab === "resumo" && (
                 <>
                   <MiniTimeline inscrito={inscrito} messageLogs={messageLogs} paymentEvents={paymentEvents} />
@@ -386,7 +399,7 @@ export default function InscritoModal({
               )}
               {activeTab === "comunicacao" && (
                 <TabComunicacao inscrito={inscrito} onLogsRefresh={refreshLogs} />
-              )}
+              )}</>}
             </div>
           </div>
         </div>
@@ -398,7 +411,7 @@ export default function InscritoModal({
       )}
 
       {/* Send Payment Modal */}
-      {sendPaymentOpen && (
+      {!inscrito.course && sendPaymentOpen && (
         <SendPaymentModal inscrito={inscrito} messageLogs={messageLogs} onClose={() => setSendPaymentOpen(false)} onSuccess={refreshLogs} />
       )}
     </>
