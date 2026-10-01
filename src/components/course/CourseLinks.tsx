@@ -51,7 +51,7 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
       <p className="mt-2 text-sm text-slate-600">Requer sessão de administrador no WordPress.</p>
       <div className="mt-2 divide-y divide-slate-200 border-y border-slate-200">
         <LinkRow title="Analítica" description="Visitas e entradas no checkout medidas com consentimento." href={`${WP_ADMIN}?page=fcia-course`} />
-        <LinkRow title="Acessos" description="Gestão de acessos dos participantes." href={`${WP_ADMIN}?page=fcia-access`} />
+        <LinkRow title="Acessos rápidos" description="Landing page, checkouts, CRM e verificação da sincronização." href={`${WP_ADMIN}?page=fcia-access`} />
         <LinkRow title="Anúncios" description="Investimento, anúncios e última sincronização." href={`${WP_ADMIN}?page=fcia-ads`} />
       </div>
     </section>
@@ -62,6 +62,9 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
         { view: "comunicacao" as CRMView, title: "Emails e SMS", text: "Enviar um teste para si e consultar o resultado." },
         { view: "recursos" as CRMView, title: "Materiais do curso", text: "Gerir os recursos disponíveis por edição." },
       ].map(item => <button key={item.view} onClick={() => onNavigate(item.view)} className={`group border-b border-slate-200 py-4 text-left ${focus}`}><span className="flex items-center justify-between gap-3 font-semibold text-slate-900">{item.title}<ArrowRight size={16} aria-hidden="true" className="text-blue-600" /></span><span className="mt-2 block text-sm text-slate-600">{item.text}</span></button>)}</div>
+      <div className="mt-2 border-t border-slate-200">
+        <LinkRow title="Área do participante" description="Ecrã de entrada dos participantes. Os materiais exigem o link privado enviado ao participante." href="https://imagenscomia.com/curso-ia/recursos" />
+      </div>
     </section>
     <details className="border-t border-slate-200 pt-5">
       <summary className={`cursor-pointer rounded text-sm font-semibold text-slate-700 ${focus}`}>Histórico anterior (até 01/10/2026)</summary>
@@ -69,7 +72,6 @@ export default function CourseLinks({ edition, onNavigate, catalog = [] }: { cat
       <div className="divide-y divide-slate-200">
         <LinkRow title="Histórico no WordPress" description="Eventos guardados do sistema anterior, sem os apagar." href={`${WP_ADMIN}?page=fcia-history`} />
         <LinkRow title="Antiga landing page" description="Versão anterior, apenas para consulta administrativa." href="https://fredericocarvalho.pt/?fc_ia_history=20261001&preview=primeira-visita" />
-        <LinkRow title="Área do participante" description="Ecrã de entrada. Os materiais exigem o link privado enviado ao participante." href="/curso-ia/recursos" />
       </div>
     </details>
   </section>;
